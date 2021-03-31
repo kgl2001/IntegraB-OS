@@ -7868,7 +7868,14 @@ ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
             STA L010B,X
 .LB9BF      RTS
 
-.lookup3		EQUW LBA68-1
+; Table of vector handlers used by vectorEntry; addresses have -1 subtracted
+; because we transfer control to these via an RTS instruction. The odd bytes
+; between the addresses are there to match the spacing of the JSR instructions
+; at osPrintBuf; the actual values are irrelevant and will never be used.
+; SFTODO: Are they really unused? Maybe there's some code hiding somewhere,
+; but nothing references this label except the code at vectorEntry. It just
+; seems a bit odd these bytes aren't 0.
+.vectorHandlerTbl	EQUW LBA68-1
 		EQUB &0A
 		EQUW LBB54-1
 		EQUB &0C
@@ -7909,9 +7916,9 @@ ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
             LDA L0108,X
             AND #&3F
             TAX
-            LDA lookup3-1,X
+            LDA vectorHandlerTbl-1,X
             PHA
-            LDA lookup3-2,X
+            LDA vectorHandlerTbl-2,X
             PHA
             RTS
 }
