@@ -7837,6 +7837,9 @@ ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
             PLA
             RTS
 }
+.romCodeStubEnd
+ramCodeStubEnd = osPrintBuf + (romCodeStubEnd - romCodeStub)
+parentVectorTbl1 = ramCodeStubEnd
 
 .LB994      TSX
             LDA L0108,X
@@ -7950,7 +7953,7 @@ ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
             ASL A
             TAY
             SEC
-            LDA L08AD,Y
+            LDA parentVectorTbl1,Y
             SBC #&01
             STA L0108,X
             LDA L08AE,Y
@@ -7994,7 +7997,7 @@ ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
 		EQUB &01								;OSMODE 6 - No such mode
 		EQUB &01								;OSMODE 7 - No such mode
 
-.LBA65      JMP (L08AD)
+.LBA65      JMP (parentVectorTbl1) ; SFTODO WHICH VECTOR IS THIS?
 
 .LBA68	  JSR LB994
             CMP #&6F
@@ -8291,7 +8294,7 @@ ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
             LDY #&80
 {
 .LBCB0      LDA BYTEVL,X
-            STA L08AD,X
+            STA parentVectorTbl1,X
             TYA
             STA BYTEVL,X
             LDA BYTEVH,X
@@ -8342,7 +8345,7 @@ ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
 .LBD18      PHP
             SEI
             LDX #&07
-.LBD1C      LDA L08AD,X
+.LBD1C      LDA parentVectorTbl1,X
             STA BYTEVL,X
             DEX
             BPL LBD1C
