@@ -7898,7 +7898,7 @@ ibosREMVIndex = 5
 ibosCNPVIndex = 6
 .vectorHandlerTbl	EQUW LBA68-1 ; BYTEV
 		EQUB &0A
-		EQUW LBB54-1 ; WORDV
+		EQUW wordvHandler-1 ; WORDV
 		EQUB &0C
 		EQUW wrchvHandler-1
 		EQUB &0E
@@ -8140,6 +8140,8 @@ ibosCNPVIndex = 6
 
 .LBB51      JMP (L08AF)
 
+.wordvHandler
+{
 .LBB54		JSR LB994
             CMP #&09
             BNE LBB67
@@ -8147,11 +8149,12 @@ ibosCNPVIndex = 6
             JSR LBB51
             JSR LB9AA
             JMP LB9E9
-			
+
 .LBB67      LDA #&01
             JMP returnToParentVectorTblEntry
 			
-.LBB6C      JMP (L08B3)
+.^LBB6C      JMP (L08B3) ; SFTODO: USE BETTER ADDRESS LABEL
+}
 
 .rdchvHandler
 {
