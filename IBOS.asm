@@ -7900,9 +7900,9 @@ ibosCNPVIndex = 6
 		EQUB &0A
 		EQUW LBB54-1 ; WORDV
 		EQUB &0C
-		EQUW LBBE3-1 ; WRCHV
+		EQUW wrchvHandler-1
 		EQUB &0E
-		EQUW LBB6F-1 ; RDCHV
+		EQUW rdchvHandler-1
 		EQUB &10
 		EQUW insvHandler-1
 		EQUB &2A
@@ -8153,11 +8153,14 @@ ibosCNPVIndex = 6
 			
 .LBB6C      JMP (L08B3)
 
+.rdchvHandler
+{
 .LBB6F		JSR LB948
             JSR LB994
             JSR LBB6C
             JSR LB9AA
             JMP LB9E9
+}
 			
 .LBB7E      JMP (L08B1)
 
@@ -8206,11 +8209,13 @@ ibosCNPVIndex = 6
             STA L03A5
             PLA
             JMP LBBF1
-			
+
+{
 .LBBDD      CMP #&03
             BNE LBC29
             BEQ LBC05
-			
+
+.^wrchvHandler
 .LBBE3		JSR LB994
             PHA
             LDA L03A5
@@ -8218,7 +8223,7 @@ ibosCNPVIndex = 6
             PLA
             CMP #&16
             BEQ LBB81
-.LBBF1      JSR LB948
+.^LBBF1      JSR LB948
             JSR LBB7E
             PHA
             LDA L03A5
@@ -8244,8 +8249,9 @@ ibosCNPVIndex = 6
             STA SHEILA+&01
             LDA #&00
             STA L03A5
-.LBC29      PLA
+.^LBC29      PLA
             JMP LB9E9
+}
 			
 .LBC2D      LDA L00D0								;get VDU status
             AND #&10								;test bit 4
@@ -8434,6 +8440,8 @@ ibosCNPVIndex = 6
             STA L0107,X
             JMP LBDDD
 
+; SFTODO: Would it be possible to factor out the common-ish code at the start of
+; insvHandler/remvHandler/cnpvHandler to save space?
 .remvHandler
 {
 .LBD96		TSX
