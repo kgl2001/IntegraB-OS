@@ -8056,7 +8056,7 @@ ibosCNPVIndex = 6
             CMP #&8E
             BEQ osbyte8EHandler
             CMP #&00
-            BEQ LBB00
+            BEQ osbyte00Handler
             CMP #&81
             BEQ LBA3A
             LDA #ibosBYTEVIndex
@@ -8140,7 +8140,9 @@ ibosCNPVIndex = 6
             JSR LB994
             JMP LBB1C
 }
-			
+
+.osbyte00Handler
+{
 .LBB00      TXA
             PHA
             LDX #&3C								;select OSMODE
@@ -8154,6 +8156,7 @@ ibosCNPVIndex = 6
             BEQ LBB22								;Output OSMODE to screen.
             LDA #&00
             JMP LBACB
+}
 			
 .LBB18      PLA
             TAX
