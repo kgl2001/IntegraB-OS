@@ -8001,7 +8001,9 @@ ibosCNPVIndex = 6
             JMP LBACB
 }
 
-; SFTODO: What's this doing?
+; Read key with time limit/read machine type (http://beebwiki.mdfs.net/OSBYTE_%2681)
+.osbyte81Handler
+{
 .LBA3A      CPX #&00
             BNE osbyte87Handler
             CPY #&FF
@@ -8019,6 +8021,7 @@ ibosCNPVIndex = 6
 .LBA56      LDX #&00
             LDA #&81
             JMP LBB1C								;jump to code for OSMODE 0-1
+}
 			
 ;OSMODE lookup table
 .LBA5D		EQUB &01								;OSMODE 0 - Not Used
@@ -8058,7 +8061,7 @@ ibosCNPVIndex = 6
             CMP #&00
             BEQ osbyte00Handler
             CMP #&81
-            BEQ LBA3A
+            BEQ osbyte81Handler
             LDA #ibosBYTEVIndex
             JMP returnToParentVectorTblEntry
 }
@@ -8141,6 +8144,7 @@ ibosCNPVIndex = 6
             JMP LBB1C
 }
 
+; Identify host/operating system (http://beebwiki.mdfs.net/OSBYTE_%2600)
 .osbyte00Handler
 {
 .LBB00      TXA
