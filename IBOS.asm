@@ -8555,7 +8555,7 @@ ibosCNPVIndex = 6
             LDA L0107,X
             ORA #&01
             STA L0107,X
-            JMP LBDDD
+            JMP setRamselAClearPrvenReturnFromVectorHandler
 }
 			
 .LBD7E      LDA L0108,X
@@ -8566,7 +8566,7 @@ ibosCNPVIndex = 6
             LDA L0107,X
             AND #&FE
             STA L0107,X
-            JMP LBDDD
+            JMP setRamselAClearPrvenReturnFromVectorHandler
 
 ; SFTODO: Would it be possible to factor out the common-ish code at the start of
 ; insvHandler/remvHandler/cnpvHandler to save space?
@@ -8587,7 +8587,7 @@ ibosCNPVIndex = 6
             LDA L0107,X
             ORA #&01
             STA L0107,X
-            JMP LBDDD
+            JMP setRamselAClearPrvenReturnFromVectorHandler
 }
 			
 .LBDB8      LDA L0107,X
@@ -8603,11 +8603,14 @@ ibosCNPVIndex = 6
             STA L0108,X
             JSR LBEB2
             JSR LBF35
-            JMP LBDDD
+            JMP setRamselAClearPrvenReturnFromVectorHandler
 			
 .LBDD9      PLA
             STA L0102,X
-; Set RAMSEL to A and clear PRVEN SFTODO: then do some stack return-looking stuff at B9E9 - take that into account when giving meaningful label here
+; Set RAMSEL to A and clear PRVEN, then return from the vector handler.
+; SFTODO: Perhaps not the catchiest label name ever...
+.setRamselAClearPrvenReturnFromVectorHandler
+{
 .LBDDD      PLA
             STA &037F
             STA SHEILA+&34
@@ -8616,6 +8619,7 @@ ibosCNPVIndex = 6
             STA &F4
             STA SHEILA+&30
             JMP returnFromVectorHandler
+}
 
 .cnpvHandler
 {
@@ -8637,7 +8641,7 @@ ibosCNPVIndex = 6
             JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBE16
             JSR LBF90
-.LBE16      JMP LBDDD
+.LBE16      JMP setRamselAClearPrvenReturnFromVectorHandler
 }
 
 .LBE19      LDA L0107,X
@@ -8649,7 +8653,7 @@ ibosCNPVIndex = 6
             STA L0103,X
             TYA
             STA L0102,X
-            JMP LBDDD
+            JMP setRamselAClearPrvenReturnFromVectorHandler
 			
 .LBE2F      JSR LBF14
             TXA
@@ -8657,7 +8661,7 @@ ibosCNPVIndex = 6
             STA L0103,X
             TYA
             STA L0102,X
-            JMP LBDDD
+            JMP setRamselAClearPrvenReturnFromVectorHandler
 			
 .LBE3E      LDX L028D
             BEQ LBE7B
