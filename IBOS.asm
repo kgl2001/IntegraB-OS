@@ -7977,6 +7977,7 @@ ibosCNPVIndex = 6
             ;   &107,S  A stacked by romCodeStubCallIBOS
             ;   &108,S  return address from "JSR ramCodeStubCallIBOS" (low)
             ;   &109,S  return address from "JSR ramCodeStubCallIBOS" (high)
+            ;   &10A,S  x (caller's data; nothing to do with us)
             ; The low byte of the return address at &108,S will be the address
             ; of the JSR ramCodeStubCallIBOS plus 2. We mask off the low bits
             ; (which are sufficient to distinguish the 7 different callers) and
@@ -7996,11 +7997,13 @@ ibosCNPVIndex = 6
 ; At this point the stack should be exactly as described in the big comment in
 ; vectorEntry; note that this code is reached via JMP so there's no extra return
 ; address on the stack as there is in restoreOrigVectorRegs.
+.returnFromVectorHandler
+{
 ; SFTODO: This is really just shuffling the stack down to remove the return
 ; address from "JSR ramCodeStubCallIBOS"; can we rewrite it more compactly using
 ; a loop?
 .LB9E9      TSX
-            LDA L0107,X ; get A stacked by romCodeStubCallIBOS
+            LDA L0107,X
             STA L0109,X
             LDA L0106,X
             STA L0108,X
@@ -8024,6 +8027,7 @@ ibosCNPVIndex = 6
             ;   &105,S  previously paged in ROM bank stacked by romCodeStubCallIBOS
             ;   &106,S  flags stacked by romCodeStubCallIBOS
             ;   &107,S  A stacked by romCodeStubCallIBOS
+            ;   &108,S  x (caller's data; nothing to do with us)
             ; We now restore Y and X and RTS from "JSR vectorEntry" in ramCodeStub,
             ; which will restore the previously paged in ROM, the flags and then A,
             ; so the vector's caller will see the Z/N flags reflecting A, but
@@ -8033,6 +8037,7 @@ ibosCNPVIndex = 6
             PLA
             TAX
             RTS
+}
 
 ; Patch the return address further up the stack (SFTODO: be good to work out
 ; what the stack looks like here) to return to the Ath vector in
@@ -8164,7 +8169,7 @@ ibosCNPVIndex = 6
             LDA #&98
 }
 .LBACB      JSR LB9AA
-            JMP LB9E9
+            JMP returnFromVectorHandler
 
 ; Read top of user memory (http://beebwiki.mdfs.net/OSBYTE_%2684)
 .osbyte84Handler
@@ -8254,7 +8259,7 @@ ibosCNPVIndex = 6
             JSR LB948
             JSR LBB51
             JSR LB9AA
-            JMP LB9E9
+            JMP returnFromVectorHandler
 
 .LBB67      LDA #ibosWORDVIndex
             JMP returnToParentVectorTblEntry
@@ -8269,7 +8274,7 @@ ibosCNPVIndex = 6
             JSR restoreOrigVectorRegs
             JSR jmpParentRDCHV
             JSR LB9AA
-            JMP LB9E9
+            JMP returnFromVectorHandler
 }
 			
 .LBB7E      JMP (L08B1)
@@ -8360,7 +8365,7 @@ ibosCNPVIndex = 6
             LDA #&00
             STA L03A5
 .^LBC29      PLA
-            JMP LB9E9
+            JMP returnFromVectorHandler
 }
 			
 .LBC2D      LDA L00D0								;get VDU status
@@ -8605,7 +8610,7 @@ ibosCNPVIndex = 6
             NOT_AND romselPrvEn
             STA &F4
             STA SHEILA+&30
-            JMP LB9E9
+            JMP returnFromVectorHandler
 
 .cnpvHandler
 {
