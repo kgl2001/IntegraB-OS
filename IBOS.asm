@@ -257,6 +257,20 @@ LF16E       = &F16E
 
 bufNumPrinter = 3 ; OS buffer number for the printer buffer
 
+; SFTODO: Define romselCopy = &F4, romsel = &FE30, ramselCopy = &37F, ramsel =
+; &FE34 and use those everywhere instead of the raw hex or SHEILA+&xx we have
+; now?
+
+romselPrvEn = &40
+ramselPrvs8 = &10
+ramselPrvs1 = &40
+ramselPrvs81 = ramselPrvs8 OR ramselPrvs1
+
+; Convenience macro to avoid the annoyance of writing this out every time.
+MACRO NOT_AND n
+             AND #NOT(n) AND &FF
+ENDMACRO
+
 ORG	&8000
 GUARD	&C000
 .start
@@ -2386,11 +2400,11 @@ GUARD	&C000
 ;Switch in Shadow / Private memory
 .PrvEn      PHA
             LDA &037F
-            ORA #&40								;Set PRVS1
+            ORA #ramselPrvs1
             STA &037F
             STA SHEILA+&34
             LDA &F4
-            ORA #&40								;Set PrvEn
+            ORA #romselPrvEn
             STA &F4
             STA SHEILA+&30
             PLA
@@ -8050,11 +8064,8 @@ ibosCNPVIndex = 6
 .bytevHandler
 {
 .LBA68	  JSR restoreOrigVectorRegs
-; SFTODO: I am assuming that JSR peeks the original A,X,Y off stack - it does
-; something roughly along those lines, but I haven't checked what exactly is on
-; the stack yet.
-; SFTODO: Is there any chance of saving a few bytes by converting this to a
-; jump table?
+            ; SFTODO: Is there any chance of saving a few bytes by converting this to a
+            ; jump table?
             CMP #&6F
             BEQ osbyte6FHandler
             CMP #&98
@@ -8455,18 +8466,26 @@ ibosCNPVIndex = 6
             JSR PrvDis								;switch out private RAM
             JSR LBC34
             JMP LBCF2
-			
+
+; Page in PRVS8 and PRVS1, returning the previous value of RAMSEL in A.
+; SFTODO: From vague memories of other bits of the code, sometimes we do this
+; sort of paging in a bit more ad-hocly, without updating &F4/&37F. So we may
+; want to note in the comment that this does the paging in
+; properly/formally/some other term.
+.pageInPrvs81
+{
 .LBD45      LDA &F4
-            ORA #&40
+            ORA #romselPrvEn
             STA &F4
             STA SHEILA+&30
             LDA &037F
             PHA
-            ORA #&50
+            ORA #ramselPrvs81
             STA &037F
             STA SHEILA+&34
             PLA
             RTS
+}
 
 .insvHandler
 {
@@ -8477,7 +8496,7 @@ ibosCNPVIndex = 6
             LDA #ibosINSVIndex
             JMP returnToParentVectorTblEntry
 			
-.LBD69      JSR LBD45
+.LBD69      JSR pageInPrvs81
             PHA
             TSX
             JSR LBEE9
@@ -8509,7 +8528,7 @@ ibosCNPVIndex = 6
             LDA #ibosREMVIndex
             JMP returnToParentVectorTblEntry
 			
-.LBDA3      JSR LBD45
+.LBDA3      JSR pageInPrvs81
             PHA
             TSX
             JSR LBEF8
@@ -8537,11 +8556,12 @@ ibosCNPVIndex = 6
 			
 .LBDD9      PLA
             STA L0102,X
+; Set RAMSEL to A and clear PRVEN SFTODO: then do some stack return-looking stuff at B9E9 - take that into account when giving meaningful label here
 .LBDDD      PLA
             STA &037F
             STA SHEILA+&34
             LDA &F4
-            AND #&BF
+            NOT_AND romselPrvEn
             STA &F4
             STA SHEILA+&30
             JMP LB9E9
