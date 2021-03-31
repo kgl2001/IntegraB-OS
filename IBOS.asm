@@ -7960,7 +7960,8 @@ ibosCNPVIndex = 6
 		EQUW cnpvHandler-1
 		EQUB &2E
 
-; Control arrives here via the RAM copy of romCodeStub in osPrintBuf.
+; Control arrives here via ramCodeStub when one of the vectors we've claimed is
+; called.
 .vectorEntry
 {
 .LB9D5      TXA
@@ -7994,9 +7995,11 @@ ibosCNPVIndex = 6
             RTS
 }
 
-; At this point the stack should be exactly as described in the big comment in
-; vectorEntry; note that this code is reached via JMP so there's no extra return
-; address on the stack as there is in restoreOrigVectorRegs.
+; Clean up and return from a vector handler; we have dealt with the call and
+; we're not going to call the parent handler. At this point the stack should be
+; exactly as described in the big comment in vectorEntry; note that this code is
+; reached via JMP so there's no extra return address on the stack as there is in
+; restoreOrigVectorRegs.
 .returnFromVectorHandler
 {
 ; SFTODO: This is really just shuffling the stack down to remove the return
@@ -8039,23 +8042,25 @@ ibosCNPVIndex = 6
             RTS
 }
 
-; Patch the return address further up the stack (SFTODO: be good to work out
-; what the stack looks like here) to return to the Ath vector in
-; parentVectorTbl.
-; SFTODO: Change name - "return" implies we *are* returning, we are actually
-; just hacking the stack so a later return will magically go to the parent.
-.returnToParentVectorTblEntry
+; Restore the registers and pass the call onto the parent vector handler for
+; vector A (using the ibos*Index numbering). At this point the stack should be
+; exactly as described in the big comment in vectorEntry; note that this code is
+; reached via JMP so there's no extra return address on the stack as there is in
+; restoreOrigVectorRegs.
+.forwardToParentVectorTblEntry
 {
 .LBA1B      TSX
             ASL A
             TAY
+            ; We need to subtract 1 from the destination address because we're
+            ; going to transfer control via RTS, which will add 1.
             SEC
             LDA parentVectorTbl,Y
             SBC #&01
-            STA L0108,X
+            STA L0108,X ; overwrite low byte of return address from "JSR ramCodeStubCallIBOS"
             LDA parentVectorTbl+1,Y
             SBC #&00
-            STA L0109,X
+            STA L0109,X ; overwrite high byte
             PLA
             TAY
             PLA
@@ -8129,7 +8134,7 @@ ibosCNPVIndex = 6
             CMP #&81
             BEQ osbyte81Handler
             LDA #ibosBYTEVIndex
-            JMP returnToParentVectorTblEntry
+            JMP forwardToParentVectorTblEntry
 }
 
 ; Read character at text cursor and screen mode (http://beebwiki.mdfs.net/OSBYTE_%2687)
@@ -8262,7 +8267,7 @@ ibosCNPVIndex = 6
             JMP returnFromVectorHandler
 
 .LBB67      LDA #ibosWORDVIndex
-            JMP returnToParentVectorTblEntry
+            JMP forwardToParentVectorTblEntry
 }
 
 {
@@ -8540,7 +8545,7 @@ ibosCNPVIndex = 6
             CMP #bufNumPrinter
             BEQ LBD69
             LDA #ibosINSVIndex
-            JMP returnToParentVectorTblEntry
+            JMP forwardToParentVectorTblEntry
 			
 .LBD69      JSR pageInPrvs81
             PHA
@@ -8572,7 +8577,7 @@ ibosCNPVIndex = 6
             CMP #bufNumPrinter
             BEQ LBDA3
             LDA #ibosREMVIndex
-            JMP returnToParentVectorTblEntry
+            JMP forwardToParentVectorTblEntry
 			
 .LBDA3      JSR pageInPrvs81
             PHA
@@ -8619,7 +8624,7 @@ ibosCNPVIndex = 6
             CMP #bufNumPrinter
             BEQ LBDFD
             LDA #ibosCNPVIndex
-            JMP returnToParentVectorTblEntry
+            JMP forwardToParentVectorTblEntry
 
 .LBDFD      LDA &037F
             PHA
