@@ -8052,9 +8052,9 @@ ibosCNPVIndex = 6
             CMP #&84
             BEQ osbyte84Handler
             CMP #&85
-            BEQ LBADC
+            BEQ osbyte85Handler
             CMP #&8E
-            BEQ LBAF1
+            BEQ osbyte8EHandler
             CMP #&00
             BEQ LBB00
             CMP #&81
@@ -8102,6 +8102,7 @@ ibosCNPVIndex = 6
 .LBACB      JSR LB9AA
             JMP LB9E9
 
+; Read top of user memory (http://beebwiki.mdfs.net/OSBYTE_%2684)
 .osbyte84Handler
 {
 .LBAD1      PHA
@@ -8111,7 +8112,10 @@ ibosCNPVIndex = 6
             PLA
             JMP LBB1C
 }
-			
+
+; Read base of display RAM for a given mode (http://beebwiki.mdfs.net/OSBYTE_%2685)
+.osbyte85Handler
+{
 .LBADC      PHA
             TXA
             BMI LBAE9
@@ -8119,18 +8123,23 @@ ibosCNPVIndex = 6
             BEQ LBAE9
             PLA
             JMP LBB1C
+}
 			
 .LBAE9      PLA
             LDX #&00
             LDY #&80
             JMP LBACB
-			
+
+; Enter language ROM (http://beebwiki.mdfs.net/OSBYTE_%268E)
+.osbyte8EHandler
+{
 .LBAF1      LDA #&8F								;Select Issue paged ROM service request
             LDX #&2A								;Service type &2A
             LDY #&00
             JSR OSBYTE								;Execute Issue paged ROM service request
             JSR LB994
             JMP LBB1C
+}
 			
 .LBB00      TXA
             PHA
