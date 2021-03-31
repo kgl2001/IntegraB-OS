@@ -8003,9 +8003,9 @@ ibosCNPVIndex = 6
 
 ; SFTODO: What's this doing?
 .LBA3A      CPX #&00
-            BNE LBA90
+            BNE osbyte87Handler
             CPY #&FF
-            BNE LBA90
+            BNE osbyte87Handler
             LDX #&3C								;select OSMODE
             JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBA56								;Branch if OSMODE=0
@@ -8048,9 +8048,9 @@ ibosCNPVIndex = 6
             CMP #&98
             BEQ osbyte98Handler
             CMP #&87
-            BEQ LBA90
+            BEQ osbyte87Handler
             CMP #&84
-            BEQ LBAD1
+            BEQ osbyte84Handler
             CMP #&85
             BEQ LBADC
             CMP #&8E
@@ -8062,9 +8062,13 @@ ibosCNPVIndex = 6
             LDA #ibosBYTEVIndex
             JMP returnToParentVectorTblEntry
 }
-			
+
+; Read character at text cursor and screen mode (http://beebwiki.mdfs.net/OSBYTE_%2687)
+.osbyte87Handler
+{
 .LBA90      JSR LB948
             JMP LBB1C
+}
 
 ; Examine buffer status (http://beebwiki.mdfs.net/OSBYTE_%2698)
 .osbyte98Handler
@@ -8098,12 +8102,15 @@ ibosCNPVIndex = 6
 .LBACB      JSR LB9AA
             JMP LB9E9
 
+.osbyte84Handler
+{
 .LBAD1      PHA
             LDA L00D0
             AND #&10
             BNE LBAE9
             PLA
             JMP LBB1C
+}
 			
 .LBADC      PHA
             TXA
