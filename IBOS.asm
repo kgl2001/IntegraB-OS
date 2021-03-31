@@ -220,6 +220,10 @@ L0400       = &0400
 L0406       = &0406
 L0700       = &0700
 L0880       = &0880
+; The OS printer buffer is stolen for use by our code stub; we take over printer
+; buffering responsibilities using our private RAM so the OS won't touch this
+; memory.
+osPrintBuf  = &0880 ; &0880-&08BF inclusive = &40 bytes bytes
 L0895       = &0895
 L089B       = &089B
 L08AD       = &08AD
@@ -250,6 +254,8 @@ LDBE6       = &DBE6
 LDC16       = &DC16
 LF168       = &F168
 LF16E       = &F16E
+
+bufNumPrinter = 3 ; OS buffer number for the printer buffer
 
 ORG	&8000
 GUARD	&C000
@@ -1319,20 +1325,21 @@ GUARD	&C000
 ;write data to Private RAM &83xx (Addr = X, Data = A)
 .L8864      PHP
             SEI
-            JSR L887C								;switch in Private RAM
+            JSR switchInPrivateRAM
             STA prv83,X								;write data to Private RAM (Addr = X, Data = A)
             PHA
-            JMP L8890								;switch out Private RAM
+            JMP switchOutPrivateRAM
 
 ;read data from Private RAM &83xx (Addr = X, Data = A)
 .L8870      PHP
             SEI
-            JSR L887C								;switch in Private RAM
+            JSR switchInPrivateRAM
             LDA prv83,X								;read data from Private RAM (Addr = X, Data = A)
             PHA
-            JMP L8890								;switch out Private RAM
-			
+            JMP switchOutPrivateRAM
+
 ;Switch in Private RAM
+.switchInPrivateRAM
 .L887C      PHA
             LDA &037F
             AND #&80
@@ -1345,6 +1352,7 @@ GUARD	&C000
             RTS		
 
 ;Switch out Private RAM
+.switchOutPrivateRAM
 .L8890      LDA &F4
             STA SHEILA+&30							;restore using value retained in &F4
             LDA &037F
@@ -1354,7 +1362,9 @@ GUARD	&C000
             PHA
             PLA
             RTS		
-			
+
+.stackTransientCmdSpace
+{
 .L88A0      LDX #&07
 .L88A2      LDA L00A8,X								;Copy 8 values from &AF-&A8 to the stack
             PHA
@@ -1368,7 +1378,11 @@ GUARD	&C000
             LDA L010C,X
             STA L0102,X
             RTS										;Return to the caller.
+}
 
+; SFTODO: This currently only has one caller and could be inlined.
+.unstackTransientCmdSpace
+{
 .L88B8      TSX
             LDA L0101,X
             STA L010B,X
@@ -1383,6 +1397,7 @@ GUARD	&C000
             CPX #&08
             BCC L88C9
             RTS
+}
 						
 ;Unconfirmed language entry point
 .language   CMP #&01								;Check if valid language entry
@@ -7402,7 +7417,7 @@ GUARD	&C000
             JMP exitSC								;Exit Service Call
 			
 ;OSWORD &0E (14) Read real time clock
-.osword0e	JSR L88A0								;save 8 bytes of data from &A8 onto the stack
+.osword0e	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
             JSR PrvEn								;switch in private RAM
             LDA L00F0								;get X register value of most recent OSWORD call
             STA prv82+&30							;and save to &8230
@@ -7423,7 +7438,7 @@ GUARD	&C000
             JMP osword49b							;restore 8 bytes of data to &A8 from the stack and exit
 			
 ;OSWORD &49 (73) - Integra-B calls
-.osword49	JSR L88A0								;save 8 bytes of data from &A8 onto the stack
+.osword49	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
             JSR PrvEn								;switch in private RAM
             LDA L00F0								;get X register value of most recent OSWORD call
             STA prv82+&30							;and save to &8230
@@ -7441,7 +7456,7 @@ GUARD	&C000
             STA L00EF								;and restore to &EF
             JSR PrvDis								;switch out private RAM
 
-.osword49b	JSR L88B8								;restore 8 bytes of data to &A8 from the stack
+.osword49b	JSR unstackTransientCmdSpace						;restore 8 bytes of data to &A8 from the stack
             JMP exitSC								;Exit Service Call
 			
 ;Save OSWORD XY entry table
@@ -7768,38 +7783,78 @@ GUARD	&C000
             RTS
 
 ;relocation code
+; Copy our code stub into the OS printer buffer.
+; SFTODO: This only has one caller at the moment and could be inlined.
+.installOSPrintBufStub
+{
 .LB954      LDX #&3F
-.LB956      LDA LB967,X
-            STA L0880,X
+.LB956      LDA romCodeStub,X
+            STA osPrintBuf,X
             DEX
             BPL LB956
+            ; Patch the stub so it contains our bank number.
             LDA &F4
             AND #&0F
-            STA L089B				;need to make this relocatable
+            STA osPrintBuf + (romCodeStubLoadBankImm + 1 - romCodeStub)
             RTS
+}
 
-;Code to be relocated to &0880
-.LB967      JSR L0895				;need to make this relocatable
-            JSR L0895				;need to make this relocatable
-            JSR L0895				;need to make this relocatable
-            JSR L0895				;need to make this relocatable
-            JSR L0895				;need to make this relocatable
-            JSR L0895				;need to make this relocatable
-            JSR L0895				;need to make this relocatable
+; Code stub which is copied into the OS printer buffer at runtime by
+; installOSPrintBufStub. The first 7 instructions are identical JSRs to the RAM
+; copy of romCodeStubCallIBOS; these are (SFTODO: confirm this) installed as the
+; targets of various non-extended vectors (SFTODO: by which subroutine?). The
+; code at romCodeStubCallIBOS pages us in, calls the vectorEntry subroutine and
+; then pages the previous ROM back in afterwards. vectorEntry is able to
+; distinguish which of the 7 JSRs transferred control (and therefore which
+; vector is being called) by examining the return address pushed onto the stack
+; by that initial JSR.
+;
+; Doing all this avoids the use of the OS extended vector mechanism, which is
+; relatively slow (particularly important for WRCHV, which gets called for every
+; character output to the screen) and doesn't allow for vector chains.
+.romCodeStub
+{
+.LB967      JSR ramCodeStubCallIBOS ; BYTEV
+            JSR ramCodeStubCallIBOS ; WORDV
+            JSR ramCodeStubCallIBOS ; WRCHV
+            JSR ramCodeStubCallIBOS ; RDCHV
+            JSR ramCodeStubCallIBOS ; INSV
+            JSR ramCodeStubCallIBOS ; REMV
+            JSR ramCodeStubCallIBOS ; CNPV
+.romCodeStubCallIBOS
+ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
 .LR0895     PHA					;becomes address &895 when relocated.
             PHP
             LDA &F4
             PHA
-            LDA #&00				;The value at this address is modified by other code
+.^romCodeStubLoadBankImm
+            LDA #&00				;The value at this address is patched at run time by installOSPrintBufStub
             STA &F4
             STA SHEILA+&30
-            JSR LB9D5
+            JSR vectorEntry
             PLA
             STA &F4
             STA SHEILA+&30
             PLP
             PLA
             RTS
+}
+.romCodeStubEnd
+ramCodeStubEnd = osPrintBuf + (romCodeStubEnd - romCodeStub)
+; The next part of osPrintBuf is used to hold a table of 7 original OS (parent)
+; vectors. This is really a single table, but because the 7 vectors of interest
+; aren't contiguous in the OS vector table it's sometimes helpful to consider it
+; as having two separate parts.
+parentVectorTbl = ramCodeStubEnd
+parentVectorTbl1 = parentVectorTbl
+; The original OS (parent) values of BYTEV, WORDV, WRCHV and RDCHV are copied to
+; parentVectorTbl1 in that order before installing our own handlers.
+parentBYTEV = parentVectorTbl1
+parentVectorTbl2 = parentVectorTbl1 + 4 * 2 ; 4 vectors, 2 bytes each
+; The original OS (parent) values of INSV, REMV and CNPV are copied to
+; parentVectorTbl2 in that order before installing our own handlers.
+parentVectorTbl2End = parentVectorTbl2 + 3 * 2 ; 3 vectors, 2 bytes each
+assert parentVectorTbl2End <= osPrintBuf + &40
 
 .LB994      TSX
             LDA L0108,X
@@ -7831,34 +7886,66 @@ GUARD	&C000
             STA L010B,X
 .LB9BF      RTS
 
-.lookup3		EQUW LBA68-1
+; Table of vector handlers used by vectorEntry; addresses have -1 subtracted
+; because we transfer control to these via an RTS instruction. The odd bytes
+; between the addresses are there to match the spacing of the JSR instructions
+; at osPrintBuf; the actual values are irrelevant and will never be used.
+; SFTODO: Are they really unused? Maybe there's some code hiding somewhere,
+; but nothing references this label except the code at vectorEntry. It just
+; seems a bit odd these bytes aren't 0.
+ibosBYTEVIndex = 0
+ibosWORDVIndex = 1
+ibosRDCHVIndex = 3
+ibosINSVIndex = 4
+ibosREMVIndex = 5
+ibosCNPVIndex = 6
+.vectorHandlerTbl	EQUW bytevHandler-1
 		EQUB &0A
-		EQUW LBB54-1
+		EQUW wordvHandler-1
 		EQUB &0C
-		EQUW LBBE3-1
+		EQUW wrchvHandler-1
 		EQUB &0E
-		EQUW LBB6F-1
+		EQUW rdchvHandler-1
 		EQUB &10
-		EQUW LBD5C-1
+		EQUW insvHandler-1
 		EQUB &2A
-		EQUW LBD96-1
+		EQUW remvHandler-1
 		EQUB &2C
-		EQUW LBDF0-1
+		EQUW cnpvHandler-1
 		EQUB &2E
-	
+
+; Control arrives here via the RAM copy of romCodeStub in osPrintBuf.
+.vectorEntry
+{
 .LB9D5      TXA
             PHA
             TYA
             PHA
+            ; At this point the stack looks like this:
+            ;   &101,S  Y stacked by preceding instructions
+            ;   &102,S  X stacked by preceding instructions
+            ;   &103,S  return address from "JSR vectorEntry" (low)
+            ;   &104,S  return address from "JSR vectorEntry" (high)
+            ;   &105,S  previously paged in ROM bank stacked by romCodeStubCallIBOS
+            ;   &106,S  flags stacked by romCodeStubCallIBOS
+            ;   &107,S  A stacked by romCodeStubCallIBOS
+            ;   &108,S  return address from "JSR ramCodeStubCallIBOS" (low)
+            ;   &109,S  return address from "JSR ramCodeStubCallIBOS" (high)
+            ; The low byte of the return address at &108,S will be the address
+            ; of the JSR ramCodeStubCallIBOS plus 2. We mask off the low bits
+            ; (which are sufficient to distinguish the 7 different callers) and
+            ; use them to transfer control to the handler for the relevant
+            ; vector.
             TSX
             LDA L0108,X
             AND #&3F
             TAX
-            LDA lookup3-1,X
+            LDA vectorHandlerTbl-1,X
             PHA
-            LDA lookup3-2,X
+            LDA vectorHandlerTbl-2,X
             PHA
             RTS
+}
 			
 .LB9E9      TSX
             LDA L0107,X
@@ -7882,15 +7969,22 @@ GUARD	&C000
             PLA
             TAX
             RTS
-			
+
+; Patch the return address further up the stack (SFTODO: be good to work out
+; what the stack looks like here) to return to the Ath vector in
+; parentVectorTbl.
+; SFTODO: Change name - "return" implies we *are* returning, we are actually
+; just hacking the stack so a later return will magically go to the parent.
+.returnToParentVectorTblEntry
+{
 .LBA1B      TSX
             ASL A
             TAY
             SEC
-            LDA L08AD,Y
+            LDA parentVectorTbl,Y
             SBC #&01
             STA L0108,X
-            LDA L08AE,Y
+            LDA parentVectorTbl+1,Y
             SBC #&00
             STA L0109,X
             PLA
@@ -7898,10 +7992,12 @@ GUARD	&C000
             PLA
             TAX
             RTS
+}
 			
 .LBA34      JSR L8A7B
             JMP LBACB
-			
+
+; SFTODO: What's this doing?
 .LBA3A      CPX #&00
             BNE LBA90
             CPY #&FF
@@ -7930,8 +8026,10 @@ GUARD	&C000
 		EQUB &01								;OSMODE 6 - No such mode
 		EQUB &01								;OSMODE 7 - No such mode
 
-.LBA65      JMP (L08AD)
+.LBA65      JMP (parentBYTEV)
 
+.bytevHandler
+{
 .LBA68	  JSR LB994
             CMP #&6F
             BEQ LBA34
@@ -7949,8 +8047,9 @@ GUARD	&C000
             BEQ LBB00
             CMP #&81
             BEQ LBA3A
-            LDA #&00
-            JMP LBA1B
+            LDA #ibosBYTEVIndex
+            JMP returnToParentVectorTblEntry
+}
 			
 .LBA90      JSR LB948
             JMP LBB1C
@@ -8047,6 +8146,8 @@ GUARD	&C000
 
 .LBB51      JMP (L08AF)
 
+.wordvHandler
+{
 .LBB54		JSR LB994
             CMP #&09
             BNE LBB67
@@ -8054,17 +8155,22 @@ GUARD	&C000
             JSR LBB51
             JSR LB9AA
             JMP LB9E9
-			
-.LBB67      LDA #&01
-            JMP LBA1B
-			
-.LBB6C      JMP (L08B3)
 
+.LBB67      LDA #ibosWORDVIndex
+            JMP returnToParentVectorTblEntry
+}
+
+{
+.jmpParentRDCHV
+.LBB6C      JMP (parentVectorTbl + ibosRDCHVIndex * 2)
+
+.^rdchvHandler
 .LBB6F		JSR LB948
             JSR LB994
-            JSR LBB6C
+            JSR jmpParentRDCHV
             JSR LB9AA
             JMP LB9E9
+}
 			
 .LBB7E      JMP (L08B1)
 
@@ -8113,11 +8219,13 @@ GUARD	&C000
             STA L03A5
             PLA
             JMP LBBF1
-			
+
+{
 .LBBDD      CMP #&03
             BNE LBC29
             BEQ LBC05
-			
+
+.^wrchvHandler
 .LBBE3		JSR LB994
             PHA
             LDA L03A5
@@ -8125,7 +8233,7 @@ GUARD	&C000
             PLA
             CMP #&16
             BEQ LBB81
-.LBBF1      JSR LB948
+.^LBBF1      JSR LB948
             JSR LBB7E
             PHA
             LDA L03A5
@@ -8151,8 +8259,9 @@ GUARD	&C000
             STA SHEILA+&01
             LDA #&00
             STA L03A5
-.LBC29      PLA
+.^LBC29      PLA
             JMP LB9E9
+}
 			
 .LBC2D      LDA L00D0								;get VDU status
             AND #&10								;test bit 4
@@ -8220,18 +8329,22 @@ GUARD	&C000
             LDX #&3C								;select OSMODE
             JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBCF2
-            JSR LB954
+            JSR installOSPrintBufStub
             PHP
             SEI
+            ; Save the parent values of BYTEV, WORDV, WRCHV and RDCHV at
+            ; parentVectorTbl1 and install our handlers at osPrintBuf+n*3 where
+            ; n=0 for BYTEV, 1 for WORDV, etc.
             LDX #&00
-            LDY #&80
+            LDY #lo(osPrintBuf)
+{
 .LBCB0      LDA BYTEVL,X
-            STA L08AD,X
+            STA parentVectorTbl1,X
             TYA
             STA BYTEVL,X
             LDA BYTEVH,X
-            STA L08AE,X
-            LDA #&08
+            STA parentVectorTbl1+1,X
+            LDA #hi(osPrintBuf)
             STA BYTEVH,X
             INY
             INY
@@ -8240,6 +8353,7 @@ GUARD	&C000
             INX
             CPX #&08
             BNE LBCB0
+}
             PLP
             JSR LBE3E
             LDA L028D
@@ -8276,12 +8390,12 @@ GUARD	&C000
 .LBD18      PHP
             SEI
             LDX #&07
-.LBD1C      LDA L08AD,X
+.LBD1C      LDA parentVectorTbl1,X
             STA BYTEVL,X
             DEX
             BPL LBD1C
             LDX #&05
-.LBD27      LDA L08B5,X
+.LBD27      LDA parentVectorTbl2,X
             STA INSVL,X
             DEX
             BPL LBD27
@@ -8305,13 +8419,15 @@ GUARD	&C000
             STA SHEILA+&34
             PLA
             RTS
-			
+
+.insvHandler
+{
 .LBD5C		TSX
             LDA L0102,X
-            CMP #&03
+            CMP #bufNumPrinter
             BEQ LBD69
-            LDA #&04
-            JMP LBA1B
+            LDA #ibosINSVIndex
+            JMP returnToParentVectorTblEntry
 			
 .LBD69      JSR LBD45
             PHA
@@ -8322,6 +8438,7 @@ GUARD	&C000
             ORA #&01
             STA L0107,X
             JMP LBDDD
+}
 			
 .LBD7E      LDA L0108,X
             JSR LBF71
@@ -8332,13 +8449,17 @@ GUARD	&C000
             AND #&FE
             STA L0107,X
             JMP LBDDD
-			
+
+; SFTODO: Would it be possible to factor out the common-ish code at the start of
+; insvHandler/remvHandler/cnpvHandler to save space?
+.remvHandler
+{
 .LBD96		TSX
             LDA L0102,X
-            CMP #&03
+            CMP #bufNumPrinter
             BEQ LBDA3
-            LDA #&05
-            JMP LBA1B
+            LDA #ibosREMVIndex
+            JMP returnToParentVectorTblEntry
 			
 .LBDA3      JSR LBD45
             PHA
@@ -8349,6 +8470,7 @@ GUARD	&C000
             ORA #&01
             STA L0107,X
             JMP LBDDD
+}
 			
 .LBDB8      LDA L0107,X
             AND #&FE
@@ -8375,14 +8497,16 @@ GUARD	&C000
             STA &F4
             STA SHEILA+&30
             JMP LB9E9
-			
+
+.cnpvHandler
+{
 .LBDF0		TSX
             LDA L0102,X
-            CMP #&03
+            CMP #bufNumPrinter
             BEQ LBDFD
-            LDA #&06
-            JMP LBA1B
-			
+            LDA #ibosCNPVIndex
+            JMP returnToParentVectorTblEntry
+
 .LBDFD      LDA &037F
             PHA
             JSR PrvEn								;switch in private RAM
@@ -8395,6 +8519,7 @@ GUARD	&C000
             BEQ LBE16
             JSR LBF90
 .LBE16      JMP LBDDD
+}
 
 .LBE19      LDA L0107,X
             AND #&01
@@ -8447,15 +8572,19 @@ GUARD	&C000
             BPL LBE83
             PHP
             SEI
+            ; Save the parent values of INSV, REMV and CNPV at
+            ; parentVectorTbl2 and install our handlers at osPrintBuf+n*3 where
+            ; n=4 for INSV, 5 for REMV and 6 for CNPV.
             LDX #&00
-            LDY #&8C
+            LDY #lo(osPrintBuf + 4 * 3)
+{
 .LBE92      LDA INSVL,X
-            STA L08B5,X
+            STA parentVectorTbl2,X
             TYA
             STA INSVL,X
             LDA INSVH,X
-            STA L08B6,X
-            LDA #&08
+            STA parentVectorTbl2+1,X
+            LDA #hi(osPrintBuf + 4 * 3)
             STA INSVH,X
             INY
             INY
@@ -8464,6 +8593,7 @@ GUARD	&C000
             INX
             CPX #&06
             BNE LBE92
+}
             PLP
             RTS
 			
@@ -8618,4 +8748,7 @@ GUARD	&C000
 			EQUB &00,$00,$00,$00,$00,$00,$00,$00
 .end
 
-SAVE "IBOS-01.ROM", start, end
+SAVE "IBOS-01.rom", start, end
+
+; SFTODO: Would it be possible to save space by factoring out "LDX #&3C:JSR
+; L8870" into a subroutine?
