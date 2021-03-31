@@ -7849,6 +7849,7 @@ GUARD	&C000
 ; relatively slow (particularly important for WRCHV, which gets called for every
 ; character output to the screen) and doesn't allow for vector chains.
 .romCodeStub
+ramCodeStub = osPrintBuf ; SFTODO: use ramCodeStub instead of osPrintBuf in some/all places?
 {
 .LB967      JSR ramCodeStubCallIBOS ; BYTEV
             JSR ramCodeStubCallIBOS ; WORDV
@@ -7858,7 +7859,7 @@ GUARD	&C000
             JSR ramCodeStubCallIBOS ; REMV
             JSR ramCodeStubCallIBOS ; CNPV
 .romCodeStubCallIBOS
-ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
+ramCodeStubCallIBOS = ramCodeStub + (romCodeStubCallIBOS - romCodeStub)
 .LR0895     PHA					;becomes address &895 when relocated.
             PHP
             LDA &F4
@@ -7876,7 +7877,7 @@ ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
             RTS
 }
 .romCodeStubEnd
-ramCodeStubEnd = osPrintBuf + (romCodeStubEnd - romCodeStub)
+ramCodeStubEnd = ramCodeStub + (romCodeStubEnd - romCodeStub)
 ; The next part of osPrintBuf is used to hold a table of 7 original OS (parent)
 ; vectors. This is really a single table, but because the 7 vectors of interest
 ; aren't contiguous in the OS vector table it's sometimes helpful to consider it
@@ -7991,9 +7992,15 @@ ibosCNPVIndex = 6
             PHA
             RTS
 }
-			
+
+; At this point the stack should be exactly as described in the big comment in
+; vectorEntry; note that this code is reached via JMP so there's no extra return
+; address on the stack as there is in restoreOrigVectorRegs.
+; SFTODO: This is really just shuffling the stack down to remove the return
+; address from "JSR ramCodeStubCallIBOS"; can we rewrite it more compactly using
+; a loop?
 .LB9E9      TSX
-            LDA L0107,X
+            LDA L0107,X ; get A stacked by romCodeStubCallIBOS
             STA L0109,X
             LDA L0106,X
             STA L0108,X
@@ -8009,6 +8016,18 @@ ibosCNPVIndex = 6
             STA L0103,X
             PLA
             PLA
+            ; At this point the stack looks like this:
+            ;   &101,S  Y stacked by preceding instructions
+            ;   &102,S  X stacked by preceding instructions
+            ;   &103,S  return address from "JSR vectorEntry" (low)
+            ;   &104,S  return address from "JSR vectorEntry" (high)
+            ;   &105,S  previously paged in ROM bank stacked by romCodeStubCallIBOS
+            ;   &106,S  flags stacked by romCodeStubCallIBOS
+            ;   &107,S  A stacked by romCodeStubCallIBOS
+            ; We now restore Y and X and RTS from "JSR vectorEntry" in ramCodeStub,
+            ; which will restore the previously paged in ROM, the flags and then A,
+            ; so the vector's caller will see the Z/N flags reflecting A, but
+            ; otherwise preserved.
             PLA
             TAY
             PLA
