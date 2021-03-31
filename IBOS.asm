@@ -7839,7 +7839,12 @@ ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
 }
 .romCodeStubEnd
 ramCodeStubEnd = osPrintBuf + (romCodeStubEnd - romCodeStub)
-parentVectorTbl1 = ramCodeStubEnd
+; The next part of osPrintBuf is used to hold a table of 7 original OS (parent)
+; vectors. This is really a single table, but because the 7 vectors of interest
+; aren't contiguous in the OS vector table it's sometimes helpful to consider it
+; as having two separate parts.
+parentVectorTbl = ramCodeStubEnd
+parentVectorTbl1 = parentVectorTbl
 ; The original OS (parent) values of BYTEV, WORDV, WRCHV and RDCHV are copied to
 ; parentVectorTbl1 in that order before installing our own handlers.
 parentBYTEV = parentVectorTbl1
@@ -7956,15 +7961,22 @@ assert parentVectorTbl2End <= osPrintBuf + &40
             PLA
             TAX
             RTS
-			
+
+; Patch the return address further up the stack (SFTODO: be good to work out
+; what the stack looks like here) to return to the Ath vector in
+; parentVectorTbl.
+; SFTODO: Change name - "return" implies we *are* returning, we are actually
+; just hacking the stack so a later return will magically go to the parent.
+.returnToParentVectorTblEntry
+{
 .LBA1B      TSX
             ASL A
             TAY
             SEC
-            LDA parentVectorTbl1,Y
+            LDA parentVectorTbl,Y
             SBC #&01
             STA L0108,X
-            LDA parentVectorTbl1+1,Y
+            LDA parentVectorTbl+1,Y
             SBC #&00
             STA L0109,X
             PLA
@@ -7972,6 +7984,7 @@ assert parentVectorTbl2End <= osPrintBuf + &40
             PLA
             TAX
             RTS
+}
 			
 .LBA34      JSR L8A7B
             JMP LBACB
@@ -8025,7 +8038,7 @@ assert parentVectorTbl2End <= osPrintBuf + &40
             CMP #&81
             BEQ LBA3A
             LDA #&00
-            JMP LBA1B
+            JMP returnToParentVectorTblEntry
 			
 .LBA90      JSR LB948
             JMP LBB1C
@@ -8131,7 +8144,7 @@ assert parentVectorTbl2End <= osPrintBuf + &40
             JMP LB9E9
 			
 .LBB67      LDA #&01
-            JMP LBA1B
+            JMP returnToParentVectorTblEntry
 			
 .LBB6C      JMP (L08B3)
 
@@ -8391,7 +8404,7 @@ assert parentVectorTbl2End <= osPrintBuf + &40
             CMP #&03
             BEQ LBD69
             LDA #&04
-            JMP LBA1B
+            JMP returnToParentVectorTblEntry
 			
 .LBD69      JSR LBD45
             PHA
@@ -8418,7 +8431,7 @@ assert parentVectorTbl2End <= osPrintBuf + &40
             CMP #&03
             BEQ LBDA3
             LDA #&05
-            JMP LBA1B
+            JMP returnToParentVectorTblEntry
 			
 .LBDA3      JSR LBD45
             PHA
@@ -8461,7 +8474,7 @@ assert parentVectorTbl2End <= osPrintBuf + &40
             CMP #&03
             BEQ LBDFD
             LDA #&06
-            JMP LBA1B
+            JMP returnToParentVectorTblEntry
 			
 .LBDFD      LDA &037F
             PHA
