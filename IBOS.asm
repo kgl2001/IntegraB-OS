@@ -7801,8 +7801,8 @@ GUARD	&C000
 ; installOSPrintBufStub. The first 7 instructions are identical JSRs to the RAM
 ; copy of romCodeStubCallIBOS; these are (SFTODO: confirm this) installed as the
 ; targets of various non-extended vectors (SFTODO: by which subroutine?). The
-; code at romCodeStubCallIBOS pages us in, transfers control to LB9D5 and then
-; pages the previous ROM back in afterwards. Code at LB9D5 is able to
+; code at romCodeStubCallIBOS pages us in, calls the vectorEntry subroutine and
+; then pages the previous ROM back in afterwards. vectorEntry is able to
 ; distinguish which of the 7 JSRs transferred control (and therefore which
 ; vector is being called) by examining the return address pushed onto the stack
 ; by that initial JSR.
@@ -7812,14 +7812,15 @@ GUARD	&C000
 ; character output to the screen) and doesn't allow for vector chains.
 .romCodeStub
 {
-.LB967      JSR osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
-            JSR osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
-            JSR osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
-            JSR osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
-            JSR osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
-            JSR osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
-            JSR osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
+.LB967      JSR ramCodeStubCallIBOS
+            JSR ramCodeStubCallIBOS
+            JSR ramCodeStubCallIBOS
+            JSR ramCodeStubCallIBOS
+            JSR ramCodeStubCallIBOS
+            JSR ramCodeStubCallIBOS
+            JSR ramCodeStubCallIBOS
 .romCodeStubCallIBOS
+ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
 .LR0895     PHA					;becomes address &895 when relocated.
             PHP
             LDA &F4
@@ -7828,7 +7829,7 @@ GUARD	&C000
             LDA #&00				;The value at this address is patched at run time by installOSPrintBufStub
             STA &F4
             STA SHEILA+&30
-            JSR LB9D5
+            JSR vectorEntry
             PLA
             STA &F4
             STA SHEILA+&30
@@ -7881,11 +7882,29 @@ GUARD	&C000
 		EQUB &2C
 		EQUW LBDF0-1
 		EQUB &2E
-	
+
+; Control arrives here via the RAM copy of romCodeStub in osPrintBuf.
+.vectorEntry
+{
 .LB9D5      TXA
             PHA
             TYA
             PHA
+            ; At this point the stack looks like this:
+            ;   &101,S  Y stacked by preceding instructions
+            ;   &102,S  X stacked by preceding instructions
+            ;   &103,S  return address from "JSR vectorEntry" (low)
+            ;   &104,S  return address from "JSR vectorEntry" (high)
+            ;   &105,S  previously paged in ROM bank stacked by romCodeStubCallIBOS
+            ;   &106,S  flags stacked by romCodeStubCallIBOS
+            ;   &107,S  A stacked by romCodeStubCallIBOS
+            ;   &108,S  return address from "JSR ramCodeStubCallIBOS" (low)
+            ;   &109,S  return address from "JSR ramCodeStubCallIBOS" (high)
+            ; The low byte of the return address at &108,S will be the address
+            ; of the JSR ramCodeStubCallIBOS plus 2. We mask off the low bits
+            ; (which are sufficient to distinguish the 7 different callers) and
+            ; use them to transfer control to the handler for the relevant
+            ; vector.
             TSX
             LDA L0108,X
             AND #&3F
@@ -7895,6 +7914,7 @@ GUARD	&C000
             LDA lookup3-2,X
             PHA
             RTS
+}
 			
 .LB9E9      TSX
             LDA L0107,X
