@@ -255,6 +255,8 @@ LDC16       = &DC16
 LF168       = &F168
 LF16E       = &F16E
 
+bufNumPrinter = 3 ; OS buffer number for the printer buffer
+
 ORG	&8000
 GUARD	&C000
 .start
@@ -7891,6 +7893,8 @@ assert parentVectorTbl2End <= osPrintBuf + &40
 ; SFTODO: Are they really unused? Maybe there's some code hiding somewhere,
 ; but nothing references this label except the code at vectorEntry. It just
 ; seems a bit odd these bytes aren't 0.
+ibosINSVIndex = 4
+ibosCNPVIndex = 6
 .vectorHandlerTbl	EQUW LBA68-1 ; BYTEV
 		EQUB &0A
 		EQUW LBB54-1 ; WORDV
@@ -7899,11 +7903,11 @@ assert parentVectorTbl2End <= osPrintBuf + &40
 		EQUB &0E
 		EQUW LBB6F-1 ; RDCHV
 		EQUB &10
-		EQUW LBD5C-1 ; INSV
+		EQUW insvHandler-1
 		EQUB &2A
 		EQUW LBD96-1 ; REMV
 		EQUB &2C
-		EQUW LBDF0-1 ; CNPV
+		EQUW cnpvHandler-1
 		EQUB &2E
 
 ; Control arrives here via the RAM copy of romCodeStub in osPrintBuf.
@@ -8398,12 +8402,14 @@ assert parentVectorTbl2End <= osPrintBuf + &40
             STA SHEILA+&34
             PLA
             RTS
-			
+
+.insvHandler
+{
 .LBD5C		TSX
             LDA L0102,X
-            CMP #&03
+            CMP #bufNumPrinter
             BEQ LBD69
-            LDA #&04
+            LDA #ibosINSVIndex
             JMP returnToParentVectorTblEntry
 			
 .LBD69      JSR LBD45
@@ -8415,6 +8421,7 @@ assert parentVectorTbl2End <= osPrintBuf + &40
             ORA #&01
             STA L0107,X
             JMP LBDDD
+}
 			
 .LBD7E      LDA L0108,X
             JSR LBF71
@@ -8468,14 +8475,16 @@ assert parentVectorTbl2End <= osPrintBuf + &40
             STA &F4
             STA SHEILA+&30
             JMP LB9E9
-			
+
+.cnpvHandler
+{
 .LBDF0		TSX
             LDA L0102,X
-            CMP #&03
+            CMP #bufNumPrinter
             BEQ LBDFD
-            LDA #&06
+            LDA #ibosCNPVIndex
             JMP returnToParentVectorTblEntry
-			
+
 .LBDFD      LDA &037F
             PHA
             JSR PrvEn								;switch in private RAM
@@ -8488,6 +8497,7 @@ assert parentVectorTbl2End <= osPrintBuf + &40
             BEQ LBE16
             JSR LBF90
 .LBE16      JMP LBDDD
+}
 
 .LBE19      LDA L0107,X
             AND #&01
