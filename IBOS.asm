@@ -7993,9 +7993,13 @@ ibosCNPVIndex = 6
             TAX
             RTS
 }
-			
+
+; Aries/Watford shadow RAM access (http://beebwiki.mdfs.net/OSBYTE_%266F)
+.osbyte6FHandler
+{
 .LBA34      JSR L8A7B
             JMP LBACB
+}
 
 ; SFTODO: What's this doing?
 .LBA3A      CPX #&00
@@ -8034,10 +8038,15 @@ ibosCNPVIndex = 6
 .bytevHandler
 {
 .LBA68	  JSR LB994
+; SFTODO: I am assuming that JSR peeks the original A,X,Y off stack - it does
+; something roughly along those lines, but I haven't checked what exactly is on
+; the stack yet.
+; SFTODO: Is there any chance of saving a few bytes by converting this to a
+; jump table?
             CMP #&6F
-            BEQ LBA34
+            BEQ osbyte6FHandler
             CMP #&98
-            BEQ LBA96
+            BEQ osbyte98Handler
             CMP #&87
             BEQ LBA90
             CMP #&84
@@ -8056,7 +8065,10 @@ ibosCNPVIndex = 6
 			
 .LBA90      JSR LB948
             JMP LBB1C
-			
+
+; Examine buffer status (http://beebwiki.mdfs.net/OSBYTE_%2698)
+.osbyte98Handler
+{
 .LBA96      JSR jmpParentBYTEV
             BCS LBACB
             LDA &037F
@@ -8082,9 +8094,10 @@ ibosCNPVIndex = 6
             LDA (L00FA),Y
             TAY
             LDA #&98
+}
 .LBACB      JSR LB9AA
             JMP LB9E9
-			
+
 .LBAD1      PHA
             LDA L00D0
             AND #&10
