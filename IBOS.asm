@@ -7964,7 +7964,8 @@ ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
 			
 .LBA34      JSR L8A7B
             JMP LBACB
-			
+
+; SFTODO: What's this doing?
 .LBA3A      CPX #&00
             BNE LBA90
             CPY #&FF
@@ -8288,6 +8289,7 @@ ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
             SEI
             LDX #&00
             LDY #&80
+{
 .LBCB0      LDA BYTEVL,X
             STA L08AD,X
             TYA
@@ -8303,6 +8305,7 @@ ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
             INX
             CPX #&08
             BNE LBCB0
+}
             PLP
             JSR LBE3E
             LDA L028D
@@ -8682,3 +8685,6 @@ ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
 .end
 
 SAVE "IBOS-01.rom", start, end
+
+; SFTODO: Would it be possible to save space by factoring out "LDX #&3C:JSR
+; L8870" into a subroutine?
