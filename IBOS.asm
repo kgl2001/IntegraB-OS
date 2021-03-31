@@ -2397,7 +2397,20 @@ GUARD	&C000
 .L9050      LDA #&8F								;issue paged ROM service request
             JMP OSBYTE								;execute paged ROM service request
 			
-;Switch in Shadow / Private memory
+; Page in PRVS1.
+; SFTODO: Original comment was "Switch in Shadow / Private memory". If I read
+; the code right, it only switches in PRVS1. If we call PRVS1 "shadow memory or
+; private memory, both are correct", the comment is consistent with my
+; understanding, but this *won't* have any effect on shadow RAM in 3000-7FFF
+; region. Will it? Ken - are you OK if the disassembly uses the naming
+; convention "shadow RAM=3000-8000, private RAM=the special 12K switchable in
+; chunks in 8000-AFFF"? I'm happy to use different names if you prefer, I just
+; think it's helpful to distinguish these two chunks of RAM.
+; SFTODO: Is there any chance of saving space by sharing some code with the
+; similar pageInPrvs81?
+.pageInPrvs1
+; SFTODO: I'd like to get rid of the PrvEn label and use pageInPrvs1 but won't
+; do it just yet.
 .PrvEn      PHA
             LDA &037F
             ORA #ramselPrvs1
@@ -2410,15 +2423,25 @@ GUARD	&C000
             PLA
             RTS
 			
-			
-;Switch out Shadow / Private memory
+
+
+; Page out private RAM.
+; SFTODO: This clears PRVS1 in RAMSEL, but is that actually necessary? If PRVEN is
+; clear none of the private RAM is accessible. Do we ever just set PRVEN and rely
+; on RAMSEL already having some of PRVS1/4/8 set? The name "pageOutPrv1" is chosen
+; to try to reflect this, but it's a bit misleading as we are paging out the *whole*
+; private 12K.
+;Switch out Shadow / Private memory SFTODO: see my comment on PrvEn
+
+; SFTODO: I'm tempted to get rid of the PrvDis label but I'll leave it for now
+.pageOutPrv1
 .PrvDis	  PHA
             LDA &F4
-            AND #&BF								;Clear PrvEn
+            NOT_AND romselPrvEn                                                                     ;Clear PrvEn
             STA &F4
             STA SHEILA+&30
             LDA &037F
-            AND #&BF								;Clear PRVS1
+            NOT_AND ramselPrvs1							;Clear PRVS1
             STA &037F
             STA SHEILA+&34
             PLA
