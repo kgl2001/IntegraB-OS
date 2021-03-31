@@ -8026,7 +8026,10 @@ ibosCNPVIndex = 6
 		EQUB &01								;OSMODE 6 - No such mode
 		EQUB &01								;OSMODE 7 - No such mode
 
+.jmpParentBYTEV
+{
 .LBA65      JMP (parentBYTEV)
+}
 
 .bytevHandler
 {
@@ -8054,7 +8057,7 @@ ibosCNPVIndex = 6
 .LBA90      JSR LB948
             JMP LBB1C
 			
-.LBA96      JSR LBA65
+.LBA96      JSR jmpParentBYTEV
             BCS LBACB
             LDA &037F
             PHA
@@ -8126,7 +8129,7 @@ ibosCNPVIndex = 6
 .LBB18      PLA
             TAX
             LDA #&00
-.LBB1C      JSR LBA65
+.LBB1C      JSR jmpParentBYTEV
             JMP LBACB
 			
 .LBB22      LDX #&00								;start at offset 0
