@@ -1319,20 +1319,21 @@ GUARD	&C000
 ;write data to Private RAM &83xx (Addr = X, Data = A)
 .L8864      PHP
             SEI
-            JSR L887C								;switch in Private RAM
+            JSR switchInPrivateRAM
             STA prv83,X								;write data to Private RAM (Addr = X, Data = A)
             PHA
-            JMP L8890								;switch out Private RAM
+            JMP switchOutPrivateRAM
 
 ;read data from Private RAM &83xx (Addr = X, Data = A)
 .L8870      PHP
             SEI
-            JSR L887C								;switch in Private RAM
+            JSR switchInPrivateRAM
             LDA prv83,X								;read data from Private RAM (Addr = X, Data = A)
             PHA
-            JMP L8890								;switch out Private RAM
-			
+            JMP switchOutPrivateRAM
+
 ;Switch in Private RAM
+.switchInPrivateRAM
 .L887C      PHA
             LDA &037F
             AND #&80
@@ -1345,6 +1346,7 @@ GUARD	&C000
             RTS		
 
 ;Switch out Private RAM
+.switchOutPrivateRAM
 .L8890      LDA &F4
             STA SHEILA+&30							;restore using value retained in &F4
             LDA &037F
@@ -1354,7 +1356,9 @@ GUARD	&C000
             PHA
             PLA
             RTS		
-			
+
+.stackTransientCmdSpace
+{
 .L88A0      LDX #&07
 .L88A2      LDA L00A8,X								;Copy 8 values from &AF-&A8 to the stack
             PHA
@@ -1368,7 +1372,11 @@ GUARD	&C000
             LDA L010C,X
             STA L0102,X
             RTS										;Return to the caller.
+}
 
+; SFTODO: This currently only has one caller and could be inlined.
+.unstackTransientCmdSpace
+{
 .L88B8      TSX
             LDA L0101,X
             STA L010B,X
@@ -1383,6 +1391,7 @@ GUARD	&C000
             CPX #&08
             BCC L88C9
             RTS
+}
 						
 ;Unconfirmed language entry point
 .language   CMP #&01								;Check if valid language entry
@@ -7402,7 +7411,7 @@ GUARD	&C000
             JMP exitSC								;Exit Service Call
 			
 ;OSWORD &0E (14) Read real time clock
-.osword0e	JSR L88A0								;save 8 bytes of data from &A8 onto the stack
+.osword0e	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
             JSR PrvEn								;switch in private RAM
             LDA L00F0								;get X register value of most recent OSWORD call
             STA prv82+&30							;and save to &8230
@@ -7423,7 +7432,7 @@ GUARD	&C000
             JMP osword49b							;restore 8 bytes of data to &A8 from the stack and exit
 			
 ;OSWORD &49 (73) - Integra-B calls
-.osword49	JSR L88A0								;save 8 bytes of data from &A8 onto the stack
+.osword49	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
             JSR PrvEn								;switch in private RAM
             LDA L00F0								;get X register value of most recent OSWORD call
             STA prv82+&30							;and save to &8230
@@ -7441,7 +7450,7 @@ GUARD	&C000
             STA L00EF								;and restore to &EF
             JSR PrvDis								;switch out private RAM
 
-.osword49b	JSR L88B8								;restore 8 bytes of data to &A8 from the stack
+.osword49b	JSR unstackTransientCmdSpace						;restore 8 bytes of data to &A8 from the stack
             JMP exitSC								;Exit Service Call
 			
 ;Save OSWORD XY entry table
