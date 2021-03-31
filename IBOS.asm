@@ -7812,13 +7812,13 @@ GUARD	&C000
 ; character output to the screen) and doesn't allow for vector chains.
 .romCodeStub
 {
-.LB967      JSR ramCodeStubCallIBOS
-            JSR ramCodeStubCallIBOS
-            JSR ramCodeStubCallIBOS
-            JSR ramCodeStubCallIBOS
-            JSR ramCodeStubCallIBOS
-            JSR ramCodeStubCallIBOS
-            JSR ramCodeStubCallIBOS
+.LB967      JSR ramCodeStubCallIBOS ; BYTEV
+            JSR ramCodeStubCallIBOS ; WORDV
+            JSR ramCodeStubCallIBOS ; WRCHV
+            JSR ramCodeStubCallIBOS ; RDCHV
+            JSR ramCodeStubCallIBOS ; INSV
+            JSR ramCodeStubCallIBOS ; REMV
+            JSR ramCodeStubCallIBOS ; CNPV
 .romCodeStubCallIBOS
 ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
 .LR0895     PHA					;becomes address &895 when relocated.
@@ -7886,19 +7886,19 @@ assert parentVectorTbl2End <= osPrintBuf + &40
 ; SFTODO: Are they really unused? Maybe there's some code hiding somewhere,
 ; but nothing references this label except the code at vectorEntry. It just
 ; seems a bit odd these bytes aren't 0.
-.vectorHandlerTbl	EQUW LBA68-1
+.vectorHandlerTbl	EQUW LBA68-1 ; BYTEV
 		EQUB &0A
-		EQUW LBB54-1
+		EQUW LBB54-1 ; WORDV
 		EQUB &0C
-		EQUW LBBE3-1
+		EQUW LBBE3-1 ; WRCHV
 		EQUB &0E
-		EQUW LBB6F-1
+		EQUW LBB6F-1 ; RDCHV
 		EQUB &10
-		EQUW LBD5C-1
+		EQUW LBD5C-1 ; INSV
 		EQUB &2A
-		EQUW LBD96-1
+		EQUW LBD96-1 ; REMV
 		EQUB &2C
-		EQUW LBDF0-1
+		EQUW LBDF0-1 ; CNPV
 		EQUB &2E
 
 ; Control arrives here via the RAM copy of romCodeStub in osPrintBuf.
@@ -8298,16 +8298,19 @@ assert parentVectorTbl2End <= osPrintBuf + &40
             JSR installOSPrintBufStub
             PHP
             SEI
+            ; Save the parent values of BYTEV, WORDV, WRCHV and RDCHV at
+            ; parentVectorTbl1 and install our handlers at osPrintBuf+n*3 where
+            ; n=0 for BYTEV, 1 for WORDV, etc.
             LDX #&00
-            LDY #&80
+            LDY #lo(osPrintBuf)
 {
 .LBCB0      LDA BYTEVL,X
             STA parentVectorTbl1,X
             TYA
             STA BYTEVL,X
             LDA BYTEVH,X
-            STA L08AE,X
-            LDA #&08
+            STA parentVectorTbl1+1,X
+            LDA #hi(osPrintBuf)
             STA BYTEVH,X
             INY
             INY
@@ -8524,15 +8527,19 @@ assert parentVectorTbl2End <= osPrintBuf + &40
             BPL LBE83
             PHP
             SEI
+            ; Save the parent values of INSV, REMV and CNPV at
+            ; parentVectorTbl2 and install our handlers at osPrintBuf+n*3 where
+            ; n=4 for INSV, 5 for REMV and 6 for CNPV.
             LDX #&00
-            LDY #&8C
+            LDY #lo(osPrintBuf + 4 * 3)
+{
 .LBE92      LDA INSVL,X
             STA parentVectorTbl2,X
             TYA
             STA INSVL,X
             LDA INSVH,X
             STA parentVectorTbl2+1,X
-            LDA #&08
+            LDA #hi(osPrintBuf + 4 * 3)
             STA INSVH,X
             INY
             INY
@@ -8541,6 +8548,7 @@ assert parentVectorTbl2End <= osPrintBuf + &40
             INX
             CPX #&06
             BNE LBE92
+}
             PLP
             RTS
 			
