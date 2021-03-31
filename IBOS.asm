@@ -8618,4 +8618,4 @@ GUARD	&C000
 			EQUB &00,$00,$00,$00,$00,$00,$00,$00
 .end
 
-SAVE "IBOS-01.ROM", start, end
+SAVE "IBOS-01.rom", start, end
