@@ -7894,6 +7894,7 @@ assert parentVectorTbl2End <= osPrintBuf + &40
 ; but nothing references this label except the code at vectorEntry. It just
 ; seems a bit odd these bytes aren't 0.
 ibosINSVIndex = 4
+ibosREMVIndex = 5
 ibosCNPVIndex = 6
 .vectorHandlerTbl	EQUW LBA68-1 ; BYTEV
 		EQUB &0A
@@ -7905,7 +7906,7 @@ ibosCNPVIndex = 6
 		EQUB &10
 		EQUW insvHandler-1
 		EQUB &2A
-		EQUW LBD96-1 ; REMV
+		EQUW remvHandler-1
 		EQUB &2C
 		EQUW cnpvHandler-1
 		EQUB &2E
@@ -8432,12 +8433,14 @@ ibosCNPVIndex = 6
             AND #&FE
             STA L0107,X
             JMP LBDDD
-			
+
+.remvHandler
+{
 .LBD96		TSX
             LDA L0102,X
-            CMP #&03
+            CMP #bufNumPrinter
             BEQ LBDA3
-            LDA #&05
+            LDA #ibosREMVIndex
             JMP returnToParentVectorTblEntry
 			
 .LBDA3      JSR LBD45
@@ -8449,6 +8452,7 @@ ibosCNPVIndex = 6
             ORA #&01
             STA L0107,X
             JMP LBDDD
+}
 			
 .LBDB8      LDA L0107,X
             AND #&FE
