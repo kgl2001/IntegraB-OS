@@ -220,7 +220,7 @@ L0400       = &0400
 L0406       = &0406
 L0700       = &0700
 L0880       = &0880
-; The OS printer buffer is stolen for use by code; we take over printer
+; The OS printer buffer is stolen for use by our code stub; we take over printer
 ; buffering responsibilities using our private RAM so the OS won't touch this
 ; memory.
 osPrintBuf  = &0880 ; &0880-&08BF inclusive = &40 bytes bytes
@@ -7781,33 +7781,51 @@ GUARD	&C000
             RTS
 
 ;relocation code
+; Copy our code stub into the OS printer buffer.
+; SFTODO: This only has one caller at the moment and could be inlined.
 .installOSPrintBufStub
 {
 .LB954      LDX #&3F
-.LB956      LDA LB967,X
+.LB956      LDA romCodeStub,X
             STA osPrintBuf,X
             DEX
             BPL LB956
             ; Patch the stub so it contains our bank number.
             LDA &F4
             AND #&0F
-            STA L089B				;need to make this relocatable
+            STA osPrintBuf + (romCodeStubLoadBankImm + 1 - romCodeStub)
             RTS
 }
 
-;Code to be relocated to &0880
-.LB967      JSR L0895				;need to make this relocatable
-            JSR L0895				;need to make this relocatable
-            JSR L0895				;need to make this relocatable
-            JSR L0895				;need to make this relocatable
-            JSR L0895				;need to make this relocatable
-            JSR L0895				;need to make this relocatable
-            JSR L0895				;need to make this relocatable
+; Code stub which is copied into the OS printer buffer at runtime by
+; installOSPrintBufStub. The first 7 instructions are identical JSRs to the RAM
+; copy of romCodeStubCallIBOS; these are (SFTODO: confirm this) installed as the
+; targets of various non-extended vectors (SFTODO: by which subroutine?). The
+; code at romCodeStubCallIBOS pages us in, transfers control to LB9D5 and then
+; pages the previous ROM back in afterwards. Code at LB9D5 is able to
+; distinguish which of the 7 JSRs transferred control (and therefore which
+; vector is being called) by examining the return address pushed onto the stack
+; by that initial JSR.
+;
+; Doing all this avoids the use of the OS extended vector mechanism, which is
+; relatively slow (particularly important for WRCHV, which gets called for every
+; character output to the screen) and doesn't allow for vector chains.
+.romCodeStub
+{
+.LB967      JSR osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
+            JSR osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
+            JSR osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
+            JSR osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
+            JSR osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
+            JSR osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
+            JSR osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
+.romCodeStubCallIBOS
 .LR0895     PHA					;becomes address &895 when relocated.
             PHP
             LDA &F4
             PHA
-            LDA #&00				;The value at this address is modified by other code
+.^romCodeStubLoadBankImm
+            LDA #&00				;The value at this address is patched at run time by installOSPrintBufStub
             STA &F4
             STA SHEILA+&30
             JSR LB9D5
@@ -7817,6 +7835,7 @@ GUARD	&C000
             PLP
             PLA
             RTS
+}
 
 .LB994      TSX
             LDA L0108,X
