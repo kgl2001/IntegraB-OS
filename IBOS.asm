@@ -2432,7 +2432,6 @@ GUARD	&C000
 ; to try to reflect this, but it's a bit misleading as we are paging out the *whole*
 ; private 12K.
 ;Switch out Shadow / Private memory SFTODO: see my comment on PrvEn
-
 ; SFTODO: I'm tempted to get rid of the PrvDis label but I'll leave it for now
 .pageOutPrv1
 .PrvDis	  PHA
@@ -8826,6 +8825,8 @@ ibosCNPVIndex = 6
             CMP #&90
             BCC LBFCA
             CMP #&AC
+            ; SFTODO: We could BCC to a *different* RTS (there's one just above)
+            ; and make the JSR:RTS below into a JMP, saving a byte.
             BCC LBFCF
 .LBFCA      LDA #&AC
             JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
@@ -8847,3 +8848,8 @@ SAVE "IBOS-01.rom", start, end
 ; SFTODO: Eventually it might be good to get rid of all the Lxxxx address
 ; labels, but I'm keeping them around for now as they might come in handy and
 ; it's much easier to take them out than to put them back in...
+
+; SFTODO: Is there any reason we can't always page the private RAM in and out as
+; a 12K chunk? If we don't need the fine-grained control on offer, we might be
+; able to remove some subroutines to page in/out different chunks and free up
+; some space for other code.
