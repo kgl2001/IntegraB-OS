@@ -220,6 +220,10 @@ L0400       = &0400
 L0406       = &0406
 L0700       = &0700
 L0880       = &0880
+; The OS printer buffer is stolen for use by code; we take over printer
+; buffering responsibilities using our private RAM so the OS won't touch this
+; memory.
+osPrintBuf  = &0880 ; &0880-&08BF inclusive = &40 bytes bytes
 L0895       = &0895
 L089B       = &089B
 L08AD       = &08AD
@@ -7777,15 +7781,19 @@ GUARD	&C000
             RTS
 
 ;relocation code
+.installOSPrintBufStub
+{
 .LB954      LDX #&3F
 .LB956      LDA LB967,X
-            STA L0880,X
+            STA osPrintBuf,X
             DEX
             BPL LB956
+            ; Patch the stub so it contains our bank number.
             LDA &F4
             AND #&0F
             STA L089B				;need to make this relocatable
             RTS
+}
 
 ;Code to be relocated to &0880
 .LB967      JSR L0895				;need to make this relocatable
@@ -8229,7 +8237,7 @@ GUARD	&C000
             LDX #&3C								;select OSMODE
             JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBCF2
-            JSR LB954
+            JSR installOSPrintBufStub
             PHP
             SEI
             LDX #&00
