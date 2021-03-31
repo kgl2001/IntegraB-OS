@@ -7856,20 +7856,29 @@ parentVectorTbl2 = parentVectorTbl1 + 4 * 2 ; 4 vectors, 2 bytes each
 parentVectorTbl2End = parentVectorTbl2 + 3 * 2 ; 3 vectors, 2 bytes each
 assert parentVectorTbl2End <= osPrintBuf + &40
 
+; Restore A, X, Y and the flags from the stacked copies pushed during the vector
+; entry process. The stack must have the same layout as described in the big
+; comment in vectorEntry; note that the addresses in this subroutine are two
+; bytes higher because we were called via JSR so we need to allow for our own
+; return address on the stack.
+.restoreOrigVectorRegs
+{
 .LB994      TSX
-            LDA L0108,X
+            LDA L0108,X ; get original flags
             PHA
-            LDA L0109,X
+            LDA L0109,X ; get original A
             PHA
-            LDA L0104,X
+            LDA L0104,X ; get original X
             PHA
-            LDA L0103,X
+            ; SFTODO: We could save a byte here by doing LDY L0103,X directly.
+            LDA L0103,X ; get original Y
             TAY
             PLA
             TAX
             PLA
             PLP
             RTS
+}
 			
 .LB9AA      PHP
             PHA
@@ -8040,7 +8049,7 @@ ibosCNPVIndex = 6
 
 .bytevHandler
 {
-.LBA68	  JSR LB994
+.LBA68	  JSR restoreOrigVectorRegs
 ; SFTODO: I am assuming that JSR peeks the original A,X,Y off stack - it does
 ; something roughly along those lines, but I haven't checked what exactly is on
 ; the stack yet.
@@ -8140,7 +8149,7 @@ ibosCNPVIndex = 6
             LDX #&2A								;Service type &2A
             LDY #&00
             JSR OSBYTE								;Execute Issue paged ROM service request
-            JSR LB994
+            JSR restoreOrigVectorRegs
             JMP LBB1C
 }
 
@@ -8187,7 +8196,7 @@ ibosCNPVIndex = 6
 
 .wordvHandler
 {
-.LBB54		JSR LB994
+.LBB54		JSR restoreOrigVectorRegs
             CMP #&09
             BNE LBB67
             JSR LB948
@@ -8205,7 +8214,7 @@ ibosCNPVIndex = 6
 
 .^rdchvHandler
 .LBB6F		JSR LB948
-            JSR LB994
+            JSR restoreOrigVectorRegs
             JSR jmpParentRDCHV
             JSR LB9AA
             JMP LB9E9
@@ -8265,7 +8274,7 @@ ibosCNPVIndex = 6
             BEQ LBC05
 
 .^wrchvHandler
-.LBBE3		JSR LB994
+.LBBE3		JSR restoreOrigVectorRegs
             PHA
             LDA L03A5
             BNE LBB90
@@ -8725,14 +8734,14 @@ ibosCNPVIndex = 6
 
 ;code relocated to &0380
 ;this code either reads, writes or compares the contents of ROM Y address &8000 with A
-.LBF5A      LDX &F4				;relotates to &0380
-            STY &F4				;relotates to &0382
-            STY SHEILA+&30			;relotates to &0384
-	  EQUB &00			;relotates to &0387. Note this byte gets dynamically changed by the code to &AD (LDA &), &8D (STA &) and &CD (CMP &) 
-	  EQUB $00,$80			;relotates to &0388. So this becomes either LDA &8000, STA &8000 or CMP &8000
-            STX &F4				;relotates to &038A
-            STX SHEILA+&30			;relotates to &038C
-            RTS				;relotates to &038F
+.LBF5A      LDX &F4				;relocates to &0380
+            STY &F4				;relocates to &0382
+            STY SHEILA+&30			;relocates to &0384
+	  EQUB &00			;relocates to &0387. Note this byte gets dynamically changed by the code to &AD (LDA &), &8D (STA &) and &CD (CMP &)
+	  EQUB $00,$80			;relocates to &0388. So this becomes either LDA &8000, STA &8000 or CMP &8000
+            STX &F4				;relocates to &038A
+            STX SHEILA+&30			;relocates to &038C
+            RTS				;relocates to &038F
 			
 .LBF6A      PHA
             LDX #&03
@@ -8791,3 +8800,7 @@ SAVE "IBOS-01.rom", start, end
 
 ; SFTODO: Would it be possible to save space by factoring out "LDX #&3C:JSR
 ; L8870" into a subroutine?
+
+; SFTODO: Eventually it might be good to get rid of all the Lxxxx address
+; labels, but I'm keeping them around for now as they might come in handy and
+; it's much easier to take them out than to put them back in...
