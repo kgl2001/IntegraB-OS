@@ -7840,6 +7840,14 @@ ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
 .romCodeStubEnd
 ramCodeStubEnd = osPrintBuf + (romCodeStubEnd - romCodeStub)
 parentVectorTbl1 = ramCodeStubEnd
+; The original OS (parent) values of BYTEV, WORDV, WRCHV and RDCHV are copied to
+; parentVectorTbl1 in that order before installing our own handlers.
+parentBYTEV = parentVectorTbl1
+parentVectorTbl2 = parentVectorTbl1 + 4 * 2 ; 4 vectors, 2 bytes each
+; The original OS (parent) values of INSV, REMV and CNPV are copied to
+; parentVectorTbl2 in that order before installing our own handlers.
+parentVectorTbl2End = parentVectorTbl2 + 3 * 2 ; 3 vectors, 2 bytes each
+assert parentVectorTbl2End <= osPrintBuf + &40
 
 .LB994      TSX
             LDA L0108,X
@@ -7956,7 +7964,7 @@ parentVectorTbl1 = ramCodeStubEnd
             LDA parentVectorTbl1,Y
             SBC #&01
             STA L0108,X
-            LDA L08AE,Y
+            LDA parentVectorTbl1+1,Y
             SBC #&00
             STA L0109,X
             PLA
@@ -7997,7 +8005,7 @@ parentVectorTbl1 = ramCodeStubEnd
 		EQUB &01								;OSMODE 6 - No such mode
 		EQUB &01								;OSMODE 7 - No such mode
 
-.LBA65      JMP (parentVectorTbl1) ; SFTODO WHICH VECTOR IS THIS?
+.LBA65      JMP (parentBYTEV)
 
 .LBA68	  JSR LB994
             CMP #&6F
@@ -8350,7 +8358,7 @@ parentVectorTbl1 = ramCodeStubEnd
             DEX
             BPL LBD1C
             LDX #&05
-.LBD27      LDA L08B5,X
+.LBD27      LDA parentVectorTbl2,X
             STA INSVL,X
             DEX
             BPL LBD27
@@ -8519,11 +8527,11 @@ parentVectorTbl1 = ramCodeStubEnd
             LDX #&00
             LDY #&8C
 .LBE92      LDA INSVL,X
-            STA L08B5,X
+            STA parentVectorTbl2,X
             TYA
             STA INSVL,X
             LDA INSVH,X
-            STA L08B6,X
+            STA parentVectorTbl2+1,X
             LDA #&08
             STA INSVH,X
             INY
