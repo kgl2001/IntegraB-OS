@@ -7893,13 +7893,15 @@ assert parentVectorTbl2End <= osPrintBuf + &40
 ; SFTODO: Are they really unused? Maybe there's some code hiding somewhere,
 ; but nothing references this label except the code at vectorEntry. It just
 ; seems a bit odd these bytes aren't 0.
+ibosBYTEVIndex = 0
+ibosWORDVIndex = 1
 ibosRDCHVIndex = 3
 ibosINSVIndex = 4
 ibosREMVIndex = 5
 ibosCNPVIndex = 6
-.vectorHandlerTbl	EQUW LBA68-1 ; BYTEV
+.vectorHandlerTbl	EQUW bytevHandler-1
 		EQUB &0A
-		EQUW wordvHandler-1 ; WORDV
+		EQUW wordvHandler-1
 		EQUB &0C
 		EQUW wrchvHandler-1
 		EQUB &0E
@@ -8026,6 +8028,8 @@ ibosCNPVIndex = 6
 
 .LBA65      JMP (parentBYTEV)
 
+.bytevHandler
+{
 .LBA68	  JSR LB994
             CMP #&6F
             BEQ LBA34
@@ -8043,8 +8047,9 @@ ibosCNPVIndex = 6
             BEQ LBB00
             CMP #&81
             BEQ LBA3A
-            LDA #&00
+            LDA #ibosBYTEVIndex
             JMP returnToParentVectorTblEntry
+}
 			
 .LBA90      JSR LB948
             JMP LBB1C
@@ -8151,7 +8156,7 @@ ibosCNPVIndex = 6
             JSR LB9AA
             JMP LB9E9
 
-.LBB67      LDA #&01
+.LBB67      LDA #ibosWORDVIndex
             JMP returnToParentVectorTblEntry
 }
 
