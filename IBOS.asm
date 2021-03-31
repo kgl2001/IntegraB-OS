@@ -7893,6 +7893,7 @@ assert parentVectorTbl2End <= osPrintBuf + &40
 ; SFTODO: Are they really unused? Maybe there's some code hiding somewhere,
 ; but nothing references this label except the code at vectorEntry. It just
 ; seems a bit odd these bytes aren't 0.
+ibosRDCHVIndex = 3
 ibosINSVIndex = 4
 ibosREMVIndex = 5
 ibosCNPVIndex = 6
@@ -8152,15 +8153,16 @@ ibosCNPVIndex = 6
 
 .LBB67      LDA #&01
             JMP returnToParentVectorTblEntry
-			
-.^LBB6C      JMP (L08B3) ; SFTODO: USE BETTER ADDRESS LABEL
 }
 
-.rdchvHandler
 {
+.jmpParentRDCHV
+.LBB6C      JMP (parentVectorTbl + ibosRDCHVIndex * 2)
+
+.^rdchvHandler
 .LBB6F		JSR LB948
             JSR LB994
-            JSR LBB6C
+            JSR jmpParentRDCHV
             JSR LB9AA
             JMP LB9E9
 }
