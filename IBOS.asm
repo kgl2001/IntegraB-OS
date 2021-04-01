@@ -93,6 +93,8 @@
 rtcUserBase = &0E
 rtcUserPrvPrintBufferStart = rtcUserBase + &2C ; the first page in private RAM reserved for the printer buffer (&90-&AC)
 
+vduSetMode = 22
+
 lastBreakType = &028D
 
 INSVH       = &022B
@@ -209,7 +211,7 @@ L0387       = &0387
 L0388       = &0388
 L0389       = &0389
 L03A4       = &03A4
-L03A5       = &03A5
+L03A5       = &03A5 ; SFTODO: This is an unused part of CFS/RFS workspace, IBOS seems to be using it  hold something across WRCHV calls but not sure
 L03A7       = &03A7
 L03B1       = &03B1
 L03B2       = &03B2
@@ -7891,7 +7893,13 @@ GUARD	&C000
             LDA L0102,X
             STA (L00D6),Y
             JMP LB931
-			
+
+; Set SHEN, which will allow MEMSEL to control shadow RAM paging.
+; SFTODO: I have a vague idea from debugging problems with Ozmoo that IBOS
+; leaves MEMSEL always 0, so SHEN effectively controls shadow RAM paging. *If*
+; that's true this function should probably be renamed pageInShadow or similar.
+.setShen
+{
 .LB948      PHA
             LDA &F4
             ORA #&80
@@ -7899,6 +7907,7 @@ GUARD	&C000
             STA SHEILA+&30
             PLA
             RTS
+}
 
 ;relocation code
 ; Copy our code stub into the OS printer buffer.
@@ -8222,7 +8231,7 @@ ibosCNPVIndex = 6
 ; Read character at text cursor and screen mode (http://beebwiki.mdfs.net/OSBYTE_%2687)
 .osbyte87Handler
 {
-.LBA90      JSR LB948
+.LBA90      JSR setShen
             JMP LBB1C
 }
 
@@ -8343,7 +8352,7 @@ ibosCNPVIndex = 6
 .LBB54		JSR restoreOrigVectorRegs
             CMP #&09
             BNE LBB67
-            JSR LB948
+            JSR setShen
             JSR LBB51
             JSR LB9AA
             JMP returnFromVectorHandler
@@ -8357,7 +8366,7 @@ ibosCNPVIndex = 6
 .LBB6C      JMP (parentVectorTbl + ibosRDCHVIndex * 2)
 
 .^rdchvHandler
-.LBB6F		JSR LB948
+.LBB6F	  JSR setShen
             JSR restoreOrigVectorRegs
             JSR jmpParentRDCHV
             JSR LB9AA
@@ -8366,6 +8375,8 @@ ibosCNPVIndex = 6
 			
 .LBB7E      JMP (L08B1)
 
+.newMode
+{
 .LBB81      PHA
             LDA L026A
             BNE LBB8C
@@ -8373,6 +8384,7 @@ ibosCNPVIndex = 6
             STA L03A5
 .LBB8C      PLA
             JMP LBBF1
+}
 			
 .LBB90      PLA
             PHA
@@ -8386,12 +8398,12 @@ ibosCNPVIndex = 6
             LDA &037F								;get RAM copy of RAMSEL
             AND #&7F								;clear Shadow RAM enable bit
             STA &037F								;and save RAM copy of RAMSEL
-            STA SHEILA+&34							;save RAMSEL
+            STA SHEILA+&34							          ;save RAMSEL
             PLA
             PHA
             AND #&7F								;clear Shadow RAM enable bit
             LDX #&3F
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&03
             STA L03A5
             PLA
@@ -8400,13 +8412,13 @@ ibosCNPVIndex = 6
 .LBBBD      LDA &037F								;get RAM copy of RAMSEL
             ORA #&80								;set Shadow RAM enable bit
             STA &037F								;and save RAM copy of RAMSEL
-            STA SHEILA+&34							;save RAMSEL
+            STA SHEILA+&34							          ;save RAMSEL
             JSR LBC2D
             PLA
             PHA
             ORA #&80								;set Shadow RAM enable bit
             LDX #&3F								
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&02
             STA L03A5
             PLA
@@ -8418,14 +8430,14 @@ ibosCNPVIndex = 6
             BEQ LBC05
 
 .^wrchvHandler
-.LBBE3		JSR restoreOrigVectorRegs
+.LBBE3	  JSR restoreOrigVectorRegs
             PHA
             LDA L03A5
             BNE LBB90
             PLA
-            CMP #&16
-            BEQ LBB81
-.^LBBF1      JSR LB948
+            CMP #vduSetMode
+            BEQ newMode
+.^LBBF1     JSR setShen
             JSR LBB7E
             PHA
             LDA L03A5
@@ -8834,13 +8846,13 @@ ibosCNPVIndex = 6
             RTS
 
 {
-; Advance prvPrintBufferWritePtr by one, wrapping round at the end of the bank
+; Advance prvPrintBufferWritePtr by one, wrapping round at the end of each bank
 ; and wrapping round at the end of the bank list.
 ; SFTODO: This has only one caller
 .^advancePrintBufferWritePtr
 .LBEB2      LDX #&03
             BNE LBEB8 ; always branch
-; Advance prvPrintBufferReadPtr by one, wrapping round at the end of the bank
+; Advance prvPrintBufferReadPtr by one, wrapping round at the end of each bank
 ; and wrapping round at the end of the bank list.
 ; SFTODO: This has only one caller
 .^advancePrintBufferReadPtr
