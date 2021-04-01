@@ -91,10 +91,12 @@
 ;Register &7F - &7F:	Bit set if RAM located in 32k bank. Default was &0F (lowest 4 x 32k banks). Changed to &7F
 
 rtcUserBase = &0E
+rtcUserSFTODOP = rtcUserBase + &28
 rtcUserPrvPrintBufferStart = rtcUserBase + &2C ; the first page in private RAM reserved for the printer buffer (&90-&AC)
 
 vduStatus = &D0
 vduStatusShadow = &10
+osShadowRamFlag = &027F
 currentMode = &0355
 
 vduSetMode = 22
@@ -2353,10 +2355,10 @@ GUARD	&C000
             JMP L8F41								;set &27F to 0
 			
 .L8F38      JSR L83EC
-            LDA L027F
+            LDA osShadowRamFlag
             JMP L8EDE								;print shadow number and exit service call
 			
-.L8F41      STA L027F
+.L8F41      STA osShadowRamFlag
             JMP exitSC								;Exit Service Call
 
 .L8F47      JMP L860E
@@ -2565,7 +2567,7 @@ GUARD	&C000
 .L90A7      LDA #&04
             JSR L8EE5
             LDA #&00
-            STA L027F
+            STA osShadowRamFlag
             LDX #&3D								;select SHX register
             LDA #&FF								;store &FF to &833D (&08: SHX On, &FF: SHX Off)
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
@@ -8291,7 +8293,7 @@ ibosCNPVIndex = 6
 .LBADC      PHA
             TXA
             BMI LBAE9
-            LDA L027F
+            LDA osShadowRamFlag
             BEQ LBAE9
             PLA
             JMP LBB1C
@@ -8396,11 +8398,11 @@ ibosCNPVIndex = 6
             JMP LBBF1
 }
 			
-.LBB90      PLA
-            PHA
+.LBB90      PLA                                                                                     ;get original OSWRCH A
+            PHA                                                                                     ;save it again
             CMP #&80
             BCS LBBBD
-            LDA L027F
+            LDA osShadowRamFlag
             BEQ LBBBD
             PLA
             PHA
@@ -8456,7 +8458,7 @@ ibosCNPVIndex = 6
             LDA vduStatus
             ORA #vduStatusShadow
             STA vduStatus
-.LBC05      LDX #&36
+.LBC05      LDX #rtcUserSFTODOP
             JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
             CLC
             ADC #&62
@@ -8473,17 +8475,17 @@ ibosCNPVIndex = 6
             STA crtcHorzDisplayed
             LDA #&00
             STA L03A5
-.^LBC29      PLA
+.^LBC29     PLA
             JMP returnFromVectorHandler
 }
 			
 .LBC2D      LDA vduStatus								;get VDU status
-            AND #&10								;test bit 4
+            AND #vduStatusShadow							;test bit 4
             BEQ LBC3B								;and branch if clear
             RTS
 			
 .LBC34      LDA vduStatus								;get VDU status
-            AND #&10								;test bit 4
+            AND #vduStatusShadow        						;test bit 4
             BNE LBC3B								;and branch if clear
             RTS
 			
@@ -8594,7 +8596,7 @@ ibosCNPVIndex = 6
             LDA #&00
             STA L03A5
             LDA #&01
-            STA L027F
+            STA osShadowRamFlag
             JSR PrvEn								;switch in private RAM
             LDA prv83+&3F
             AND #&7F
