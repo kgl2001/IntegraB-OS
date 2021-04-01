@@ -8464,9 +8464,10 @@ ibosCNPVIndex = 6
             PLA
             JMP processWrchv
 
+.checkOtherModeChangeStates
 .LBBDD      CMP #modeChangeStateEnteringNonShadowMode
-            BNE LBC29
-            BEQ LBC05
+            BNE wrchvHandlerDone
+            BEQ adjustCrtcHorz
 
 .^wrchvHandler
 .LBBE3	  JSR restoreOrigVectorRegs
@@ -8482,10 +8483,11 @@ ibosCNPVIndex = 6
             PHA
             LDA modeChangeState
             CMP #modeChangeStateEnteringShadowMode
-            BNE LBBDD
+            BNE checkOtherModeChangeStates
             LDA vduStatus
             ORA #vduStatusShadow
             STA vduStatus
+.adjustCrtcHorz
             ; SFTODO: The following code is calculating values for
             ; crtcHorz{Total,Displayed} based on rtcUserSFTODOP and the current
             ; screen mode. Is this an attempt to provide a horizontal equivalent
@@ -8508,7 +8510,8 @@ ibosCNPVIndex = 6
             STA crtcHorzDisplayed
             LDA #&00
             STA modeChangeState
-.^LBC29     PLA
+.^wrchvHandlerDone
+.LBC29      PLA
             JMP returnFromVectorHandler
 }
 
