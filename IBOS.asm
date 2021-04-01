@@ -4,6 +4,10 @@
 ; - "shadow RAM" is the 20K of RAM which can be paged in via SHEN+MEMSEL in the
 ;   &3000-&7FFF region
 
+; SFTODO: The following constants and associated comments are a bit randomly ordered, this should be tidied up eventually.
+; For example, it might help to move the comments about RTC register use nearer to the private memory allocations, as
+; some of those are copies of each other.
+
 ;PRVS1 Address &81xx
 ;Used to store *BOOT parameters
 
