@@ -8615,7 +8615,7 @@ ibosCNPVIndex = 6
 
 .insvHandler
 {
-.LBD5C		TSX
+.LBD5C	  TSX
             LDA L0102,X ; get original X=buffer number
             CMP #bufNumPrinter
             BEQ isPrinterBuffer
@@ -8637,7 +8637,7 @@ ibosCNPVIndex = 6
 .insvBufferNotFull
 .LBD7E      LDA L0108,X ; get original A=character to insert
             JSR staArbitraryRom
-            JSR LBEB6
+            JSR advancePrintBufferReadPtr
             JSR LBF43
             ; Return to caller with carry clear to indicate insertion succeeded.
             TSX
@@ -8680,7 +8680,7 @@ ibosCNPVIndex = 6
             BNE LBDD9
             PLA
             STA L0108,X
-            JSR LBEB2
+            JSR advancePrintBufferWritePtr
             JSR LBF35
             JMP restoreRamselClearPrvenReturnFromVectorHandler
 			
@@ -8817,13 +8817,17 @@ ibosCNPVIndex = 6
             RTS
 
 {
-; Advance SFTODOA by one, wrapping round at the end of the bank and wrapping
-; round at the end of the bank list.
-.^LBEB2     LDX #&03
+; Advance prvPrintBufferWritePtr by one, wrapping round at the end of the bank
+; and wrapping round at the end of the bank list.
+; SFTODO: This has only one caller
+.^advancePrintBufferWritePtr
+.LBEB2      LDX #&03
             BNE LBEB8 ; always branch
-; Advance SFTODOB by one, wrapping round at the end of the bank and wrapping
-; round at the end of the bank list.
-.^LBEB6     LDX #&00
+; Advance prvPrintBufferReadPtr by one, wrapping round at the end of the bank
+; and wrapping round at the end of the bank list.
+; SFTODO: This has only one caller
+.^advancePrintBufferReadPtr
+.LBEB6      LDX #&00
 .LBEB8      INC prvPrintBufferPtrBase,X
             BNE LBEE8
             INC prvPrintBufferPtrBase + 1,X
