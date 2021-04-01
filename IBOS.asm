@@ -328,10 +328,11 @@ opcodeCmdAbs = &CD
 crtcHorzTotal = SHEILA + &00
 crtcHorzDisplayed = SHEILA + &01
 
-romselPrvEn = &40
-ramselPrvs8 = &10
-ramselPrvs1 = &40
-ramselShen  = &80
+romselPrvEn  = &40
+romselMemsel = &80
+ramselPrvs8  = &10
+ramselPrvs1  = &40
+ramselShen   = &80
 ramselPrvs81 = ramselPrvs8 OR ramselPrvs1
 
 ; bits in the 6502 flags registers (as stacked via PHP)
@@ -7909,6 +7910,8 @@ GUARD	&C000
 ; SFTODO: I have a vague idea from debugging problems with Ozmoo that IBOS
 ; leaves MEMSEL always 0, so SHEN effectively controls shadow RAM paging. *If*
 ; that's true this function should probably be renamed pageInShadow or similar.
+; (OK, this isn't *absolutely* true - code at LBC3B temporarily alters MEMSEL,
+; but it *may* be mostly true, so I won't delete this comment yet.)
 .setShen
 {
 .LB948      PHA
@@ -8492,8 +8495,9 @@ ibosCNPVIndex = 6
             AND #vduStatusShadow        						;test bit 4
             BNE LBC3B								;and branch if clear
             RTS
-			
-.LBC3B      LDX #(prvShx - prv83)							;select SHX register (&08: On, &FF: Off) SFTODO: 08->00?
+
+{
+.^LBC3B     LDX #(prvShx - prv83)							;select SHX register (&08: On, &FF: Off) SFTODO: 08->00?
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ rts                                                                                 ;nothing to do if SHX off
             ; SFTODO: Why does IBOS play around with these CRTC registers at all, anywhere?
@@ -8507,19 +8511,20 @@ ibosCNPVIndex = 6
             AND #&0F
             STA &F4
             STA SHEILA+&30
+            ; We're going to L00A8 as temporary zp workspace, so stack the existing values.
             LDA L00A8
             PHA
             LDA L00A9
             PHA
-            LDA #&00
+            LDA #&00 ; SFTODO: LO(shadowStart)?
             STA L00A8
-            LDA #&30
+            LDA #&30 ; SFTODO: HI(shadowStart)?
             STA L00A9
             LDY #&00
 .LBC66      LDA (L00A8),Y
             TAX
             LDA &F4
-            EOR #&80
+            EOR #romselMemsel ; SFTODO: Why not just AND #romselMemsel? We cleared PRVEN/MEMSEL above and I can't see any other entries to this code (e.g. via LBC66) To be fair this code is fine and maybe it is clearer to think of repeatedly flipping than setting or clearing.
             STA &F4
             STA SHEILA+&30
             LDA (L00A8),Y
@@ -8527,7 +8532,7 @@ ibosCNPVIndex = 6
             TXA
             STA (L00A8),Y
             LDA &F4
-            EOR #&80
+            EOR #&80 ; SFTODO: Why not just NOT_AND romselMemsel?
             STA &F4
             STA SHEILA+&30
             PLA
@@ -8540,11 +8545,13 @@ ibosCNPVIndex = 6
             STA L00A9
             PLA
             STA L00A8
+            ; Restore the original value of ROMSEL which we stacked above.
             PLA
             STA &F4
             STA SHEILA+&30
 .rts
 .LBC97      RTS
+}
 
 .LBC98      LDA #&00
             STA &037F
