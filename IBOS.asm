@@ -7916,7 +7916,7 @@ GUARD	&C000
 {
 .LB948      PHA
             LDA &F4
-            ORA #&80
+            ORA #romselMemsel
             STA &F4
             STA SHEILA+&30
             PLA
@@ -8401,37 +8401,36 @@ ibosCNPVIndex = 6
             LDA #&01
             STA L03A5
 .LBB8C      PLA
-            JMP LBBF1
+            JMP processWrchv
 }
 
 {
 ; SFTODO: I *SUSPECT* WE GET HERE IF WE'RE PROCESSING THE BYTE FOLLOWING A VDU 22, IE A=MODE WE'RE ABOUT TO ENTER
-.LBB90      PLA                                                                                     ;get original OSWRCH A
+.LBB90      PLA                                                                                     ;get original OSWRCH A=new mode
             PHA                                                                                     ;save it again
             CMP #&80
-            BCS LBBBD
-            LDA osShadowRamFlag
-            BEQ notShadow
-            ; We're in a shadow RAM mode.
+            BCS enteringShadowMode
+            LDA osShadowRamFlag ; SFTODO: Poking at this byte on b-em Integra-B, it is *not* used in the same way as on (eg) a Master - it always seems to be 1 at the BASIC prompt. So I don't know what we're actually checking here yet.
+            BEQ enteringShadowMode
             ; SFTODO: Aren't the next two instructions pointless? maybeSwapShadow2 immediately does LDA vduStatus.
-            PLA                                                                                     ;get original OSWRCH A
+            PLA                                                                                     ;get original OSWRCH A=new mode
             PHA                                                                                     ;save it again
             JSR maybeSwapShadow2
             LDA &037F								;get RAM copy of RAMSEL
             NOT_AND ramselShen							;clear Shadow RAM enable bit
             STA &037F								;and save RAM copy of RAMSEL
             STA SHEILA+&34							          ;save RAMSEL
-            PLA                                                                                     ;get original OSWRCH A
+            PLA                                                                                     ;get original OSWRCH A=new mode
             PHA                                                                                     ;save it again
-            AND #&7F								;clear Shadow RAM enable bit
+            AND #&7F								;clear Shadow RAM enable bit SFTODO: isn't this redundant? We'd have done "BCS enteringShadowMode" above if top bit was set, wouldn't we?
             LDX #&3F
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&03
             STA L03A5
             PLA
-            JMP LBBF1
+            JMP processWrchv
 
-.notShadow
+.enteringShadowMode
 .LBBBD      LDA &037F								;get RAM copy of RAMSEL
             ORA #ramselShen								;set Shadow RAM enable bit
             STA &037F								;and save RAM copy of RAMSEL
@@ -8445,7 +8444,7 @@ ibosCNPVIndex = 6
             LDA #&02
             STA L03A5
             PLA
-            JMP LBBF1
+            JMP processWrchv
 
 .LBBDD      CMP #&03
             BNE LBC29
@@ -8459,7 +8458,8 @@ ibosCNPVIndex = 6
             PLA
             CMP #vduSetMode
             BEQ newMode
-.^LBBF1     JSR setShen
+.^processWrchv ; SFTODO: not a great name...
+.LBBF1      JSR setShen
             JSR jmpParentWRCHV
             PHA
             LDA L03A5
@@ -9121,6 +9121,9 @@ SAVE "IBOS-01.rom", start, end
 
 ; SFTODO: Would it be possible to save space by factoring out "LDX #&3C:JSR
 ; readPrivateRam8300X" into a subroutine?
+
+; SFTODO: Could we save space by factoring out some common-ish sequences of code
+; to set or clear various bits of ROMSEL/RAMSEL and their RAM copies?
 
 ; SFTODO: Eventually it might be good to get rid of all the Lxxxx address
 ; labels, but I'm keeping them around for now as they might come in handy and
