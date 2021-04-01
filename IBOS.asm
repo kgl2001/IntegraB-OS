@@ -266,6 +266,10 @@ ramselPrvs8 = &10
 ramselPrvs1 = &40
 ramselPrvs81 = ramselPrvs8 OR ramselPrvs1
 
+; bits in the 6502 flags registers (as stacked via PHP)
+flagC = &01
+flagV = &40
+
 ; Convenience macro to avoid the annoyance of writing this out every time.
 MACRO NOT_AND n
              AND #NOT(n) AND &FF
@@ -8624,7 +8628,7 @@ ibosCNPVIndex = 6
 .cnpvHandler
 {
 .LBDF0		TSX
-            LDA L0102,X
+            LDA L0102,X ; get original X=buffer number
             CMP #bufNumPrinter
             BEQ LBDFD
             LDA #ibosCNPVIndex
@@ -8634,19 +8638,21 @@ ibosCNPVIndex = 6
             PHA
             JSR PrvEn								;switch in private RAM
             TSX
-            LDA L0107,X
-            AND #&40
-            BEQ LBE19
+            LDA L0107,X ; get original flags
+            AND #flagV
+            BEQ cnpvCount
+            ; We're purging the buffer.
             LDX #&47
             JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBE16
             JSR LBF90
 .LBE16      JMP setRamselAClearPrvenReturnFromVectorHandler
-}
 
-.LBE19      LDA L0107,X
-            AND #&01
-            BNE LBE2F
+.cnpvCount
+.LBE19      LDA L0107,X ; get original flags
+            AND #flagC
+            BNE cnpvCountSpaceLeft
+            ; We're counting the entries in the buffer.
             JSR LBF25
             TXA
             TSX
@@ -8654,7 +8660,9 @@ ibosCNPVIndex = 6
             TYA
             STA L0102,X
             JMP setRamselAClearPrvenReturnFromVectorHandler
-			
+}
+
+.cnpvCountSpaceLeft
 .LBE2F      JSR LBF14
             TXA
             TSX
