@@ -5057,7 +5057,7 @@ GUARD	&C000
 .LA380      LDX L00AA								;get ROM number
             JSR L9FC6								;check if ROM is WP. Will return with Z set if writeable
             PHP
-            LDA #&45								;'E' (Enabled)
+            LDA #'E'								;'E' (Enabled)
             PLP
             BEQ LA38D								;jump to write to screen
             LDA #&50								;'P' (Protected)
@@ -5065,7 +5065,7 @@ GUARD	&C000
             JSR PrvEn								;switch in private RAM
             LDX L00AA								;Get ROM Number
             LDA L02A1,X								;get ROM Type
-            LDY #&20								;' '
+            LDY #' '								;' '
             AND #&FE								;bit 0 of ROM Type is undefined, so mask out
             BNE LA3BC								;if any other bits set, then ROM exists so skip code for Unplugged ROM check, and get and write ROM details
             LDY #&55								;'U' (Unplugged)
@@ -5076,18 +5076,18 @@ GUARD	&C000
             JSR L91B9								;write ' ' to screen in place of 'U'
             JSR L91B9								;write ' ' to screen in place of 'S'
             JSR L91B9								;write ' ' to screen in place of 'L'
-            LDA #&29								;')'
+            LDA #')'								;')'
             JSR OSWRCH								;write to screen
             JMP OSNEWL								;new line and return
 			
 .LA3BC      PHA									;save ROM Type
             TYA									;either ' ' for inserted, or 'U' for unplugged, depending on where called from
             JSR OSWRCH								;write to screen
-            LDX #&53								;'S' (Service)
+            LDX #'S'								;'S' (Service)
             PLA									;recover ROM Type
             PHA									;save ROM Type for further investigation
             BMI LA3C9								;check bit 7 (Service Entry exists) and write 'S' if set
-            LDX #&20								;otherwise write ' '
+            LDX #' '								;otherwise write ' '
 .LA3C9      TXA
             JSR OSWRCH								;write either 'S' or ' ' to screen
             LDX #&4C								;'L' (Language)
@@ -6167,7 +6167,7 @@ GUARD	&C000
             BCS LAC1F
 .LAC1D      LDA #&0C								;get '0C'
 .LAC1F      JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
-            LDA #&3A								;':'
+            LDA #':'								;':'
             JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 .LAC27      LDX #&00
             LDA L00AB
