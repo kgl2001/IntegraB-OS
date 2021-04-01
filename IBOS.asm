@@ -1319,7 +1319,7 @@ GUARD	&C000
 			
 ;Condition then write to Private RAM &83xx (Addr = X, Data = A)
 .L8820      JSR L882D								;Set msb of Addr (Addr = Addr OR &80)
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
 
 ;Clear msb of Addr (Addr = Addr & &7F)			
 .L8826      PHA
@@ -1376,12 +1376,15 @@ GUARD	&C000
 .L8863      RTS
 
 ;write data to Private RAM &83xx (Addr = X, Data = A)
+.writePrivateRam8300X
+{
 .L8864      PHP
             SEI
             JSR switchInPrivateRAM
             STA prv83,X								;write data to Private RAM (Addr = X, Data = A)
             PHA
             JMP switchOutPrivateRAM
+}
 
 ;read data from Private RAM &83xx (Addr = X, Data = A)
 .readPrivateRam8300X
@@ -1831,7 +1834,7 @@ GUARD	&C000
             AND L00F1
             EOR L00F0
             AND #&03
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX #&0B
             CMP #&00
             BNE L8B90
@@ -1982,7 +1985,7 @@ GUARD	&C000
             JMP L8E0A
 
 .L8C8F      LDX #&47
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             JMP exitSC								;Exit Service Call
 }
 			
@@ -2334,7 +2337,7 @@ GUARD	&C000
             JMP L8FA3
 			
 .L8F60      LDX #&3D								;select SHX register (&08: On, &FF: Off)
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             JMP exitSC								;Exit Service Call
 			
 ;*CSAVE Command
@@ -2391,10 +2394,10 @@ GUARD	&C000
 			
 .L8FC8      LDA #&00
             LDX #&40
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&FF
             LDX #&41
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&00
             STA L027A
             LDA #&00
@@ -2406,7 +2409,7 @@ GUARD	&C000
             JSR L9050
             LDA #&00
             LDX #&41
-            JMP L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JMP writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
 			
 .L8FF1      LDA #&81
             STA SHEILA+&E0
@@ -2423,9 +2426,9 @@ GUARD	&C000
             BMI L8FA9
             LDA #&FF
             LDX #&40
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX #&41
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX #&FF								;service type &FF - tube system main initialisation
             LDY #&00
             JSR L9050								;issue paged ROM service request
@@ -2443,7 +2446,7 @@ GUARD	&C000
             JSR L9050								;issue paged ROM service request
             LDA #&00
             LDX #&41
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&7F
 .L9045      BIT SHEILA+&E2
             BVC L9045
@@ -2529,7 +2532,7 @@ GUARD	&C000
             STA L027F
             LDX #&3D								;select SHX register
             LDA #&FF								;store &FF to &833D (&08: SHX On, &FF: SHX Off)
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&16								;change screen mode
             JSR OSWRCH
             LDA L0355								;current screen mode
@@ -3383,12 +3386,12 @@ GUARD	&C000
             STA SHEILA+&34								;shadow off
             LDX #&07								;start at address 7
             LDA #&FF								;set data to &FF
-.L96D9      JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+.L96D9      JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             DEX									;repeat
             BNE L96D9								;until 0.
             LDA &F4									;get current ROM number
             AND #&0F								;mask
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             BIT L03A4								;?
             BPL L96EE
             JMP L9808
@@ -3396,7 +3399,7 @@ GUARD	&C000
 .L96EE      LDX #&3A
             JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
             LDX #&45
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX L028D
             BEQ L9719
             LDX #&32								;0-2: OSMODE / 3: SHX
@@ -3404,14 +3407,14 @@ GUARD	&C000
             PHA
             AND #&07								;mask OSMODE value
             LDX #&3C								;select OSMODE register
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             JSR LA4E3								;Assign default pseudo RAM banks to absolute RAM banks
             PLA
             AND #&08
             BEQ L9714
             LDA #&FF
 .L9714      LDX #&3D								;select SHX register (&08: On, &FF: Off)
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
 .L9719      JSR LBC98
             LDX #&0A								;get TV / MODE parameters
             JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
@@ -3614,7 +3617,7 @@ GUARD	&C000
             TSX
             ORA L0101,X
 .L9896      LDX #&43
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             PLA
             JMP exitSCa								;restore service call parameters and exit
 			
@@ -8357,7 +8360,7 @@ ibosCNPVIndex = 6
             PHA
             AND #&7F								;clear Shadow RAM enable bit
             LDX #&3F
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&03
             STA L03A5
             PLA
@@ -8372,7 +8375,7 @@ ibosCNPVIndex = 6
             PHA
             ORA #&80								;set Shadow RAM enable bit
             LDX #&3F								
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&02
             STA L03A5
             PLA
@@ -8974,7 +8977,7 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
             ; and make the JSR:RTS below into a JMP, saving a byte.
             BCC LBFCF
 .LBFCA      LDA #&AC
-            JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
 .LBFCF      RTS
 
 			EQUB &00,$00,$00,$00,$00,$00,$00,$00
