@@ -8501,6 +8501,7 @@ ibosCNPVIndex = 6
 .^maybeSwapShadow2
 .LBC34      LDA vduStatus								;get VDU status
             AND #vduStatusShadow        						;test bit 4
+            ; SFTODO: Rewriting the next two lines as "BEQ some-rts-somewhere:FALLTHROUGH_TO swapShadowIfShxEnabled" would save a byte.
             BNE swapShadowIfShxEnabled							;and branch if clear
             RTS
 
