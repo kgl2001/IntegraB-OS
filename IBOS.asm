@@ -8464,6 +8464,11 @@ ibosCNPVIndex = 6
             LDA vduStatus
             ORA #vduStatusShadow
             STA vduStatus
+            ; SFTODO: The following code is calculating values for
+            ; crtcHorz{Total,Displayed} based on rtcUserSFTODOP and the current
+            ; screen mode. Is this an attempt to provide a horizontal equivalent
+            ; of *TV, i.e. to move the display left and right to centre it on a
+            ; particular monitor? Is this exposed to the user or hidden?
 .LBC05      LDX #rtcUserSFTODOP
             JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
             CLC
