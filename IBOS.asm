@@ -6956,7 +6956,7 @@ GUARD	&C000
             LDX #&0A
 .LB291      CMP #'1'
             BCC LB29C
-            CMP #':'								;':' Between 0..9
+            CMP #'9'+1								;':' Between 0..9
             BCS LB29C
             AND #&0F
             TAX
