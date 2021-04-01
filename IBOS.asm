@@ -272,7 +272,7 @@ prvPrintBufferFreeHigh = prv82 + &08
 prvPrintBufferSizeLow  = prv82 + &09
 prvPrintBufferSizeMid  = prv82 + &0A
 prvPrintBufferSizeHigh = prv82 + &0B
-prvPrintBufferBankList = prv83 + &18 ; 4 bytes
+prvPrintBufferBankList = prv83 + &18 ; 4 byte list of sideways RAM banks used by printer buffer, &FF for "no bank in this position"
 
 LDBE6       = &DBE6
 LDC16       = &DC16
@@ -2066,15 +2066,16 @@ GUARD	&C000
             ORA #&40
             STA prvPrintBufferBankList
             LDA #&FF
-            STA prv83+&19
-            STA prv83+&1A
-            STA prv83+&1B
+            STA prvPrintBufferBankList + 1
+            STA prvPrintBufferBankList + 2
+            STA prvPrintBufferBankList + 3
 .L8D5A      LDA prvPrintBufferBankList
             CMP #&FF
             BEQ L8D46
             AND #&F0
             CMP #&40
-            BNE L8D8D
+            BNE bufferInPrivateRam
+            ; Buffer is in sideways RAM, not private RAM.
             JSR LBFBD
             STA prv82+&0C
             LDA #&B0
@@ -2089,7 +2090,8 @@ GUARD	&C000
             SBC prv82+&0C
             STA prvPrintBufferSizeMid
             JMP purgePrintBuffer
-			
+
+.bufferInPrivateRam
 .L8D8D      LDA #&00
             STA prvPrintBufferSizeLow
             STA prvPrintBufferSizeMid
@@ -2133,7 +2135,7 @@ GUARD	&C000
             JMP L8E07								;and finish
 			
 .L8DE8      LDX #&01								;starting with the first RAM bank
-            JSR L8E8C								;write 'k in Shadow RAM '
+            JSR L8E8C								;write 'k in Sideways RAM '
             LDY #&00
 .L8DEF      LDA prvPrintBufferBankList,Y								;get RAM bank number from Private memory
             BMI L8E02								;if nothing in private memory then finish, otherwise
