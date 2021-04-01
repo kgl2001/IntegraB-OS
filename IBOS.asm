@@ -250,11 +250,15 @@ prv81       = &8100
 prv82       = &8200
 prv83       = &8300
 
+; The printer buffer can be up to 64K in size; 64K is &10000 bytes so we need to
+; use a 24-bit representation and we therefore have high, middle and low bytes
+; here instead of just high and low bytes.
 prvPrintBufferFreeLow  = prv82 + &06
-prvPrintBufferFreeHigh = prv82 + &07
-prvPrintBufferStatus   = prv82 + &08 ; SFTODO: what are possible values?
+prvPrintBufferFreeMid  = prv82 + &07
+prvPrintBufferFreeHigh = prv82 + &08
 prvPrintBufferSizeLow  = prv82 + &09
-prvPrintBufferSizeHigh = prv82 + &0A
+prvPrintBufferSizeMid  = prv82 + &0A
+prvPrintBufferSizeHigh = prv82 + &0B
 
 LDBE6       = &DBE6
 LDC16       = &DC16
@@ -1950,7 +1954,9 @@ GUARD	&C000
 			
 ;*BUFFER Command
 ;Note Buffer does not work in OSMODE 0
-.buffer     JSR PrvEn								;switch in private RAM
+.buffer
+{
+            JSR PrvEn								;switch in private RAM
             LDA prv83+&3C								;read OSMODE
             BNE L8CAE								;error if OSMODE 0, otherwise continue
             JSR L867E								;Goto error handling, where calling address is pulled from stack
@@ -1960,10 +1966,10 @@ GUARD	&C000
 
 .L8CAE      JSR L872B
             BCC L8CC6
-            LDA (L00A8),Y								;get byte from keyboard buffer
-            CMP #&23								;check for '#'
+            LDA (L00A8),Y								;get byte from keyboard buffer SFTODO: command argument, not keyboard buffer?
+            CMP #'#'								;check for '#'
             BEQ L8D07								;set buffer based on manually entered bank numbers
-            CMP #&3F								;check for '?'
+            CMP #'?'								;check for '?'
             BNE L8CC0								;identify free banks and set buffer based on number of banks requested by user
             JMP L8DCA								;report number of banks set
 			
@@ -2034,6 +2040,7 @@ GUARD	&C000
             STA prv83+&1A
             STA prv83+&1B
             RTS
+}
 			
 .L8D46      LDA &F4
             AND #&0F
@@ -2057,27 +2064,27 @@ GUARD	&C000
             STA prv82+&0D
             STA prv82+&0F
             STA prvPrintBufferSizeLow
-            STA prv82+&0B
+            STA prvPrintBufferSizeHigh
             SEC
             LDA prv82+&0E
             SBC prv82+&0C
-            STA prvPrintBufferSizeHigh
+            STA prvPrintBufferSizeMid
             JMP purgePrintBuffer
 			
 .L8D8D      LDA #&00
             STA prvPrintBufferSizeLow
+            STA prvPrintBufferSizeMid
             STA prvPrintBufferSizeHigh
-            STA prv82+&0B
             TAX
 .L8D99      LDA prv83+&18,X
             BMI L8DB5
             CLC
-            LDA prvPrintBufferSizeHigh
+            LDA prvPrintBufferSizeMid
             ADC #&40
-            STA prvPrintBufferSizeHigh
-            LDA prv82+&0B
+            STA prvPrintBufferSizeMid
+            LDA prvPrintBufferSizeHigh
             ADC #&00
-            STA prv82+&0B
+            STA prvPrintBufferSizeHigh
             INX
             CPX #&04
             BNE L8D99
@@ -2091,9 +2098,9 @@ GUARD	&C000
             STX prv82+&0F
             JMP purgePrintBuffer
 			
-.L8DCA      LDA prv82+&0B
+.L8DCA      LDA prvPrintBufferSizeHigh
             LSR A
-            LDA prvPrintBufferSizeHigh
+            LDA prvPrintBufferSizeMid
             ROR A
             ROR A
             SEC									;left justify (ignore leading 0s)
@@ -8692,7 +8699,7 @@ ibosCNPVIndex = 6
             JSR PrvEn								;switch in private RAM
             LDA #&00
             STA prvPrintBufferSizeLow
-            STA prv82+&0B
+            STA prvPrintBufferSizeHigh
             STA prv82+&0D
             STA prv82+&0F
             JSR LBFBD
@@ -8702,7 +8709,7 @@ ibosCNPVIndex = 6
             SEC
             LDA prv82+&0E
             SBC prv82+&0C
-            STA prvPrintBufferSizeHigh
+            STA prvPrintBufferSizeMid
             LDA &F4
             ORA #&40
             STA prv83+&18
@@ -8775,8 +8782,8 @@ ibosCNPVIndex = 6
 .checkPrintBufferFull
 {
 .LBEE9      LDA prvPrintBufferFreeLow
+            ORA prvPrintBufferFreeMid
             ORA prvPrintBufferFreeHigh
-            ORA prvPrintBufferStatus
             BEQ LBEF6
             CLC
             RTS
@@ -8788,11 +8795,11 @@ ibosCNPVIndex = 6
 .LBEF8      LDA prvPrintBufferFreeLow
             CMP prvPrintBufferSizeLow
             BNE LBF12
-            LDA prvPrintBufferFreeHigh
-            CMP prvPrintBufferSizeHigh
+            LDA prvPrintBufferFreeMid
+            CMP prvPrintBufferSizeMid
             BNE LBF12
-            LDA prvPrintBufferFreeHigh
-            CMP prvPrintBufferSizeHigh
+            LDA prvPrintBufferFreeMid
+            CMP prvPrintBufferSizeMid
             BNE LBF12
             SEC
             RTS
@@ -8807,14 +8814,16 @@ ibosCNPVIndex = 6
 ; code??) into &Bxxx, although it may not be worth the hassle.
 .getPrintBufferFree
 {
-.LBF14      LDX prvPrintBufferStatus
-            BNE LBF20
+.LBF14      LDX prvPrintBufferFreeHigh
+            BNE atLeast64KFree
             LDX prvPrintBufferFreeLow
-            LDY prvPrintBufferFreeHigh
+            LDY prvPrintBufferFreeMid
             RTS
 
-            ; SFTODO: Why do we return &FFFF here? Isn't that saying the buffer has 64K free?
-.LBF20      LDX #&FF
+.atLeast64KFree
+            ; Tell the caller there's 64K-1 byte free, which is the maximum
+            ; return value.
+            LDX #&FF
             LDY #&FF
             RTS
 }
@@ -8822,32 +8831,36 @@ ibosCNPVIndex = 6
 ; SFTODO: Currently has only one caller FWIW
 .getPrintBufferUsed
 {
+; SFTODO: Won't this incorrectly return 0 if a 64K buffer is entirely full? Do
+; we prevent this happening somehow? This could be tested fairly easily by
+; simply having no printer connected/turned on, setting a 64K buffer, writing
+; 64K to it and then calling CNPV to query the amount of data in the buffer.
 .LBF25      SEC
             LDA prvPrintBufferSizeLow
             SBC prvPrintBufferFreeLow
             TAX
-            LDA prvPrintBufferSizeHigh
-            SBC prvPrintBufferFreeHigh
+            LDA prvPrintBufferSizeMid
+            SBC prvPrintBufferFreeMid
             TAY
             RTS
 }
 
 .LBF35      INC prvPrintBufferFreeLow
             BNE LBF3D
-            INC prvPrintBufferFreeHigh
+            INC prvPrintBufferFreeMid
 .LBF3D      BNE LBF42
-            INC prvPrintBufferStatus
+            INC prvPrintBufferFreeHigh
 .LBF42      RTS
 
 .LBF43      SEC
             LDA prvPrintBufferFreeLow
             SBC #&01
             STA prvPrintBufferFreeLow
-            LDA prvPrintBufferFreeHigh
+            LDA prvPrintBufferFreeMid
             SBC #&00
-            STA prvPrintBufferFreeHigh
+            STA prvPrintBufferFreeMid
             BCS LBF59
-            DEC prvPrintBufferStatus
+            DEC prvPrintBufferFreeHigh
 .LBF59      RTS
 
 ;code relocated to &0380
@@ -8892,10 +8905,10 @@ ibosCNPVIndex = 6
             STA prv82+&05
             LDA prvPrintBufferSizeLow
             STA prvPrintBufferFreeLow
+            LDA prvPrintBufferSizeMid
+            STA prvPrintBufferFreeMid
             LDA prvPrintBufferSizeHigh
             STA prvPrintBufferFreeHigh
-            LDA prv82+&0B
-            STA prvPrintBufferStatus
             RTS
 }
 			
