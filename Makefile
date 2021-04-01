@@ -5,4 +5,4 @@ IBOS-01.rom: IBOS.asm Makefile
 	@cmp IBOS-01.rom IBOS-Orig.rom || (echo "New ROM is not identical to original"; mv IBOS-01.rom IBOS-01-variant.rom; exit 1)
 
 clean:
-	/bin/rm -f IBOS.lst IBOS-01.rom
+	/bin/rm -f IBOS.lst IBOS-01.rom IBOS-01-variant.rom

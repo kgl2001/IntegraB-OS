@@ -250,12 +250,59 @@ prv81       = &8100
 prv82       = &8200
 prv83       = &8300
 
+; The printer buffer can be up to 64K in size; 64K is &10000 bytes so we need to
+; use a 24-bit representation and we therefore have high, middle and low bytes
+; here instead of just high and low bytes.
+; SFTODO: I'm not exactly sure what's happening, but SFTODOA and SFTODOB are a
+; pair of three byte counters, probably something to do with the printer buffer.
+; The 'AB' variables here are used where code is accessing either A or B
+; depending on whether X is 0 or 3.
+SFTODOALOW = prv82 + &00
+SFTODOAMID = prv82 + &01
+SFTODOAHIGH = prv82 + &02
+SFTODOABLOW = SFTODOALOW
+SFTODOABMID = SFTODOAMID
+SFTODOABHIGH = SFTODOAHIGH
+SFTODOBLOW = prv82 + &03
+SFTODOBMID = prv82 + &04
+SFTODOBHIGH = prv82 + &05
+prvPrintBufferFreeLow  = prv82 + &06
+prvPrintBufferFreeMid  = prv82 + &07
+prvPrintBufferFreeHigh = prv82 + &08
+prvPrintBufferSizeLow  = prv82 + &09
+prvPrintBufferSizeMid  = prv82 + &0A
+prvPrintBufferSizeHigh = prv82 + &0B
+prvPrintBufferBankList = prv83 + &18 ; 4 byte list of sideways RAM banks used by printer buffer, &FF for "no bank in this position"
+
 LDBE6       = &DBE6
 LDC16       = &DC16
 LF168       = &F168
 LF16E       = &F16E
 
 bufNumPrinter = 3 ; OS buffer number for the printer buffer
+
+opcodeStaAbs = &8D
+opcodeLdaAbs = &AD
+opcodeCmdAbs = &CD
+
+; SFTODO: Define romselCopy = &F4, romsel = &FE30, ramselCopy = &37F, ramsel =
+; &FE34 and use those everywhere instead of the raw hex or SHEILA+&xx we have
+; now?
+
+romselPrvEn = &40
+ramselPrvs8 = &10
+ramselPrvs1 = &40
+ramselPrvs81 = ramselPrvs8 OR ramselPrvs1
+
+; bits in the 6502 flags registers (as stacked via PHP)
+flagC = &01
+flagZ = &02
+flagV = &40
+
+; Convenience macro to avoid the annoyance of writing this out every time.
+MACRO NOT_AND n
+             AND #NOT(n) AND &FF
+ENDMACRO
 
 ORG	&8000
 GUARD	&C000
@@ -1903,7 +1950,9 @@ GUARD	&C000
 .L8C6D      JMP OSWRCH
 
 ;*PURGE Command
-.purge      JSR L8699
+.purge
+{
+            JSR L8699
             BCC L8C8F
             LDA (L00A8),Y
             CMP #&3F
@@ -1914,16 +1963,19 @@ GUARD	&C000
             JMP L8FA3
 			
 .L8C86      JSR PrvEn								;switch in private RAM
-            JSR LBF90
+            JSR purgePrintBuffer
             JMP L8E0A
-			
+
 .L8C8F      LDX #&47
             JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
             JMP exitSC								;Exit Service Call
+}
 			
 ;*BUFFER Command
 ;Note Buffer does not work in OSMODE 0
-.buffer     JSR PrvEn								;switch in private RAM
+.buffer
+{
+            JSR PrvEn								;switch in private RAM
             LDA prv83+&3C								;read OSMODE
             BNE L8CAE								;error if OSMODE 0, otherwise continue
             JSR L867E								;Goto error handling, where calling address is pulled from stack
@@ -1933,10 +1985,10 @@ GUARD	&C000
 
 .L8CAE      JSR L872B
             BCC L8CC6
-            LDA (L00A8),Y								;get byte from keyboard buffer
-            CMP #&23								;check for '#'
+            LDA (L00A8),Y								;get byte from keyboard buffer SFTODO: command argument, not keyboard buffer?
+            CMP #'#'								;check for '#'
             BEQ L8D07								;set buffer based on manually entered bank numbers
-            CMP #&3F								;check for '?'
+            CMP #'?'								;check for '?'
             BNE L8CC0								;identify free banks and set buffer based on number of banks requested by user
             JMP L8DCA								;report number of banks set
 			
@@ -1955,7 +2007,7 @@ GUARD	&C000
 .L8CD8      JSR L8E10								;test for SWRAM at bank Y
             BCS L8CE6
             TYA
-            STA prv83+&18,X								;store RAM bank number in Private memory
+            STA prvPrintBufferBankList,X								;store RAM bank number in Private memory
             INX									;increment counter for number of RAM banks found
             CPX #&04								;until 4 banks are found
             BEQ L8CEB
@@ -1971,7 +2023,7 @@ GUARD	&C000
             LDA #&FF
 .L8CF7      CPX #&04
             BCS L8D01
-            STA prv83+&18,X
+            STA prvPrintBufferBankList,X
             INX
             BNE L8CF7
 .L8D01      JSR L8D5A
@@ -1990,7 +2042,7 @@ GUARD	&C000
             TYA
             BCS L8D2C
             LDX L00AC
-            STA prv83+&18,X
+            STA prvPrintBufferBankList,X
             INX
             STX L00AC
             CPX #&04
@@ -2002,26 +2054,28 @@ GUARD	&C000
             JMP L8DCA
 			
 .L8D37      LDA #&FF								;unassign RAM banks from *BUFFER
-            STA prv83+&18
+            STA prvPrintBufferBankList
             STA prv83+&19
             STA prv83+&1A
             STA prv83+&1B
             RTS
+}
 			
 .L8D46      LDA &F4
             AND #&0F
             ORA #&40
-            STA prv83+&18
+            STA prvPrintBufferBankList
             LDA #&FF
-            STA prv83+&19
-            STA prv83+&1A
-            STA prv83+&1B
-.L8D5A      LDA prv83+&18
+            STA prvPrintBufferBankList + 1
+            STA prvPrintBufferBankList + 2
+            STA prvPrintBufferBankList + 3
+.L8D5A      LDA prvPrintBufferBankList
             CMP #&FF
             BEQ L8D46
             AND #&F0
             CMP #&40
-            BNE L8D8D
+            BNE bufferInPrivateRam
+            ; Buffer is in sideways RAM, not private RAM.
             JSR LBFBD
             STA prv82+&0C
             LDA #&B0
@@ -2029,28 +2083,29 @@ GUARD	&C000
             LDA #&00
             STA prv82+&0D
             STA prv82+&0F
-            STA prv82+&09
-            STA prv82+&0B
+            STA prvPrintBufferSizeLow
+            STA prvPrintBufferSizeHigh
             SEC
             LDA prv82+&0E
             SBC prv82+&0C
-            STA prv82+&0A
-            JMP LBF90
-			
+            STA prvPrintBufferSizeMid
+            JMP purgePrintBuffer
+
+.bufferInPrivateRam
 .L8D8D      LDA #&00
-            STA prv82+&09
-            STA prv82+&0A
-            STA prv82+&0B
+            STA prvPrintBufferSizeLow
+            STA prvPrintBufferSizeMid
+            STA prvPrintBufferSizeHigh
             TAX
-.L8D99      LDA prv83+&18,X
+.L8D99      LDA prvPrintBufferBankList,X
             BMI L8DB5
             CLC
-            LDA prv82+&0A
+            LDA prvPrintBufferSizeMid
             ADC #&40
-            STA prv82+&0A
-            LDA prv82+&0B
+            STA prvPrintBufferSizeMid
+            LDA prvPrintBufferSizeHigh
             ADC #&00
-            STA prv82+&0B
+            STA prvPrintBufferSizeHigh
             INX
             CPX #&04
             BNE L8D99
@@ -2062,16 +2117,16 @@ GUARD	&C000
             LDA #&C0
             STA prv82+&0E
             STX prv82+&0F
-            JMP LBF90
+            JMP purgePrintBuffer
 			
-.L8DCA      LDA prv82+&0B
+.L8DCA      LDA prvPrintBufferSizeHigh
             LSR A
-            LDA prv82+&0A
+            LDA prvPrintBufferSizeMid
             ROR A
             ROR A
             SEC									;left justify (ignore leading 0s)
             JSR L86DE								;Convert binary number to numeric characters and write characters to screen
-            LDA prv83+&18
+            LDA prvPrintBufferBankList
             AND #&F0
             CMP #&40
             BNE L8DE8
@@ -2080,9 +2135,9 @@ GUARD	&C000
             JMP L8E07								;and finish
 			
 .L8DE8      LDX #&01								;starting with the first RAM bank
-            JSR L8E8C								;write 'k in Shadow RAM '
+            JSR L8E8C								;write 'k in Sideways RAM '
             LDY #&00
-.L8DEF      LDA prv83+&18,Y								;get RAM bank number from Private memory
+.L8DEF      LDA prvPrintBufferBankList,Y								;get RAM bank number from Private memory
             BMI L8E02								;if nothing in private memory then finish, otherwise
             SEC									;left justify (ignore leading 0s)
             JSR L86DE								;Convert binary number to numeric characters and write characters to screen
@@ -2107,23 +2162,23 @@ GUARD	&C000
             PHP
             SEI
             LDA #&00
-            STA L0388
+            STA ramRomAccessSubroutineVariableInsn + 1
             LDA #&80
-            STA L0389
-            LDA #&AD								;&AD is opcode for 'LDA &', so: 0387 LDA &8000
-            STA L0387
-            JSR L0380								;switch to ROM Bank Y and read value of &8000 to A
+            STA ramRomAccessSubroutineVariableInsn + 2
+            LDA #opcodeLdaAbs
+            STA ramRomAccessSubroutineVariableInsn
+            JSR ramRomAccessSubroutine							;switch to ROM Bank Y and read value of &8000 to A
             EOR #&FF								;EOR with &FF
             TAX									;and write back to &8000
-            LDA #&8D								;&8D is opcode for 'STA &', so: 0387 STA &8000
-            STA L0387
+            LDA #opcodeStaAbs
+            STA ramRomAccessSubroutineVariableInsn
             TXA
-            JSR L0380								;switch to ROM Bank Y and write value of A to &8000
+            JSR ramRomAccessSubroutine							;switch to ROM Bank Y and write value of A to &8000
             TAX
-            LDA #&CD								;&CD is opcode for 'CMP &', so: 0387 CMP &8000
-            STA L0387
+            LDA #opcodeCmdAbs
+            STA ramRomAccessSubroutineVariableInsn
             TXA
-            JSR L0380								;switch to ROM Bank Y and compare value of &8000 with A
+            JSR ramRomAccessSubroutine							;switch to ROM Bank Y and compare value of &8000 with A
             SEC
             BNE L8E4A
             CLC
@@ -2139,10 +2194,10 @@ GUARD	&C000
 .L8E57      TXA									;restore the contents of ROM Bank Y &8000
             EOR #&FF								;EOR with &FF
             TAX									;and write back to &8000
-            LDA #&8D								;&8D is opcode for STA &, so: 0387 STA &8000
-            STA L0387
+            LDA #opcodeStaAbs
+            STA ramRomAccessSubroutineVariableInsn
             TXA
-            JSR L0380
+            JSR ramRomAccessSubroutine
             PLP
             JMP L8E69
 			
@@ -2383,28 +2438,50 @@ GUARD	&C000
 .L9050      LDA #&8F								;issue paged ROM service request
             JMP OSBYTE								;execute paged ROM service request
 			
-;Switch in Shadow / Private memory
+; Page in PRVS1.
+; SFTODO: Original comment was "Switch in Shadow / Private memory". If I read
+; the code right, it only switches in PRVS1. If we call PRVS1 "shadow memory or
+; private memory, both are correct", the comment is consistent with my
+; understanding, but this *won't* have any effect on shadow RAM in 3000-7FFF
+; region. Will it? Ken - are you OK if the disassembly uses the naming
+; convention "shadow RAM=3000-8000, private RAM=the special 12K switchable in
+; chunks in 8000-AFFF"? I'm happy to use different names if you prefer, I just
+; think it's helpful to distinguish these two chunks of RAM.
+; SFTODO: Is there any chance of saving space by sharing some code with the
+; similar pageInPrvs81?
+.pageInPrvs1
+; SFTODO: I'd like to get rid of the PrvEn label and use pageInPrvs1 but won't
+; do it just yet.
 .PrvEn      PHA
             LDA &037F
-            ORA #&40								;Set PRVS1
+            ORA #ramselPrvs1
             STA &037F
             STA SHEILA+&34
             LDA &F4
-            ORA #&40								;Set PrvEn
+            ORA #romselPrvEn
             STA &F4
             STA SHEILA+&30
             PLA
             RTS
 			
-			
-;Switch out Shadow / Private memory
+
+
+; Page out private RAM.
+; SFTODO: This clears PRVS1 in RAMSEL, but is that actually necessary? If PRVEN is
+; clear none of the private RAM is accessible. Do we ever just set PRVEN and rely
+; on RAMSEL already having some of PRVS1/4/8 set? The name "pageOutPrv1" is chosen
+; to try to reflect this, but it's a bit misleading as we are paging out the *whole*
+; private 12K.
+;Switch out Shadow / Private memory SFTODO: see my comment on PrvEn
+; SFTODO: I'm tempted to get rid of the PrvDis label but I'll leave it for now
+.pageOutPrv1
 .PrvDis	  PHA
             LDA &F4
-            AND #&BF								;Clear PrvEn
+            NOT_AND romselPrvEn                                                                     ;Clear PrvEn
             STA &F4
             STA SHEILA+&30
             LDA &037F
-            AND #&BF								;Clear PRVS1
+            NOT_AND ramselPrvs1							;Clear PRVS1
             STA &037F
             STA SHEILA+&34
             PLA
@@ -2576,9 +2653,9 @@ GUARD	&C000
             LDA L00AA
             CLC
             JSR L86DE								;Convert binary number to numeric characters and write characters to screen
-            LDA #&3A								;':'
+            LDA #':'
             JSR OSWRCH								;write to screen
-.L91B9      LDA #&20								;' '
+.L91B9      LDA #' '
             JMP OSWRCH								;write to screen
 			
 ;*PRINT Command
@@ -4980,7 +5057,7 @@ GUARD	&C000
 .LA380      LDX L00AA								;get ROM number
             JSR L9FC6								;check if ROM is WP. Will return with Z set if writeable
             PHP
-            LDA #&45								;'E' (Enabled)
+            LDA #'E'								;'E' (Enabled)
             PLP
             BEQ LA38D								;jump to write to screen
             LDA #&50								;'P' (Protected)
@@ -4988,7 +5065,7 @@ GUARD	&C000
             JSR PrvEn								;switch in private RAM
             LDX L00AA								;Get ROM Number
             LDA L02A1,X								;get ROM Type
-            LDY #&20								;' '
+            LDY #' '								;' '
             AND #&FE								;bit 0 of ROM Type is undefined, so mask out
             BNE LA3BC								;if any other bits set, then ROM exists so skip code for Unplugged ROM check, and get and write ROM details
             LDY #&55								;'U' (Unplugged)
@@ -4999,18 +5076,18 @@ GUARD	&C000
             JSR L91B9								;write ' ' to screen in place of 'U'
             JSR L91B9								;write ' ' to screen in place of 'S'
             JSR L91B9								;write ' ' to screen in place of 'L'
-            LDA #&29								;')'
+            LDA #')'								;')'
             JSR OSWRCH								;write to screen
             JMP OSNEWL								;new line and return
 			
 .LA3BC      PHA									;save ROM Type
             TYA									;either ' ' for inserted, or 'U' for unplugged, depending on where called from
             JSR OSWRCH								;write to screen
-            LDX #&53								;'S' (Service)
+            LDX #'S'								;'S' (Service)
             PLA									;recover ROM Type
             PHA									;save ROM Type for further investigation
             BMI LA3C9								;check bit 7 (Service Entry exists) and write 'S' if set
-            LDX #&20								;otherwise write ' '
+            LDX #' '								;otherwise write ' '
 .LA3C9      TXA
             JSR OSWRCH								;write either 'S' or ' ' to screen
             LDX #&4C								;'L' (Language)
@@ -6090,7 +6167,7 @@ GUARD	&C000
             BCS LAC1F
 .LAC1D      LDA #&0C								;get '0C'
 .LAC1F      JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
-            LDA #&3A								;':'
+            LDA #':'								;':'
             JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 .LAC27      LDX #&00
             LDA L00AB
@@ -6871,15 +6948,15 @@ GUARD	&C000
             CMP #&2B								;'+'
             BNE LB285
             LDX #&0B
-.LB285      CMP #&2D								;'-'
+.LB285      CMP #'-'
             BNE LB28B
             LDX #&0C
-.LB28B      CMP #&2A								;'*'
+.LB28B      CMP #'*'
             BNE LB291
             LDX #&0A
-.LB291      CMP #&31								;'1'
+.LB291      CMP #'1'
             BCC LB29C
-            CMP #&3A								;':' Between 0..9
+            CMP #':'								;':' Between 0..9
             BCS LB29C
             AND #&0F
             TAX
@@ -7813,6 +7890,7 @@ GUARD	&C000
 ; relatively slow (particularly important for WRCHV, which gets called for every
 ; character output to the screen) and doesn't allow for vector chains.
 .romCodeStub
+ramCodeStub = osPrintBuf ; SFTODO: use ramCodeStub instead of osPrintBuf in some/all places?
 {
 .LB967      JSR ramCodeStubCallIBOS ; BYTEV
             JSR ramCodeStubCallIBOS ; WORDV
@@ -7822,7 +7900,7 @@ GUARD	&C000
             JSR ramCodeStubCallIBOS ; REMV
             JSR ramCodeStubCallIBOS ; CNPV
 .romCodeStubCallIBOS
-ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
+ramCodeStubCallIBOS = ramCodeStub + (romCodeStubCallIBOS - romCodeStub)
 .LR0895     PHA					;becomes address &895 when relocated.
             PHP
             LDA &F4
@@ -7840,7 +7918,7 @@ ramCodeStubCallIBOS = osPrintBuf + (romCodeStubCallIBOS - romCodeStub)
             RTS
 }
 .romCodeStubEnd
-ramCodeStubEnd = osPrintBuf + (romCodeStubEnd - romCodeStub)
+ramCodeStubEnd = ramCodeStub + (romCodeStubEnd - romCodeStub)
 ; The next part of osPrintBuf is used to hold a table of 7 original OS (parent)
 ; vectors. This is really a single table, but because the 7 vectors of interest
 ; aren't contiguous in the OS vector table it's sometimes helpful to consider it
@@ -7856,20 +7934,29 @@ parentVectorTbl2 = parentVectorTbl1 + 4 * 2 ; 4 vectors, 2 bytes each
 parentVectorTbl2End = parentVectorTbl2 + 3 * 2 ; 3 vectors, 2 bytes each
 assert parentVectorTbl2End <= osPrintBuf + &40
 
+; Restore A, X, Y and the flags from the stacked copies pushed during the vector
+; entry process. The stack must have the same layout as described in the big
+; comment in vectorEntry; note that the addresses in this subroutine are two
+; bytes higher because we were called via JSR so we need to allow for our own
+; return address on the stack.
+.restoreOrigVectorRegs
+{
 .LB994      TSX
-            LDA L0108,X
+            LDA L0108,X ; get original flags
             PHA
-            LDA L0109,X
+            LDA L0109,X ; get original A
             PHA
-            LDA L0104,X
+            LDA L0104,X ; get original X
             PHA
-            LDA L0103,X
+            ; SFTODO: We could save a byte here by doing LDY L0103,X directly.
+            LDA L0103,X ; get original Y
             TAY
             PLA
             TAX
             PLA
             PLP
             RTS
+}
 			
 .LB9AA      PHP
             PHA
@@ -7914,7 +8001,8 @@ ibosCNPVIndex = 6
 		EQUW cnpvHandler-1
 		EQUB &2E
 
-; Control arrives here via the RAM copy of romCodeStub in osPrintBuf.
+; Control arrives here via ramCodeStub when one of the vectors we've claimed is
+; called.
 .vectorEntry
 {
 .LB9D5      TXA
@@ -7931,6 +8019,7 @@ ibosCNPVIndex = 6
             ;   &107,S  A stacked by romCodeStubCallIBOS
             ;   &108,S  return address from "JSR ramCodeStubCallIBOS" (low)
             ;   &109,S  return address from "JSR ramCodeStubCallIBOS" (high)
+            ;   &10A,S  x (caller's data; nothing to do with us)
             ; The low byte of the return address at &108,S will be the address
             ; of the JSR ramCodeStubCallIBOS plus 2. We mask off the low bits
             ; (which are sufficient to distinguish the 7 different callers) and
@@ -7946,7 +8035,17 @@ ibosCNPVIndex = 6
             PHA
             RTS
 }
-			
+
+; Clean up and return from a vector handler; we have dealt with the call and
+; we're not going to call the parent handler. At this point the stack should be
+; exactly as described in the big comment in vectorEntry; note that this code is
+; reached via JMP so there's no extra return address on the stack as there is in
+; restoreOrigVectorRegs.
+.returnFromVectorHandler
+{
+; SFTODO: This is really just shuffling the stack down to remove the return
+; address from "JSR ramCodeStubCallIBOS"; can we rewrite it more compactly using
+; a loop?
 .LB9E9      TSX
             LDA L0107,X
             STA L0109,X
@@ -7964,44 +8063,66 @@ ibosCNPVIndex = 6
             STA L0103,X
             PLA
             PLA
-            PLA
-            TAY
-            PLA
-            TAX
-            RTS
-
-; Patch the return address further up the stack (SFTODO: be good to work out
-; what the stack looks like here) to return to the Ath vector in
-; parentVectorTbl.
-; SFTODO: Change name - "return" implies we *are* returning, we are actually
-; just hacking the stack so a later return will magically go to the parent.
-.returnToParentVectorTblEntry
-{
-.LBA1B      TSX
-            ASL A
-            TAY
-            SEC
-            LDA parentVectorTbl,Y
-            SBC #&01
-            STA L0108,X
-            LDA parentVectorTbl+1,Y
-            SBC #&00
-            STA L0109,X
+            ; At this point the stack looks like this:
+            ;   &101,S  Y stacked by preceding instructions
+            ;   &102,S  X stacked by preceding instructions
+            ;   &103,S  return address from "JSR vectorEntry" (low)
+            ;   &104,S  return address from "JSR vectorEntry" (high)
+            ;   &105,S  previously paged in ROM bank stacked by romCodeStubCallIBOS
+            ;   &106,S  flags stacked by romCodeStubCallIBOS
+            ;   &107,S  A stacked by romCodeStubCallIBOS
+            ;   &108,S  x (caller's data; nothing to do with us)
+            ; We now restore Y and X and RTS from "JSR vectorEntry" in ramCodeStub,
+            ; which will restore the previously paged in ROM, the flags and then A,
+            ; so the vector's caller will see the Z/N flags reflecting A, but
+            ; otherwise preserved.
             PLA
             TAY
             PLA
             TAX
             RTS
 }
-			
+
+; Restore the registers and pass the call onto the parent vector handler for
+; vector A (using the ibos*Index numbering). At this point the stack should be
+; exactly as described in the big comment in vectorEntry; note that this code is
+; reached via JMP so there's no extra return address on the stack as there is in
+; restoreOrigVectorRegs.
+.forwardToParentVectorTblEntry
+{
+.LBA1B      TSX
+            ASL A
+            TAY
+            ; We need to subtract 1 from the destination address because we're
+            ; going to transfer control via RTS, which will add 1.
+            SEC
+            LDA parentVectorTbl,Y
+            SBC #&01
+            STA L0108,X ; overwrite low byte of return address from "JSR ramCodeStubCallIBOS"
+            LDA parentVectorTbl+1,Y
+            SBC #&00
+            STA L0109,X ; overwrite high byte
+            PLA
+            TAY
+            PLA
+            TAX
+            RTS
+}
+
+; Aries/Watford shadow RAM access (http://beebwiki.mdfs.net/OSBYTE_%266F)
+.osbyte6FHandler
+{
 .LBA34      JSR L8A7B
             JMP LBACB
+}
 
-; SFTODO: What's this doing?
+; Read key with time limit/read machine type (http://beebwiki.mdfs.net/OSBYTE_%2681)
+.osbyte81Handler
+{
 .LBA3A      CPX #&00
-            BNE LBA90
+            BNE osbyte87Handler
             CPY #&FF
-            BNE LBA90
+            BNE osbyte87Handler
             LDX #&3C								;select OSMODE
             JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBA56								;Branch if OSMODE=0
@@ -8015,6 +8136,7 @@ ibosCNPVIndex = 6
 .LBA56      LDX #&00
             LDA #&81
             JMP LBB1C								;jump to code for OSMODE 0-1
+}
 			
 ;OSMODE lookup table
 .LBA5D		EQUB &01								;OSMODE 0 - Not Used
@@ -8026,35 +8148,47 @@ ibosCNPVIndex = 6
 		EQUB &01								;OSMODE 6 - No such mode
 		EQUB &01								;OSMODE 7 - No such mode
 
+.jmpParentBYTEV
+{
 .LBA65      JMP (parentBYTEV)
+}
 
 .bytevHandler
 {
-.LBA68	  JSR LB994
+.LBA68	  JSR restoreOrigVectorRegs
+            ; SFTODO: Is there any chance of saving a few bytes by converting this to a
+            ; jump table?
             CMP #&6F
-            BEQ LBA34
+            BEQ osbyte6FHandler
             CMP #&98
-            BEQ LBA96
+            BEQ osbyte98Handler
             CMP #&87
-            BEQ LBA90
+            BEQ osbyte87Handler
             CMP #&84
-            BEQ LBAD1
+            BEQ osbyte84Handler
             CMP #&85
-            BEQ LBADC
+            BEQ osbyte85Handler
             CMP #&8E
-            BEQ LBAF1
+            BEQ osbyte8EHandler
             CMP #&00
-            BEQ LBB00
+            BEQ osbyte00Handler
             CMP #&81
-            BEQ LBA3A
+            BEQ osbyte81Handler
             LDA #ibosBYTEVIndex
-            JMP returnToParentVectorTblEntry
+            JMP forwardToParentVectorTblEntry
 }
-			
+
+; Read character at text cursor and screen mode (http://beebwiki.mdfs.net/OSBYTE_%2687)
+.osbyte87Handler
+{
 .LBA90      JSR LB948
             JMP LBB1C
-			
-.LBA96      JSR LBA65
+}
+
+; Examine buffer status (http://beebwiki.mdfs.net/OSBYTE_%2698)
+.osbyte98Handler
+{
+.LBA96      JSR jmpParentBYTEV
             BCS LBACB
             LDA &037F
             PHA
@@ -8079,16 +8213,24 @@ ibosCNPVIndex = 6
             LDA (L00FA),Y
             TAY
             LDA #&98
+}
 .LBACB      JSR LB9AA
-            JMP LB9E9
-			
+            JMP returnFromVectorHandler
+
+; Read top of user memory (http://beebwiki.mdfs.net/OSBYTE_%2684)
+.osbyte84Handler
+{
 .LBAD1      PHA
             LDA L00D0
             AND #&10
             BNE LBAE9
             PLA
             JMP LBB1C
-			
+}
+
+; Read base of display RAM for a given mode (http://beebwiki.mdfs.net/OSBYTE_%2685)
+.osbyte85Handler
+{
 .LBADC      PHA
             TXA
             BMI LBAE9
@@ -8096,19 +8238,27 @@ ibosCNPVIndex = 6
             BEQ LBAE9
             PLA
             JMP LBB1C
+}
 			
 .LBAE9      PLA
             LDX #&00
             LDY #&80
             JMP LBACB
-			
+
+; Enter language ROM (http://beebwiki.mdfs.net/OSBYTE_%268E)
+.osbyte8EHandler
+{
 .LBAF1      LDA #&8F								;Select Issue paged ROM service request
             LDX #&2A								;Service type &2A
             LDY #&00
             JSR OSBYTE								;Execute Issue paged ROM service request
-            JSR LB994
+            JSR restoreOrigVectorRegs
             JMP LBB1C
-			
+}
+
+; Identify host/operating system (http://beebwiki.mdfs.net/OSBYTE_%2600)
+.osbyte00Handler
+{
 .LBB00      TXA
             PHA
             LDX #&3C								;select OSMODE
@@ -8122,11 +8272,12 @@ ibosCNPVIndex = 6
             BEQ LBB22								;Output OSMODE to screen.
             LDA #&00
             JMP LBACB
+}
 			
 .LBB18      PLA
             TAX
             LDA #&00
-.LBB1C      JSR LBA65
+.LBB1C      JSR jmpParentBYTEV
             JMP LBACB
 			
 .LBB22      LDX #&00								;start at offset 0
@@ -8148,16 +8299,16 @@ ibosCNPVIndex = 6
 
 .wordvHandler
 {
-.LBB54		JSR LB994
+.LBB54		JSR restoreOrigVectorRegs
             CMP #&09
             BNE LBB67
             JSR LB948
             JSR LBB51
             JSR LB9AA
-            JMP LB9E9
+            JMP returnFromVectorHandler
 
 .LBB67      LDA #ibosWORDVIndex
-            JMP returnToParentVectorTblEntry
+            JMP forwardToParentVectorTblEntry
 }
 
 {
@@ -8166,10 +8317,10 @@ ibosCNPVIndex = 6
 
 .^rdchvHandler
 .LBB6F		JSR LB948
-            JSR LB994
+            JSR restoreOrigVectorRegs
             JSR jmpParentRDCHV
             JSR LB9AA
-            JMP LB9E9
+            JMP returnFromVectorHandler
 }
 			
 .LBB7E      JMP (L08B1)
@@ -8226,7 +8377,7 @@ ibosCNPVIndex = 6
             BEQ LBC05
 
 .^wrchvHandler
-.LBBE3		JSR LB994
+.LBBE3		JSR restoreOrigVectorRegs
             PHA
             LDA L03A5
             BNE LBB90
@@ -8260,7 +8411,7 @@ ibosCNPVIndex = 6
             LDA #&00
             STA L03A5
 .^LBC29      PLA
-            JMP LB9E9
+            JMP returnFromVectorHandler
 }
 			
 .LBC2D      LDA L00D0								;get VDU status
@@ -8407,48 +8558,60 @@ ibosCNPVIndex = 6
             JSR PrvDis								;switch out private RAM
             JSR LBC34
             JMP LBCF2
-			
+
+; Page in PRVS8 and PRVS1, returning the previous value of RAMSEL in A.
+; SFTODO: From vague memories of other bits of the code, sometimes we do this
+; sort of paging in a bit more ad-hocly, without updating &F4/&37F. So we may
+; want to note in the comment that this does the paging in
+; properly/formally/some other term.
+.pageInPrvs81
+{
 .LBD45      LDA &F4
-            ORA #&40
+            ORA #romselPrvEn
             STA &F4
             STA SHEILA+&30
             LDA &037F
             PHA
-            ORA #&50
+            ORA #ramselPrvs81
             STA &037F
             STA SHEILA+&34
             PLA
             RTS
+}
 
 .insvHandler
 {
 .LBD5C		TSX
-            LDA L0102,X
+            LDA L0102,X ; get original X=buffer number
             CMP #bufNumPrinter
-            BEQ LBD69
+            BEQ isPrinterBuffer
             LDA #ibosINSVIndex
-            JMP returnToParentVectorTblEntry
-			
-.LBD69      JSR LBD45
+            JMP forwardToParentVectorTblEntry
+
+.isPrinterBuffer
+.LBD69      JSR pageInPrvs81
             PHA
             TSX
-            JSR LBEE9
-            BCC LBD7E
-            LDA L0107,X
-            ORA #&01
-            STA L0107,X
-            JMP LBDDD
-}
-			
-.LBD7E      LDA L0108,X
-            JSR LBF71
+            JSR checkPrintBufferFull
+            BCC insvBufferNotFull
+            ; Return to caller with carry set to indicate insertion failed.
+            LDA L0107,X ; get original flags
+            ORA #flagC
+            STA L0107,X ; modify original flags so C is set
+            JMP restoreRamselClearPrvenReturnFromVectorHandler
+
+.insvBufferNotFull
+.LBD7E      LDA L0108,X ; get original A=character to insert
+            JSR staArbitraryRom
             JSR LBEB6
             JSR LBF43
+            ; Return to caller with carry clear to indicate insertion succeeded.
             TSX
-            LDA L0107,X
-            AND #&FE
-            STA L0107,X
-            JMP LBDDD
+            LDA L0107,X ; get original flags
+            NOT_AND flagC
+            STA L0107,X ; modify original flags so C is clear
+            JMP restoreRamselClearPrvenReturnFromVectorHandler
+}
 
 ; SFTODO: Would it be possible to factor out the common-ish code at the start of
 ; insvHandler/remvHandler/cnpvHandler to save space?
@@ -8459,9 +8622,9 @@ ibosCNPVIndex = 6
             CMP #bufNumPrinter
             BEQ LBDA3
             LDA #ibosREMVIndex
-            JMP returnToParentVectorTblEntry
+            JMP forwardToParentVectorTblEntry
 			
-.LBDA3      JSR LBD45
+.LBDA3      JSR pageInPrvs81
             PHA
             TSX
             JSR LBEF8
@@ -8469,13 +8632,13 @@ ibosCNPVIndex = 6
             LDA L0107,X
             ORA #&01
             STA L0107,X
-            JMP LBDDD
+            JMP restoreRamselClearPrvenReturnFromVectorHandler
 }
 			
 .LBDB8      LDA L0107,X
             AND #&FE
             STA L0107,X
-            JSR LBF6A
+            JSR ldaArbitraryRom
             TSX
             PHA
             LDA L0107,X
@@ -8485,67 +8648,82 @@ ibosCNPVIndex = 6
             STA L0108,X
             JSR LBEB2
             JSR LBF35
-            JMP LBDDD
+            JMP restoreRamselClearPrvenReturnFromVectorHandler
 			
 .LBDD9      PLA
             STA L0102,X
+; Restore RAMSEL to the stacked value, clear PRVEN, then return from the vector
+; handler.
+; SFTODO: Perhaps not the catchiest label name ever...
+.restoreRamselClearPrvenReturnFromVectorHandler
+{
 .LBDDD      PLA
             STA &037F
             STA SHEILA+&34
             LDA &F4
-            AND #&BF
+            NOT_AND romselPrvEn
             STA &F4
             STA SHEILA+&30
-            JMP LB9E9
+            JMP returnFromVectorHandler
+}
 
 .cnpvHandler
 {
 .LBDF0		TSX
-            LDA L0102,X
+            LDA L0102,X ; get original X=buffer number
             CMP #bufNumPrinter
             BEQ LBDFD
             LDA #ibosCNPVIndex
-            JMP returnToParentVectorTblEntry
+            JMP forwardToParentVectorTblEntry
 
 .LBDFD      LDA &037F
             PHA
             JSR PrvEn								;switch in private RAM
             TSX
-            LDA L0107,X
-            AND #&40
-            BEQ LBE19
+            LDA L0107,X ; get original flags
+            AND #flagV
+            BEQ cnpvCount
+            ; We're purging the buffer.
             LDX #&47
             JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBE16
-            JSR LBF90
-.LBE16      JMP LBDDD
+            JSR purgePrintBuffer
+.LBE16      JMP restoreRamselClearPrvenReturnFromVectorHandler
+
+.cnpvCount
+.LBE19      LDA L0107,X ; get original flags
+            AND #flagC
+            BNE cnpvCountSpaceLeft
+            ; We're counting the entries in the buffer; return them as 16-bit value YX.
+            JSR getPrintBufferUsed
+            TXA
+            TSX
+            STA L0103,X ; overwrite stacked X, so we return A to caller in X
+            TYA
+            STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
+            JMP restoreRamselClearPrvenReturnFromVectorHandler
 }
 
-.LBE19      LDA L0107,X
-            AND #&01
-            BNE LBE2F
-            JSR LBF25
+.cnpvCountSpaceLeft
+{
+            ; We're counting the space left in the buffer; return that as 16-bit value YX.
+.LBE2F      JSR getPrintBufferFree
+            ; SFTODO: Following code is identical to fragment just above, we
+            ; could JMP to it to avoid this duplication.
             TXA
             TSX
-            STA L0103,X
+            STA L0103,X ; overwrite stacked X, so we return A to caller in X
             TYA
-            STA L0102,X
-            JMP LBDDD
-			
-.LBE2F      JSR LBF14
-            TXA
-            TSX
-            STA L0103,X
-            TYA
-            STA L0102,X
-            JMP LBDDD
+            STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
+            JMP restoreRamselClearPrvenReturnFromVectorHandler
+}
 			
 .LBE3E      LDX L028D
             BEQ LBE7B
             JSR PrvEn								;switch in private RAM
             LDA #&00
-            STA prv82+&09
-            STA prv82+&0B
+            STA prvPrintBufferSizeLow
+            STA prvPrintBufferSizeHigh
             STA prv82+&0D
             STA prv82+&0F
             JSR LBFBD
@@ -8555,21 +8733,24 @@ ibosCNPVIndex = 6
             SEC
             LDA prv82+&0E
             SBC prv82+&0C
-            STA prv82+&0A
+            STA prvPrintBufferSizeMid
             LDA &F4
             ORA #&40
-            STA prv83+&18
+            STA prvPrintBufferBankList
             LDA #&FF
             STA prv83+&19
             STA prv83+&1A
             STA prv83+&1B
-.LBE7B      JSR LBF90
+.LBE7B      JSR purgePrintBuffer
             JSR PrvDis								;switch out private RAM
-            LDY #&0F								;relocation code
-.LBE83      LDA LBF5A,Y
-            STA L0380,Y
+            ; Copy the rom access subroutine from ROM into RAM.
+            LDY #romRomAccessSubroutineEnd - romRomAccessSubroutine - 1
+{
+.LBE83      LDA romRomAccessSubroutine,Y
+            STA ramRomAccessSubroutine,Y
             DEY
             BPL LBE83
+}
             PHP
             SEI
             ; Save the parent values of INSV, REMV and CNPV at
@@ -8596,145 +8777,188 @@ ibosCNPVIndex = 6
 }
             PLP
             RTS
-			
-.LBEB2      LDX #&03
-            BNE LBEB8
-.LBEB6      LDX #&00
-.LBEB8      INC prv82+&00,X
+
+{
+.^LBEB2     LDX #&03
+            BNE LBEB8 ; always branch
+.^LBEB6     LDX #&00
+.LBEB8      INC SFTODOABLOW,X
             BNE LBEE8
-            INC prv82+&01,X
-            LDA prv82+&01,X
+            INC SFTODOABMID,X
+            LDA SFTODOABMID,X
             CMP prv82+&0E
             BCC LBEE8
-            LDY prv82+&02,X
+            LDY SFTODOABHIGH,X
             INY
             CPY #&04
             BCC LBED2
             LDY #&00
-.LBED2      LDA prv83+&18,Y
+.LBED2      LDA prvPrintBufferBankList,Y
             BPL LBED9
             LDY #&00
 .LBED9      TYA
-            STA prv82+&02,X
+            STA SFTODOABHIGH,X
             LDA #&00
-            STA prv82+&00,X
+            STA SFTODOABLOW,X
             LDA prv82+&0C
-            STA prv82+&01,X
+            STA SFTODOABMID,X
 .LBEE8      RTS
+}
 
-.LBEE9      LDA prv82+&06
-            ORA prv82+&07
-            ORA prv82+&08
+; SFTODO: This has only one caller
+; Return with carry set if and only if the printer buffer is full.
+; SFTODO: Not 100% confident I have the meaning of the return value correct yet
+.checkPrintBufferFull
+{
+.LBEE9      LDA prvPrintBufferFreeLow
+            ORA prvPrintBufferFreeMid
+            ORA prvPrintBufferFreeHigh
             BEQ LBEF6
             CLC
             RTS
 			
 .LBEF6      SEC
             RTS
+}
 			
-.LBEF8      LDA prv82+&06
-            CMP prv82+&09
+.LBEF8      LDA prvPrintBufferFreeLow
+            CMP prvPrintBufferSizeLow
             BNE LBF12
-            LDA prv82+&07
-            CMP prv82+&0A
+            LDA prvPrintBufferFreeMid
+            CMP prvPrintBufferSizeMid
             BNE LBF12
-            LDA prv82+&07
-            CMP prv82+&0A
+            LDA prvPrintBufferFreeMid
+            CMP prvPrintBufferSizeMid
             BNE LBF12
             SEC
             RTS
 			
 .LBF12      CLC
             RTS
-			
-.LBF14      LDX prv82+&08
-            BNE LBF20
-            LDX prv82+&06
-            LDY prv82+&07
+
+; SFTODO: This currently only has one caller, so could be inlined. Although
+; maybe there's some critical alignment stuff going on, which means certain code
+; has to live in the &Bxxx region so it can be accessed while private RAM is
+; paged in. But we could potentially move the caller (or just all INSV/CNPV/REMV
+; code??) into &Bxxx, although it may not be worth the hassle.
+.getPrintBufferFree
+{
+.LBF14      LDX prvPrintBufferFreeHigh
+            BNE atLeast64KFree
+            LDX prvPrintBufferFreeLow
+            LDY prvPrintBufferFreeMid
             RTS
 
-.LBF20      LDX #&FF
+.atLeast64KFree
+            ; Tell the caller there's 64K-1 byte free, which is the maximum
+            ; return value.
+            LDX #&FF
             LDY #&FF
             RTS
-			
+}
+
+; SFTODO: Currently has only one caller FWIW
+.getPrintBufferUsed
+{
+; SFTODO: Won't this incorrectly return 0 if a 64K buffer is entirely full? Do
+; we prevent this happening somehow? This could be tested fairly easily by
+; simply having no printer connected/turned on, setting a 64K buffer, writing
+; 64K to it and then calling CNPV to query the amount of data in the buffer.
 .LBF25      SEC
-            LDA prv82+&09
-            SBC prv82+&06
+            LDA prvPrintBufferSizeLow
+            SBC prvPrintBufferFreeLow
             TAX
-            LDA prv82+&0A
-            SBC prv82+&07
+            LDA prvPrintBufferSizeMid
+            SBC prvPrintBufferFreeMid
             TAY
             RTS
+}
 
-.LBF35      INC prv82+&06
+.LBF35      INC prvPrintBufferFreeLow
             BNE LBF3D
-            INC prv82+&07
+            INC prvPrintBufferFreeMid
 .LBF3D      BNE LBF42
-            INC prv82+&08
+            INC prvPrintBufferFreeHigh
 .LBF42      RTS
 
 .LBF43      SEC
-            LDA prv82+&06
+            LDA prvPrintBufferFreeLow
             SBC #&01
-            STA prv82+&06
-            LDA prv82+&07
+            STA prvPrintBufferFreeLow
+            LDA prvPrintBufferFreeMid
             SBC #&00
-            STA prv82+&07
+            STA prvPrintBufferFreeMid
             BCS LBF59
-            DEC prv82+&08
+            DEC prvPrintBufferFreeHigh
 .LBF59      RTS
 
 ;code relocated to &0380
 ;this code either reads, writes or compares the contents of ROM Y address &8000 with A
-.LBF5A      LDX &F4				;relotates to &0380
-            STY &F4				;relotates to &0382
-            STY SHEILA+&30			;relotates to &0384
-	  EQUB &00			;relotates to &0387. Note this byte gets dynamically changed by the code to &AD (LDA &), &8D (STA &) and &CD (CMP &) 
-	  EQUB $00,$80			;relotates to &0388. So this becomes either LDA &8000, STA &8000 or CMP &8000
-            STX &F4				;relotates to &038A
-            STX SHEILA+&30			;relotates to &038C
-            RTS				;relotates to &038F
-			
+ramRomAccessSubroutine = &0380 ; SFTODO: Move this line?
+.romRomAccessSubroutine
+.LBF5A      LDX &F4				;relocates to &0380
+            STY &F4				;relocates to &0382
+            STY SHEILA+&30			;relocates to &0384
+.romRomAccessSubroutineVariableInsn
+ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubroutineVariableInsn - romRomAccessSubroutine)
+	  EQUB &00			;relocates to &0387. Note this byte gets dynamically changed by the code to &AD (LDA &), &8D (STA &) and &CD (CMP &)
+	  EQUB $00,$80			;relocates to &0388. So this becomes either LDA &8000, STA &8000 or CMP &8000
+            STX &F4				;relocates to &038A
+            STX SHEILA+&30			;relocates to &038C
+            RTS				;relocates to &038F
+.romRomAccessSubroutineEnd
+
+; Temporarily page in ROM bank at &8318+?&8205 and do LDA (&8203)
+.ldaArbitraryRom
+{
 .LBF6A      PHA
             LDX #&03
-            LDA #&AD
-            BNE LBF76
+            LDA #opcodeLdaAbs
+            BNE LBF76 ; always branch
+; Temporarily page in ROM bank at &8318+?&8202 and do STA (&8200)
+.^staArbitraryRom
 .LBF71      PHA
             LDX #&00
-            LDA #&8D			;Set address &0387 to 'STA &'
-.LBF76      STA L0387
-            LDA prv82+&00,X
-            STA L0388
-            LDA prv82+&01,X
-            STA L0389
-            LDY prv82+&02,X
-            LDA prv83+&18,Y
+            LDA #opcodeStaAbs
+.LBF76      STA ramRomAccessSubroutineVariableInsn
+            LDA SFTODOABLOW,X
+            STA ramRomAccessSubroutineVariableInsn + 1
+            LDA SFTODOABMID,X
+            STA ramRomAccessSubroutineVariableInsn + 2
+            LDY SFTODOABHIGH,X
+            LDA prvPrintBufferBankList,Y
             TAY
             PLA
-            JMP L0380			;This code is relocated from .LBF5A
+            JMP ramRomAccessSubroutine
+}
 
+.purgePrintBuffer
+{
 .LBF90      LDA #&00
-            STA prv82+&00
-            STA prv82+&03
+            STA SFTODOALOW
+            STA SFTODOBLOW
             LDA prv82+&0C
-            STA prv82+&01
-            STA prv82+&04
+            STA SFTODOAMID
+            STA SFTODOBMID
             LDA prv82+&0D
-            STA prv82+&02
-            STA prv82+&05
-            LDA prv82+&09
-            STA prv82+&06
-            LDA prv82+&0A
-            STA prv82+&07
-            LDA prv82+&0B
-            STA prv82+&08
+            STA SFTODOAHIGH
+            STA SFTODOBHIGH
+            LDA prvPrintBufferSizeLow
+            STA prvPrintBufferFreeLow
+            LDA prvPrintBufferSizeMid
+            STA prvPrintBufferFreeMid
+            LDA prvPrintBufferSizeHigh
+            STA prvPrintBufferFreeHigh
             RTS
+}
 			
 .LBFBD      LDX #&45
             JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&90
             BCC LBFCA
             CMP #&AC
+            ; SFTODO: We could BCC to a *different* RTS (there's one just above)
+            ; and make the JSR:RTS below into a JMP, saving a byte.
             BCC LBFCF
 .LBFCA      LDA #&AC
             JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
@@ -8752,3 +8976,12 @@ SAVE "IBOS-01.rom", start, end
 
 ; SFTODO: Would it be possible to save space by factoring out "LDX #&3C:JSR
 ; L8870" into a subroutine?
+
+; SFTODO: Eventually it might be good to get rid of all the Lxxxx address
+; labels, but I'm keeping them around for now as they might come in handy and
+; it's much easier to take them out than to put them back in...
+
+; SFTODO: The original ROM obviously has everything aligned correctly, but if
+; we're going to be modifying this in the future it might be good to put
+; asserts in routines which have to live outside a certain area of the ROM in
+; order to avoid breaking when we page in private RAM.
