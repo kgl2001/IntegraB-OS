@@ -309,6 +309,8 @@ prvPrintBufferSizeHigh  = prv82 + &0B
 prvPrintBufferBankList  = prv83 + &18 ; 4 bytes
 prvPrvPrintBufferStart = prv83 + &45 ; working copy of rtcUserPrvPrintBufferStart
 
+prvShx = prv83 + &3D ; &08 on, &FF off SFTODO: Not sure about those on/off values, we test this against 0 in some places - is it &00 on?
+
 LDBE6       = &DBE6
 LDC16       = &DC16
 LF168       = &F168
@@ -329,6 +331,7 @@ crtcHorzDisplayed = SHEILA + &01
 romselPrvEn = &40
 ramselPrvs8 = &10
 ramselPrvs1 = &40
+ramselShen  = &80
 ramselPrvs81 = ramselPrvs8 OR ramselPrvs1
 
 ; bits in the 6502 flags registers (as stacked via PHP)
@@ -8397,7 +8400,8 @@ ibosCNPVIndex = 6
 .LBB8C      PLA
             JMP LBBF1
 }
-			
+
+{
 .LBB90      PLA                                                                                     ;get original OSWRCH A
             PHA                                                                                     ;save it again
             CMP #&80
@@ -8422,7 +8426,7 @@ ibosCNPVIndex = 6
             JMP LBBF1
 			
 .LBBBD      LDA &037F								;get RAM copy of RAMSEL
-            ORA #&80								;set Shadow RAM enable bit
+            ORA #ramselShen								;set Shadow RAM enable bit
             STA &037F								;and save RAM copy of RAMSEL
             STA SHEILA+&34							          ;save RAMSEL
             JSR LBC2D
@@ -8436,7 +8440,6 @@ ibosCNPVIndex = 6
             PLA
             JMP LBBF1
 
-{
 .LBBDD      CMP #&03
             BNE LBC29
             BEQ LBC05
@@ -8478,7 +8481,8 @@ ibosCNPVIndex = 6
 .^LBC29     PLA
             JMP returnFromVectorHandler
 }
-			
+
+; SFTODO: This has only one caller
 .LBC2D      LDA vduStatus								;get VDU status
             AND #vduStatusShadow							;test bit 4
             BEQ LBC3B								;and branch if clear
@@ -8489,13 +8493,15 @@ ibosCNPVIndex = 6
             BNE LBC3B								;and branch if clear
             RTS
 			
-.LBC3B      LDX #&3D								;select SHX register (&08: On, &FF: Off)
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            BEQ LBC97
+.LBC3B      LDX #(prvShx - prv83)							;select SHX register (&08: On, &FF: Off) SFTODO: 08->00?
+            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
+            BEQ rts                                                                                 ;nothing to do if SHX off
+            ; SFTODO: Why does IBOS play around with these CRTC registers at all, anywhere?
             LDA #&08
             STA crtcHorzTotal
             LDA #&F0
             STA crtcHorzDisplayed
+            ; SFTODO: Next few lines are temporarily (note we PHA the old &F4) clearing PRVEN/MEMSEL
             LDA &F4
             PHA
             AND #&0F
@@ -8537,6 +8543,7 @@ ibosCNPVIndex = 6
             PLA
             STA &F4
             STA SHEILA+&30
+.rts
 .LBC97      RTS
 
 .LBC98      LDA #&00
