@@ -272,6 +272,7 @@ prvPrintBufferFreeHigh = prv82 + &08
 prvPrintBufferSizeLow  = prv82 + &09
 prvPrintBufferSizeMid  = prv82 + &0A
 prvPrintBufferSizeHigh = prv82 + &0B
+prvPrintBufferBankList = prv83 + &18 ; 4 bytes
 
 LDBE6       = &DBE6
 LDC16       = &DC16
@@ -2006,7 +2007,7 @@ GUARD	&C000
 .L8CD8      JSR L8E10								;test for SWRAM at bank Y
             BCS L8CE6
             TYA
-            STA prv83+&18,X								;store RAM bank number in Private memory
+            STA prvPrintBufferBankList,X								;store RAM bank number in Private memory
             INX									;increment counter for number of RAM banks found
             CPX #&04								;until 4 banks are found
             BEQ L8CEB
@@ -2022,7 +2023,7 @@ GUARD	&C000
             LDA #&FF
 .L8CF7      CPX #&04
             BCS L8D01
-            STA prv83+&18,X
+            STA prvPrintBufferBankList,X
             INX
             BNE L8CF7
 .L8D01      JSR L8D5A
@@ -2041,7 +2042,7 @@ GUARD	&C000
             TYA
             BCS L8D2C
             LDX L00AC
-            STA prv83+&18,X
+            STA prvPrintBufferBankList,X
             INX
             STX L00AC
             CPX #&04
@@ -2053,7 +2054,7 @@ GUARD	&C000
             JMP L8DCA
 			
 .L8D37      LDA #&FF								;unassign RAM banks from *BUFFER
-            STA prv83+&18
+            STA prvPrintBufferBankList
             STA prv83+&19
             STA prv83+&1A
             STA prv83+&1B
@@ -2063,12 +2064,12 @@ GUARD	&C000
 .L8D46      LDA &F4
             AND #&0F
             ORA #&40
-            STA prv83+&18
+            STA prvPrintBufferBankList
             LDA #&FF
             STA prv83+&19
             STA prv83+&1A
             STA prv83+&1B
-.L8D5A      LDA prv83+&18
+.L8D5A      LDA prvPrintBufferBankList
             CMP #&FF
             BEQ L8D46
             AND #&F0
@@ -2094,7 +2095,7 @@ GUARD	&C000
             STA prvPrintBufferSizeMid
             STA prvPrintBufferSizeHigh
             TAX
-.L8D99      LDA prv83+&18,X
+.L8D99      LDA prvPrintBufferBankList,X
             BMI L8DB5
             CLC
             LDA prvPrintBufferSizeMid
@@ -2123,7 +2124,7 @@ GUARD	&C000
             ROR A
             SEC									;left justify (ignore leading 0s)
             JSR L86DE								;Convert binary number to numeric characters and write characters to screen
-            LDA prv83+&18
+            LDA prvPrintBufferBankList
             AND #&F0
             CMP #&40
             BNE L8DE8
@@ -2134,7 +2135,7 @@ GUARD	&C000
 .L8DE8      LDX #&01								;starting with the first RAM bank
             JSR L8E8C								;write 'k in Shadow RAM '
             LDY #&00
-.L8DEF      LDA prv83+&18,Y								;get RAM bank number from Private memory
+.L8DEF      LDA prvPrintBufferBankList,Y								;get RAM bank number from Private memory
             BMI L8E02								;if nothing in private memory then finish, otherwise
             SEC									;left justify (ignore leading 0s)
             JSR L86DE								;Convert binary number to numeric characters and write characters to screen
@@ -8733,7 +8734,7 @@ ibosCNPVIndex = 6
             STA prvPrintBufferSizeMid
             LDA &F4
             ORA #&40
-            STA prv83+&18
+            STA prvPrintBufferBankList
             LDA #&FF
             STA prv83+&19
             STA prv83+&1A
@@ -8790,7 +8791,7 @@ ibosCNPVIndex = 6
             CPY #&04
             BCC LBED2
             LDY #&00
-.LBED2      LDA prv83+&18,Y
+.LBED2      LDA prvPrintBufferBankList,Y
             BPL LBED9
             LDY #&00
 .LBED9      TYA
@@ -8923,7 +8924,7 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
             LDA SFTODOABMID,X
             STA ramRomAccessSubroutineVariableInsn + 2
             LDY SFTODOABHIGH,X
-            LDA prv83+&18,Y
+            LDA prvPrintBufferBankList,Y
             TAY
             PLA
             JMP ramRomAccessSubroutine
