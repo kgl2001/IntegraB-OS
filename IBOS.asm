@@ -8965,14 +8965,14 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
             RTS				;relocates to &038F
 .romRomAccessSubroutineEnd
 
-; Temporarily page in ROM bank at &8318+?&8205 and do LDA (&8203)
+; Temporarily page in ROM bank prvPrintBufferBankList[SFTODOBHIGH] and do LDA (SFTODOBLOW)
 .ldaArbitraryRom
 {
 .LBF6A      PHA
             LDX #&03
             LDA #opcodeLdaAbs
             BNE LBF76 ; always branch
-; Temporarily page in ROM bank at &8318+?&8202 and do STA (&8200)
+; Temporarily page in ROM bank prvPrintBufferBankList[SFTODOAHIGH] and do STA (SFTODOALOW)
 .^staArbitraryRom
 .LBF71      PHA
             LDX #&00
