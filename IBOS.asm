@@ -3385,7 +3385,9 @@ GUARD	&C000
             JMP LF16E								;OSBYTE 143 - Pass service commands to sideways ROMs (http://mdfs.net/Docs/Comp/BBC/OS1-20/F135)
 
 ;Absolute workspace claim - Service call &01
-.service01  LDA #&00
+.service01
+{
+            LDA #&00
             STA &037F
             STA SHEILA+&34								;shadow off
             LDX #&07								;start at address 7
@@ -3543,6 +3545,7 @@ GUARD	&C000
             LDA #&9C
             JSR OSBYTE
 .L9808      JMP exitSCa								;restore service call parameters and exit
+}
 
 .L980B      LSR A
 .L980C      LSR A
