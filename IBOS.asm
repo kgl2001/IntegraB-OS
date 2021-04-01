@@ -91,7 +91,7 @@
 ;Register &7F - &7F:	Bit set if RAM located in 32k bank. Default was &0F (lowest 4 x 32k banks). Changed to &7F
 
 rtcUserBase = &0E
-rtcUserSFTODOX = rtcUserBase + &2C ; SFTODO: Something to do with printer buffer?
+rtcUserPrvPrintBufferStart = rtcUserBase + &2C ; the first page in private RAM reserved for the printer buffer (&90-&AC)
 
 lastBreakType = &028D
 
@@ -289,7 +289,7 @@ prvPrintBufferBankStart = prv82 + &0C ; high byte of bank start (&80 for sideway
 prvPrintBufferBankEnd   = prv82 + &0E ; high byte of bank end (&C0 for sideways RAM, &B0 for private RAM)
 prvPrintBufferSizeHigh  = prv82 + &0B
 prvPrintBufferBankList  = prv83 + &18 ; 4 byte list of sideways RAM banks used by printer buffer, &FF for "no bank in this position"
-prvSFTODOX = prv83 + &45 ; SFTODO: Something to do with printer buffer? A copy of something held in RTC user mem
+prvPrvPrintBufferStart = prv83 + &45 ; SFTODO: Something to do with printer buffer? A copy of something held in RTC user mem
 
 LDBE6       = &DBE6
 LDC16       = &DC16
@@ -1695,7 +1695,7 @@ GUARD	&C000
 		EQUB &35,&13								;Century - Default is &13 (1900)
 		EQUB &38,&FF
 		EQUB &39,&FF
-		EQUB rtcUserSFTODOX,&90
+		EQUB rtcUserPrvPrintBufferStart,&90
 		EQUB &7F,&0F								;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks).
 
 .L8A7B	  PHP
@@ -2105,7 +2105,7 @@ GUARD	&C000
             CMP #&40
             BNE bufferInSidewaysRam
             ; Buffer is in private RAM, not sideways RAM.
-            JSR sanitiseSFTODOX
+            JSR sanitisePrvPrintBufferStart
             STA prvPrintBufferBankStart
             LDA #&B0
             STA prvPrintBufferBankEnd
@@ -3409,9 +3409,9 @@ GUARD	&C000
             BPL L96EE
             JMP L9808
 			
-.L96EE      LDX #rtcUserSFTODOX
+.L96EE      LDX #rtcUserPrvPrintBufferStart
             JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
-            LDX #prvSFTODOX-prv83                                                                   ; SFTODO: not too happy with this format
+            LDX #prvPrvPrintBufferStart-prv83                                                                   ; SFTODO: not too happy with this format
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX lastBreakType
             BEQ L9719
@@ -8744,7 +8744,7 @@ ibosCNPVIndex = 6
 
 ; SFTODO: This only has one caller
 .LBE3E      LDX lastBreakType
-            BEQ LBE7B
+            BEQ softBreak
             JSR PrvEn								;switch in private RAM
             LDA #&00
             STA prvPrintBufferSizeLow
@@ -8753,7 +8753,7 @@ ibosCNPVIndex = 6
             STA prv82+&0F
             ; SFTODO: Following code is similar to chunk just below L8D5A, could
             ; it be factored out?
-            JSR sanitiseSFTODOX
+            JSR sanitisePrvPrintBufferStart
             STA prvPrintBufferBankStart
             LDA #&B0
             STA prvPrintBufferBankEnd
@@ -8768,6 +8768,7 @@ ibosCNPVIndex = 6
             STA prv83+&19
             STA prv83+&1A
             STA prv83+&1B
+.softBreak
 .LBE7B      JSR purgePrintBuffer
             JSR PrvDis								;switch out private RAM
             ; Copy the rom access subroutine from ROM into RAM.
@@ -8993,10 +8994,10 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
             RTS
 }
 
-; If prvSFTODOX isn't in the range &90-&AC, set it to &AC. We return with prvSFTODOX in A.
-.sanitiseSFTODOX
+; If prvPrvPrintBufferStart isn't in the range &90-&AC, set it to &AC. We return with prvPrvPrintBufferStart in A.
+.sanitisePrvPrintBufferStart
 {
-.LBFBD      LDX #prvSFTODOX-prv83                                                                   ; SFTODO: not too happy with this format
+.LBFBD      LDX #prvPrvPrintBufferStart-prv83                                                                   ; SFTODO: not too happy with this format
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&90
             BCC LBFCA
