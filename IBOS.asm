@@ -331,6 +331,13 @@ MACRO NOT_AND n
              AND #NOT(n) AND &FF
 ENDMACRO
 
+; This macro asserts that the given label immediately follows the macro call.
+; This makes fall-through more explicit and guards against accidentally breaking
+; things when rearranging blocks of code.
+MACRO FALLTHROUGH_TO label
+          ASSERT P% == label
+ENDMACRO
+
 ORG	&8000
 GUARD	&C000
 .start
@@ -7966,7 +7973,7 @@ parentVectorTbl2 = parentVectorTbl1 + 4 * 2 ; 4 vectors, 2 bytes each
 ; The original OS (parent) values of INSV, REMV and CNPV are copied to
 ; parentVectorTbl2 in that order before installing our own handlers.
 parentVectorTbl2End = parentVectorTbl2 + 3 * 2 ; 3 vectors, 2 bytes each
-assert parentVectorTbl2End <= osPrintBuf + &40
+ASSERT parentVectorTbl2End <= osPrintBuf + &40
 
 ; Restore A, X, Y and the flags from the stacked copies pushed during the vector
 ; entry process. The stack must have the same layout as described in the big
@@ -8651,7 +8658,7 @@ ibosCNPVIndex = 6
 ; insvHandler/remvHandler/cnpvHandler to save space?
 .remvHandler
 {
-.LBD96		TSX
+.LBD96	  TSX
             LDA L0102,X
             CMP #bufNumPrinter
             BEQ LBDA3
@@ -8667,8 +8674,7 @@ ibosCNPVIndex = 6
             ORA #&01
             STA L0107,X
             JMP restoreRamselClearPrvenReturnFromVectorHandler
-}
-			
+
 .LBDB8      LDA L0107,X
             AND #&FE
             STA L0107,X
@@ -8686,6 +8692,9 @@ ibosCNPVIndex = 6
 			
 .LBDD9      PLA
             STA L0102,X
+            FALLTHROUGH_TO restoreRamselClearPrvenReturnFromVectorHandler
+}
+
 ; Restore RAMSEL to the stacked value, clear PRVEN, then return from the vector
 ; handler.
 ; SFTODO: Perhaps not the catchiest label name ever...
