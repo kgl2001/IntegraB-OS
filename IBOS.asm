@@ -8413,7 +8413,7 @@ ibosCNPVIndex = 6
             BEQ LBBBD
             PLA
             PHA
-            JSR LBC34
+            JSR maybeSwapShadow2
             LDA &037F								;get RAM copy of RAMSEL
             AND #&7F								;clear Shadow RAM enable bit
             STA &037F								;and save RAM copy of RAMSEL
@@ -8432,7 +8432,7 @@ ibosCNPVIndex = 6
             ORA #ramselShen								;set Shadow RAM enable bit
             STA &037F								;and save RAM copy of RAMSEL
             STA SHEILA+&34							          ;save RAMSEL
-            JSR LBC2D
+            JSR maybeSwapShadow1
             PLA
             PHA
             ORA #&80								;set Shadow RAM enable bit
@@ -8485,19 +8485,28 @@ ibosCNPVIndex = 6
             JMP returnFromVectorHandler
 }
 
+{
+; SFTODO: The next two subroutines are probably effectively saying "do nothing
+; if the shadow state hasn't changed, otherwise do swapShadowIfShxEnabled". I
+; have given them poor names for now and should revisit this once exatly when
+; they're called becomes clearer.
 ; SFTODO: This has only one caller
+.^maybeSwapShadow1
 .LBC2D      LDA vduStatus								;get VDU status
             AND #vduStatusShadow							;test bit 4
-            BEQ LBC3B								;and branch if clear
-            RTS
-			
-.LBC34      LDA vduStatus								;get VDU status
-            AND #vduStatusShadow        						;test bit 4
-            BNE LBC3B								;and branch if clear
+            BEQ swapShadowIfShxEnabled							;and branch if clear
             RTS
 
-{
-.^LBC3B     LDX #(prvShx - prv83)							;select SHX register (&08: On, &FF: Off) SFTODO: 08->00?
+; SFTODO: This has only one caller
+.^maybeSwapShadow2
+.LBC34      LDA vduStatus								;get VDU status
+            AND #vduStatusShadow        						;test bit 4
+            BNE swapShadowIfShxEnabled							;and branch if clear
+            RTS
+
+; If SHX is enabled, swap the contents of main and shadow RAM between &3000-&7FFF.
+.swapShadowIfShxEnabled
+.LBC3B      LDX #(prvShx - prv83)							;select SHX register (&08: On, &FF: Off) SFTODO: 08->00?
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ rts                                                                                 ;nothing to do if SHX off
             ; SFTODO: Why does IBOS play around with these CRTC registers at all, anywhere?
@@ -8635,7 +8644,7 @@ ibosCNPVIndex = 6
             AND #&7F
             STA prv83+&3F
             JSR PrvDis								;switch out private RAM
-            JSR LBC34
+            JSR maybeSwapShadow2
             JMP LBCF2
 
 ; Page in PRVS8 and PRVS1, returning the previous value of RAMSEL in A.
