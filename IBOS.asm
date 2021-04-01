@@ -8652,23 +8652,26 @@ ibosCNPVIndex = 6
 .LBE19      LDA L0107,X ; get original flags
             AND #flagC
             BNE cnpvCountSpaceLeft
-            ; We're counting the entries in the buffer.
+            ; We're counting the entries in the buffer; return them as 16-bit value YX.
             JSR LBF25
             TXA
             TSX
-            STA L0103,X
+            STA L0103,X ; overwrite stacked X, so we return A to caller in X
             TYA
-            STA L0102,X
+            STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
             JMP setRamselAClearPrvenReturnFromVectorHandler
 }
 
 .cnpvCountSpaceLeft
+            ; We're counting the space left in the buffer; return that as 16-bit value YX.
 .LBE2F      JSR LBF14
+            ; SFTODO: Following code is identical to fragment just above, we
+            ; could JMP to it to avoid this duplication.
             TXA
             TSX
-            STA L0103,X
+            STA L0103,X ; overwrite stacked X, so we return A to caller in X
             TYA
-            STA L0102,X
+            STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
             JMP setRamselAClearPrvenReturnFromVectorHandler
 			
 .LBE3E      LDX L028D
