@@ -8638,7 +8638,7 @@ ibosCNPVIndex = 6
 .LBD7E      LDA L0108,X ; get original A=character to insert
             JSR staArbitraryRom
             JSR advancePrintBufferReadPtr
-            JSR LBF43
+            JSR decrementPrintBufferFree
             ; Return to caller with carry clear to indicate insertion succeeded.
             TSX
             LDA L0107,X ; get original flags
@@ -8681,7 +8681,7 @@ ibosCNPVIndex = 6
             PLA
             STA L0108,X
             JSR advancePrintBufferWritePtr
-            JSR LBF35
+            JSR incrementPrintBufferFree
             JMP restoreRamselClearPrvenReturnFromVectorHandler
 			
 .LBDD9      PLA
@@ -8926,13 +8926,20 @@ ibosCNPVIndex = 6
             RTS
 }
 
+; SFTODO: This has only a single caller
+.incrementPrintBufferFree
+{
 .LBF35      INC prvPrintBufferFreeLow
             BNE LBF3D
             INC prvPrintBufferFreeMid
 .LBF3D      BNE LBF42
             INC prvPrintBufferFreeHigh
 .LBF42      RTS
+}
 
+; SFTODO: This has only a single caller
+.decrementPrintBufferFree
+{
 .LBF43      SEC
             LDA prvPrintBufferFreeLow
             SBC #&01
@@ -8943,6 +8950,7 @@ ibosCNPVIndex = 6
             BCS LBF59
             DEC prvPrintBufferFreeHigh
 .LBF59      RTS
+}
 
 ;code relocated to &0380
 ;this code either reads, writes or compares the contents of ROM Y address &8000 with A
