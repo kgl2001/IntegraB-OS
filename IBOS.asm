@@ -93,6 +93,7 @@
 rtcUserBase = &0E
 rtcUserSFTODOX = rtcUserBase + &2C ; SFTODO: Something to do with printer buffer?
 
+lastBreakType = &028D
 
 INSVH       = &022B
 INSVL       = &022A
@@ -259,13 +260,14 @@ prv81       = &8100
 prv82       = &8200
 prv83       = &8300
 
-; The printer buffer can be up to 64K in size; 64K is &10000 bytes so we need to
-; use a 24-bit representation and we therefore have high, middle and low bytes
-; here instead of just high and low bytes.
 ; SFTODO: I'm not exactly sure what's happening, but SFTODOA and SFTODOB are a
 ; pair of three byte counters, probably something to do with the printer buffer.
 ; The 'AB' variables here are used where code is accessing either A or B
 ; depending on whether X is 0 or 3.
+; SFTODOA and SFTODOB are "physical pointers" into the circular printer buffer;
+; SFTODOHIGH is the bank index in prvPrintBufferBankList and SFTODOMIDLOW point
+; to the memory map address in the RAM bank. I say "physical pointers" because
+; they aren't simple logical offsets from the start of the printer buffer.
 SFTODOALOW = prv82 + &00
 SFTODOAMID = prv82 + &01
 SFTODOAHIGH = prv82 + &02
@@ -275,6 +277,9 @@ SFTODOABHIGH = SFTODOAHIGH
 SFTODOBLOW = prv82 + &03
 SFTODOBMID = prv82 + &04
 SFTODOBHIGH = prv82 + &05
+; The printer buffer can be up to 64K in size; 64K is &10000 bytes so we need to
+; use a 24-bit representation and we therefore have high, middle and low bytes
+; here instead of just high and low bytes.
 prvPrintBufferFreeLow   = prv82 + &06
 prvPrintBufferFreeMid   = prv82 + &07
 prvPrintBufferFreeHigh  = prv82 + &08
@@ -1490,7 +1495,7 @@ GUARD	&C000
             LDX #&FF
             TXS
             JSR L88D7								;Set BRK Vector to &8969
-            LDA L028D								;Read current language ROM number
+            LDA lastBreakType								;Read current language ROM number
             BNE L88F2
             JMP L898E
 			
@@ -3290,7 +3295,7 @@ GUARD	&C000
             JMP L964C
 			
 .L9611      JSR PrvEn								;switch in private RAM
-            LDX L028D								;get last Break type
+            LDX lastBreakType								;get last Break type
             CPX #&01								;power on break?
             BNE L9640								;if not the exit
             CLC
@@ -3319,7 +3324,7 @@ GUARD	&C000
             DEX
             JMP L968D
 			
-.L9652      LDA L028D
+.L9652      LDA lastBreakType
             BNE L9668
             LDX #&43
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
@@ -3352,7 +3357,7 @@ GUARD	&C000
             BCC L968D
             DEX
 .L968D      JSR L96BC
-            LDA L028D
+            LDA lastBreakType
             BNE L969A
             LDA L028C
             BPL L96A7
@@ -3408,7 +3413,7 @@ GUARD	&C000
             JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
             LDX #prvSFTODOX-prv83                                                                   ; SFTODO: not too happy with this format
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-            LDX L028D
+            LDX lastBreakType
             BEQ L9719
             LDX #&32								;0-2: OSMODE / 3: SHX
             JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
@@ -3447,7 +3452,7 @@ GUARD	&C000
             JSR OSBYTE								;execute *TV X,Y
             LDA #&16								;select switch MODE
             JSR OSWRCH								;write switch MODE
-            LDX L028D								;Read Hard / Soft Break
+            LDX lastBreakType								;Read Hard / Soft Break
             BNE L9758								;Branch on hard break (power on / Ctrl Break)
             LDX #&3C								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
@@ -3525,7 +3530,7 @@ GUARD	&C000
             JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
             PHA
             LDY #&C8
-            LDA L028D
+            LDA lastBreakType
             BEQ L97EE
             PLA
             PHA
@@ -3560,7 +3565,7 @@ GUARD	&C000
             PHA
             BIT prv83+&41
             BMI L9836
-            LDA L028D
+            LDA lastBreakType
             BEQ L9831
             BIT L03A4
             BMI L983D
@@ -3655,7 +3660,7 @@ GUARD	&C000
             JSR OSWRCH								;Write to screen
             DEX									;Next Character
             BPL L98CC								;Loop
-            LDA L028D								;Check Break status. 0=soft, 1=power up, 2=hard
+            LDA lastBreakType								;Check Break status. 0=soft, 1=power up, 2=hard
             BEQ L9912								;No Beep and don't write amount of Memory to screen
             LDA #&07								;Beep
             JSR OSWRCH								;Write to screen
@@ -5376,7 +5381,7 @@ GUARD	&C000
 
             JSR PrvDis								;switch out private RAM
 
-            LDX L028D
+            LDX lastBreakType
             BEQ LA5B8
             LDA #&7A
             JSR OSBYTE
@@ -8526,7 +8531,7 @@ ibosCNPVIndex = 6
 }
             PLP
             JSR LBE3E
-            LDA L028D
+            LDA lastBreakType
             BNE LBCF2
             LDX #&3F
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
@@ -8736,8 +8741,9 @@ ibosCNPVIndex = 6
             STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
             JMP restoreRamselClearPrvenReturnFromVectorHandler
 }
-			
-.LBE3E      LDX L028D
+
+; SFTODO: This only has one caller
+.LBE3E      LDX lastBreakType
             BEQ LBE7B
             JSR PrvEn								;switch in private RAM
             LDA #&00
