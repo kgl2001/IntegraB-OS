@@ -260,23 +260,18 @@ prv81       = &8100
 prv82       = &8200
 prv83       = &8300
 
-; SFTODO: I'm not exactly sure what's happening, but SFTODOA and SFTODOB are a
-; pair of three byte counters, probably something to do with the printer buffer.
-; The 'AB' variables here are used where code is accessing either A or B
-; depending on whether X is 0 or 3.
-; SFTODOA and SFTODOB are "physical pointers" into the circular printer buffer;
-; SFTODOHIGH is the bank index in prvPrintBufferBankList and SFTODOMIDLOW point
-; to the memory map address in the RAM bank. I say "physical pointers" because
-; they aren't simple logical offsets from the start of the printer buffer.
-SFTODOALOW = prv82 + &00
-SFTODOAMID = prv82 + &01
-SFTODOAHIGH = prv82 + &02
-SFTODOABLOW = SFTODOALOW
-SFTODOABMID = SFTODOAMID
-SFTODOABHIGH = SFTODOAHIGH
-SFTODOBLOW = prv82 + &03
-SFTODOBMID = prv82 + &04
-SFTODOBHIGH = prv82 + &05
+; The printer buffer is implemented using two "extended pointers" - one for
+; reading, one for writing. Each consists of a two byte address and a one byte
+; index to a bank in prvPrintBufferBankList; note that these addresses are
+; physical addresses in the &8000-&BFFF region, not logical offsets from the
+; start of the printer buffer. The two pointers are adjacent in memory and some
+; code (using prvPrintBufferPtrBase) will operate on either, using X to specify
+; the read pointer (0) or the write pointer (3).
+prvPrintBufferPtrBase = prv82 + &00
+prvPrintBufferWritePtr = prv82 + &00
+prvPrintBufferWriteBankIndex = prv82 + &02
+prvPrintBufferReadPtr = prv82 + &03
+prvPrintBufferReadBankIndex = prv82 + &05
 ; The printer buffer can be up to 64K in size; 64K is &10000 bytes so we need to
 ; use a 24-bit representation and we therefore have high, middle and low bytes
 ; here instead of just high and low bytes.
@@ -8829,13 +8824,13 @@ ibosCNPVIndex = 6
 ; Advance SFTODOB by one, wrapping round at the end of the bank and wrapping
 ; round at the end of the bank list.
 .^LBEB6     LDX #&00
-.LBEB8      INC SFTODOABLOW,X
+.LBEB8      INC prvPrintBufferPtrBase,X
             BNE LBEE8
-            INC SFTODOABMID,X
-            LDA SFTODOABMID,X
+            INC prvPrintBufferPtrBase + 1,X
+            LDA prvPrintBufferPtrBase + 1,X
             CMP prvPrintBufferBankEnd
             BCC LBEE8
-            LDY SFTODOABHIGH,X
+            LDY prvPrintBufferPtrBase + 2,X
             INY
             CPY #&04
             BCC LBED2
@@ -8846,13 +8841,13 @@ ibosCNPVIndex = 6
             ; indicating an invalid bank; wrap round to the first bank.
             LDY #&00
 .LBED9      TYA
-            STA SFTODOABHIGH,X
+            STA prvPrintBufferPtrBase + 2,X
             ; SFTODO: Are the next two lines redundant? I think we can only get
-            ; here if INC SFTODOABLOW,X above left this value zero.
+            ; here if INC prvPrintBufferPtrBase,X above left this value zero.
             LDA #&00
-            STA SFTODOABLOW,X
+            STA prvPrintBufferPtrBase,X
             LDA prvPrintBufferBankStart
-            STA SFTODOABMID,X
+            STA prvPrintBufferPtrBase + 1,X
 .LBEE8      RTS
 }
 
@@ -8965,24 +8960,24 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
             RTS				;relocates to &038F
 .romRomAccessSubroutineEnd
 
-; Temporarily page in ROM bank prvPrintBufferBankList[SFTODOBHIGH] and do LDA (SFTODOBLOW)
+; Temporarily page in ROM bank prvPrintBufferBankList[prvPrintBufferReadBankIndex] and do LDA (prvPrintBufferReadPtr)
 .ldaArbitraryRom
 {
 .LBF6A      PHA
             LDX #&03
             LDA #opcodeLdaAbs
             BNE LBF76 ; always branch
-; Temporarily page in ROM bank prvPrintBufferBankList[SFTODOAHIGH] and do STA (SFTODOALOW)
+; Temporarily page in ROM bank prvPrintBufferBankList[prvPrintBufferWriteBankIndex] and do STA (prvPrintBufferWritePtr)
 .^staArbitraryRom
 .LBF71      PHA
             LDX #&00
             LDA #opcodeStaAbs
 .LBF76      STA ramRomAccessSubroutineVariableInsn
-            LDA SFTODOABLOW,X
+            LDA prvPrintBufferPtrBase,X
             STA ramRomAccessSubroutineVariableInsn + 1
-            LDA SFTODOABMID,X
+            LDA prvPrintBufferPtrBase + 1,X
             STA ramRomAccessSubroutineVariableInsn + 2
-            LDY SFTODOABHIGH,X
+            LDY prvPrintBufferPtrBase + 2,X
             LDA prvPrintBufferBankList,Y
             TAY
             PLA
@@ -8992,14 +8987,14 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
 .purgePrintBuffer
 {
 .LBF90      LDA #&00
-            STA SFTODOALOW
-            STA SFTODOBLOW
+            STA prvPrintBufferWritePtr
+            STA prvPrintBufferReadPtr
             LDA prvPrintBufferBankStart
-            STA SFTODOAMID
-            STA SFTODOBMID
+            STA prvPrintBufferWritePtr + 1
+            STA prvPrintBufferReadPtr + 1
             LDA prvPrintBufferFirstBankIndex
-            STA SFTODOAHIGH
-            STA SFTODOBHIGH
+            STA prvPrintBufferWriteBankIndex
+            STA prvPrintBufferReadBankIndex
             LDA prvPrintBufferSizeLow
             STA prvPrintBufferFreeLow
             LDA prvPrintBufferSizeMid
