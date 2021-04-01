@@ -8558,7 +8558,7 @@ ibosCNPVIndex = 6
 .LBD69      JSR pageInPrvs81
             PHA
             TSX
-            JSR LBEE9
+            JSR checkPrinterBufferEmpty
             BCC LBD7E
             LDA L0107,X
             ORA #&01
@@ -8762,6 +8762,11 @@ ibosCNPVIndex = 6
             STA prv82+&01,X
 .LBEE8      RTS
 
+; SFTODO: This has only one caller
+; Return with carry set if printer buffer is enabled (SFTODO?) and empty.
+; SFTODO: Not 100% confident I have the meaning of the return value correct yet
+.checkPrinterBufferEmpty
+{
 .LBEE9      LDA prvPrinterBufferUsedLow
             ORA prvPrinterBufferUsedHigh
             ORA prvPrinterBufferStatus
@@ -8771,6 +8776,7 @@ ibosCNPVIndex = 6
 			
 .LBEF6      SEC
             RTS
+}
 			
 .LBEF8      LDA prvPrinterBufferUsedLow
             CMP prv82+&09
@@ -8800,6 +8806,7 @@ ibosCNPVIndex = 6
             LDY prvPrinterBufferUsedHigh
             RTS
 
+            ; SFTODO: Why do we return &FFFF here? Isn't that saying the buffer has 64K free?
 .LBF20      LDX #&FF
             LDY #&FF
             RTS
