@@ -250,9 +250,9 @@ prv81       = &8100
 prv82       = &8200
 prv83       = &8300
 
-prvPrinterBufferUsedLow  = prv82 + &06
-prvPrinterBufferUsedHigh = prv82 + &07
-prvPrinterBufferStatus   = prv82 + &08 ; SFTODO: what are possible values?
+prvPrintBufferUsedLow  = prv82 + &06
+prvPrintBufferUsedHigh = prv82 + &07
+prvPrintBufferStatus   = prv82 + &08 ; SFTODO: what are possible values?
 
 LDBE6       = &DBE6
 LDC16       = &DC16
@@ -8558,14 +8558,15 @@ ibosCNPVIndex = 6
 .LBD69      JSR pageInPrvs81
             PHA
             TSX
-            JSR checkPrinterBufferEmpty
-            BCC LBD7E
-            LDA L0107,X
-            ORA #&01
-            STA L0107,X
+            JSR checkPrintBufferFull
+            BCC insvBufferNotFull
+            ; Return to caller with carry set to indicate buffer is full.
+            LDA L0107,X ; get original flags
+            ORA #flagC
+            STA L0107,X ; modify original flags so C is set
             JMP setRamselAClearPrvenReturnFromVectorHandler
-}
-			
+
+.insvBufferNotFull
 .LBD7E      LDA L0108,X
             JSR LBF71
             JSR LBEB6
@@ -8575,6 +8576,7 @@ ibosCNPVIndex = 6
             AND #&FE
             STA L0107,X
             JMP setRamselAClearPrvenReturnFromVectorHandler
+}
 
 ; SFTODO: Would it be possible to factor out the common-ish code at the start of
 ; insvHandler/remvHandler/cnpvHandler to save space?
@@ -8763,13 +8765,13 @@ ibosCNPVIndex = 6
 .LBEE8      RTS
 
 ; SFTODO: This has only one caller
-; Return with carry set if printer buffer is enabled (SFTODO?) and empty.
+; Return with carry set if and only if the printer buffer is full.
 ; SFTODO: Not 100% confident I have the meaning of the return value correct yet
-.checkPrinterBufferEmpty
+.checkPrintBufferFull
 {
-.LBEE9      LDA prvPrinterBufferUsedLow
-            ORA prvPrinterBufferUsedHigh
-            ORA prvPrinterBufferStatus
+.LBEE9      LDA prvPrintBufferUsedLow
+            ORA prvPrintBufferUsedHigh
+            ORA prvPrintBufferStatus
             BEQ LBEF6
             CLC
             RTS
@@ -8778,13 +8780,13 @@ ibosCNPVIndex = 6
             RTS
 }
 			
-.LBEF8      LDA prvPrinterBufferUsedLow
+.LBEF8      LDA prvPrintBufferUsedLow
             CMP prv82+&09
             BNE LBF12
-            LDA prvPrinterBufferUsedHigh
+            LDA prvPrintBufferUsedHigh
             CMP prv82+&0A
             BNE LBF12
-            LDA prvPrinterBufferUsedHigh
+            LDA prvPrintBufferUsedHigh
             CMP prv82+&0A
             BNE LBF12
             SEC
@@ -8800,10 +8802,10 @@ ibosCNPVIndex = 6
 ; code??) into &Bxxx, although it may not be worth the hassle.
 .getPrintBufferFree
 {
-.LBF14      LDX prvPrinterBufferStatus
+.LBF14      LDX prvPrintBufferStatus
             BNE LBF20
-            LDX prvPrinterBufferUsedLow
-            LDY prvPrinterBufferUsedHigh
+            LDX prvPrintBufferUsedLow
+            LDY prvPrintBufferUsedHigh
             RTS
 
             ; SFTODO: Why do we return &FFFF here? Isn't that saying the buffer has 64K free?
@@ -8817,30 +8819,30 @@ ibosCNPVIndex = 6
 {
 .LBF25      SEC
             LDA prv82+&09
-            SBC prvPrinterBufferUsedLow
+            SBC prvPrintBufferUsedLow
             TAX
             LDA prv82+&0A
-            SBC prvPrinterBufferUsedHigh
+            SBC prvPrintBufferUsedHigh
             TAY
             RTS
 }
 
-.LBF35      INC prvPrinterBufferUsedLow
+.LBF35      INC prvPrintBufferUsedLow
             BNE LBF3D
-            INC prvPrinterBufferUsedHigh
+            INC prvPrintBufferUsedHigh
 .LBF3D      BNE LBF42
-            INC prvPrinterBufferStatus
+            INC prvPrintBufferStatus
 .LBF42      RTS
 
 .LBF43      SEC
-            LDA prvPrinterBufferUsedLow
+            LDA prvPrintBufferUsedLow
             SBC #&01
-            STA prvPrinterBufferUsedLow
-            LDA prvPrinterBufferUsedHigh
+            STA prvPrintBufferUsedLow
+            LDA prvPrintBufferUsedHigh
             SBC #&00
-            STA prvPrinterBufferUsedHigh
+            STA prvPrintBufferUsedHigh
             BCS LBF59
-            DEC prvPrinterBufferStatus
+            DEC prvPrintBufferStatus
 .LBF59      RTS
 
 ;code relocated to &0380
@@ -8882,11 +8884,11 @@ ibosCNPVIndex = 6
             STA prv82+&02
             STA prv82+&05
             LDA prv82+&09
-            STA prvPrinterBufferUsedLow
+            STA prvPrintBufferUsedLow
             LDA prv82+&0A
-            STA prvPrinterBufferUsedHigh
+            STA prvPrintBufferUsedHigh
             LDA prv82+&0B
-            STA prvPrinterBufferStatus
+            STA prvPrintBufferStatus
             RTS
 			
 .LBFBD      LDX #&45
