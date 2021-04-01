@@ -8405,21 +8405,24 @@ ibosCNPVIndex = 6
 }
 
 {
+; SFTODO: I *SUSPECT* WE GET HERE IF WE'RE PROCESSING THE BYTE FOLLOWING A VDU 22, IE A=MODE WE'RE ABOUT TO ENTER
 .LBB90      PLA                                                                                     ;get original OSWRCH A
             PHA                                                                                     ;save it again
             CMP #&80
             BCS LBBBD
             LDA osShadowRamFlag
-            BEQ LBBBD
-            PLA
-            PHA
+            BEQ notShadow
+            ; We're in a shadow RAM mode.
+            ; SFTODO: Aren't the next two instructions pointless? maybeSwapShadow2 immediately does LDA vduStatus.
+            PLA                                                                                     ;get original OSWRCH A
+            PHA                                                                                     ;save it again
             JSR maybeSwapShadow2
             LDA &037F								;get RAM copy of RAMSEL
-            AND #&7F								;clear Shadow RAM enable bit
+            NOT_AND ramselShen							;clear Shadow RAM enable bit
             STA &037F								;and save RAM copy of RAMSEL
             STA SHEILA+&34							          ;save RAMSEL
-            PLA
-            PHA
+            PLA                                                                                     ;get original OSWRCH A
+            PHA                                                                                     ;save it again
             AND #&7F								;clear Shadow RAM enable bit
             LDX #&3F
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
@@ -8427,7 +8430,8 @@ ibosCNPVIndex = 6
             STA L03A5
             PLA
             JMP LBBF1
-			
+
+.notShadow
 .LBBBD      LDA &037F								;get RAM copy of RAMSEL
             ORA #ramselShen								;set Shadow RAM enable bit
             STA &037F								;and save RAM copy of RAMSEL
