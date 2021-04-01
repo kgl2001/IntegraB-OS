@@ -2653,9 +2653,9 @@ GUARD	&C000
             LDA L00AA
             CLC
             JSR L86DE								;Convert binary number to numeric characters and write characters to screen
-            LDA #&3A								;':'
+            LDA #':'
             JSR OSWRCH								;write to screen
-.L91B9      LDA #&20								;' '
+.L91B9      LDA #' '
             JMP OSWRCH								;write to screen
 			
 ;*PRINT Command
@@ -6948,15 +6948,15 @@ GUARD	&C000
             CMP #&2B								;'+'
             BNE LB285
             LDX #&0B
-.LB285      CMP #&2D								;'-'
+.LB285      CMP #'-'
             BNE LB28B
             LDX #&0C
-.LB28B      CMP #&2A								;'*'
+.LB28B      CMP #'*'
             BNE LB291
             LDX #&0A
-.LB291      CMP #&31								;'1'
+.LB291      CMP #'1'
             BCC LB29C
-            CMP #&3A								;':' Between 0..9
+            CMP #':'								;':' Between 0..9
             BCS LB29C
             AND #&0F
             TAX
