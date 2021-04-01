@@ -1938,7 +1938,7 @@ GUARD	&C000
             JMP L8FA3
 			
 .L8C86      JSR PrvEn								;switch in private RAM
-            JSR LBF90
+            JSR purgePrintBuffer
             JMP L8E0A
 			
 .L8C8F      LDX #&47
@@ -2059,7 +2059,7 @@ GUARD	&C000
             LDA prv82+&0E
             SBC prv82+&0C
             STA prvPrintBufferSizeHigh
-            JMP LBF90
+            JMP purgePrintBuffer
 			
 .L8D8D      LDA #&00
             STA prvPrintBufferSizeLow
@@ -2086,7 +2086,7 @@ GUARD	&C000
             LDA #&C0
             STA prv82+&0E
             STX prv82+&0F
-            JMP LBF90
+            JMP purgePrintBuffer
 			
 .L8DCA      LDA prv82+&0B
             LSR A
@@ -8653,7 +8653,7 @@ ibosCNPVIndex = 6
             LDX #&47
             JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBE16
-            JSR LBF90
+            JSR purgePrintBuffer
 .LBE16      JMP setRamselAClearPrvenReturnFromVectorHandler
 
 .cnpvCount
@@ -8707,7 +8707,7 @@ ibosCNPVIndex = 6
             STA prv83+&19
             STA prv83+&1A
             STA prv83+&1B
-.LBE7B      JSR LBF90
+.LBE7B      JSR purgePrintBuffer
             JSR PrvDis								;switch out private RAM
             LDY #&0F								;relocation code
 .LBE83      LDA LBF5A,Y
@@ -8876,6 +8876,8 @@ ibosCNPVIndex = 6
             PLA
             JMP L0380			;This code is relocated from .LBF5A
 
+.purgePrintBuffer
+{
 .LBF90      LDA #&00
             STA prv82+&00
             STA prv82+&03
@@ -8892,6 +8894,7 @@ ibosCNPVIndex = 6
             LDA prv82+&0B
             STA prvPrintBufferStatus
             RTS
+}
 			
 .LBFBD      LDX #&45
             JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
