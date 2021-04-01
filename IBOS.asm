@@ -90,6 +90,9 @@
 ;Register &3A - &90:
 ;Register &7F - &7F:	Bit set if RAM located in 32k bank. Default was &0F (lowest 4 x 32k banks). Changed to &7F
 
+rtcUserBase = &0E
+rtcUserSFTODOX = rtcUserBase + &2C ; SFTODO: Something to do with printer buffer?
+
 
 INSVH       = &022B
 INSVL       = &022A
@@ -279,6 +282,7 @@ prvPrintBufferSizeLow  = prv82 + &09
 prvPrintBufferSizeMid  = prv82 + &0A
 prvPrintBufferSizeHigh = prv82 + &0B
 prvPrintBufferBankList = prv83 + &18 ; 4 byte list of sideways RAM banks used by printer buffer, &FF for "no bank in this position"
+prvSFTODOX = prv83 + &45 ; SFTODO: Something to do with printer buffer? A copy of something held in RTC user mem
 
 LDBE6       = &DBE6
 LDC16       = &DC16
@@ -1684,7 +1688,7 @@ GUARD	&C000
 		EQUB &35,&13								;Century - Default is &13 (1900)
 		EQUB &38,&FF
 		EQUB &39,&FF
-		EQUB &3A,&90
+		EQUB rtcUserSFTODOX,&90
 		EQUB &7F,&0F								;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks).
 
 .L8A7B	  PHP
@@ -3396,10 +3400,10 @@ GUARD	&C000
             BPL L96EE
             JMP L9808
 			
-.L96EE      LDX #&3A
+.L96EE      LDX #rtcUserSFTODOX
             JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
-            LDX #&45
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+            LDX #prvSFTODOX-prv83                                                                   ; SFTODO: not too happy with this format
+            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX L028D
             BEQ L9719
             LDX #&32								;0-2: OSMODE / 3: SHX
@@ -8968,8 +8972,8 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
             RTS
 }
 			
-.LBFBD      LDX #&45
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
+.LBFBD      LDX #prvSFTODOX-prv83                                                                   ; SFTODO: not too happy with this format
+            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&90
             BCC LBFCA
             CMP #&AC
