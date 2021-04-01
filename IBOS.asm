@@ -1,3 +1,9 @@
+; Terminology:
+; - "private RAM" is the 12K of RAM which can be paged in via PRVEN+PRVS1/4/8 in
+;   the &8000-&BFFF region
+; - "shadow RAM" is the 20K of RAM which can be paged in via SHEN+MEMSEL in the
+;   &3000-&7FFF region
+
 ;PRVS1 Address &81xx
 ;Used to store *BOOT parameters
 
@@ -2439,19 +2445,12 @@ GUARD	&C000
             JMP OSBYTE								;execute paged ROM service request
 			
 ; Page in PRVS1.
-; SFTODO: Original comment was "Switch in Shadow / Private memory". If I read
-; the code right, it only switches in PRVS1. If we call PRVS1 "shadow memory or
-; private memory, both are correct", the comment is consistent with my
-; understanding, but this *won't* have any effect on shadow RAM in 3000-7FFF
-; region. Will it? Ken - are you OK if the disassembly uses the naming
-; convention "shadow RAM=3000-8000, private RAM=the special 12K switchable in
-; chunks in 8000-AFFF"? I'm happy to use different names if you prefer, I just
-; think it's helpful to distinguish these two chunks of RAM.
 ; SFTODO: Is there any chance of saving space by sharing some code with the
 ; similar pageInPrvs81?
 .pageInPrvs1
-; SFTODO: I'd like to get rid of the PrvEn label and use pageInPrvs1 but won't
-; do it just yet.
+; SFTODO: I'd like to get rid of the PrvEn label and just use pageInPrvs1 but
+; won't do it just yet, as I don't fully understand the model the code is using
+; to manage paging private RAM in/out.
 .PrvEn      PHA
             LDA &037F
             ORA #ramselPrvs1
@@ -2472,7 +2471,6 @@ GUARD	&C000
 ; on RAMSEL already having some of PRVS1/4/8 set? The name "pageOutPrv1" is chosen
 ; to try to reflect this, but it's a bit misleading as we are paging out the *whole*
 ; private 12K.
-;Switch out Shadow / Private memory SFTODO: see my comment on PrvEn
 ; SFTODO: I'm tempted to get rid of the PrvDis label but I'll leave it for now
 .pageOutPrv1
 .PrvDis	  PHA
@@ -6956,7 +6954,7 @@ GUARD	&C000
             LDX #&0A
 .LB291      CMP #'1'
             BCC LB29C
-            CMP #'9'+1								;':' Between 0..9
+            CMP #'9'+1								;':' Between 0..9 SFTODO: between 1..9?
             BCS LB29C
             AND #&0F
             TAX
@@ -8807,7 +8805,6 @@ ibosCNPVIndex = 6
 
 ; SFTODO: This has only one caller
 ; Return with carry set if and only if the printer buffer is full.
-; SFTODO: Not 100% confident I have the meaning of the return value correct yet
 .checkPrintBufferFull
 {
 .LBEE9      LDA prvPrintBufferFreeLow
@@ -8863,7 +8860,10 @@ ibosCNPVIndex = 6
 ; SFTODO: Won't this incorrectly return 0 if a 64K buffer is entirely full? Do
 ; we prevent this happening somehow? This could be tested fairly easily by
 ; simply having no printer connected/turned on, setting a 64K buffer, writing
-; 64K to it and then calling CNPV to query the amount of data in the buffer.
+; 64K to it and then calling CNPV to query the amount of data in the buffer. It's
+; possible the nature of the (presumably) circular print buffer means it can
+; never actually contain more than 64K-1 bytes even if it's 64K, but that's
+; just speculation.
 .LBF25      SEC
             LDA prvPrintBufferSizeLow
             SBC prvPrintBufferFreeLow
@@ -8894,6 +8894,10 @@ ibosCNPVIndex = 6
 
 ;code relocated to &0380
 ;this code either reads, writes or compares the contents of ROM Y address &8000 with A
+; SFTODO: Both here and with the vector RAM stub, it might be better to use a
+; naming convention where the ROM copy is suffixed "Template" and the RAM copy doesn't
+; have any special naming. The current naming convention isn't that bad, but when it's
+; natural for the name of this subroutine to include "Rom" it gets a little confusing.
 ramRomAccessSubroutine = &0380 ; SFTODO: Move this line?
 .romRomAccessSubroutine
 .LBF5A      LDX &F4				;relocates to &0380
