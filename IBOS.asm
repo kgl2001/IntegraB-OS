@@ -285,12 +285,26 @@ prvPrintBufferFreeMid   = prv82 + &07
 prvPrintBufferFreeHigh  = prv82 + &08
 prvPrintBufferSizeLow   = prv82 + &09
 prvPrintBufferSizeMid   = prv82 + &0A
-prvPrintBufferBankStart = prv82 + &0C ; high byte of bank start (&80 for sideways RAM, SFTODOPROB&84 for private RAM)
-prvPrintBufferFirstBankIndex = prv82 + &0D ; SFTODO: I think this is always zero, it is used to initialise the bank index of SFTODOA and SFTODOB - if I'm right and it is always zero, there are a few bytes to be saved by never write to this and just using a zero constant instead of reading it
-prvPrintBufferBankEnd   = prv82 + &0E ; high byte of bank end (&C0 for sideways RAM, &B0 for private RAM)
+; prvPrintBufferBankStart is the high byte of the start address of the banks
+; used for the printer buffer. This is &80 for sideways RAM, or a copy of
+; prvPrvPrintBufferStart (&90-&AC) for private RAM.
+prvPrintBufferBankStart = prv82 + &0C
+; prvPrintBufferFirstBankIndex is used to initialise the bank index of SFTODOA
+; and SFTODOB. SFTODO: I think this is always zero; if so it's redundant and
+; there's no need to write it and we can just use 0 instead of reading it, which
+; would save a few bytes of code.
+prvPrintBufferFirstBankIndex = prv82 + &0D
+; prvPrintBufferBankEnd is the high byte of the (exclusive) end address of the
+; banks used for the printer buffer. This is &C0 for sideways RAM or &B0 for
+; private RAM.
+prvPrintBufferBankEnd   = prv82 + &0E
 prvPrintBufferSizeHigh  = prv82 + &0B
-prvPrintBufferBankList  = prv83 + &18 ; 4 byte list of sideways RAM banks used by printer buffer, &FF for "no bank in this position"
-prvPrvPrintBufferStart = prv83 + &45 ; SFTODO: Something to do with printer buffer? A copy of something held in RTC user mem
+; prvPrintBufferBankList is a 4 byte list of private/sideways RAM banks used by
+; the printer buffer. If there are less than 4 banks, the unused entries will be
+; &FF. If the buffer is in private RAM, the first entry will be &4X where X is
+; the IBOS ROM bank number and the others will be &FF.
+prvPrintBufferBankList  = prv83 + &18 ; 4 bytes
+prvPrvPrintBufferStart = prv83 + &45 ; working copy of rtcUserPrvPrintBufferStart
 
 LDBE6       = &DBE6
 LDC16       = &DC16
