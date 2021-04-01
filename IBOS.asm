@@ -2098,7 +2098,7 @@ GUARD	&C000
             CMP #&40
             BNE bufferInPrivateRam
             ; Buffer is in sideways RAM, not private RAM.
-            JSR LBFBD
+            JSR sanitiseSFTODOX
             STA prv82+&0C
             LDA #&B0
             STA prv82+&0E
@@ -3392,12 +3392,12 @@ GUARD	&C000
             STA SHEILA+&34								;shadow off
             LDX #&07								;start at address 7
             LDA #&FF								;set data to &FF
-.L96D9      JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+.L96D9      JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             DEX									;repeat
             BNE L96D9								;until 0.
-            LDA &F4									;get current ROM number
+            LDA &F4								;get current ROM number
             AND #&0F								;mask
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             BIT L03A4								;?
             BPL L96EE
             JMP L9808
@@ -8743,7 +8743,7 @@ ibosCNPVIndex = 6
             STA prvPrintBufferSizeHigh
             STA prv82+&0D
             STA prv82+&0F
-            JSR LBFBD
+            JSR sanitiseSFTODOX
             STA prv82+&0C
             LDA #&B0
             STA prv82+&0E
@@ -8974,7 +8974,10 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
             STA prvPrintBufferFreeHigh
             RTS
 }
-			
+
+; If prvSFTODOX isn't in the range &90-&AC, set it to &AC.
+.sanitiseSFTODOX
+{
 .LBFBD      LDX #prvSFTODOX-prv83                                                                   ; SFTODO: not too happy with this format
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&90
@@ -8986,6 +8989,7 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
 .LBFCA      LDA #&AC
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
 .LBFCF      RTS
+}
 
 			EQUB &00,$00,$00,$00,$00,$00,$00,$00
 			EQUB &00,$00,$00,$00,$00,$00,$00,$00
