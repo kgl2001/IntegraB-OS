@@ -284,10 +284,10 @@ prvPrintBufferSizeMid   = prv82 + &0A
 ; used for the printer buffer. This is &80 for sideways RAM, or a copy of
 ; prvPrvPrintBufferStart (&90-&AC) for private RAM.
 prvPrintBufferBankStart = prv82 + &0C
-; prvPrintBufferFirstBankIndex is used to initialise the bank index of SFTODOA
-; and SFTODOB. SFTODO: I think this is always zero; if so it's redundant and
-; there's no need to write it and we can just use 0 instead of reading it, which
-; would save a few bytes of code.
+; prvPrintBufferFirstBankIndex is used to initialise
+; prvPrintBufferWriteBankIndex and prvPrintBufferReadBankIndex. SFTODO: I think
+; this is always zero; if so it's redundant and there's no need to write it and
+; we can just use 0 instead of reading it, which would save a few bytes of code.
 prvPrintBufferFirstBankIndex = prv82 + &0D
 ; prvPrintBufferBankEnd is the high byte of the (exclusive) end address of the
 ; banks used for the printer buffer. This is &C0 for sideways RAM or &B0 for
@@ -9041,3 +9041,7 @@ SAVE "IBOS-01.rom", start, end
 ; we're going to be modifying this in the future it might be good to put
 ; asserts in routines which have to live outside a certain area of the ROM in
 ; order to avoid breaking when we page in private RAM.
+
+; SFTODO: I've been wrapping my multi-line comments to 80 characters (when I
+; remember!), it might be nice to tweak the final disassembly to fit entirely in
+; 80 columns.
