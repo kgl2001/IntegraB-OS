@@ -8670,28 +8670,36 @@ ibosCNPVIndex = 6
             TSX
             JSR LBEF8
             BCC LBDB8
-            LDA L0107,X
-            ORA #&01
-            STA L0107,X
+            ; SFTODO: Some similarity with insvHandler here, could we factor out common code?
+            LDA L0107,X ; get original flags
+            ORA #flagC
+            STA L0107,X ; modify original flags so C is set
             JMP restoreRamselClearPrvenReturnFromVectorHandler
 
-.LBDB8      LDA L0107,X
-            AND #&FE
-            STA L0107,X
+; SFTODO: The following code doesn't make sense, we seem to be returning in Y
+; for examine and A for remove, which is the wrong way round. What am I missing?
+.LBDB8      LDA L0107,X ; get original flags
+            NOT_AND flagC
+            STA L0107,X ; modify original flags so C is clear
             JSR ldaPrintBufferReadPtr
             TSX
-            PHA
-            LDA L0107,X
-            AND #&40
-            BNE LBDD9
+            PHA ; note this doesn't affect X so our L01xx,X references stay the same
+            LDA L0107,X ; get original flags
+            AND #flagV
+            BNE examineBuffer
+            ; V was cleared by the caller, so we're removing a character from
+            ; the buffer.
             PLA
-            STA L0108,X
+            STA L0108,X ; overwrite original A with character read from our buffer
             JSR advancePrintBufferWritePtr
             JSR incrementPrintBufferFree
             JMP restoreRamselClearPrvenReturnFromVectorHandler
-			
+
+.examineBuffer
+            ; V was set by the caller, so we're just examining the buffer
+            ; without removing anything.
 .LBDD9      PLA
-            STA L0102,X
+            STA L0102,X ; overwrite original Y with character peeked from our buffer
             FALLTHROUGH_TO restoreRamselClearPrvenReturnFromVectorHandler
 }
 
@@ -8878,7 +8886,8 @@ ibosCNPVIndex = 6
 .LBEF6      SEC
             RTS
 }
-			
+
+; SFTODO: This has only one caller
 .LBEF8      LDA prvPrintBufferFreeLow
             CMP prvPrintBufferSizeLow
             BNE LBF12
