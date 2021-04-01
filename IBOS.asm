@@ -8975,7 +8975,7 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
             RTS
 }
 
-; If prvSFTODOX isn't in the range &90-&AC, set it to &AC.
+; If prvSFTODOX isn't in the range &90-&AC, set it to &AC. We return with prvSFTODOX in A.
 .sanitiseSFTODOX
 {
 .LBFBD      LDX #prvSFTODOX-prv83                                                                   ; SFTODO: not too happy with this format
