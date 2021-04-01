@@ -8653,7 +8653,7 @@ ibosCNPVIndex = 6
             AND #flagC
             BNE cnpvCountSpaceLeft
             ; We're counting the entries in the buffer; return them as 16-bit value YX.
-            JSR LBF25
+            JSR getPrintBufferUsed
             TXA
             TSX
             STA L0103,X ; overwrite stacked X, so we return A to caller in X
@@ -8800,7 +8800,10 @@ ibosCNPVIndex = 6
             LDY #&FF
             RTS
 }
-			
+
+; SFTODO: Currently has only one caller FWIW
+.getPrintBufferUsed
+{
 .LBF25      SEC
             LDA prv82+&09
             SBC prv82+&06
@@ -8809,6 +8812,7 @@ ibosCNPVIndex = 6
             SBC prv82+&07
             TAY
             RTS
+}
 
 .LBF35      INC prv82+&06
             BNE LBF3D
