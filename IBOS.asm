@@ -250,6 +250,10 @@ prv81       = &8100
 prv82       = &8200
 prv83       = &8300
 
+prvPrinterBufferUsedLow  = prv82 + &06
+prvPrinterBufferUsedHigh = prv82 + &07
+prvPrinterBufferStatus   = prv82 + &08 ; SFTODO: what are possible values?
+
 LDBE6       = &DBE6
 LDC16       = &DC16
 LF168       = &F168
@@ -8758,9 +8762,9 @@ ibosCNPVIndex = 6
             STA prv82+&01,X
 .LBEE8      RTS
 
-.LBEE9      LDA prv82+&06
-            ORA prv82+&07
-            ORA prv82+&08
+.LBEE9      LDA prvPrinterBufferUsedLow
+            ORA prvPrinterBufferUsedHigh
+            ORA prvPrinterBufferStatus
             BEQ LBEF6
             CLC
             RTS
@@ -8768,13 +8772,13 @@ ibosCNPVIndex = 6
 .LBEF6      SEC
             RTS
 			
-.LBEF8      LDA prv82+&06
+.LBEF8      LDA prvPrinterBufferUsedLow
             CMP prv82+&09
             BNE LBF12
-            LDA prv82+&07
+            LDA prvPrinterBufferUsedHigh
             CMP prv82+&0A
             BNE LBF12
-            LDA prv82+&07
+            LDA prvPrinterBufferUsedHigh
             CMP prv82+&0A
             BNE LBF12
             SEC
@@ -8790,10 +8794,10 @@ ibosCNPVIndex = 6
 ; code??) into &Bxxx, although it may not be worth the hassle.
 .getPrintBufferFree
 {
-.LBF14      LDX prv82+&08
+.LBF14      LDX prvPrinterBufferStatus
             BNE LBF20
-            LDX prv82+&06
-            LDY prv82+&07
+            LDX prvPrinterBufferUsedLow
+            LDY prvPrinterBufferUsedHigh
             RTS
 
 .LBF20      LDX #&FF
@@ -8806,30 +8810,30 @@ ibosCNPVIndex = 6
 {
 .LBF25      SEC
             LDA prv82+&09
-            SBC prv82+&06
+            SBC prvPrinterBufferUsedLow
             TAX
             LDA prv82+&0A
-            SBC prv82+&07
+            SBC prvPrinterBufferUsedHigh
             TAY
             RTS
 }
 
-.LBF35      INC prv82+&06
+.LBF35      INC prvPrinterBufferUsedLow
             BNE LBF3D
-            INC prv82+&07
+            INC prvPrinterBufferUsedHigh
 .LBF3D      BNE LBF42
-            INC prv82+&08
+            INC prvPrinterBufferStatus
 .LBF42      RTS
 
 .LBF43      SEC
-            LDA prv82+&06
+            LDA prvPrinterBufferUsedLow
             SBC #&01
-            STA prv82+&06
-            LDA prv82+&07
+            STA prvPrinterBufferUsedLow
+            LDA prvPrinterBufferUsedHigh
             SBC #&00
-            STA prv82+&07
+            STA prvPrinterBufferUsedHigh
             BCS LBF59
-            DEC prv82+&08
+            DEC prvPrinterBufferStatus
 .LBF59      RTS
 
 ;code relocated to &0380
@@ -8871,11 +8875,11 @@ ibosCNPVIndex = 6
             STA prv82+&02
             STA prv82+&05
             LDA prv82+&09
-            STA prv82+&06
+            STA prvPrinterBufferUsedLow
             LDA prv82+&0A
-            STA prv82+&07
+            STA prvPrinterBufferUsedHigh
             LDA prv82+&0B
-            STA prv82+&08
+            STA prvPrinterBufferStatus
             RTS
 			
 .LBFBD      LDX #&45
