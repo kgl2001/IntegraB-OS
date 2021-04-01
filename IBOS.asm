@@ -250,9 +250,11 @@ prv81       = &8100
 prv82       = &8200
 prv83       = &8300
 
-prvPrintBufferUsedLow  = prv82 + &06
-prvPrintBufferUsedHigh = prv82 + &07
+prvPrintBufferFreeLow  = prv82 + &06
+prvPrintBufferFreeHigh = prv82 + &07
 prvPrintBufferStatus   = prv82 + &08 ; SFTODO: what are possible values?
+prvPrintBufferSizeLow  = prv82 + &09
+prvPrintBufferSizeHigh = prv82 + &0A
 
 LDBE6       = &DBE6
 LDC16       = &DC16
@@ -2051,25 +2053,25 @@ GUARD	&C000
             LDA #&00
             STA prv82+&0D
             STA prv82+&0F
-            STA prv82+&09
+            STA prvPrintBufferSizeLow
             STA prv82+&0B
             SEC
             LDA prv82+&0E
             SBC prv82+&0C
-            STA prv82+&0A
+            STA prvPrintBufferSizeHigh
             JMP LBF90
 			
 .L8D8D      LDA #&00
-            STA prv82+&09
-            STA prv82+&0A
+            STA prvPrintBufferSizeLow
+            STA prvPrintBufferSizeHigh
             STA prv82+&0B
             TAX
 .L8D99      LDA prv83+&18,X
             BMI L8DB5
             CLC
-            LDA prv82+&0A
+            LDA prvPrintBufferSizeHigh
             ADC #&40
-            STA prv82+&0A
+            STA prvPrintBufferSizeHigh
             LDA prv82+&0B
             ADC #&00
             STA prv82+&0B
@@ -2088,7 +2090,7 @@ GUARD	&C000
 			
 .L8DCA      LDA prv82+&0B
             LSR A
-            LDA prv82+&0A
+            LDA prvPrintBufferSizeHigh
             ROR A
             ROR A
             SEC									;left justify (ignore leading 0s)
@@ -8686,7 +8688,7 @@ ibosCNPVIndex = 6
             BEQ LBE7B
             JSR PrvEn								;switch in private RAM
             LDA #&00
-            STA prv82+&09
+            STA prvPrintBufferSizeLow
             STA prv82+&0B
             STA prv82+&0D
             STA prv82+&0F
@@ -8697,7 +8699,7 @@ ibosCNPVIndex = 6
             SEC
             LDA prv82+&0E
             SBC prv82+&0C
-            STA prv82+&0A
+            STA prvPrintBufferSizeHigh
             LDA &F4
             ORA #&40
             STA prv83+&18
@@ -8769,8 +8771,8 @@ ibosCNPVIndex = 6
 ; SFTODO: Not 100% confident I have the meaning of the return value correct yet
 .checkPrintBufferFull
 {
-.LBEE9      LDA prvPrintBufferUsedLow
-            ORA prvPrintBufferUsedHigh
+.LBEE9      LDA prvPrintBufferFreeLow
+            ORA prvPrintBufferFreeHigh
             ORA prvPrintBufferStatus
             BEQ LBEF6
             CLC
@@ -8780,14 +8782,14 @@ ibosCNPVIndex = 6
             RTS
 }
 			
-.LBEF8      LDA prvPrintBufferUsedLow
-            CMP prv82+&09
+.LBEF8      LDA prvPrintBufferFreeLow
+            CMP prvPrintBufferSizeLow
             BNE LBF12
-            LDA prvPrintBufferUsedHigh
-            CMP prv82+&0A
+            LDA prvPrintBufferFreeHigh
+            CMP prvPrintBufferSizeHigh
             BNE LBF12
-            LDA prvPrintBufferUsedHigh
-            CMP prv82+&0A
+            LDA prvPrintBufferFreeHigh
+            CMP prvPrintBufferSizeHigh
             BNE LBF12
             SEC
             RTS
@@ -8804,8 +8806,8 @@ ibosCNPVIndex = 6
 {
 .LBF14      LDX prvPrintBufferStatus
             BNE LBF20
-            LDX prvPrintBufferUsedLow
-            LDY prvPrintBufferUsedHigh
+            LDX prvPrintBufferFreeLow
+            LDY prvPrintBufferFreeHigh
             RTS
 
             ; SFTODO: Why do we return &FFFF here? Isn't that saying the buffer has 64K free?
@@ -8818,29 +8820,29 @@ ibosCNPVIndex = 6
 .getPrintBufferUsed
 {
 .LBF25      SEC
-            LDA prv82+&09
-            SBC prvPrintBufferUsedLow
+            LDA prvPrintBufferSizeLow
+            SBC prvPrintBufferFreeLow
             TAX
-            LDA prv82+&0A
-            SBC prvPrintBufferUsedHigh
+            LDA prvPrintBufferSizeHigh
+            SBC prvPrintBufferFreeHigh
             TAY
             RTS
 }
 
-.LBF35      INC prvPrintBufferUsedLow
+.LBF35      INC prvPrintBufferFreeLow
             BNE LBF3D
-            INC prvPrintBufferUsedHigh
+            INC prvPrintBufferFreeHigh
 .LBF3D      BNE LBF42
             INC prvPrintBufferStatus
 .LBF42      RTS
 
 .LBF43      SEC
-            LDA prvPrintBufferUsedLow
+            LDA prvPrintBufferFreeLow
             SBC #&01
-            STA prvPrintBufferUsedLow
-            LDA prvPrintBufferUsedHigh
+            STA prvPrintBufferFreeLow
+            LDA prvPrintBufferFreeHigh
             SBC #&00
-            STA prvPrintBufferUsedHigh
+            STA prvPrintBufferFreeHigh
             BCS LBF59
             DEC prvPrintBufferStatus
 .LBF59      RTS
@@ -8883,10 +8885,10 @@ ibosCNPVIndex = 6
             LDA prv82+&0D
             STA prv82+&02
             STA prv82+&05
-            LDA prv82+&09
-            STA prvPrintBufferUsedLow
-            LDA prv82+&0A
-            STA prvPrintBufferUsedHigh
+            LDA prvPrintBufferSizeLow
+            STA prvPrintBufferFreeLow
+            LDA prvPrintBufferSizeHigh
+            STA prvPrintBufferFreeHigh
             LDA prv82+&0B
             STA prvPrintBufferStatus
             RTS
