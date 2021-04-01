@@ -8540,12 +8540,23 @@ ibosCNPVIndex = 6
             BNE swapShadowIfShxEnabled							;and branch if clear
             RTS
 
-; If SHX is enabled, swap the contents of main and shadow RAM between &3000-&7FFF.
+; If SHX is enabled, swap the contents of main and shadow RAM between
+; &3000-&7FFF. SFTODO: *personal opinion alert* AIUI, Acorn sideways RAM on the
+; B+ and M128 behaves as if SHX is always enabled. I think the only reason to
+; not always have SHX enabled is that it slows down mode changes. If that's
+; right, could we (perhaps keeping SHX off as an option just for the sake of it)
+; make this swap so fast it's unnoticeable by using 256 bytes of private RAM to
+; do the swap a page at a time, reducing the number of MEMSEL toggles we need to
+; do (currently we toggle twice per byte of screen memory) and speeding things
+; up?
 .swapShadowIfShxEnabled
 .LBC3B      LDX #(prvShx - prv83)							;select SHX register (&08: On, &FF: Off) SFTODO: 08->00?
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ rts                                                                                 ;nothing to do if SHX off
-            ; SFTODO: Why does IBOS play around with these CRTC registers at all, anywhere?
+            ; SFTODO: Why does IBOS play around with these CRTC registers at
+            ; all, anywhere? This bit of code seems particularly odd because it
+            ; seems to use fixed values, unlike the ones we calculate elsewhere.
+            ; Is it trying to black out the screen during the swap?
             LDA #&08
             STA crtcHorzTotal
             LDA #&F0
