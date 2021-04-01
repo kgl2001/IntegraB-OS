@@ -93,6 +93,10 @@
 rtcUserBase = &0E
 rtcUserPrvPrintBufferStart = rtcUserBase + &2C ; the first page in private RAM reserved for the printer buffer (&90-&AC)
 
+vduStatus = &D0
+vduStatusShadow = &10
+currentMode = &0355
+
 vduSetMode = 22
 
 lastBreakType = &028D
@@ -211,7 +215,7 @@ L0387       = &0387
 L0388       = &0388
 L0389       = &0389
 L03A4       = &03A4
-L03A5       = &03A5 ; SFTODO: This is an unused part of CFS/RFS workspace, IBOS seems to be using it  hold something across WRCHV calls but not sure
+L03A5       = &03A5 ; SFTODO: This is an unused part of CFS/RFS workspace, IBOS seems to be using it  hold something across WRCHV calls but not sure - possibly it's to allow a quick check for shadow/non-shadow mode?
 L03A7       = &03A7
 L03B1       = &03B1
 L03B2       = &03B2
@@ -317,6 +321,8 @@ opcodeCmdAbs = &CD
 ; SFTODO: Define romselCopy = &F4, romsel = &FE30, ramselCopy = &37F, ramsel =
 ; &FE34 and use those everywhere instead of the raw hex or SHEILA+&xx we have
 ; now?
+crtcHorzTotal = SHEILA + &00
+crtcHorzDisplayed = SHEILA + &01
 
 romselPrvEn = &40
 ramselPrvs8 = &10
@@ -1879,16 +1885,16 @@ GUARD	&C000
             STA L00F0
             JMP exitSC								;Exit Service Call
 
-            LDA L00D0								;get VDU status   ***missing reference address***
+            LDA vduStatus								;get VDU status   ***missing reference address***
             AND #&EF								;clear bit 4
-            STA L00D0								;store VDU status
+            STA vduStatus								;store VDU status
             LDA &037F								;get RAMID
             AND #&80								;mask bit 7 - Shadow RAM enable bit
             LSR A
             LSR A
             LSR A									;move to bit 4
-            ORA L00D0								;combine with &00D0
-            STA L00D0								;and store VDU status
+            ORA vduStatus								;combine with &00D0
+            STA vduStatus								;and store VDU status
 .L8BB0      RTS
 
 ;Unrecognised OSWORD call - Service call &08
@@ -2565,7 +2571,7 @@ GUARD	&C000
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&16								;change screen mode
             JSR OSWRCH
-            LDA L0355								;current screen mode
+            LDA currentMode								;current screen mode
             JSR OSWRCH
             BIT L027A								;check for Tube - &00: not present, &ff: present
             BPL L90DE
@@ -8032,6 +8038,7 @@ ASSERT parentVectorTbl2End <= osPrintBuf + &40
 ; seems a bit odd these bytes aren't 0.
 ibosBYTEVIndex = 0
 ibosWORDVIndex = 1
+ibosWRCHVIndex = 2
 ibosRDCHVIndex = 3
 ibosINSVIndex = 4
 ibosREMVIndex = 5
@@ -8271,7 +8278,7 @@ ibosCNPVIndex = 6
 .osbyte84Handler
 {
 .LBAD1      PHA
-            LDA L00D0
+            LDA vduStatus
             AND #&10
             BNE LBAE9
             PLA
@@ -8372,8 +8379,11 @@ ibosCNPVIndex = 6
             JSR LB9AA
             JMP returnFromVectorHandler
 }
-			
-.LBB7E      JMP (L08B1)
+
+.jmpParentWRCHV
+{
+.LBB7E      JMP (parentVectorTbl + ibosWRCHVIndex * 2)
+}
 
 .newMode
 {
@@ -8438,19 +8448,19 @@ ibosCNPVIndex = 6
             CMP #vduSetMode
             BEQ newMode
 .^LBBF1     JSR setShen
-            JSR LBB7E
+            JSR jmpParentWRCHV
             PHA
             LDA L03A5
             CMP #&02
             BNE LBBDD
-            LDA L00D0
-            ORA #&10
-            STA L00D0
+            LDA vduStatus
+            ORA #vduStatusShadow
+            STA vduStatus
 .LBC05      LDX #&36
             JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
             CLC
             ADC #&62
-            LDX L0355
+            LDX currentMode
             CPX #&04
             BCC LBC1C
             LSR A
@@ -8459,20 +8469,20 @@ ibosCNPVIndex = 6
             CLC
             ADC #&04
 .LBC1C      LDX #&02
-            STX SHEILA+&00
-            STA SHEILA+&01
+            STX crtcHorzTotal
+            STA crtcHorzDisplayed
             LDA #&00
             STA L03A5
 .^LBC29      PLA
             JMP returnFromVectorHandler
 }
 			
-.LBC2D      LDA L00D0								;get VDU status
+.LBC2D      LDA vduStatus								;get VDU status
             AND #&10								;test bit 4
             BEQ LBC3B								;and branch if clear
             RTS
 			
-.LBC34      LDA L00D0								;get VDU status
+.LBC34      LDA vduStatus								;get VDU status
             AND #&10								;test bit 4
             BNE LBC3B								;and branch if clear
             RTS
@@ -8481,9 +8491,9 @@ ibosCNPVIndex = 6
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBC97
             LDA #&08
-            STA SHEILA+&00
+            STA crtcHorzTotal
             LDA #&F0
-            STA SHEILA+&01
+            STA crtcHorzDisplayed
             LDA &F4
             PHA
             AND #&0F
@@ -8568,9 +8578,9 @@ ibosCNPVIndex = 6
             LDA #&80								;set Shadow RAM enable bit
             STA &037F								;store at RAMID
             STA SHEILA+&34							;store at RAMSEL
-            LDA L00D0								;Get VDU status
+            LDA vduStatus								;Get VDU status
             ORA #&10								;set bit 4
-            STA L00D0								;save VDU status
+            STA vduStatus								;save VDU status
             LDA #&00
             STA L03A5
             RTS
@@ -8578,9 +8588,9 @@ ibosCNPVIndex = 6
 .LBCF2      LDA #&00								;clear Shadow RAM enable bit
             STA &037F								;store at RAMID
             STA SHEILA+&34							;store at RAMSEL
-            LDA L00D0								;get VDU status
+            LDA vduStatus								;get VDU status
             AND #&EF								;clear bit 4
-            STA L00D0								;save VDU status
+            STA vduStatus								;save VDU status
             LDA #&00
             STA L03A5
             LDA #&01
