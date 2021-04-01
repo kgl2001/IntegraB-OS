@@ -278,6 +278,7 @@ ramselPrvs81 = ramselPrvs8 OR ramselPrvs1
 
 ; bits in the 6502 flags registers (as stacked via PHP)
 flagC = &01
+flagZ = &02
 flagV = &40
 
 ; Convenience macro to avoid the annoyance of writing this out every time.
@@ -8561,7 +8562,7 @@ ibosCNPVIndex = 6
 .insvHandler
 {
 .LBD5C		TSX
-            LDA L0102,X
+            LDA L0102,X ; get original X=buffer number
             CMP #bufNumPrinter
             BEQ LBD69
             LDA #ibosINSVIndex
@@ -8576,18 +8577,19 @@ ibosCNPVIndex = 6
             LDA L0107,X ; get original flags
             ORA #flagC
             STA L0107,X ; modify original flags so C is set
-            JMP setRamselAClearPrvenReturnFromVectorHandler
+            JMP restoreRamselClearPrvenReturnFromVectorHandler
 
 .insvBufferNotFull
-.LBD7E      LDA L0108,X
+.LBD7E      LDA L0108,X ; get original A=character to insert
             JSR LBF71
             JSR LBEB6
             JSR LBF43
+            ; Return to caller with carry clear to indicate buffer not full.
             TSX
-            LDA L0107,X
-            AND #&FE
-            STA L0107,X
-            JMP setRamselAClearPrvenReturnFromVectorHandler
+            LDA L0107,X ; get original flags
+            NOT_AND flagC
+            STA L0107,X ; modify original flags so C is clear
+            JMP restoreRamselClearPrvenReturnFromVectorHandler
 }
 
 ; SFTODO: Would it be possible to factor out the common-ish code at the start of
@@ -8609,7 +8611,7 @@ ibosCNPVIndex = 6
             LDA L0107,X
             ORA #&01
             STA L0107,X
-            JMP setRamselAClearPrvenReturnFromVectorHandler
+            JMP restoreRamselClearPrvenReturnFromVectorHandler
 }
 			
 .LBDB8      LDA L0107,X
@@ -8625,13 +8627,14 @@ ibosCNPVIndex = 6
             STA L0108,X
             JSR LBEB2
             JSR LBF35
-            JMP setRamselAClearPrvenReturnFromVectorHandler
+            JMP restoreRamselClearPrvenReturnFromVectorHandler
 			
 .LBDD9      PLA
             STA L0102,X
-; Set RAMSEL to A and clear PRVEN, then return from the vector handler.
+; Restore RAMSEL to the stacked value, clear PRVEN, then return from the vector
+; handler.
 ; SFTODO: Perhaps not the catchiest label name ever...
-.setRamselAClearPrvenReturnFromVectorHandler
+.restoreRamselClearPrvenReturnFromVectorHandler
 {
 .LBDDD      PLA
             STA &037F
@@ -8664,7 +8667,7 @@ ibosCNPVIndex = 6
             JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBE16
             JSR purgePrintBuffer
-.LBE16      JMP setRamselAClearPrvenReturnFromVectorHandler
+.LBE16      JMP restoreRamselClearPrvenReturnFromVectorHandler
 
 .cnpvCount
 .LBE19      LDA L0107,X ; get original flags
@@ -8677,7 +8680,7 @@ ibosCNPVIndex = 6
             STA L0103,X ; overwrite stacked X, so we return A to caller in X
             TYA
             STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
-            JMP setRamselAClearPrvenReturnFromVectorHandler
+            JMP restoreRamselClearPrvenReturnFromVectorHandler
 }
 
 .cnpvCountSpaceLeft
@@ -8691,7 +8694,7 @@ ibosCNPVIndex = 6
             STA L0103,X ; overwrite stacked X, so we return A to caller in X
             TYA
             STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
-            JMP setRamselAClearPrvenReturnFromVectorHandler
+            JMP restoreRamselClearPrvenReturnFromVectorHandler
 }
 			
 .LBE3E      LDX L028D
