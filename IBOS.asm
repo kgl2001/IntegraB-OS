@@ -286,6 +286,7 @@ prvPrintBufferFreeHigh  = prv82 + &08
 prvPrintBufferSizeLow   = prv82 + &09
 prvPrintBufferSizeMid   = prv82 + &0A
 prvPrintBufferBankStart = prv82 + &0C ; high byte of bank start (&80 for sideways RAM, SFTODOPROB&84 for private RAM)
+prvPrintBufferFirstBankIndex = prv82 + &0D ; SFTODO: I think this is always zero, it is used to initialise the bank index of SFTODOA and SFTODOB - if I'm right and it is always zero, there are a few bytes to be saved by never write to this and just using a zero constant instead of reading it
 prvPrintBufferBankEnd   = prv82 + &0E ; high byte of bank end (&C0 for sideways RAM, &B0 for private RAM)
 prvPrintBufferSizeHigh  = prv82 + &0B
 prvPrintBufferBankList  = prv83 + &18 ; 4 byte list of sideways RAM banks used by printer buffer, &FF for "no bank in this position"
@@ -2110,7 +2111,7 @@ GUARD	&C000
             LDA #&B0
             STA prvPrintBufferBankEnd
             LDA #&00
-            STA prv82+&0D
+            STA prvPrintBufferFirstBankIndex
             STA prv82+&0F
             STA prvPrintBufferSizeLow
             STA prvPrintBufferSizeHigh
@@ -2142,7 +2143,7 @@ GUARD	&C000
 .L8DB5      LDA #&80
             STA prvPrintBufferBankStart
             LDA #&00
-            STA prv82+&0D
+            STA prvPrintBufferFirstBankIndex
             LDA #&C0
             STA prvPrintBufferBankEnd
             STX prv82+&0F
@@ -8749,7 +8750,7 @@ ibosCNPVIndex = 6
             LDA #&00
             STA prvPrintBufferSizeLow
             STA prvPrintBufferSizeHigh
-            STA prv82+&0D
+            STA prvPrintBufferFirstBankIndex
             STA prv82+&0F
             ; SFTODO: Following code is similar to chunk just below L8D5A, could
             ; it be factored out?
@@ -8982,7 +8983,7 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
             LDA prvPrintBufferBankStart
             STA SFTODOAMID
             STA SFTODOBMID
-            LDA prv82+&0D
+            LDA prvPrintBufferFirstBankIndex
             STA SFTODOAHIGH
             STA SFTODOBHIGH
             LDA prvPrintBufferSizeLow
