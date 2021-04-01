@@ -8761,10 +8761,11 @@ ibosCNPVIndex = 6
 }
             PLP
             RTS
-			
-.LBEB2      LDX #&03
-            BNE LBEB8
-.LBEB6      LDX #&00
+
+{
+.^LBEB2     LDX #&03
+            BNE LBEB8 ; always branch
+.^LBEB6     LDX #&00
 .LBEB8      INC prv82+&00,X
             BNE LBEE8
             INC prv82+&01,X
@@ -8786,6 +8787,7 @@ ibosCNPVIndex = 6
             LDA prv82+&0C
             STA prv82+&01,X
 .LBEE8      RTS
+}
 
 ; SFTODO: This has only one caller
 ; Return with carry set if and only if the printer buffer is full.
