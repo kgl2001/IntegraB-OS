@@ -8663,8 +8663,9 @@ ibosCNPVIndex = 6
 }
 
 .cnpvCountSpaceLeft
+{
             ; We're counting the space left in the buffer; return that as 16-bit value YX.
-.LBE2F      JSR LBF14
+.LBE2F      JSR getPrintBufferFree
             ; SFTODO: Following code is identical to fragment just above, we
             ; could JMP to it to avoid this duplication.
             TXA
@@ -8673,6 +8674,7 @@ ibosCNPVIndex = 6
             TYA
             STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
             JMP setRamselAClearPrvenReturnFromVectorHandler
+}
 			
 .LBE3E      LDX L028D
             BEQ LBE7B
@@ -8780,7 +8782,14 @@ ibosCNPVIndex = 6
 			
 .LBF12      CLC
             RTS
-			
+
+; SFTODO: This currently only has one caller, so could be inlined. Although
+; maybe there's some critical alignment stuff going on, which means certain code
+; has to live in the &Bxxx region so it can be accessed while private RAM is
+; paged in. But we could potentially move the caller (or just all INSV/CNPV/REMV
+; code??) into &Bxxx, although it may not be worth the hassle.
+.getPrintBufferFree
+{
 .LBF14      LDX prv82+&08
             BNE LBF20
             LDX prv82+&06
@@ -8790,6 +8799,7 @@ ibosCNPVIndex = 6
 .LBF20      LDX #&FF
             LDY #&FF
             RTS
+}
 			
 .LBF25      SEC
             LDA prv82+&09
@@ -8893,7 +8903,7 @@ SAVE "IBOS-01.rom", start, end
 ; labels, but I'm keeping them around for now as they might come in handy and
 ; it's much easier to take them out than to put them back in...
 
-; SFTODO: Is there any reason we can't always page the private RAM in and out as
-; a 12K chunk? If we don't need the fine-grained control on offer, we might be
-; able to remove some subroutines to page in/out different chunks and free up
-; some space for other code.
+; SFTODO: The original ROM obviously has everything aligned correctly, but if
+; we're going to be modifying this in the future it might be good to put
+; asserts in routines which have to live outside a certain area of the ROM in
+; order to avoid breaking when we page in private RAM.
