@@ -253,6 +253,19 @@ prv83       = &8300
 ; The printer buffer can be up to 64K in size; 64K is &10000 bytes so we need to
 ; use a 24-bit representation and we therefore have high, middle and low bytes
 ; here instead of just high and low bytes.
+; SFTODO: I'm not exactly sure what's happening, but SFTODOA and SFTODOB are a
+; pair of three byte counters, probably something to do with the printer buffer.
+; The 'AB' variables here are used where code is accessing either A or B
+; depending on whether X is 0 or 3.
+SFTODOALOW = prv82 + &00
+SFTODOAMID = prv82 + &01
+SFTODOAHIGH = prv82 + &02
+SFTODOABLOW = SFTODOALOW
+SFTODOABMID = SFTODOAMID
+SFTODOABHIGH = SFTODOAHIGH
+SFTODOBLOW = prv82 + &03
+SFTODOBMID = prv82 + &04
+SFTODOBHIGH = prv82 + &05
 prvPrintBufferFreeLow  = prv82 + &06
 prvPrintBufferFreeMid  = prv82 + &07
 prvPrintBufferFreeHigh = prv82 + &08
@@ -8766,13 +8779,13 @@ ibosCNPVIndex = 6
 .^LBEB2     LDX #&03
             BNE LBEB8 ; always branch
 .^LBEB6     LDX #&00
-.LBEB8      INC prv82+&00,X
+.LBEB8      INC SFTODOABLOW,X
             BNE LBEE8
-            INC prv82+&01,X
-            LDA prv82+&01,X
+            INC SFTODOABMID,X
+            LDA SFTODOABMID,X
             CMP prv82+&0E
             BCC LBEE8
-            LDY prv82+&02,X
+            LDY SFTODOABHIGH,X
             INY
             CPY #&04
             BCC LBED2
@@ -8781,11 +8794,11 @@ ibosCNPVIndex = 6
             BPL LBED9
             LDY #&00
 .LBED9      TYA
-            STA prv82+&02,X
+            STA SFTODOABHIGH,X
             LDA #&00
-            STA prv82+&00,X
+            STA SFTODOABLOW,X
             LDA prv82+&0C
-            STA prv82+&01,X
+            STA SFTODOABMID,X
 .LBEE8      RTS
 }
 
@@ -8905,11 +8918,11 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
             LDX #&00
             LDA #opcodeStaAbs
 .LBF76      STA ramRomAccessSubroutineVariableInsn
-            LDA prv82+&00,X
+            LDA SFTODOABLOW,X
             STA ramRomAccessSubroutineVariableInsn + 1
-            LDA prv82+&01,X
+            LDA SFTODOABMID,X
             STA ramRomAccessSubroutineVariableInsn + 2
-            LDY prv82+&02,X
+            LDY SFTODOABHIGH,X
             LDA prv83+&18,Y
             TAY
             PLA
@@ -8919,14 +8932,14 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
 .purgePrintBuffer
 {
 .LBF90      LDA #&00
-            STA prv82+&00
-            STA prv82+&03
+            STA SFTODOALOW
+            STA SFTODOBLOW
             LDA prv82+&0C
-            STA prv82+&01
-            STA prv82+&04
+            STA SFTODOAMID
+            STA SFTODOBMID
             LDA prv82+&0D
-            STA prv82+&02
-            STA prv82+&05
+            STA SFTODOAHIGH
+            STA SFTODOBHIGH
             LDA prvPrintBufferSizeLow
             STA prvPrintBufferFreeLow
             LDA prvPrintBufferSizeMid
