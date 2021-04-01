@@ -1927,7 +1927,9 @@ GUARD	&C000
 .L8C6D      JMP OSWRCH
 
 ;*PURGE Command
-.purge      JSR L8699
+.purge
+{
+            JSR L8699
             BCC L8C8F
             LDA (L00A8),Y
             CMP #&3F
@@ -1940,10 +1942,11 @@ GUARD	&C000
 .L8C86      JSR PrvEn								;switch in private RAM
             JSR purgePrintBuffer
             JMP L8E0A
-			
+
 .L8C8F      LDX #&47
             JSR L8864								;write data to Private RAM &83xx (Addr = X, Data = A)
             JMP exitSC								;Exit Service Call
+}
 			
 ;*BUFFER Command
 ;Note Buffer does not work in OSMODE 0
