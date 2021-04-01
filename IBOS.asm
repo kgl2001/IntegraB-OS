@@ -275,13 +275,15 @@ SFTODOABHIGH = SFTODOAHIGH
 SFTODOBLOW = prv82 + &03
 SFTODOBMID = prv82 + &04
 SFTODOBHIGH = prv82 + &05
-prvPrintBufferFreeLow  = prv82 + &06
-prvPrintBufferFreeMid  = prv82 + &07
-prvPrintBufferFreeHigh = prv82 + &08
-prvPrintBufferSizeLow  = prv82 + &09
-prvPrintBufferSizeMid  = prv82 + &0A
-prvPrintBufferSizeHigh = prv82 + &0B
-prvPrintBufferBankList = prv83 + &18 ; 4 byte list of sideways RAM banks used by printer buffer, &FF for "no bank in this position"
+prvPrintBufferFreeLow   = prv82 + &06
+prvPrintBufferFreeMid   = prv82 + &07
+prvPrintBufferFreeHigh  = prv82 + &08
+prvPrintBufferSizeLow   = prv82 + &09
+prvPrintBufferSizeMid   = prv82 + &0A
+prvPrintBufferBankStart = prv82 + &0C ; high byte of bank start (&80 for sideways RAM, SFTODOPROB&84 for private RAM)
+prvPrintBufferBankEnd   = prv82 + &0E ; high byte of bank end (&C0 for sideways RAM, &B0 for private RAM)
+prvPrintBufferSizeHigh  = prv82 + &0B
+prvPrintBufferBankList  = prv83 + &18 ; 4 byte list of sideways RAM banks used by printer buffer, &FF for "no bank in this position"
 prvSFTODOX = prv83 + &45 ; SFTODO: Something to do with printer buffer? A copy of something held in RTC user mem
 
 LDBE6       = &DBE6
@@ -2096,24 +2098,24 @@ GUARD	&C000
             BEQ L8D46
             AND #&F0
             CMP #&40
-            BNE bufferInPrivateRam
-            ; Buffer is in sideways RAM, not private RAM.
+            BNE bufferInSidewaysRam
+            ; Buffer is in private RAM, not sideways RAM.
             JSR sanitiseSFTODOX
-            STA prv82+&0C
+            STA prvPrintBufferBankStart
             LDA #&B0
-            STA prv82+&0E
+            STA prvPrintBufferBankEnd
             LDA #&00
             STA prv82+&0D
             STA prv82+&0F
             STA prvPrintBufferSizeLow
             STA prvPrintBufferSizeHigh
             SEC
-            LDA prv82+&0E
-            SBC prv82+&0C
+            LDA prvPrintBufferBankEnd
+            SBC prvPrintBufferBankStart
             STA prvPrintBufferSizeMid
             JMP purgePrintBuffer
 
-.bufferInPrivateRam
+.bufferInSidewaysRam
 .L8D8D      LDA #&00
             STA prvPrintBufferSizeLow
             STA prvPrintBufferSizeMid
@@ -2133,11 +2135,11 @@ GUARD	&C000
             BNE L8D99
             DEX
 .L8DB5      LDA #&80
-            STA prv82+&0C
+            STA prvPrintBufferBankStart
             LDA #&00
             STA prv82+&0D
             LDA #&C0
-            STA prv82+&0E
+            STA prvPrintBufferBankEnd
             STX prv82+&0F
             JMP purgePrintBuffer
 			
@@ -8743,13 +8745,15 @@ ibosCNPVIndex = 6
             STA prvPrintBufferSizeHigh
             STA prv82+&0D
             STA prv82+&0F
+            ; SFTODO: Following code is similar to chunk just below L8D5A, could
+            ; it be factored out?
             JSR sanitiseSFTODOX
-            STA prv82+&0C
+            STA prvPrintBufferBankStart
             LDA #&B0
-            STA prv82+&0E
+            STA prvPrintBufferBankEnd
             SEC
-            LDA prv82+&0E
-            SBC prv82+&0C
+            LDA prvPrintBufferBankEnd
+            SBC prvPrintBufferBankStart
             STA prvPrintBufferSizeMid
             LDA &F4
             ORA #&40
@@ -8796,14 +8800,18 @@ ibosCNPVIndex = 6
             RTS
 
 {
+; Advance SFTODOA by one, wrapping round at the end of the bank and wrapping
+; round at the end of the bank list.
 .^LBEB2     LDX #&03
             BNE LBEB8 ; always branch
+; Advance SFTODOB by one, wrapping round at the end of the bank and wrapping
+; round at the end of the bank list.
 .^LBEB6     LDX #&00
 .LBEB8      INC SFTODOABLOW,X
             BNE LBEE8
             INC SFTODOABMID,X
             LDA SFTODOABMID,X
-            CMP prv82+&0E
+            CMP prvPrintBufferBankEnd
             BCC LBEE8
             LDY SFTODOABHIGH,X
             INY
@@ -8812,12 +8820,16 @@ ibosCNPVIndex = 6
             LDY #&00
 .LBED2      LDA prvPrintBufferBankList,Y
             BPL LBED9
+            ; Top bit of this bank number is set, so it's going to be $FF
+            ; indicating an invalid bank; wrap round to the first bank.
             LDY #&00
 .LBED9      TYA
             STA SFTODOABHIGH,X
+            ; SFTODO: Are the next two lines redundant? I think we can only get
+            ; here if INC SFTODOABLOW,X above left this value zero.
             LDA #&00
             STA SFTODOABLOW,X
-            LDA prv82+&0C
+            LDA prvPrintBufferBankStart
             STA SFTODOABMID,X
 .LBEE8      RTS
 }
@@ -8960,7 +8972,7 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
 .LBF90      LDA #&00
             STA SFTODOALOW
             STA SFTODOBLOW
-            LDA prv82+&0C
+            LDA prvPrintBufferBankStart
             STA SFTODOAMID
             STA SFTODOBMID
             LDA prv82+&0D
