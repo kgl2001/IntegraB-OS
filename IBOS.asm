@@ -100,6 +100,16 @@ negativeVduQueueSize = &026A
 osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force shadow modes (note that AllMem.txt seems to have this wrong, at least my copy does)
 currentMode = &0355
 
+; This is a byte of unused CFS/RFS workspace which IBOS repurposes to track
+; state during mode changes. I *guess* this is done because it's quicker than
+; paging in private RAM; OSWRCH is relatively performance sensitive and we check
+; this on every call.
+modeChangeState = &03A5
+modeChangeStateNone = 0 ; no mode change in progress
+modeChangeStateSeenVduSetMode = 1 ; we've seen a VDU 22, the next OSWRCH call is the new mode
+modeChangeStateEnteringShadowMode = 2
+modeChangeStateEnteringNonShadowMode = 3
+
 vduSetMode = 22
 
 lastBreakType = &028D
@@ -8398,14 +8408,14 @@ ibosCNPVIndex = 6
 {
             ; We're processing OSWRCH with A=vduSetMode. That is only actually a
             ; set mode call if we're not part-way through a longer VDU sequence
-            ; (e.g. VDU 23,128,22,...), so check that and set L03A5 to 1 if we
+            ; (e.g. VDU 23,128,22,...), so check that and set modeChangeState to 1 if we
             ; *are* going to change mode.
 .LBB81      PHA
             LDA negativeVduQueueSize
             BNE LBB8C
-            ; SFTODO: I think we know L03A5 is 0 here, so we could just do INC L03A5.
-            LDA #&01
-            STA L03A5
+            ; SFTODO: I think we know modeChangeState is 0 here, so we could just do INC modeChangeState.
+            LDA #modeChangeStateSeenVduSetMode
+            STA modeChangeState
 .LBB8C      PLA
             JMP processWrchv
 }
@@ -8433,8 +8443,8 @@ ibosCNPVIndex = 6
             AND #&7F								;clear Shadow RAM enable bit SFTODO: isn't this redundant? We'd have done "BCS enteringShadowMode" above if top bit was set, wouldn't we?
             LDX #&3F
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-            LDA #&03
-            STA L03A5
+            LDA #modeChangeStateEnteringNonShadowMode
+            STA modeChangeState
             PLA
             JMP processWrchv
 
@@ -8449,19 +8459,19 @@ ibosCNPVIndex = 6
             ORA #&80								;set Shadow RAM enable bit
             LDX #&3F								
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-            LDA #&02
-            STA L03A5
+            LDA #modeChangeStateEnteringShadowMode
+            STA modeChangeState
             PLA
             JMP processWrchv
 
-.LBBDD      CMP #&03
+.LBBDD      CMP #modeChangeStateEnteringNonShadowMode
             BNE LBC29
             BEQ LBC05
 
 .^wrchvHandler
 .LBBE3	  JSR restoreOrigVectorRegs
             PHA
-            LDA L03A5
+            LDA modeChangeState
             BNE selectNewMode
             PLA
             CMP #vduSetMode
@@ -8470,8 +8480,8 @@ ibosCNPVIndex = 6
 .LBBF1      JSR setShen
             JSR jmpParentWRCHV
             PHA
-            LDA L03A5
-            CMP #&02
+            LDA modeChangeState
+            CMP #modeChangeStateEnteringShadowMode
             BNE LBBDD
             LDA vduStatus
             ORA #vduStatusShadow
@@ -8497,7 +8507,7 @@ ibosCNPVIndex = 6
             STX crtcHorzTotal
             STA crtcHorzDisplayed
             LDA #&00
-            STA L03A5
+            STA modeChangeState
 .^LBC29     PLA
             JMP returnFromVectorHandler
 }
@@ -8625,7 +8635,7 @@ ibosCNPVIndex = 6
             ORA #&10								;set bit 4
             STA vduStatus								;save VDU status
             LDA #&00
-            STA L03A5
+            STA modeChangeState
             RTS
 			
 .LBCF2      LDA #&00								;clear Shadow RAM enable bit
@@ -8635,7 +8645,7 @@ ibosCNPVIndex = 6
             AND #&EF								;clear bit 4
             STA vduStatus								;save VDU status
             LDA #&00
-            STA L03A5
+            STA modeChangeState
             LDA #&01
             STA osShadowRamFlag
             JSR PrvEn								;switch in private RAM
