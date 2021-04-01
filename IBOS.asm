@@ -1314,7 +1314,7 @@ GUARD	&C000
 
 ;Condition then read from Private RAM &83xx (Addr = X, Data = A)
 .L8817      JSR L882D								;Set msb of Addr (Addr = Addr OR &80)
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             JMP L8826								;Clear msb of Addr (Addr = Addr & &7F)
 			
 ;Condition then write to Private RAM &83xx (Addr = X, Data = A)
@@ -1384,15 +1384,21 @@ GUARD	&C000
             JMP switchOutPrivateRAM
 
 ;read data from Private RAM &83xx (Addr = X, Data = A)
+.readPrivateRam8300X
+{
 .L8870      PHP
             SEI
             JSR switchInPrivateRAM
             LDA prv83,X								;read data from Private RAM (Addr = X, Data = A)
             PHA
+            ; SFTODO: We could move switchOutPrivateRAM just after this code and
+            ; fall through to it, saving three bytes.
             JMP switchOutPrivateRAM
+}
 
 ;Switch in Private RAM
 .switchInPrivateRAM
+{
 .L887C      PHA
             LDA &037F
             AND #&80
@@ -1402,10 +1408,12 @@ GUARD	&C000
             ORA #&40
             STA SHEILA+&30							;retain value of &F4 so it can be restored after read / write operation complete
             PLA
-            RTS		
+            RTS
+}
 
 ;Switch out Private RAM
 .switchOutPrivateRAM
+{
 .L8890      LDA &F4
             STA SHEILA+&30							;restore using value retained in &F4
             LDA &037F
@@ -1414,7 +1422,8 @@ GUARD	&C000
             PLP
             PHA
             PLA
-            RTS		
+            RTS
+}
 
 .stackTransientCmdSpace
 {
@@ -1717,7 +1726,7 @@ GUARD	&C000
 ;Unrecognised OSBYTE call - Service call &07
 ;A, X & Y stored in &EF, &F0 & F1 respecively
 .service07  LDX #&3C								;select OSMODE
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&00								;OSMODE 0?
             BNE osbyte6C								;Branch if OSMODE 1-5
             LDA L00EF								;get OSBYTE command
@@ -1813,7 +1822,7 @@ GUARD	&C000
             JMP exitSC								;Exit Service Call
 			
 .L8B6D      LDX #&44								;read data from &8344???
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             PHA
             STA L00F1
             LDA L00F0
@@ -1965,7 +1974,7 @@ GUARD	&C000
             BNE L8C86
             JSR L83EC
             LDX #&47
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             JMP L8FA3
 			
 .L8C86      JSR PrvEn								;switch in private RAM
@@ -2257,7 +2266,7 @@ GUARD	&C000
 			
 .L8ED6      JSR L83EC
             LDX #&3C								;select OSMODE
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
 .L8EDE      SEC
             JSR L86DE								;Convert binary number to numeric characters and write characters to screen
             JMP L8E07								;new line, exit out of private RAM and exit service call
@@ -2321,7 +2330,7 @@ GUARD	&C000
             BNE L8F47
             JSR L83EC
             LDX #&3D								;select SHX register (&08: On, &FF: Off)
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             JMP L8FA3
 			
 .L8F60      LDX #&3D								;select SHX register (&08: On, &FF: Off)
@@ -3304,7 +3313,7 @@ GUARD	&C000
 .L9652      LDA L028D
             BNE L9668
             LDX #&43
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             PHA
             JSR L966E
             PLA
@@ -3430,10 +3439,10 @@ GUARD	&C000
             LDX L028D								;Read Hard / Soft Break
             BNE L9758								;Branch on hard break (power on / Ctrl Break)
             LDX #&3C								;select OSMODE
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ L9758								;branch if OSMODE=0
             LDX #&3F								;read mode?
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             JSR OSWRCH								;write mode?
             JMP L9768
 			
@@ -3583,7 +3592,7 @@ GUARD	&C000
 
 ;Vectors claimed - Service call &0F
 .service0F  LDX #&43
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             AND #&80
             PHA
             LDA #&00
@@ -3610,7 +3619,7 @@ GUARD	&C000
             JMP exitSCa								;restore service call parameters and exit
 			
 .L989F      LDX #&3C								;select OSMODE
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&00								;If OSMODE=0
             BEQ L991D								;Then no startup message
             LDA #&D7								;Startup message suppression and !BOOT option status
@@ -5192,7 +5201,7 @@ GUARD	&C000
             CLC
             ADC #&08
             TAX
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
 .LA48B      INY
 .LA48C      CMP #&10
             BCS LA495
@@ -5388,7 +5397,7 @@ GUARD	&C000
             STA L00AF
             JSR LA4C5
 .LA5CE      LDX #&41
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             EOR #&FF
             AND #&10
             TSX
@@ -7219,7 +7228,7 @@ GUARD	&C000
 .LB490      ASL A
             BCC LB4AC
             LDX #&44
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             PHA
             AND #&01
             BEQ LB4A2
@@ -8122,7 +8131,7 @@ ibosCNPVIndex = 6
             CPY #&FF
             BNE osbyte87Handler
             LDX #&3C								;select OSMODE
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBA56								;Branch if OSMODE=0
             CMP #&01								;Check if OSMODE=1
             BEQ LBA56								;Branch if OSMODE=1
@@ -8260,7 +8269,7 @@ ibosCNPVIndex = 6
 .LBB00      TXA
             PHA
             LDX #&3C								;select OSMODE
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBB18								;Branch if OSMODE=0
             CMP #&04								;OSMODE 4?
             BNE LBB0F								;Branch if OSMODE<>4 (OSMODE 1-3)
@@ -8285,7 +8294,7 @@ ibosCNPVIndex = 6
             CPX #&15								;until &15
             BNE LBB24								;loop
             LDX #&3C								;select OSMODE
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             ORA #&30								;convert OSMODE to character printable OSMODE (OSMODE = OSMODE + &30)
             STA L0113								;write OSMODE character to error text
             JMP L0100								;Generate BRK and error
@@ -8423,7 +8432,7 @@ ibosCNPVIndex = 6
             RTS
 			
 .LBC3B      LDX #&3D								;select SHX register (&08: On, &FF: Off)
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBC97
             LDA #&08
             STA SHEILA+&00
@@ -8476,7 +8485,7 @@ ibosCNPVIndex = 6
             STA &037F
             STA SHEILA+&34
             LDX #&3C								;select OSMODE
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBCF2
             JSR installOSPrintBufStub
             PHP
@@ -8508,7 +8517,7 @@ ibosCNPVIndex = 6
             LDA L028D
             BNE LBCF2
             LDX #&3F
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BPL LBCF2
             LDA #&80								;set Shadow RAM enable bit
             STA &037F								;store at RAMID
@@ -8683,7 +8692,7 @@ ibosCNPVIndex = 6
             BEQ cnpvCount
             ; We're purging the buffer.
             LDX #&47
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBE16
             JSR purgePrintBuffer
 .LBE16      JMP restoreRamselClearPrvenReturnFromVectorHandler
@@ -8957,7 +8966,7 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
 }
 			
 .LBFBD      LDX #&45
-            JSR L8870								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&90
             BCC LBFCA
             CMP #&AC
@@ -8979,7 +8988,7 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
 SAVE "IBOS-01.rom", start, end
 
 ; SFTODO: Would it be possible to save space by factoring out "LDX #&3C:JSR
-; L8870" into a subroutine?
+; readPrivateRam8300X" into a subroutine?
 
 ; SFTODO: Eventually it might be good to get rid of all the Lxxxx address
 ; labels, but I'm keeping them around for now as they might come in handy and
