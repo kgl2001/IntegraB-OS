@@ -101,14 +101,14 @@ osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force sh
 currentMode = &0355
 
 ; This is a byte of unused CFS/RFS workspace which IBOS repurposes to track
-; state during mode changes. I *guess* this is done because it's quicker than
+; state during mode changes. This is probably done because it's quicker than
 ; paging in private RAM; OSWRCH is relatively performance sensitive and we check
 ; this on every call.
 modeChangeState = &03A5
 modeChangeStateNone = 0 ; no mode change in progress
-modeChangeStateSeenVduSetMode = 1 ; we've seen a VDU 22, the next OSWRCH call is the new mode
-modeChangeStateEnteringShadowMode = 2
-modeChangeStateEnteringNonShadowMode = 3
+modeChangeStateSeenVduSetMode = 1 ; we've seen VDU 22, we're waiting for mode byte
+modeChangeStateEnteringShadowMode = 2 ; we're changing into a shadow mode
+modeChangeStateEnteringNonShadowMode = 3 ; we're changing into a non-shadow mode
 
 vduSetMode = 22
 
@@ -8508,7 +8508,7 @@ ibosCNPVIndex = 6
 .LBC1C      LDX #&02
             STX crtcHorzTotal
             STA crtcHorzDisplayed
-            LDA #&00
+            LDA #modeChangeStateNone
             STA modeChangeState
 .^wrchvHandlerDone
 .LBC29      PLA
@@ -8637,7 +8637,7 @@ ibosCNPVIndex = 6
             LDA vduStatus								;Get VDU status
             ORA #&10								;set bit 4
             STA vduStatus								;save VDU status
-            LDA #&00
+            LDA #modeChangeStateNone
             STA modeChangeState
             RTS
 			
@@ -8647,7 +8647,7 @@ ibosCNPVIndex = 6
             LDA vduStatus								;get VDU status
             AND #&EF								;clear bit 4
             STA vduStatus								;save VDU status
-            LDA #&00
+            LDA #modeChangeStateNone
             STA modeChangeState
             LDA #&01
             STA osShadowRamFlag
