@@ -8424,6 +8424,7 @@ ibosCNPVIndex = 6
             JMP processWrchv
 }
 
+; The following scope is the WRCHV handler; the entry point is at wrchvHandler half way down.
 {
 ; We're processing the second byte of a vduSetMode command, i.e. we will change
 ; mode when we forward this byte to the parent WRCHV.
@@ -8549,7 +8550,14 @@ ibosCNPVIndex = 6
             STA crtcHorzTotal
             LDA #&F0
             STA crtcHorzDisplayed
-            ; SFTODO: Next few lines are temporarily (note we PHA the old &F4) clearing PRVEN/MEMSEL
+            ; SFTODO: Next few lines are temporarily (note we PHA the old &F4)
+            ; clearing PRVEN/MEMSEL
+            ; SFTODO: Since we use EOR to toggle MEMSEL in the swap loop,
+            ; couldn't we get away with not doing this (and of course not bother
+            ; resetting the original value afterwards either)? It doesn't matter
+            ; if MEMSEL is currently set or not, since the operation is
+            ; symmetrical, and we'd do an even number of toggles so we'd finish
+            ; in the original state.
             LDA &F4
             PHA
             AND #&0F
