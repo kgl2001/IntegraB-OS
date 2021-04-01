@@ -8636,7 +8636,7 @@ ibosCNPVIndex = 6
 
 .insvBufferNotFull
 .LBD7E      LDA L0108,X ; get original A=character to insert
-            JSR staArbitraryRom
+            JSR staPrintBufferWritePtr
             JSR advancePrintBufferReadPtr
             JSR decrementPrintBufferFree
             ; Return to caller with carry clear to indicate insertion succeeded.
@@ -8672,7 +8672,7 @@ ibosCNPVIndex = 6
 .LBDB8      LDA L0107,X
             AND #&FE
             STA L0107,X
-            JSR ldaArbitraryRom
+            JSR ldaPrintBufferReadPtr
             TSX
             PHA
             LDA L0107,X
@@ -8973,14 +8973,16 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
 .romRomAccessSubroutineEnd
 
 ; Temporarily page in ROM bank prvPrintBufferBankList[prvPrintBufferReadBankIndex] and do LDA (prvPrintBufferReadPtr)
-.ldaArbitraryRom
+; SFTODO: This only has a single caller
+.ldaPrintBufferReadPtr
 {
 .LBF6A      PHA
             LDX #&03
             LDA #opcodeLdaAbs
             BNE LBF76 ; always branch
 ; Temporarily page in ROM bank prvPrintBufferBankList[prvPrintBufferWriteBankIndex] and do STA (prvPrintBufferWritePtr)
-.^staArbitraryRom
+; SFTODO: This only has a single caller
+.^staPrintBufferWritePtr
 .LBF71      PHA
             LDX #&00
             LDA #opcodeStaAbs
