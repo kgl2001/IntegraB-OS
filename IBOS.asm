@@ -96,7 +96,8 @@ rtcUserPrvPrintBufferStart = rtcUserBase + &2C ; the first page in private RAM r
 
 vduStatus = &D0
 vduStatusShadow = &10
-osShadowRamFlag = &027F
+negativeVduQueueSize = &026A
+osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force shadow modes (note that AllMem.txt seems to have this wrong, at least my copy does)
 currentMode = &0355
 
 vduSetMode = 22
@@ -8395,9 +8396,14 @@ ibosCNPVIndex = 6
 
 .newMode
 {
+            ; We're processing OSWRCH with A=vduSetMode. That is only actually a
+            ; set mode call if we're not part-way through a longer VDU sequence
+            ; (e.g. VDU 23,128,22,...), so check that and set L03A5 to 1 if we
+            ; *are* going to change mode.
 .LBB81      PHA
-            LDA L026A
+            LDA negativeVduQueueSize
             BNE LBB8C
+            ; SFTODO: I think we know L03A5 is 0 here, so we could just do INC L03A5.
             LDA #&01
             STA L03A5
 .LBB8C      PLA
@@ -8405,12 +8411,14 @@ ibosCNPVIndex = 6
 }
 
 {
-; SFTODO: I *SUSPECT* WE GET HERE IF WE'RE PROCESSING THE BYTE FOLLOWING A VDU 22, IE A=MODE WE'RE ABOUT TO ENTER
+; We're processing the second byte of a vduSetMode command, i.e. we will change
+; mode when we forward this byte to the parent WRCHV.
+.selectNewMode
 .LBB90      PLA                                                                                     ;get original OSWRCH A=new mode
             PHA                                                                                     ;save it again
             CMP #&80
             BCS enteringShadowMode
-            LDA osShadowRamFlag ; SFTODO: Poking at this byte on b-em Integra-B, it is *not* used in the same way as on (eg) a Master - it always seems to be 1 at the BASIC prompt. So I don't know what we're actually checking here yet.
+            LDA osShadowRamFlag
             BEQ enteringShadowMode
             ; SFTODO: Aren't the next two instructions pointless? maybeSwapShadow2 immediately does LDA vduStatus.
             PLA                                                                                     ;get original OSWRCH A=new mode
@@ -8454,7 +8462,7 @@ ibosCNPVIndex = 6
 .LBBE3	  JSR restoreOrigVectorRegs
             PHA
             LDA L03A5
-            BNE LBB90
+            BNE selectNewMode
             PLA
             CMP #vduSetMode
             BEQ newMode
