@@ -267,6 +267,10 @@ LF16E       = &F16E
 
 bufNumPrinter = 3 ; OS buffer number for the printer buffer
 
+opcodeStaAbs = &8D
+opcodeLdaAbs = &AD
+opcodeCmdAbs = &CD
+
 ; SFTODO: Define romselCopy = &F4, romsel = &FE30, ramselCopy = &37F, ramsel =
 ; &FE34 and use those everywhere instead of the raw hex or SHEILA+&xx we have
 ; now?
@@ -2142,23 +2146,23 @@ GUARD	&C000
             PHP
             SEI
             LDA #&00
-            STA L0388
+            STA ramRomAccessSubroutineVariableInsn + 1
             LDA #&80
-            STA L0389
-            LDA #&AD								;&AD is opcode for 'LDA &', so: 0387 LDA &8000
-            STA L0387
-            JSR L0380								;switch to ROM Bank Y and read value of &8000 to A
+            STA ramRomAccessSubroutineVariableInsn + 2
+            LDA #opcodeLdaAbs
+            STA ramRomAccessSubroutineVariableInsn
+            JSR ramRomAccessSubroutine							;switch to ROM Bank Y and read value of &8000 to A
             EOR #&FF								;EOR with &FF
             TAX									;and write back to &8000
-            LDA #&8D								;&8D is opcode for 'STA &', so: 0387 STA &8000
-            STA L0387
+            LDA #opcodeStaAbs
+            STA ramRomAccessSubroutineVariableInsn
             TXA
-            JSR L0380								;switch to ROM Bank Y and write value of A to &8000
+            JSR ramRomAccessSubroutine							;switch to ROM Bank Y and write value of A to &8000
             TAX
-            LDA #&CD								;&CD is opcode for 'CMP &', so: 0387 CMP &8000
-            STA L0387
+            LDA #opcodeCmdAbs
+            STA ramRomAccessSubroutineVariableInsn
             TXA
-            JSR L0380								;switch to ROM Bank Y and compare value of &8000 with A
+            JSR ramRomAccessSubroutine							;switch to ROM Bank Y and compare value of &8000 with A
             SEC
             BNE L8E4A
             CLC
@@ -2174,10 +2178,10 @@ GUARD	&C000
 .L8E57      TXA									;restore the contents of ROM Bank Y &8000
             EOR #&FF								;EOR with &FF
             TAX									;and write back to &8000
-            LDA #&8D								;&8D is opcode for STA &, so: 0387 STA &8000
-            STA L0387
+            LDA #opcodeStaAbs
+            STA ramRomAccessSubroutineVariableInsn
             TXA
-            JSR L0380
+            JSR ramRomAccessSubroutine
             PLP
             JMP L8E69
 			
@@ -8564,16 +8568,17 @@ ibosCNPVIndex = 6
 .LBD5C		TSX
             LDA L0102,X ; get original X=buffer number
             CMP #bufNumPrinter
-            BEQ LBD69
+            BEQ isPrinterBuffer
             LDA #ibosINSVIndex
             JMP forwardToParentVectorTblEntry
-			
+
+.isPrinterBuffer
 .LBD69      JSR pageInPrvs81
             PHA
             TSX
             JSR checkPrintBufferFull
             BCC insvBufferNotFull
-            ; Return to caller with carry set to indicate buffer is full.
+            ; Return to caller with carry set to indicate insertion failed.
             LDA L0107,X ; get original flags
             ORA #flagC
             STA L0107,X ; modify original flags so C is set
@@ -8584,7 +8589,7 @@ ibosCNPVIndex = 6
             JSR LBF71
             JSR LBEB6
             JSR LBF43
-            ; Return to caller with carry clear to indicate buffer not full.
+            ; Return to caller with carry clear to indicate insertion succeeded.
             TSX
             LDA L0107,X ; get original flags
             NOT_AND flagC
@@ -8722,11 +8727,14 @@ ibosCNPVIndex = 6
             STA prv83+&1B
 .LBE7B      JSR purgePrintBuffer
             JSR PrvDis								;switch out private RAM
-            LDY #&0F								;relocation code
-.LBE83      LDA LBF5A,Y
-            STA L0380,Y
+            ; Copy the rom access subroutine from ROM into RAM.
+            LDY #romRomAccessSubroutineEnd - romRomAccessSubroutine - 1
+{
+.LBE83      LDA romRomAccessSubroutine,Y
+            STA ramRomAccessSubroutine,Y
             DEY
             BPL LBE83
+}
             PHP
             SEI
             ; Save the parent values of INSV, REMV and CNPV at
@@ -8868,14 +8876,19 @@ ibosCNPVIndex = 6
 
 ;code relocated to &0380
 ;this code either reads, writes or compares the contents of ROM Y address &8000 with A
+ramRomAccessSubroutine = &0380 ; SFTODO: Move this line?
+.romRomAccessSubroutine
 .LBF5A      LDX &F4				;relocates to &0380
             STY &F4				;relocates to &0382
             STY SHEILA+&30			;relocates to &0384
+.romRomAccessSubroutineVariableInsn
+ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubroutineVariableInsn - romRomAccessSubroutine)
 	  EQUB &00			;relocates to &0387. Note this byte gets dynamically changed by the code to &AD (LDA &), &8D (STA &) and &CD (CMP &)
 	  EQUB $00,$80			;relocates to &0388. So this becomes either LDA &8000, STA &8000 or CMP &8000
             STX &F4				;relocates to &038A
             STX SHEILA+&30			;relocates to &038C
             RTS				;relocates to &038F
+.romRomAccessSubroutineEnd
 			
 .LBF6A      PHA
             LDX #&03
@@ -8883,17 +8896,17 @@ ibosCNPVIndex = 6
             BNE LBF76
 .LBF71      PHA
             LDX #&00
-            LDA #&8D			;Set address &0387 to 'STA &'
-.LBF76      STA L0387
+            LDA #opcodeStaAbs
+.LBF76      STA ramRomAccessSubroutineVariableInsn
             LDA prv82+&00,X
-            STA L0388
+            STA ramRomAccessSubroutineVariableInsn + 1
             LDA prv82+&01,X
-            STA L0389
+            STA ramRomAccessSubroutineVariableInsn + 2
             LDY prv82+&02,X
             LDA prv83+&18,Y
             TAY
             PLA
-            JMP L0380			;This code is relocated from .LBF5A
+            JMP ramRomAccessSubroutine
 
 .purgePrintBuffer
 {
