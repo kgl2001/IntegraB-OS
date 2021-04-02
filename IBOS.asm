@@ -1380,6 +1380,7 @@ GUARD	&C000
 		EQUB &D6
 		EQUS "Not found", &00
 
+{
 ;Condition then read from Private RAM &83xx (Addr = X, Data = A)
 .L8817      JSR setXMsb								;Set msb of Addr (Addr = Addr OR &80)
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
@@ -1399,16 +1400,13 @@ GUARD	&C000
 
 ;Set msb of Addr (Addr = Addr OR &80)
 .setXMsb
-{
 .L882D      PHA
             TXA
             ORA #&80
             TAX
             PLA
             RTS
-}
 
-{
 ; Read/write A from/to user register X.
 ; For X<=&31, the user register is held in RTC register X+&0E.
 ; For &32<=X<=&7F, the user register is held in private RAM at &8380+X.
