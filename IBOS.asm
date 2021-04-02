@@ -87,7 +87,7 @@
 ;Register &10 - &A0:	0: File system / 4: Boot / 5-7: Data
 
 
-; These registers are held in private RAM at &8380-&83FF and are not
+; These registers are held in private RAM at &83B2-&83FF and are not
 ; battery-backed (SFTODO: correct?). They are initialised on startup (SFTODO:
 ; where exactly?) and can be accessed via readUserReg/writeUserReg just like the actual
 ; RTC user registers.
@@ -1409,9 +1409,12 @@ GUARD	&C000
 }
 
 {
-;Read from RTC clock User area. X=Addr, A=Data
-;For X between &00 and &31, read from RTC + &0E
-;For X between &32 and &79, read from Private RAM &83xx + &80
+; Read/write A from/to user register X.
+; For X<=&31, the user register is held in RTC register X+&0E.
+; For &32<=X<=&7F, the user register is held in private RAM at &8380+X.
+; For X>=&80, the subroutine does nothing.
+; SFTODO: Does the code rely on that behaviour for X>=&80?
+
 .^readUserReg
 	  CPX #&80
             BCS rts  								;Invalid if Address >=&80
@@ -1426,10 +1429,9 @@ GUARD	&C000
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             JMP L885B
 
-;Write to RTC clock User area. X=Addr, A=Data
 .^writeUserReg
 	  CPX #&80
-            BCS L8863								;Invalid if Address >=&80
+            BCS rts  								;Invalid if Address >=&80
             CPX #&32
             BCS L8820								;Write to Private RAM if Address >&32 and <&80
             PHA
