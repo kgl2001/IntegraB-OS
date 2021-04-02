@@ -7921,13 +7921,11 @@ GUARD	&C000
             STA (L00D6),Y
             JMP LB931
 
-; Set SHEN, which will allow MEMSEL to control shadow RAM paging.
-; SFTODO: I have a vague idea from debugging problems with Ozmoo that IBOS
-; leaves MEMSEL always 0, so SHEN effectively controls shadow RAM paging. *If*
-; that's true this function should probably be renamed pageInShadow or similar.
-; (OK, this isn't *absolutely* true - code at LBC3B temporarily alters MEMSEL,
-; but it *may* be mostly true, so I won't delete this comment yet.)
-.setShen
+; Set MEMSEL. This means that main/video memory will be paged in at &3000-&7FFF
+; regardless of SHEN.
+; SFTODO: Maybe change this to something like pageInMainVideoMemory? But for now
+; it's probably better to make the hardware paging operation the focus.
+.setMemsel
 {
 .LB948      PHA
             LDA &F4
@@ -8273,7 +8271,7 @@ ibosCNPVIndex = 6
 ; Read character at text cursor and screen mode (http://beebwiki.mdfs.net/OSBYTE_%2687)
 .osbyte87Handler
 {
-.LBA90      JSR setShen
+.LBA90      JSR setMemsel
             JMP LBB1C
 }
 
@@ -8394,7 +8392,7 @@ ibosCNPVIndex = 6
 .LBB54		JSR restoreOrigVectorRegs
             CMP #&09
             BNE LBB67
-            JSR setShen
+            JSR setMemsel
             JSR LBB51
             JSR updateOrigVectorRegs
             JMP returnFromVectorHandler
@@ -8408,7 +8406,7 @@ ibosCNPVIndex = 6
 .LBB6C      JMP (parentVectorTbl + ibosRDCHVIndex * 2)
 
 .^rdchvHandler
-.LBB6F	  JSR setShen
+.LBB6F	  JSR setMemsel
             JSR restoreOrigVectorRegs
             JSR jmpParentRDCHV
             JSR updateOrigVectorRegs
@@ -8495,7 +8493,7 @@ ibosCNPVIndex = 6
             CMP #vduSetMode
             BEQ newMode
 .^processWrchv ; SFTODO: not a great name...
-.LBBF1      JSR setShen
+.LBBF1      JSR setMemsel
             JSR jmpParentWRCHV
             PHA
             LDA modeChangeState
