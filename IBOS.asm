@@ -89,7 +89,7 @@
 
 ; These registers are held in private RAM at &8380-&83FF and are not
 ; battery-backed (SFTODO: correct?). They are initialised on startup (SFTODO:
-; where exactly?) and can be accessed via readRTC/writeRTC just like the actual
+; where exactly?) and can be accessed via readUserReg/writeUserReg just like the actual
 ; RTC user registers.
 ;Register &32 - &04:	0-2: OSMODE / 3: SHX
 ;Register &35 - &13:	Century
@@ -1412,7 +1412,7 @@ GUARD	&C000
 ;Read from RTC clock User area. X=Addr, A=Data
 ;For X between &00 and &31, read from RTC + &0E
 ;For X between &32 and &79, read from Private RAM &83xx + &80
-.^readRTC
+.^readUserReg
 	  CPX #&80
             BCS rts  								;Invalid if Address >=&80
             CPX #&32
@@ -1427,7 +1427,7 @@ GUARD	&C000
             JMP L885B
 
 ;Write to RTC clock User area. X=Addr, A=Data
-.^writeRTC
+.^writeUserReg
 	  CPX #&80
             BCS L8863								;Invalid if Address >=&80
             CPX #&32
@@ -1672,7 +1672,7 @@ GUARD	&C000
             ASL A									;move to upper 4 bits (LANG parameter)
             ORA &F4									;Read current ROM number & save to lower 4 bits (FILE parameter)
 ;	  LDA #&EC								;Force LANG: 14, FILE: 12 in IBOS 1.21 (in place of ORA &F4 in line above)
-.L89D2      JSR writeRTC								;Write to RTC clock User area. X=Addr, A=Data
+.L89D2      JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             DEX
             BPL L89C4
             JSR LA790								;Stop Clock and Initialise RTC registers &00 to &0B
@@ -1715,7 +1715,7 @@ GUARD	&C000
             LDY #&1E								;Number of entries in lookup table for IntegraB defaults
 .L8A2D	  LDX intDefault-L89E9+L2800+&00,Y						;address of relocated intDefault table:		(address for data)
 	  LDA intDefault-L89E9+L2800+&01,Y						;address of relocated intDefault table+1:	(data)
-            JSR writeRTC								;Write IntegraB default value to RTC User RAM
+            JSR writeUserReg								;Write IntegraB default value to RTC User RAM
             DEY
             DEY
             BPL L8A2D								;Repeat for all 16 values
@@ -1853,7 +1853,7 @@ GUARD	&C000
             BNE osbyteA2
             PLA
             LDX L00F0
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA L00F1
             PHA
             JMP exitSC								;Exit Service Call
@@ -1863,7 +1863,7 @@ GUARD	&C000
             BNE osbyte44
             LDX L00F0
             LDA L00F1
-            JSR writeRTC								;Write to RTC clock User area. X=Addr, A=Data
+            JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             PLA
             LDA L00F1
             PHA
@@ -2421,7 +2421,7 @@ GUARD	&C000
             JSR L922B								;get address of file name and open file
             TAY									;move file handle to Y
             LDX #&00								;start at RTC clock User area 0
-.L8F70      JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+.L8F70      JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             JSR OSBPUT								;write data in A to file handle Y
             INX									;next byte
             BPL L8F70								;for 128 bytes
@@ -2433,7 +2433,7 @@ GUARD	&C000
             TAY									;move file handle to Y
             LDX #&00								;start at RTC clock User area 0
 .L8F83      JSR OSBGET								;read data from file handle Y into A
-            JSR writeRTC								;Write to RTC clock User area. X=Addr, A=Data
+            JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             INX									;get next byte
             BPL L8F83								;for 128 bytes
 
@@ -3062,16 +3062,16 @@ GUARD	&C000
             STA L00BC
             LDA ConfParBit,Y
             TAX
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND L00BC
             ORA L00BD
-            JMP writeRTC							;Write to RTC clock User area. X=Addr, A=Data
+            JMP writeUserReg							;Write to RTC clock User area. X=Addr, A=Data
 			
 .L940A      JSR L93C3
             JSR L93CA
             LDA ConfParBit,Y
             TAX
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND L00BC
             STA L00BD
             LDA ConfParBit+1,Y
@@ -3164,7 +3164,7 @@ GUARD	&C000
             JSR L94F8
             JSR L91B9								;write ' ' to screen
             LDX #&10								;Register &10 (0: File system / 4: Boot / 5-7: Data )
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LDX #&4E								;'N' - NFS
             AND #&01								;Isolate file system bit
             BEQ L94BA								;NFS?
@@ -3193,11 +3193,11 @@ GUARD	&C000
 .L94DD      CLC
 .L94DE      PHP										;Save File system status bit in Carry flag
             LDX #&10								;Register &10 (0: File system / 4: Boot / 5-7: Data )
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LSR A									;Rotate old File system status bit out of register
             PLP										;Restore new File system status bit from Carry flag
             ROL A									;Rotate new File system status bit in to register
-            JMP writeRTC							;Write to RTC clock User area. X=Addr, A=Data
+            JMP writeUserReg							;Write to RTC clock User area. X=Addr, A=Data
 			
 .Conf1		BCS L94F2
             JSR L9427
@@ -3404,7 +3404,7 @@ GUARD	&C000
             JMP L9680
 			
 .L966E      LDX #&10								;Register &10 (0: File system / 4: Boot / 5-7: Data )
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ROR A
             ROR A									;Move File system bit to msb
             AND #&80								;and isolate bit
@@ -3415,7 +3415,7 @@ GUARD	&C000
             RTS
 			
 .L9680      LDX #&05
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&0F
             TAX
             CPX &F4
@@ -3427,7 +3427,7 @@ GUARD	&C000
             LDA L028C
             BPL L96A7
 .L969A      LDX #&05
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             JSR L980B
             JMP L96A7
 			
@@ -3475,13 +3475,13 @@ GUARD	&C000
             JMP L9808
 			
 .L96EE      LDX #rtcUserPrvPrintBufferStart
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LDX #prvPrvPrintBufferStart-prv83                                                                   ; SFTODO: not too happy with this format
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX lastBreakType
             BEQ L9719
             LDX #&32								;0-2: OSMODE / 3: SHX
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA
             AND #&07								;mask OSMODE value
             LDX #&3C								;select OSMODE register
@@ -3495,7 +3495,7 @@ GUARD	&C000
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
 .L9719      JSR LBC98
             LDX #&0A								;get TV / MODE parameters
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA									;save value
             ROL A									;move msb to carry
             PHP									;save msb
@@ -3528,7 +3528,7 @@ GUARD	&C000
             JMP L9768
 			
 .L9758      LDX #&0A								;get MODE value - Shadow: bit 3, Mode: bits 0, 1 & 2
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&0F								;Lower nibble only
             CMP #&08								;Is shadow bit set?
             BCC L9765								;Branch if no shadow (less than &8)
@@ -3536,22 +3536,22 @@ GUARD	&C000
 .L9765      JSR OSWRCH								;Write MODE
 .L9768      JSR L989F
             LDX #&0C								;get keyboard auto-repeat delay (cSecs)
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             TAX
             LDA #&0B								;select keyboard auto-repeat delay
             JSR OSBYTE								;write keyboard auto-repeat delay
             LDX #&0D								;get keyboard auto-repeat rate (cSecs)
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             TAX
             LDA #&0C								;select keyboard auto-repeat rate
             JSR OSBYTE								;write keyboard auto-repeat rate
             LDX #&0E								;get character ignored by printer
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             TAX
             LDA #&06								;select character ignored by printer
             JSR OSBYTE								;write character ignored by printer
             LDX #&0F								;get RS485 baud rate for receiving and transmitting data (bits 2,3,4) & printer destination (bit 5)
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             JSR L980D								;2 x LSR
             PHA
             AND #&07								;get lower 3 bits
@@ -3571,7 +3571,7 @@ GUARD	&C000
             LDA #&05								;select printer destination
             JSR OSBYTE								;write printer destination
             LDX #&0B
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA
             AND #&38
             LDX #&A0								;CAPS Lock Engaged + Shift Enabled?
@@ -3592,7 +3592,7 @@ GUARD	&C000
             ASL A
             STA L00A8
             LDX #&10								;Register &10 (0: File system / 4: Boot / 5-7: Data )
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA
             LDY #&C8
             LDA lastBreakType
@@ -3635,7 +3635,7 @@ GUARD	&C000
             BIT L03A4
             BMI L983D
             LDX #&0F
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&01
             BNE L982E
             LDA #&FF
@@ -3730,7 +3730,7 @@ GUARD	&C000
             LDA #&07								;Beep
             JSR OSWRCH								;Write to screen
             LDX #&7F								;Read 'RAM installed in banks' register
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA L00A8
             LDX #&07								;Check all 8 32k banks for RAM
             LDA #&00								;Start with 0k RAM
@@ -5075,11 +5075,11 @@ GUARD	&C000
 ;*INSERT Command
 .insert     JSR LA2E4								;Error check input data
             LDX #&06								;get *INSERT status
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA L00AE								;update *INSERT status
-            JSR writeRTC								;Write to RTC clock User area. X=Addr, A=Data
+            JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             LDX #&07
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA L00AF
             JSR LA31A								;Check for Immediate 'I' flag
             BNE LA317								;Exit if not immediate
@@ -5087,7 +5087,7 @@ GUARD	&C000
             JSR LA49C								;Initialise inserted ROMs
 .LA317      JMP exitSC								;Exit Service Call
 
-.LA31A      JSR writeRTC								;Write to RTC clock User area. X=Addr, A=Data
+.LA31A      JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             JSR L853F								;find next character. offset stored in Y
             LDA (L00A8),Y
             AND #&DF								;Capitalise
@@ -5098,11 +5098,11 @@ GUARD	&C000
 .unplug	  JSR LA2E4								;Error check input data
             JSR LA4D6								;Invert all bits in &AE and &AF
             LDX #&06								;INSERT status for ROMS &0F to &08
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND L00AE
-            JSR writeRTC								;Write to RTC clock User area. X=Addr, A=Data
+            JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             LDX #&07								;INSERT status for ROMS &07 to &00
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND L00AF
             JSR LA31A
             BNE LA347
@@ -5138,7 +5138,7 @@ GUARD	&C000
 	  LSR A
             TAY
             LDX #&7F								;read RAM installed in bank flag from private &83FF
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND LA34A,Y								;Get data from lookup table
             BNE LA380								;Branch if RAM
             LDA #&20								;' '
@@ -5382,30 +5382,30 @@ GUARD	&C000
             JMP LA2EB
 			
 .LA513      LDX #&38
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA L00AE
             PLP
             PHP
             BCC LA520
             EOR L00AE
-.LA520      JSR writeRTC								;Write to RTC clock User area. X=Addr, A=Data
+.LA520      JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             INX
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA L00AF
             PLP
             BCC LA52E
             EOR L00AF
-.LA52E      JSR writeRTC								;Write to RTC clock User area. X=Addr, A=Data
+.LA52E      JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             JSR PrvEn								;switch in private RAM
             JSR LA53D
 .LA537      JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call
 			
 .LA53D      LDX #&38
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA prv82+&52
             INX
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHP
             SEI
             LSR A
@@ -5472,10 +5472,10 @@ GUARD	&C000
 .LA5B8      LDA #&00
             STA L03A4
             LDX #&06
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA L00AE
             LDX #&07
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA L00AF
             JSR LA4C5
 .LA5CE      LDX #&41
@@ -5596,7 +5596,7 @@ GUARD	&C000
             AND #&20
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             LDX #&32
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LDX #&00
             AND #&10
             BEQ LA6BB
@@ -5624,7 +5624,7 @@ GUARD	&C000
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             LDX #&35
             LDA prv82+&28
-            JMP writeRTC								;Write to RTC clock User area. X=Addr, A=Data
+            JMP writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
 .LA6F3      JSR LA775								;Check if RTC Update in Progress, and wait if necessary
@@ -5724,7 +5724,7 @@ GUARD	&C000
 
 .LA7A8      BCS LA7C2
             LDX #&33
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&40
             LSR A
             STA L00AE
@@ -6953,7 +6953,7 @@ GUARD	&C000
             LDA prv82+&4D
             BNE LB1E9
 .LB1E4      LDX #&35
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
 .LB1E9      STA prv82+&28
             RTS
 			
@@ -7150,7 +7150,7 @@ GUARD	&C000
 .LB34C		EQUB &0F,&07
 
 .LB34E      LDX #&33
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ASL A
             PHP
             ASL A
@@ -7159,7 +7159,7 @@ GUARD	&C000
             ROR A
             PLP
             ROR A
-            JSR writeRTC								;Write to RTC clock User area. X=Addr, A=Data
+            JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
 
 .LB35E      SEC
 .LB35F      LDA &F4
@@ -7177,7 +7177,7 @@ GUARD	&C000
             BCC LB3CA
 
 	  LDX #&33
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA									;and save value
             AND #&01								;read first bit (0)
             TAX
@@ -7253,7 +7253,7 @@ GUARD	&C000
             BVC LB447
             BPL LB447
             LDX #&33
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LSR A
             AND #&20
             STA prv82+&76
@@ -7507,7 +7507,7 @@ GUARD	&C000
             LSR A
             PHP
             LDX #&33
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ASL A
             PLP
             ROR A
@@ -7527,11 +7527,11 @@ GUARD	&C000
             BCS LB61B
             PHP
             LDX #&33
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PLP
             BNE LB67C
             AND #&BF
-            JSR writeRTC							;Write to RTC clock User area. X=Addr, A=Data
+            JSR writeUserReg							;Write to RTC clock User area. X=Addr, A=Data
             LDX #&0B								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&9F
@@ -7539,7 +7539,7 @@ GUARD	&C000
             JMP LB6E3
 			
 .LB67C      ORA #&40
-            JSR writeRTC							;Write to RTC clock User area. X=Addr, A=Data
+            JSR writeUserReg							;Write to RTC clock User area. X=Addr, A=Data
             LDX #&0B								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&9F
@@ -7572,7 +7572,7 @@ GUARD	&C000
             AND #&20
             JSR L86C8
             LDX #&33
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&80
             BEQ LB6E0
             JSR L91B9								;write ' ' to screen
@@ -8547,7 +8547,7 @@ ibosCNPVIndex = 6
             ; In a modified IBOS this should probably either be removed to save
             ; space or exposed via *CONFIGURE/*STATUS.
 .LBC05      LDX #rtcUserHorzTV
-            JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
+            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             CLC
             ADC #&62
             LDX currentMode
