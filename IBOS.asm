@@ -645,7 +645,7 @@ GUARD	&C000
             BEQ L8387								;reached the end of the check. All good, so process.
             JMP L836A								;loop
 			
-.L837E      CMP #&2E								;'.'
+.L837E      CMP #'.'
             BNE L838D								;command not matched. Check next command.
             CPY #&03								;check length of command.
             BCC L838D								;If less than 3, then too short, even if initial characters match, so check next command
@@ -1064,16 +1064,20 @@ GUARD	&C000
             JMP L83FB
 
 ;service entry point
-.service    PHA										;save service type
+.service
+{
+            PHA										;save service type
             TXA
             PHA										;save ROM number
             TYA
             PHA										;save ROM parameter
             TSX
-            LDA L0103,X								;what are we grabbing here?
+            LDA L0103,X								;get original A we stacked just above
             BEQ exitSCa								;restore service call parameters and exit
             CMP #&05
             BNE L8635								;Process lookup table if not equal to &05
+            ; We're handling service call 5 - unrecognised interrupt.
+            ; SFTODO: I'm guessing this is something to do with the RTC generating an interrupt when alarm time occurs.
             LDX #&0C								;Select 'Register C' register on RTC: Register &0C
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             CMP #&80								;Interrupt Request Flag
@@ -1087,14 +1091,14 @@ GUARD	&C000
             BPL L8637
 
 ;restore service call parameters and exit
-.exitSCa	PLA										;restore ROM parameter				
+.^exitSCa   PLA										;restore ROM parameter
             TAY
             PLA										;restore ROM number
             TAX
             PLA										;restore service type
             RTS
 
-.exitSC		TSX
+.^exitSC    TSX
             LDA #&00
             STA L0103,X
             JMP exitSCa								;restore service call parameters and exit
@@ -1135,6 +1139,7 @@ GUARD	&C000
 		EQUW service06-1							;Address for Break
 		EQUW service08-1							;Address for unrecognised OSWORD call
 		EQUW service07-1							;Address for unrecognised OSBYTE call
+}
 
 ;error handling routine
 .L867E      JSR PrvDis								;switch out private RAM
@@ -7272,11 +7277,11 @@ GUARD	&C000
             STA SHEILA+&30
             RTS
 			
-.LB46E      DEX										;Select 'Register B' register on RTC: Register &0B
+.LB46E      DEX									;Select 'Register B' register on RTC: Register &0B
             JSR LA660								;3 x NOP delay
-            STX SHEILA+&38							;Strobe in address
+            STX SHEILA+&38						          	;Strobe in address
             JSR LA660								;3 x NOP delay
-            AND SHEILA+&3C							;Strobe out data
+            AND SHEILA+&3C							          ;Strobe out data
             JSR LA664
             ASL A
             ASL A
@@ -7293,7 +7298,7 @@ GUARD	&C000
 .LB490      ASL A
             BCC LB4AC
             LDX #&44
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             PHA
             AND #&01
             BEQ LB4A2
