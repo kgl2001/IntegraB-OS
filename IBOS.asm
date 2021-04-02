@@ -1377,12 +1377,12 @@ GUARD	&C000
 		EQUS "Not found", &00
 
 ;Condition then read from Private RAM &83xx (Addr = X, Data = A)
-.L8817      JSR L882D								;Set msb of Addr (Addr = Addr OR &80)
+.L8817      JSR setXMsb								;Set msb of Addr (Addr = Addr OR &80)
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             JMP L8826								;Clear msb of Addr (Addr = Addr & &7F)
 			
 ;Condition then write to Private RAM &83xx (Addr = X, Data = A)
-.L8820      JSR L882D								;Set msb of Addr (Addr = Addr OR &80)
+.L8820      JSR setXMsb								;Set msb of Addr (Addr = Addr OR &80)
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
 
 ;Clear msb of Addr (Addr = Addr & &7F)			
@@ -1394,18 +1394,23 @@ GUARD	&C000
             RTS		
 
 ;Set msb of Addr (Addr = Addr OR &80)
+.setXMsb
+{
 .L882D      PHA
             TXA
             ORA #&80
             TAX
             PLA
-            RTS		
+            RTS
+}
 
+{
 ;Read from RTC clock User area. X=Addr, A=Data
 ;For X between &00 and &31, read from RTC + &0E
 ;For X between &32 and &79, read from Private RAM &83xx + &80
-.readRTC	  CPX #&80
-            BCS L8863								;Invalid if Address >=&80
+.^readRTC
+	  CPX #&80
+            BCS rts  								;Invalid if Address >=&80
             CPX #&32
             BCS L8817								;Read from Private RAM if Address >&32 and <&80
             PHA
@@ -1418,7 +1423,8 @@ GUARD	&C000
             JMP L885B
 
 ;Write to RTC clock User area. X=Addr, A=Data
-.writeRTC	  CPX #&80
+.^writeRTC
+	  CPX #&80
             BCS L8863								;Invalid if Address >=&80
             CPX #&32
             BCS L8820								;Write to Private RAM if Address >&32 and <&80
@@ -1437,7 +1443,9 @@ GUARD	&C000
             TAX
             PLA
             CLC
+.rts
 .L8863      RTS
+}
 
 ;write data to Private RAM &83xx (Addr = X, Data = A)
 .writePrivateRam8300X
