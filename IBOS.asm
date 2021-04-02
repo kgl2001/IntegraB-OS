@@ -339,7 +339,9 @@ opcodeCmdAbs = &CD
 
 ; SFTODO: Define romselCopy = &F4, romsel = &FE30, ramselCopy = &37F, ramsel =
 ; &FE34 and use those everywhere instead of the raw hex or SHEILA+&xx we have
-; now?
+; now? SFTODO: Or maybe romId instead of romselCopy and ditto for ramselCopy,
+; to match the Integra-B documentation, although I find those names a bit less
+; intuitive personally.
 crtcHorzTotal = SHEILA + &00
 crtcHorzDisplayed = SHEILA + &01
 
@@ -7966,6 +7968,18 @@ GUARD	&C000
 ; Doing all this avoids the use of the OS extended vector mechanism, which is
 ; relatively slow (particularly important for WRCHV, which gets called for every
 ; character output to the screen) and doesn't allow for vector chains.
+;
+; Note that while we have to save the originally paged in bank from romselCopy
+; and restore it afterwards for obvious reasons (the caller is very likely
+; directly or indirectly relying on this, e.g. a BASIC program will need the
+; BASIC ROM to remain paged in after making an OS call which goes to IBOS!),
+; this *also* has the effect of restoring the previous values of PRVEN and MEMSEL.
+; SFTODO: I would like to get the whole ROM disassembled first before writing a
+; permanent comment, but this is why e.g. rdchvHandler can do JSR setMemsel without
+; explicitly reverting that change.
+; SFTODO: Experience with Ozmoo suggests it's *probably* OK, but does IBOS always
+; restore RAMSEL/RAMID to their original values if it changes them? Or at least the
+; PRVSx bits?
 .romCodeStub
 ramCodeStub = osPrintBuf ; SFTODO: use ramCodeStub instead of osPrintBuf in some/all places?
 {
