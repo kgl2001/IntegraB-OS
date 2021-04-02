@@ -1407,11 +1407,16 @@ GUARD	&C000
             PLA
             RTS
 
-; Read/write A from/to user register X.
+; Read/write A from/to user register X. X is preserved on exit.
 ; For X<=&31, the user register is held in RTC register X+&0E.
 ; For &32<=X<=&7F, the user register is held in private RAM at &8380+X.
-; For X>=&80, the subroutine does nothing.
+; For X>=&80, these subroutines do nothing.
 ; SFTODO: Does the code rely on that behaviour for X>=&80?
+; SFTODO: These two routines start off very similar, can we share code?
+; SFTODO: A fair amount of the code/complexity here is preserving X. Do callers
+; need this/could they be easily changed not to need it? If we don't have to
+; worry about being re-entrant, is there a byte of main RAM we could use to stash
+; X in on entry.
 
 .^readUserReg
 	  CPX #&80
@@ -1421,7 +1426,7 @@ GUARD	&C000
             PHA
             CLC
             TXA
-            ADC #&0E								;Increment address by &0E bytes. First &0E bytes are for the RTC data
+            ADC #rtcUserBase								;Increment address by &0E bytes. First &0E bytes are for the RTC data
             TAX
             PLA
             JSR rdRTCRAM								;Read data from RTC memory location X into A
@@ -1435,7 +1440,7 @@ GUARD	&C000
             PHA
             CLC
             TXA
-            ADC #&0E								;Increment address by &0E bytes. First &0E bytes are for the RTC data
+            ADC #rtcUserBase								;Increment address by &0E bytes. First &0E bytes are for the RTC data
             TAX
             PLA
             JSR wrRTCRAM								;Write data from A to RTC memory location X
@@ -1443,7 +1448,7 @@ GUARD	&C000
 .L885B      PHA
             TXA
             SEC
-            SBC #&0E								;Restore address by reducing address by &0E bytes. First &0E bytes are for the RTC data
+            SBC #rtcUserBase								;Restore address by reducing address by &0E bytes. First &0E bytes are for the RTC data
             TAX
             PLA
             CLC
@@ -5540,7 +5545,7 @@ GUARD	&C000
 .LA646      RTS
 
 ;read from RTC RAM (Addr = X, Data = A)
-.rdRTCRAM	  PHP
+.rdRTCRAM   PHP
             SEI
             JSR LA66C								;Set RTC address according to X
             LDA SHEILA+&3C								;Strobe out data
@@ -5549,18 +5554,18 @@ GUARD	&C000
             RTS
 			
 ;write to RTC RAM (Addr = X, Data = A)
-.wrRTCRAM	  PHP
+.wrRTCRAM   PHP
             JSR LA66C								;Set RTC address according to X
             STA SHEILA+&3C								;Strobe in data
             JSR LA664
             PLP
             RTS
-			
+
 .LA660      NOP
 .LA661      NOP
             NOP
             RTS
-			
+
 .LA664      PHA
             LDA #&0D								;Select 'Register D' register on RTC: Register &0D
             JSR LA66C
