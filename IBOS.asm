@@ -8036,21 +8036,33 @@ ASSERT parentVectorTbl2End <= osPrintBuf + &40
             PLP
             RTS
 }
-			
+
+; This subroutine is the inverse of restoreOrigVectorRegs; it takes the current
+; values of A, X, Y and the flags and overwrites the stacked copies with them
+; so they will be restored on returning from the vector handler.
+.updateOrigVectorRegs
+{
+            ; At this point the stack is as described in the big comment in
+            ; vectorEntry but with the return address for this subroutine also
+            ; pushed onto the stack.
 .LB9AA      PHP
             PHA
             TXA
             PHA
             TYA
             TSX
-            STA L0106,X
+            ; So at this point the stack is as described in the big comment in
+            ; vectorEntry but with everything moved up five bytes (X=S-5, if S
+            ; is the value of the stack pointer in that comment).
+            STA L0106,X ; overwrite original stacked Y
             PLA
-            STA L0107,X
+            STA L0107,X ; overwrite original stacked X
             PLA
-            STA L010C,X
+            STA L010C,X ; overwrite original stacked A
             PLA
-            STA L010B,X
+            STA L010B,X ; overwrite original stacked flags
 .LB9BF      RTS
+}
 
 ; Table of vector handlers used by vectorEntry; addresses have -1 subtracted
 ; because we transfer control to these via an RTS instruction. The odd bytes
@@ -8294,7 +8306,7 @@ ibosCNPVIndex = 6
             TAY
             LDA #&98
 }
-.LBACB      JSR LB9AA
+.LBACB      JSR updateOrigVectorRegs
             JMP returnFromVectorHandler
 
 ; Read top of user memory (http://beebwiki.mdfs.net/OSBYTE_%2684)
@@ -8384,7 +8396,7 @@ ibosCNPVIndex = 6
             BNE LBB67
             JSR setShen
             JSR LBB51
-            JSR LB9AA
+            JSR updateOrigVectorRegs
             JMP returnFromVectorHandler
 
 .LBB67      LDA #ibosWORDVIndex
@@ -8399,7 +8411,7 @@ ibosCNPVIndex = 6
 .LBB6F	  JSR setShen
             JSR restoreOrigVectorRegs
             JSR jmpParentRDCHV
-            JSR LB9AA
+            JSR updateOrigVectorRegs
             JMP returnFromVectorHandler
 }
 
