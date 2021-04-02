@@ -95,7 +95,7 @@
 ;Register &7F - &7F:	Bit set if RAM located in 32k bank. Default was &0F (lowest 4 x 32k banks). Changed to &7F
 
 rtcUserBase = &0E
-rtcUserSFTODOP = rtcUserBase + &28
+rtcUserHorzTV = rtcUserBase + &28 ; "horizontal *TV" settings
 rtcUserPrvPrintBufferStart = rtcUserBase + &2C ; the first page in private RAM reserved for the printer buffer (&90-&AC)
 
 vduStatus = &D0
@@ -8493,12 +8493,14 @@ ibosCNPVIndex = 6
             ORA #vduStatusShadow
             STA vduStatus
 .adjustCrtcHorz
-            ; SFTODO: The following code is calculating values for
-            ; crtcHorz{Total,Displayed} based on rtcUserSFTODOP and the current
-            ; screen mode. Is this an attempt to provide a horizontal equivalent
-            ; of *TV, i.e. to move the display left and right to centre it on a
-            ; particular monitor? Is this exposed to the user or hidden?
-.LBC05      LDX #rtcUserSFTODOP
+            ; SFTODO: There seems to be an undocumented feature of IBOS which
+            ; will perform a horizontal screen shift (analogous to the vertical
+            ; shift controlled by *TV/*CONFIGURE TV) based on rtcUserHorzTV.
+            ; This is not exposed in *CONFIGURE/*STATUS, but it does seem to
+            ; work if you use *FX162,54 to write directly to the RTC register.
+            ; In a modified IBOS this should probably either be removed to save
+            ; space or exposed via *CONFIGURE/*STATUS.
+.LBC05      LDX #rtcUserHorzTV
             JSR readRTC								;Read from RTC clock User area. X=Addr, A=Data
             CLC
             ADC #&62
@@ -9181,3 +9183,6 @@ SAVE "IBOS-01.rom", start, end
 ; SFTODO: I've been wrapping my multi-line comments to 80 characters (when I
 ; remember!), it might be nice to tweak the final disassembly to fit entirely in
 ; 80 columns.
+
+; SFTODO: Enhancement idea - allow "*CO." as an abbreviation for *CONFIGURE. The
+; Master accepts this, and it does trip me up when using IBOS.
