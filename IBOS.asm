@@ -8405,6 +8405,11 @@ ibosCNPVIndex = 6
 .jmpParentRDCHV
 .LBB6C      JMP (parentVectorTbl + ibosRDCHVIndex * 2)
 
+; It seems a bit counter-intuitive that IBOS needs a RDCHV handler at all, but I
+; believe this is needed so cursor editing can work - the OS will try to read
+; from screen memory to work out what character is currently on the screen when
+; copying text. OS 1.20 doesn't call OSBYTE &87 to read the character, it just
+; calls its own internal OSBYTE &87 implementation directly via JSR.
 .^rdchvHandler
 .LBB6F	  JSR setMemsel
             JSR restoreOrigVectorRegs
