@@ -1990,7 +1990,7 @@ GUARD	&C000
 ;Checks for blank and clears table
 .boot       JSR PrvEn								;switch in private RAM
             LDA (L00A8),Y
-            CMP #&3F								;'?'
+            CMP #'?'
             BEQ L8C26								;Print *BOOT parameters
             LDA L00A8
             STA L00F2
@@ -2034,7 +2034,7 @@ GUARD	&C000
             PHA
             LDA #&7C								;CHR$&7C
             JSR OSWRCH								;write to screen
-            LDA #&21								;'!'
+            LDA #'!'								;'!'
             JSR OSWRCH								;write to screen
             PLA
 .L8C4C      AND #&7F
@@ -2385,7 +2385,7 @@ GUARD	&C000
             JSR L8E6C
             LDA #&00
             STA prv83+&3C								;write OSMODE
-            JSR LBD18
+            JSR SFTODOZZ
             JMP L8EFA
 			
 .L8F17      JSR L8E6C
@@ -2398,7 +2398,7 @@ GUARD	&C000
 .shadow	  JSR L872B
             BCC L8F41
             LDA (L00A8),Y								;get next character from command parameter
-            CMP #&3F								;check for '='
+            CMP #'?'								;check for '='
             BEQ L8F38								;branch if set
             CMP #&0D								;check for no parameters
             BNE L8F47
@@ -2418,7 +2418,7 @@ GUARD	&C000
 .shx      JSR L8699
             BCC L8F60
             LDA (L00A8),Y
-            CMP #&3F								;'='
+            CMP #'?'
             BNE L8F47
             JSR L83EC
             LDX #&3D								;select SHX register (&08: On, &FF: Off)
@@ -8740,12 +8740,16 @@ ibosCNPVIndex = 6
             STA modeChangeState
             LDA #&01
             STA osShadowRamFlag
+.SFTODOCOMMON1
             JSR PrvEn								;switch in private RAM
             LDA prv83+&3F
             AND #&7F
             STA prv83+&3F
             JMP PrvDis								;switch out private RAM
-			
+
+; SFTODO: This has only one caller
+.SFTODOZZ
+{
 .LBD18      PHP
             SEI
             LDX #&07
@@ -8759,6 +8763,7 @@ ibosCNPVIndex = 6
             DEX
             BPL LBD27
             PLP
+            ; SFTODO: The next few lines (down to and including JSR PrvDis) could be replaced by JSR SFTODOCOMMON1, I think.
             JSR PrvEn								;switch in private RAM
             LDA prv83+&3F
             AND #&7F
@@ -8766,6 +8771,7 @@ ibosCNPVIndex = 6
             JSR PrvDis								;switch out private RAM
             JSR maybeSwapShadow2
             JMP LBCF2
+}
 
 ; Page in PRVS8 and PRVS1, returning the previous value of RAMSEL in A.
 ; SFTODO: From vague memories of other bits of the code, sometimes we do this
