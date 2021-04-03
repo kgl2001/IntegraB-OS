@@ -87,10 +87,9 @@
 ;Register &10 - &A0:	0: File system / 4: Boot / 5-7: Data
 
 
-; These registers are held in private RAM at &83B2-&83FF and are not
-; battery-backed (SFTODO: correct?). They are initialised on startup (SFTODO:
-; where exactly?) and can be accessed via readUserReg/writeUserReg just like the actual
-; RTC user registers.
+; These registers are held in private RAM at &83B2-&83FF; this is battery-backed
+; (as is the whole of private and shadow RAM), so they look just like the above
+; RTC user registers to code accessing them via readUserReg/writeUserReg.
 ;Register &32 - &04:	0-2: OSMODE / 3: SHX
 ;Register &35 - &13:	Century
 ;Register &38 - &FF:
