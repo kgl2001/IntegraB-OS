@@ -3842,7 +3842,9 @@ GUARD	&C000
             JMP LA2DE
 			
 ;*SRWIPE Command
-.srwipe	  JSR L9B25
+.srwipe
+{
+	  JSR L9B25
             JSR PrvEn								;switch in private RAM
             LDX #&00
 .L998F      ROR L00AF
@@ -3857,8 +3859,8 @@ GUARD	&C000
 .L99A0      JSR L9FC6
             BNE L99BF
             PHA
-            LDX #L9E38 MOD &100							;LSB of relocatable Wipe RAM code
-            LDY #L9E38 DIV &100							;LSB of relocatable Wipe RAM code
+            LDX #lo(wipeRamTemplate)							;LSB of relocatable Wipe RAM code
+            LDY #hi(wipeRamTemplate)							;LSB of relocatable Wipe RAM code
             JSR L9F33								;relocate &32 bytes of Wipe RAM code from &9E38 to &03A7
             PLA
             JSR L03A7								;Call relocated Wipe RAM code
@@ -3870,6 +3872,7 @@ GUARD	&C000
             STA L02A1,X								;clear ROM Type byte
             STA prv83+&2C,X								;clear Private RAM copy of ROM Type byte
 .L99BF      RTS
+}
 
 		EQUS "RAM","ROM"
 
@@ -4483,6 +4486,9 @@ GUARD	&C000
 
 ;Wipe RAM at bank A
 ;this code is relocated to and executed at &03A7
+wipeRam = &03A7
+.wipeRamTemplate
+{
 .L9E38	  LDX romselCopy
             STA romselCopy
             STA romsel
@@ -4497,6 +4503,7 @@ GUARD	&C000
             STX romselCopy
             STX romsel
             RTS
+}
 
 ;write ROM header to RAM at bank A
 ;this code is relocated to and executed at &03A7
