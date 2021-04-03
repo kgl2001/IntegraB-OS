@@ -3882,9 +3882,11 @@ GUARD	&C000
 .L99BF      RTS
 }
 
+; SFTODO: How are these strings accessed? Which label?
 		EQUS "RAM","ROM"
 
-.L99C6	  PHA
+{
+.^L99C6	  PHA
 	  LDX #L9E59 MOD &100							;was LDX #&59
 	  LDY #L9E59 DIV &100							;was LDY #&9E
 	  JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9E59 to &03A7
@@ -3897,6 +3899,7 @@ GUARD	&C000
             STA prv82+&21
             STA L03C2
             JMP variableMainRamSubroutine								;Call relocated code
+}
 			
 .L99E5      LDX #&03
 .L99E7      CMP prv83+&0C,X
@@ -3905,7 +3908,7 @@ GUARD	&C000
             BPL L99E7
             SEC
             RTS
-			
+
 .L99F1      LDA #&FF
             STA prv83+&0C,X
 .L99F6      LDX #&00
