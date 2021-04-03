@@ -8734,7 +8734,7 @@ ibosCNPVIndex = 6
             STA ramselCopy								;store at RAMID
             STA ramsel							;store at RAMSEL
             LDA vduStatus								;get VDU status
-            AND #&EF								;clear bit 4
+            NOT_AND vduStatusShadow							;clear bit 4
             STA vduStatus								;save VDU status
             LDA #modeChangeStateNone
             STA modeChangeState
@@ -8765,6 +8765,7 @@ ibosCNPVIndex = 6
             PLP
             ; SFTODO: The next few lines (down to and including JSR PrvDis) could be replaced by JSR SFTODOCOMMON1, I think.
             JSR PrvEn								;switch in private RAM
+            ; SFTODO: We seem to set b7 of prv83+&3F here and in a couple of places but never read it!?
             LDA prv83+&3F
             AND #&7F
             STA prv83+&3F
