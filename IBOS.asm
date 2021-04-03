@@ -3810,7 +3810,7 @@ GUARD	&C000
             LDA prv83+&08,Y
             BMI L994A
             TAX
-            JSR L9FC6
+            JSR testRamUsingVariableMainRamSubroutine
             BNE L994A
             LDA prv83+&2C,X
             BEQ L994D
@@ -3864,7 +3864,7 @@ GUARD	&C000
             JMP LA2DE
 
 ; SFTODO: This has only one caller, the code immediately above - could it just be inlined?
-.L99A0      JSR L9FC6
+.L99A0      JSR testRamUsingVariableMainRamSubroutine
             BNE L99BF
             PHA
             LDX #lo(wipeRamTemplate)							;LSB of relocatable Wipe RAM code
@@ -3956,7 +3956,7 @@ GUARD	&C000
             BCC L9A67
             TYA
             PHA
-            JSR L9FC6
+            JSR testRamUsingVariableMainRamSubroutine
             BNE L9A59
             LDA prv83+&2C,X
             BEQ L9A56
@@ -4036,7 +4036,7 @@ GUARD	&C000
             LDA #&00
             ROR A
             STA L00AD
-            JSR L9FC6
+            JSR testRamUsingVariableMainRamSubroutine
             BNE L9B0D
             LDA prv83+&2C,X
             BEQ L9AE8
@@ -4724,7 +4724,10 @@ GUARD	&C000
             STA L03BD								;Change this to relocated address (&03AF+&xx ???)
 .L9FC5      RTS
 
-;Relocation code then check for RAM banks. 
+;Relocation code then check for RAM banks.
+; SFTODO: "Using..." part of name is perhaps OTT, but it might be important to "remind" us that this tramples over variableMainRamSubroutine - perhaps change later once more code is labelled up
+.testRamUsingVariableMainRamSubroutine
+{
 .L9FC6      TXA
             PHA
             LDX #lo(testRamTemplate)
@@ -4732,6 +4735,7 @@ GUARD	&C000
             JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9E0A to &03A7
             PLA
             JMP variableMainRamSubroutine								;Call relocated code
+}
 			
 ;this routine is called by osword42 and osword43
 ;
@@ -5198,7 +5202,7 @@ GUARD	&C000
             LDA #&20								;' '
             BNE LA38D								;jump to write to screen
 .LA380      LDX L00AA								;get ROM number
-            JSR L9FC6								;check if ROM is WP. Will return with Z set if writeable
+            JSR testRamUsingVariableMainRamSubroutine								;check if ROM is WP. Will return with Z set if writeable
             PHP
             LDA #'E'								;'E' (Enabled)
             PLP
