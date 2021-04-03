@@ -3865,7 +3865,7 @@ GUARD	&C000
             BNE L99BF
             PHA
             LDX #lo(wipeRamTemplate)							;LSB of relocatable Wipe RAM code
-            LDY #hi(wipeRamTemplate)							;LSB of relocatable Wipe RAM code
+            LDY #hi(wipeRamTemplate)							;MSB of relocatable Wipe RAM code
             JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of Wipe RAM code from &9E38 to &03A7
             PLA
             JSR variableMainRamSubroutine								;Call relocated Wipe RAM code
@@ -4507,6 +4507,7 @@ GUARD	&C000
             STX romselCopy
             STX romsel
             RTS
+            ASSERT P% - wipeRamTemplate <= variableMainRamSubroutineMaxSize
 }
 
 ;write ROM header to RAM at bank A
