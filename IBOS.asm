@@ -122,6 +122,9 @@ modeChangeStateSeenVduSetMode = 1 ; we've seen VDU 22, we're waiting for mode by
 modeChangeStateEnteringShadowMode = 2 ; we're changing into a shadow mode
 modeChangeStateEnteringNonShadowMode = 3 ; we're changing into a non-shadow mode
 
+; This is a byte of unused VDU variable workspace which IBOS uses. SFTODO: Say *how* IBOS uses it, once that becomes clear!
+vduVariableShadow = &037F
+
 vduSetMode = 22
 
 lastBreakType = &028D
@@ -1488,10 +1491,10 @@ GUARD	&C000
 .switchInPrivateRAM
 {
 .L887C      PHA
-            LDA &037F
+            LDA vduVariableShadow
             AND #&80
             ORA #&40
-            STA SHEILA+&34							;retain value of &037F so it can be restored after read / write operation complete
+            STA SHEILA+&34							;retain value of vduVariableShadow so it can be restored after read / write operation complete
             LDA &F4
             ORA #&40
             STA SHEILA+&30							;retain value of &F4 so it can be restored after read / write operation complete
@@ -1504,8 +1507,8 @@ GUARD	&C000
 {
 .L8890      LDA &F4
             STA SHEILA+&30							;restore using value retained in &F4
-            LDA &037F
-            STA SHEILA+&34							;restore using value retained in &037F
+            LDA vduVariableShadow
+            STA SHEILA+&34							;restore using value retained in vduVariableShadow
             PLA
             PLP
             PHA
@@ -1703,7 +1706,7 @@ GUARD	&C000
             DEX
             BPL L89EE								;Until all RAM banks are wiped.
             LDA #&F0								;Set Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
-            STA &037F
+            STA vduVariableShadow
             STA SHEILA+&34
             LDA #&40								;Set Private RAM Enable (PRVEN) & Unset Shadow / Main toggle (MEMSEL)
             STA &F4
@@ -1716,7 +1719,7 @@ GUARD	&C000
             STA prv83+&0E
             STA prv83+&0F
             LDA #&00								;Unset Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
-            STA &037F
+            STA vduVariableShadow
             STA SHEILA+&34
             PLA									;Restore SWR bank
             STA &F4
@@ -1777,7 +1780,7 @@ GUARD	&C000
 	  JSR PrvEn								;switch in private RAM
             TXA
             STA prv82+&53
-            LDA &037F
+            LDA vduVariableShadow
             ROL A
             PHP
             LDA prv82+&53
@@ -1799,11 +1802,11 @@ GUARD	&C000
             BPL L8AC1
             ASL prv83+&3E
             ROL prv82+&53
-.L8AB3      LDA &037F
+.L8AB3      LDA vduVariableShadow
             ROL A
             ROR prv82+&53
             ROR A
-            STA &037F
+            STA vduVariableShadow
             STA SHEILA+&34
 .L8AC1      LDA prv82+&52
             TAX
@@ -1829,13 +1832,13 @@ GUARD	&C000
             LDA #&01
 .L8AE4      PHP
             SEI
-            ROL &037F
+            ROL vduVariableShadow
             PHP
             EOR #&01
             ROR A
-            LDA &037F
+            LDA vduVariableShadow
             ROR A
-            STA &037F
+            STA vduVariableShadow
             STA SHEILA+&34
             LDA #&00
 .L8AF9      PLP
@@ -1937,7 +1940,7 @@ GUARD	&C000
             LDA vduStatus								;get VDU status   ***missing reference address***
             AND #&EF								;clear bit 4
             STA vduStatus								;store VDU status
-            LDA &037F								;get RAMID
+            LDA vduVariableShadow								;get RAMID
             AND #&80								;mask bit 7 - Shadow RAM enable bit
             LSR A
             LSR A
@@ -2549,9 +2552,9 @@ GUARD	&C000
 ; won't do it just yet, as I don't fully understand the model the code is using
 ; to manage paging private RAM in/out.
 .PrvEn      PHA
-            LDA &037F
+            LDA vduVariableShadow
             ORA #ramselPrvs1
-            STA &037F
+            STA vduVariableShadow
             STA SHEILA+&34
             LDA &F4
             ORA #romselPrvEn
@@ -2575,9 +2578,9 @@ GUARD	&C000
             NOT_AND romselPrvEn                                                                     ;Clear PrvEn
             STA &F4
             STA SHEILA+&30
-            LDA &037F
+            LDA vduVariableShadow
             NOT_AND ramselPrvs1							;Clear PRVS1
-            STA &037F
+            STA vduVariableShadow
             STA SHEILA+&34
             PLA
             RTS
@@ -3474,7 +3477,7 @@ GUARD	&C000
 .service01
 {
             LDA #&00
-            STA &037F
+            STA vduVariableShadow
             STA SHEILA+&34								;shadow off
             LDX #&07								;start at address 7
             LDA #&FF								;set data to &FF
@@ -3670,10 +3673,10 @@ GUARD	&C000
             LDX #&00
             JMP LDC16								;Set up Sideways ROM latch and RAM copy (http://mdfs.net/Docs/Comp/BBC/OS1-20/D940)
 			
-.L984C      LDA &037F
+.L984C      LDA vduVariableShadow
             PHA
             LDA #&00
-            STA &037F
+            STA vduVariableShadow
             STA SHEILA+&34
             JSR PrvEn								;switch in private RAM
             PLA
@@ -3682,7 +3685,7 @@ GUARD	&C000
 .L985D      PHA
             JSR PrvDis								;switch out private RAM
             PLA
-            STA &037F
+            STA vduVariableShadow
             STA SHEILA+&34
             RTS
 
@@ -5443,9 +5446,9 @@ GUARD	&C000
             BCS LA570
             JMP LA5B8
 			
-.LA570      LDA &037F
+.LA570      LDA vduVariableShadow
             AND #&80
-            STA &037F
+            STA vduVariableShadow
 
             JSR PrvEn								;switch in private RAM
 
@@ -7178,11 +7181,11 @@ GUARD	&C000
 .LB35E      SEC
 .LB35F      LDA &F4
             PHA
-            LDA &037F
+            LDA vduVariableShadow
             PHA
             AND #&80
             ORA #&40
-            STA &037F
+            STA vduVariableShadow
             STA SHEILA+&34
             LDA &F4
             ORA #&40
@@ -7296,7 +7299,7 @@ GUARD	&C000
             STA SHEILA+&40
 
 .LB460      PLA
-            STA &037F
+            STA vduVariableShadow
             STA SHEILA+&34
             PLA
             STA &F4
@@ -8325,10 +8328,10 @@ ibosCNPVIndex = 6
 {
 .LBA96      JSR jmpParentBYTEV
             BCS LBACB
-            LDA &037F
+            LDA vduVariableShadow
             PHA
             ORA #&40
-            STA &037F
+            STA vduVariableShadow
             STA SHEILA+&34
             LDA &F4
             PHA
@@ -8341,7 +8344,7 @@ ibosCNPVIndex = 6
             STA &F4
             STA SHEILA+&30
             PLA
-            STA &037F
+            STA vduVariableShadow
             STA SHEILA+&34
             BCC LBACB
             CLC
@@ -8499,9 +8502,9 @@ ibosCNPVIndex = 6
             PLA                                                                                     ;get original OSWRCH A=new mode
             PHA                                                                                     ;save it again
             JSR maybeSwapShadow2
-            LDA &037F								;get RAM copy of RAMSEL
+            LDA vduVariableShadow								;get RAM copy of RAMSEL
             NOT_AND ramselShen							;clear Shadow RAM enable bit
-            STA &037F								;and save RAM copy of RAMSEL
+            STA vduVariableShadow								;and save RAM copy of RAMSEL
             STA SHEILA+&34							          ;save RAMSEL
             PLA                                                                                     ;get original OSWRCH A=new mode
             PHA                                                                                     ;save it again
@@ -8514,9 +8517,9 @@ ibosCNPVIndex = 6
             JMP processWrchv
 
 .enteringShadowMode
-.LBBBD      LDA &037F								;get RAM copy of RAMSEL
+.LBBBD      LDA vduVariableShadow								;get RAM copy of RAMSEL
             ORA #ramselShen								;set Shadow RAM enable bit
-            STA &037F								;and save RAM copy of RAMSEL
+            STA vduVariableShadow								;and save RAM copy of RAMSEL
             STA SHEILA+&34							          ;save RAMSEL
             JSR maybeSwapShadow1
             PLA
@@ -8679,7 +8682,7 @@ ibosCNPVIndex = 6
 }
 
 .LBC98      LDA #&00
-            STA &037F
+            STA vduVariableShadow
             STA SHEILA+&34
             LDX #&3C								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
@@ -8717,7 +8720,7 @@ ibosCNPVIndex = 6
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BPL LBCF2
             LDA #&80								;set Shadow RAM enable bit
-            STA &037F								;store at RAMID
+            STA vduVariableShadow								;store at RAMID
             STA SHEILA+&34							;store at RAMSEL
             LDA vduStatus								;Get VDU status
             ORA #&10								;set bit 4
@@ -8727,7 +8730,7 @@ ibosCNPVIndex = 6
             RTS
 			
 .LBCF2      LDA #&00								;clear Shadow RAM enable bit
-            STA &037F								;store at RAMID
+            STA vduVariableShadow								;store at RAMID
             STA SHEILA+&34							;store at RAMSEL
             LDA vduStatus								;get VDU status
             AND #&EF								;clear bit 4
@@ -8774,10 +8777,10 @@ ibosCNPVIndex = 6
             ORA #romselPrvEn
             STA &F4
             STA SHEILA+&30
-            LDA &037F
+            LDA vduVariableShadow
             PHA
             ORA #ramselPrvs81
-            STA &037F
+            STA vduVariableShadow
             STA SHEILA+&34
             PLA
             RTS
@@ -8872,7 +8875,7 @@ ibosCNPVIndex = 6
 .restoreRamselClearPrvenReturnFromVectorHandler
 {
 .LBDDD      PLA
-            STA &037F
+            STA vduVariableShadow
             STA SHEILA+&34
             LDA &F4
             NOT_AND romselPrvEn
@@ -8890,7 +8893,7 @@ ibosCNPVIndex = 6
             LDA #ibosCNPVIndex
             JMP forwardToParentVectorTblEntry
 
-.LBDFD      LDA &037F
+.LBDFD      LDA vduVariableShadow
             PHA
             JSR PrvEn								;switch in private RAM
             TSX
