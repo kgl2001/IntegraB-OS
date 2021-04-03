@@ -103,6 +103,7 @@ rtcUserBase = &0E
 ; implementation detail (and an offset of rtcUserBase needs to be applied when
 ; accessing them, which will be handled automatically by
 ; readUserReg/writeUserReg if necessary).
+userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
 
@@ -3015,8 +3016,8 @@ GUARD	&C000
 		EQUB &0A,&00,&04							;MODE ->	  &0A Bits 0..3
 		EQUB &0F,&00,&01							;TUBE ->	  &0F Bit  0
 		EQUB &10,&04,&81							;BOOT ->	  &10 Bit  4
-		EQUB &32,&03,&81							;SHX ->	  &32 Bit  3
-		EQUB &32,&00,&03							;OSMODE ->  &32 Bits 0..2
+		EQUB userRegOsModeShx,&03,&81							;SHX ->	  &32 Bit  3
+		EQUB userRegOsModeShx,&00,&03							;OSMODE ->  &32 Bits 0..2
 		EQUB &33,&00,&06							;ALARM ->	  &33 Bits 0..5
 
 ;*CONFIGURE / *STATUS Options
@@ -3506,7 +3507,7 @@ GUARD	&C000
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX lastBreakType
             BEQ softBreak
-            LDX #&32								;0-2: OSMODE / 3: SHX
+            LDX #userRegOsModeShx								;0-2: OSMODE / 3: SHX
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA
             AND #&07								;mask OSMODE value
@@ -5622,7 +5623,7 @@ GUARD	&C000
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&20
             JSR wrRTCRAM								;Write data from A to RTC memory location X
-            LDX #&32
+            LDX #userRegOsModeShx
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LDX #&00
             AND #&10
