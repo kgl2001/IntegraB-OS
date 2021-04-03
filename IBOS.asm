@@ -124,6 +124,8 @@ modeChangeStateEnteringNonShadowMode = 3 ; we're changing into a non-shadow mode
 
 ; This is a byte of unused VDU variable workspace which IBOS uses for the RAM copy of RAMSEL,
 ; in the same way &F4 is used as a RAM copy of ROMSEL.
+; SFTODO: Maybe rename this ramId, as that's what Integra-B manual calls it, but I will stick
+; with this temporarily as I find it much more intuitive.
 ramselCopy = &037F
 
 vduSetMode = 22
