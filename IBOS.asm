@@ -67,6 +67,7 @@
 ;Register &0C
 ;Register &0D
 
+rtcUserBase = &0E
 ;RTC User Registers (add &0E to get real RTC user register - registers &00-&0D are for RTC clock registers)
 ;Register &00
 ;Register &01
@@ -97,9 +98,8 @@
 ;Register &3A - &90:
 ;Register &7F - &7F:	Bit set if RAM located in 32k bank. Default was &0F (lowest 4 x 32k banks). Changed to &7F
 
-rtcUserBase = &0E
-rtcUserHorzTV = rtcUserBase + &28 ; "horizontal *TV" settings
-rtcUserPrvPrintBufferStart = rtcUserBase + &2C ; the first page in private RAM reserved for the printer buffer (&90-&AC)
+rtcUserHorzTV = &36 ; "horizontal *TV" settings
+rtcUserPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
 
 vduStatus = &D0
 vduStatusShadow = &10
