@@ -123,6 +123,11 @@ modeChangeStateSeenVduSetMode = 1 ; we've seen VDU 22, we're waiting for mode by
 modeChangeStateEnteringShadowMode = 2 ; we're changing into a shadow mode
 modeChangeStateEnteringNonShadowMode = 3 ; we're changing into a non-shadow mode
 
+; This is part of CFS/RFS workspace which IBOS temporarily borrows; various different
+; code templates are copied here for execution.
+variableMainRamSubroutine = &03A7 ; SFTODO: POOR NAME
+; SFTODO: ADD A CONSTANT FOR MAX SIZE OF CODE AT variableMainRamSubroutine
+
 vduSetMode = 22
 
 lastBreakType = &028D
@@ -4486,7 +4491,6 @@ GUARD	&C000
 
 ;Wipe RAM at bank A
 ;this code is relocated to and executed at &03A7
-wipeRam = &03A7
 .wipeRamTemplate
 {
 .L9E38	  LDX romselCopy
@@ -4494,10 +4498,10 @@ wipeRam = &03A7
             STA romsel
             LDA #&00
 .L9E41      STA prv80+&00							
-            INC L03A7+L9E41-L9E38+1								;Self modifying code - increment LSB of STA in line above
+            INC variableMainRamSubroutine+L9E41-L9E38+1								;Self modifying code - increment LSB of STA in line above
             BNE L9E41									;Test for overflow
-            INC L03A7+L9E41-L9E38+2								;Increment MSB of STA in line above
-            BIT L03A7+L9E41-L9E38+2								;test MSB bit 6 (have we reached &4000?)
+            INC variableMainRamSubroutine+L9E41-L9E38+2								;Increment MSB of STA in line above
+            BIT variableMainRamSubroutine+L9E41-L9E38+2								;test MSB bit 6 (have we reached &4000?)
             BVC L9E41									;No? Then loop
             LDA romselCopy
             STX romselCopy
