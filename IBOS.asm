@@ -98,8 +98,13 @@ rtcUserBase = &0E
 ;Register &3A - &90:
 ;Register &7F - &7F:	Bit set if RAM located in 32k bank. Default was &0F (lowest 4 x 32k banks). Changed to &7F
 
-rtcUserHorzTV = &36 ; "horizontal *TV" settings
-rtcUserPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
+; These constants identify user registers for use with readUserReg/writeUserReg;
+; although some of these will be stored in RTC user registers, this is really an
+; implementation detail (and an offset of rtcUserBase needs to be applied when
+; accessing them, which will be handled automatically by
+; readUserReg/writeUserReg if necessary).
+userRegHorzTV = &36 ; "horizontal *TV" settings
+userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
 
 vduStatus = &D0
 vduStatusShadow = &10
@@ -325,7 +330,7 @@ prvPrintBufferSizeHigh  = prv82 + &0B
 ; &FF. If the buffer is in private RAM, the first entry will be &4X where X is
 ; the IBOS ROM bank number and the others will be &FF.
 prvPrintBufferBankList  = prv83 + &18 ; 4 bytes
-prvPrvPrintBufferStart = prv83 + &45 ; working copy of rtcUserPrvPrintBufferStart
+prvPrvPrintBufferStart = prv83 + &45 ; working copy of userRegPrvPrintBufferStart
 
 prvShx = prv83 + &3D ; &08 on, &FF off SFTODO: Not sure about those on/off values, we test this against 0 in some places - is it &00 on?
 
@@ -1764,7 +1769,7 @@ GUARD	&C000
 		EQUB &35,&13								;Century - Default is &13 (1900)
 		EQUB &38,&FF
 		EQUB &39,&FF
-		EQUB rtcUserPrvPrintBufferStart,&90
+		EQUB userRegPrvPrintBufferStart,&90
 		EQUB &7F,&0F								;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks).
 
 .L8A7B	  PHP
@@ -3478,7 +3483,7 @@ GUARD	&C000
             BPL L96EE
             JMP L9808
 			
-.L96EE      LDX #rtcUserPrvPrintBufferStart
+.L96EE      LDX #userRegPrvPrintBufferStart
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LDX #prvPrvPrintBufferStart-prv83                                                                   ; SFTODO: not too happy with this format
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
@@ -8545,12 +8550,12 @@ ibosCNPVIndex = 6
 .adjustCrtcHorz
             ; SFTODO: There seems to be an undocumented feature of IBOS which
             ; will perform a horizontal screen shift (analogous to the vertical
-            ; shift controlled by *TV/*CONFIGURE TV) based on rtcUserHorzTV.
+            ; shift controlled by *TV/*CONFIGURE TV) based on userRegHorzTV.
             ; This is not exposed in *CONFIGURE/*STATUS, but it does seem to
             ; work if you use *FX162,54 to write directly to the RTC register.
             ; In a modified IBOS this should probably either be removed to save
             ; space or exposed via *CONFIGURE/*STATUS.
-.LBC05      LDX #rtcUserHorzTV
+.LBC05      LDX #userRegHorzTV
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             CLC
             ADC #&62
