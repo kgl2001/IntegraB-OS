@@ -3505,7 +3505,7 @@ GUARD	&C000
             LDX #prvPrvPrintBufferStart-prv83                                                                   ; SFTODO: not too happy with this format
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX lastBreakType
-            BEQ L9719
+            BEQ softBreak
             LDX #&32								;0-2: OSMODE / 3: SHX
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA
@@ -3519,6 +3519,7 @@ GUARD	&C000
             LDA #&FF
 .L9714      LDX #&3D								;select SHX register (&08: On, &FF: Off)
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+.softBreak
 .L9719      JSR LBC98
             LDX #&0A								;get TV / MODE parameters
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
@@ -3541,7 +3542,7 @@ GUARD	&C000
 .L9736      TAY									;set Y=0
             LDA #&90								;select *TV X,Y
             JSR OSBYTE								;execute *TV X,Y
-            LDA #&16								;select switch MODE
+            LDA #vduSetMode								;select switch MODE
             JSR OSWRCH								;write switch MODE
             LDX lastBreakType								;Read Hard / Soft Break
             BNE L9758								;Branch on hard break (power on / Ctrl Break)
