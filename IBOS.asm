@@ -8714,7 +8714,7 @@ ibosCNPVIndex = 6
             BNE LBCB0
 }
             PLP
-            JSR LBE3E
+            JSR initPrintBuffer
             LDA lastBreakType
             BNE LBCF2
             LDX #&3F
@@ -8936,10 +8936,15 @@ ibosCNPVIndex = 6
             JMP restoreRamselClearPrvenReturnFromVectorHandler
 }
 
-{
 ; SFTODO: This only has one caller
-.^LBE3E      LDX lastBreakType
+; SFTODO: Some of the code in here is similar to that used as part of 'buffer'
+; (the *BUFFER command), could it be factored out?
+.initPrintBuffer
+{
+.LBE3E      LDX lastBreakType
             BEQ softBreak
+            ; On hard break or power-on reset, set up the printer buffer so it
+            ; uses private RAM from prvPrvPrintBufferStart onwards.
             JSR PrvEn								;switch in private RAM
             LDA #&00
             STA prvPrintBufferSizeLow
@@ -8966,7 +8971,7 @@ ibosCNPVIndex = 6
 .softBreak
 .LBE7B      JSR purgePrintBuffer
             JSR PrvDis								;switch out private RAM
-            ; Copy the rom access subroutine from ROM into RAM.
+            ; Copy the rom access subroutine used by the printer buffer from ROM into RAM.
             LDY #romRomAccessSubroutineEnd - romRomAccessSubroutine - 1
 {
 .LBE83      LDA romRomAccessSubroutine,Y
