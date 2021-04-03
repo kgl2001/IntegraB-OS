@@ -126,7 +126,7 @@ modeChangeStateEnteringNonShadowMode = 3 ; we're changing into a non-shadow mode
 ; This is part of CFS/RFS workspace which IBOS temporarily borrows; various different
 ; code templates are copied here for execution.
 variableMainRamSubroutine = &03A7 ; SFTODO: POOR NAME
-; SFTODO: ADD A CONSTANT FOR MAX SIZE OF CODE AT variableMainRamSubroutine
+variableMainRamSubroutineMaxSize = &32 ; SFTODO: ASSERT ALL THE SUBROUTINES ARE SMALLER THAN THIS
 
 vduSetMode = 22
 
@@ -4640,15 +4640,16 @@ GUARD	&C000
 ;L9EAE - Load RAM to SWRAM bank specified by A from file system
 ;L9ED9 - 
 ;L9EF9 -
+; SFTODO: Do we have to preserve AC/AD here? It obviously depends on how we're called, but this is transient command space and we're allowed to corrupt it if we're implementing a * command.
 .copyYxToVariableMainRamSubroutine
 {
-.^L9F33      LDA L00AD
+.L9F33     LDA L00AD
             PHA
             LDA L00AC
             PHA
             STX L00AC
             STY L00AD
-            LDY #&31
+            LDY #variableMainRamSubroutineMaxSize - 1
 .L9F3F      LDA (L00AC),Y
             STA variableMainRamSubroutine,Y
             DEY
