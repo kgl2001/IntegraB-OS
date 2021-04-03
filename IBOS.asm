@@ -991,11 +991,11 @@ GUARD	&C000
             AND #&DF								;capitalise
             CMP #&58								;'X' - '*X*' command
             BNE L8591								;if not, then check for '*S*'
-            JMP L9087								;execute '*X*' command
+            JMP commandX								;execute '*X*' command
 			
 .L8591      CMP #&53								;'S' - Undocumented '*S*' command
             BNE L8579								;if not, then restore and exit
-            JMP L9083								;execute '*S*' command
+            JMP commandS								;execute '*S*' command
 			
 .L8598      STY L00AD
             STX L00AC
@@ -2586,13 +2586,15 @@ GUARD	&C000
 {
 ;execute '*S*' command
 ;switches to shadow, executes command, then switches back out of shadow?
-.^L9083     CLV
+.^commandS
+.L9083      CLV
             SEC
             BCS L9088
 
 ;execute '*X*' command
 ;switches from shadow, executes command, then switches back to shadow
-.^L9087     CLC
+.^commandX
+.L9087      CLC
 .L9088      PHP
             INY
             INY
