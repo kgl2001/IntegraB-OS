@@ -343,7 +343,10 @@ prvPrintBufferBankList  = prv83 + &18 ; 4 bytes
 prvPrvPrintBufferStart = prv83 + &45 ; working copy of userRegPrvPrintBufferStart
 
 prvShx = prv83 + &3D ; &08 on, &FF off SFTODO: Not sure about those on/off values, we test this against 0 in some places - is it &00 on?
-prvOsMode = prv83 + &3C ; SFTODO: not too sure about this, since OSMode is also held in b0-2 of user reigster &32 - is this a copy with just OSMode in for convenience? If so should perhaps tweak the name.
+prvOsMode = prv83 + &3C ; OSMODE, extracted from relevant bits of userRegOsModeShx SFTODO: WHEN/BY WHAT CODE?
+; SFTODO: If private RAM is battery backed, could we just keep OSMODE in
+; prvOsMode and not bother with the copy in the low bits of userRegOsModeShx?
+; That would save some code.
 
 prvSFTODOSHADOW = prv83 + &3F ; SFTODO: something to do with shadow RAM, b7 at least is used, maybe others?
 
@@ -3773,13 +3776,13 @@ GUARD	&C000
             JSR L86DE								;Convert binary number to numeric characters and write characters to screen
             JMP L990D								;Write 'K' to screen
 			
-.L98FE      LDA #&32								;'2'
+.L98FE      LDA #'2'
             JSR OSWRCH								;Write to screen
-            LDA #&35								;'5'
+            LDA #'5'
             JSR OSWRCH								;Write to screen
-            LDA #&36								;'6'
+            LDA #'6'
             JSR OSWRCH								;Write to screen
-.L990D      LDA #&4B								;;K"
+.L990D      LDA #'K'
             JSR OSWRCH								;Write to screen
 .L9912      JSR OSNEWL								;New Line
             BIT L027A								;check for Tube - &00: not present, &ff: present
