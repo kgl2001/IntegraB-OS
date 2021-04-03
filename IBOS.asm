@@ -3866,7 +3866,7 @@ GUARD	&C000
             PHA
             LDX #lo(wipeRamTemplate)							;LSB of relocatable Wipe RAM code
             LDY #hi(wipeRamTemplate)							;LSB of relocatable Wipe RAM code
-            JSR L9F33								;relocate &32 bytes of Wipe RAM code from &9E38 to &03A7
+            JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of Wipe RAM code from &9E38 to &03A7
             PLA
             JSR variableMainRamSubroutine								;Call relocated Wipe RAM code
             PHA
@@ -3884,7 +3884,7 @@ GUARD	&C000
 .L99C6	  PHA
 	  LDX #L9E59 MOD &100							;was LDX #&59
 	  LDY #L9E59 DIV &100							;was LDY #&9E
-	  JSR L9F33								;relocate &32 bytes of code from &9E59 to &03A7
+	  JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9E59 to &03A7
             PLA
             BEQ L99D6
             LDA #&4F
@@ -4639,8 +4639,10 @@ GUARD	&C000
 ;L9E83 - Save RAM at SWRAM bank specified by A to file system
 ;L9EAE - Load RAM to SWRAM bank specified by A from file system
 ;L9ED9 - 
-;L9EF9 - 
-.L9F33      LDA L00AD
+;L9EF9 -
+.copyYxToVariableMainRamSubroutine
+{
+.^L9F33      LDA L00AD
             PHA
             LDA L00AC
             PHA
@@ -4656,6 +4658,7 @@ GUARD	&C000
             PLA
             STA L00AD
             RTS
+}
 
 .L9F4E      BIT prv82+&25
             BMI L9FA4
@@ -4685,7 +4688,7 @@ GUARD	&C000
 
             LDX #&9EF9 MOD &100							;was LDX #&F9
             LDY #&9EF9 DIV &100							;was LDY #&9E
-            JSR L9F33								;relocate &32 bytes of code from &9EF9 to &03A7
+            JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9EF9 to &03A7
             BIT prv82+&20
             BPL L9FA3
 
@@ -4701,7 +4704,7 @@ GUARD	&C000
             STA prv83+&42
             LDX #L9ED9 MOD &100							;was LDX #&D9
             LDY #L9ED9 DIV &100							;was LDY #&9E
-            JSR L9F33								;relocate &32 bytes of code from &9ED9 to &03A7
+            JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9ED9 to &03A7
             BIT prv82+&20								;check if we need to swap &AA with &A8 in code at &9ED9
             BPL L9FC5
             LDA #&AA
@@ -4717,7 +4720,7 @@ GUARD	&C000
             PHA
             LDX #L9E0A MOD &100							;was LDX #&0A
             LDY #L9E0A DIV &100							;was LDY #&9E
-            JSR L9F33								;relocate &32 bytes of code from &9E0A to &03A7
+            JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9E0A to &03A7
             PLA
             JMP variableMainRamSubroutine								;Call relocated code
 			
@@ -4980,7 +4983,7 @@ GUARD	&C000
             LDX #L9E83 MOD &100						;
             LDY #L9E83 DIV &100						;
 .LA1AA      PHA
-            JSR L9F33								;relocate &32 bytes of code from either &9E83 or &9EAE to &03A7
+            JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from either &9E83 or &9EAE to &03A7
             LDA prv82+&2A
             STA prv82+&26
             LDA prv82+&2B
