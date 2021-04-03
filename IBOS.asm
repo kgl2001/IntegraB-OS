@@ -298,7 +298,7 @@ prv83       = &8300
 ; SFTODO: The following are grouped "logically" for now, rather than by address.
 ; This is probably easiest to understand, and if we're going to create a table
 ; showing all the addresses in order later on, there's no need for these labels
-; to be in physical address order.
+; to be in physical address order. SFTODO: Might actually be in physical order, I'll see how it works out.
 
 ; The printer buffer is implemented using two "extended pointers" - one for
 ; reading, one for writing. Each consists of a two byte address and a one byte
@@ -342,6 +342,7 @@ prvPrintBufferBankList  = prv83 + &18 ; 4 bytes
 prvPrvPrintBufferStart = prv83 + &45 ; working copy of userRegPrvPrintBufferStart
 
 prvShx = prv83 + &3D ; &08 on, &FF off SFTODO: Not sure about those on/off values, we test this against 0 in some places - is it &00 on?
+prvOsMode = prv83 + &3C ; SFTODO: not too sure about this, since OSMode is also held in b0-2 of user reigster &32 - is this a copy with just OSMode in for convenience? If so should perhaps tweak the name.
 
 prvSFTODOSHADOW = prv83 + &3F ; SFTODO: something to do with shadow RAM, b7 at least is used, maybe others?
 
@@ -1824,7 +1825,7 @@ GUARD	&C000
 			
 ;Unrecognised OSBYTE call - Service call &07
 ;A, X & Y stored in &EF, &F0 & F1 respecively
-.service07  LDX #&3C								;select OSMODE
+.service07  LDX #prvOsMode - prv83								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&00								;OSMODE 0?
             BNE osbyte6C								;Branch if OSMODE 1-5
@@ -2090,7 +2091,7 @@ GUARD	&C000
 .buffer
 {
             JSR PrvEn								;switch in private RAM
-            LDA prv83+&3C								;read OSMODE
+            LDA prvOsMode								;read OSMODE
             BNE L8CAE								;error if OSMODE 0, otherwise continue
             JSR L867E								;Goto error handling, where calling address is pulled from stack
 
@@ -2364,7 +2365,7 @@ GUARD	&C000
             JMP exitSC								;Exit Service Call
 			
 .L8ED6      JSR L83EC
-            LDX #&3C								;select OSMODE
+            LDX #prvOsMode - prv83								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
 .L8EDE      SEC
             JSR L86DE								;Convert binary number to numeric characters and write characters to screen
@@ -2376,10 +2377,10 @@ GUARD	&C000
             BCS L8EFE
             PHA
             JSR PrvEn								;switch in private RAM
-            LDA prv83+&3C								;read OSMODE
+            LDA prvOsMode								;read OSMODE
             BEQ L8F17
 .L8EF6      PLA
-            STA prv83+&3C								;write OSMODE
+            STA prvOsMode								;write OSMODE
 .L8EFA      JSR PrvDis								;switch out private RAM
             RTS
 			
@@ -2387,17 +2388,17 @@ GUARD	&C000
 .L8EFE      JMP L92E3
 
 .L8F01      JSR PrvEn								;switch in private RAM
-            LDA prv83+&3C								;read OSMODE
+            LDA prvOsMode								;read OSMODE
             BEQ L8EFA
             JSR L8E6C
             LDA #&00
-            STA prv83+&3C								;write OSMODE
+            STA prvOsMode								;write OSMODE
             JSR SFTODOZZ
             JMP L8EFA
 			
 .L8F17      JSR L8E6C
             PLA
-            STA prv83+&3C								;write OSMODE
+            STA prvOsMode								;write OSMODE
             JSR LBC98
             JMP L8EFA
 			
@@ -3509,7 +3510,7 @@ GUARD	&C000
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA
             AND #&07								;mask OSMODE value
-            LDX #&3C								;select OSMODE register
+            LDX #prvOsMode - prv83								;select OSMODE register
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             JSR LA4E3								;Assign default pseudo RAM banks to absolute RAM banks
             PLA
@@ -3544,7 +3545,7 @@ GUARD	&C000
             JSR OSWRCH								;write switch MODE
             LDX lastBreakType								;Read Hard / Soft Break
             BNE L9758								;Branch on hard break (power on / Ctrl Break)
-            LDX #&3C								;select OSMODE
+            LDX #prvOsMode - prv83									;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ L9758								;branch if OSMODE=0
             LDX #prvSFTODOSHADOW - prv83						;read mode? SFTODO: OK, so probably prvSFTODOSHADOW is the (configured?) screen mode? That would account for b7 being shadow-ish
@@ -3725,7 +3726,7 @@ GUARD	&C000
             PLA
             JMP exitSCa								;restore service call parameters and exit
 			
-.L989F      LDX #&3C								;select OSMODE
+.L989F      LDX #prvOsMode - prv83								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&00								;If OSMODE=0
             BEQ L991D								;Then no startup message
@@ -5377,7 +5378,7 @@ GUARD	&C000
 ;For OSMODE 2: W..Z = 12..15
 
 .LA4E3      JSR PrvEn								;switch in private RAM
-            LDA prv83+&3C								;read OSMODE
+            LDA prvOsMode								;read OSMODE
             LDX #&03								;a total of 4 pseudo banks
             LDY #&07								;for osmodes other than 2, absolute banks are 4..7
             CMP #&02								;check for osmode 2
@@ -8271,7 +8272,7 @@ ibosCNPVIndex = 6
             BNE osbyte87Handler
             CPY #&FF
             BNE osbyte87Handler
-            LDX #&3C								;select OSMODE
+            LDX #prvOsMode - prv83								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBA56								;Branch if OSMODE=0
             CMP #&01								;Check if OSMODE=1
@@ -8348,7 +8349,7 @@ ibosCNPVIndex = 6
             ORA #&40
             STA romselCopy
             STA romsel
-            LDA prv83+&3C						;read OSMODE
+            LDA prvOsMode						;read OSMODE
             CMP #&02
             PLA
             STA romselCopy
@@ -8409,7 +8410,7 @@ ibosCNPVIndex = 6
 {
 .LBB00      TXA
             PHA
-            LDX #&3C								;select OSMODE
+            LDX #prvOsMode - prv83								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBB18								;Branch if OSMODE=0
             CMP #&04								;OSMODE 4?
@@ -8434,7 +8435,7 @@ ibosCNPVIndex = 6
             INX
             CPX #&15								;until &15
             BNE LBB24								;loop
-            LDX #&3C								;select OSMODE
+            LDX #prvOsMode - prv83								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             ORA #&30								;convert OSMODE to character printable OSMODE (OSMODE = OSMODE + &30)
             STA L0113								;write OSMODE character to error text
@@ -8694,7 +8695,7 @@ ibosCNPVIndex = 6
 .LBC98      LDA #&00
             STA ramselCopy
             STA ramsel
-            LDX #&3C								;select OSMODE
+            LDX #prvOsMode - prv83								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBCF2
             JSR installOSPrintBufStub
@@ -9257,7 +9258,7 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
 
 SAVE "IBOS-01.rom", start, end
 
-; SFTODO: Would it be possible to save space by factoring out "LDX #&3C:JSR
+; SFTODO: Would it be possible to save space by factoring out "LDX #prvOsMode:JSR
 ; readPrivateRam8300X" into a subroutine?
 
 ; SFTODO: Could we save space by factoring out some common-ish sequences of code
