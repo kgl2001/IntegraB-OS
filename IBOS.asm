@@ -113,6 +113,8 @@ negativeVduQueueSize = &026A
 osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force shadow modes (note that AllMem.txt seems to have this wrong, at least my copy does)
 currentMode = &0355
 
+romBinaryVersion = &8008
+
 ; This is a byte of unused CFS/RFS workspace which IBOS repurposes to track
 ; state during mode changes. This is probably done because it's quicker than
 ; paging in private RAM; OSWRCH is relatively performance sensitive and we check
@@ -4469,23 +4471,22 @@ GUARD	&C000
 ;On entry A=ROM bank to test
 ;On exit A=X=ROM bank that has been tested. Z contains test result.
 ;this code is relocated to and executed at &03A7
-; SFTODO: Change prv80 refs to just &8008 etc? This is accessing arbitrary sideways RAM, not specifically private RAM.
 .testRamTemplate
 {
 .L9E0A	  LDX romselCopy										;Read current ROM number from &F4 and store in X
             STA romselCopy										;Write new ROM number from A to &F4
             STA romsel									;Write new ROM number from A to &FE30
-            LDA prv80+&08									;Read contents of &8008
+            LDA romBinaryVersion									;Read contents of &8008
             EOR #&FF									;and XOR with &FF 
-            STA prv80+&08									;Write XORd data back to &8008
+            STA romBinaryVersion									;Write XORd data back to &8008
             JSR variableMainRamSubroutine+L9E37-L9E0A								;Delay 1 before read back
             JSR variableMainRamSubroutine+L9E37-L9E0A								;Delay 2 before read back
             JSR variableMainRamSubroutine+L9E37-L9E0A								;Delay 3 before read back
             JSR variableMainRamSubroutine+L9E37-L9E0A								;Delay 4 before read back
-            CMP prv80+&08									;Does contents of &8008 match what has been written?
+            CMP romBinaryVersion									;Does contents of &8008 match what has been written?
             PHP										;Save test
             EOR #&FF									;XOR again with &FF to restore original data
-            STA prv80+&08									;store original data back to &8008
+            STA romBinaryVersion									;store original data back to &8008
             LDA romselCopy										;read current ROM number from &F4 and store in A
             STX romselCopy										;restore original ROM number to &F4
             STX romsel									;restore original ROM number to &FE30
