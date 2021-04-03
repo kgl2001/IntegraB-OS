@@ -8936,8 +8936,9 @@ ibosCNPVIndex = 6
             JMP restoreRamselClearPrvenReturnFromVectorHandler
 }
 
+{
 ; SFTODO: This only has one caller
-.LBE3E      LDX lastBreakType
+.^LBE3E      LDX lastBreakType
             BEQ softBreak
             JSR PrvEn								;switch in private RAM
             LDA #&00
@@ -8999,6 +9000,7 @@ ibosCNPVIndex = 6
 }
             PLP
             RTS
+}
 
 {
 ; Advance prvPrintBufferWritePtr by one, wrapping round at the end of each bank
