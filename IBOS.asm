@@ -3868,7 +3868,7 @@ GUARD	&C000
             LDY #hi(wipeRamTemplate)							;LSB of relocatable Wipe RAM code
             JSR L9F33								;relocate &32 bytes of Wipe RAM code from &9E38 to &03A7
             PLA
-            JSR L03A7								;Call relocated Wipe RAM code
+            JSR variableMainRamSubroutine								;Call relocated Wipe RAM code
             PHA
             JSR L99E5
             PLA
@@ -3893,7 +3893,7 @@ GUARD	&C000
             JSR L9B18
             STA prv82+&21
             STA L03C2
-            JMP L03A7								;Call relocated code
+            JMP variableMainRamSubroutine								;Call relocated code
 			
 .L99E5      LDX #&03
 .L99E7      CMP prv83+&0C,X
@@ -4327,7 +4327,7 @@ GUARD	&C000
 .L9CFC      LDA L00AD
             BEQ L9D0D
             LDY #&FF
-            JSR L03A7								;Call relocated code
+            JSR variableMainRamSubroutine								;Call relocated code
             INC L00A9
             INC L00AB
             DEC L00AD
@@ -4335,7 +4335,7 @@ GUARD	&C000
 .L9D0D      LDY L00AC
             BEQ L9D15
             DEY
-            JSR L03A7								;Call relocated code
+            JSR variableMainRamSubroutine								;Call relocated code
 .L9D15      PLA
             STA L00AC
             PLA
@@ -4474,10 +4474,10 @@ GUARD	&C000
             LDA prv80+&08									;Read contents of &8008
             EOR #&FF									;and XOR with &FF 
             STA prv80+&08									;Write XORd data back to &8008
-            JSR L03A7+L9E37-L9E0A								;Delay 1 before read back
-            JSR L03A7+L9E37-L9E0A								;Delay 2 before read back
-            JSR L03A7+L9E37-L9E0A								;Delay 3 before read back
-            JSR L03A7+L9E37-L9E0A								;Delay 4 before read back
+            JSR variableMainRamSubroutine+L9E37-L9E0A								;Delay 1 before read back
+            JSR variableMainRamSubroutine+L9E37-L9E0A								;Delay 2 before read back
+            JSR variableMainRamSubroutine+L9E37-L9E0A								;Delay 3 before read back
+            JSR variableMainRamSubroutine+L9E37-L9E0A								;Delay 4 before read back
             CMP prv80+&08									;Does contents of &8008 match what has been written?
             PHP										;Save test
             EOR #&FF									;XOR again with &FF to restore original data
@@ -4648,7 +4648,7 @@ GUARD	&C000
             STY L00AD
             LDY #&31
 .L9F3F      LDA (L00AC),Y
-            STA L03A7,Y
+            STA variableMainRamSubroutine,Y
             DEY
             BPL L9F3F
             PLA
@@ -4719,7 +4719,7 @@ GUARD	&C000
             LDY #L9E0A DIV &100							;was LDY #&9E
             JSR L9F33								;relocate &32 bytes of code from &9E0A to &03A7
             PLA
-            JMP L03A7								;Call relocated code
+            JMP variableMainRamSubroutine								;Call relocated code
 			
 ;this routine is called by osword42 and osword43
 ;
