@@ -122,12 +122,6 @@ modeChangeStateSeenVduSetMode = 1 ; we've seen VDU 22, we're waiting for mode by
 modeChangeStateEnteringShadowMode = 2 ; we're changing into a shadow mode
 modeChangeStateEnteringNonShadowMode = 3 ; we're changing into a non-shadow mode
 
-; This is a byte of unused VDU variable workspace which IBOS uses for the RAM copy of RAMSEL,
-; in the same way &F4 is used as a RAM copy of ROMSEL.
-; SFTODO: Maybe rename this ramId, as that's what Integra-B manual calls it, but I will stick
-; with this temporarily as I find it much more intuitive.
-ramselCopy = &037F
-
 vduSetMode = 22
 
 lastBreakType = &028D
@@ -161,6 +155,10 @@ OSEVEN      = &FFBF
 OSRDRM      = &FFB9
 SHEILA      = &FE00
 
+romsel = SHEILA + &30
+romselCopy = &F4
+ramsel = SHEILA + &34
+ramselCopy = &037F ; unused VDU variable workspace repurposed by IBOS
 
 L0000       = &0000
 L0032       = &0032
@@ -1497,10 +1495,10 @@ GUARD	&C000
             LDA ramselCopy
             AND #&80
             ORA #&40
-            STA SHEILA+&34							;retain value of ramselCopy so it can be restored after read / write operation complete
-            LDA &F4
+            STA ramsel							;retain value of ramselCopy so it can be restored after read / write operation complete
+            LDA romselCopy
             ORA #&40
-            STA SHEILA+&30							;retain value of &F4 so it can be restored after read / write operation complete
+            STA romsel							;retain value of &F4 so it can be restored after read / write operation complete
             PLA
             RTS
 }
@@ -1508,10 +1506,10 @@ GUARD	&C000
 ;Switch out Private RAM
 .switchOutPrivateRAM
 {
-.L8890      LDA &F4
-            STA SHEILA+&30							;restore using value retained in &F4
+.L8890      LDA romselCopy
+            STA romsel							;restore using value retained in &F4
             LDA ramselCopy
-            STA SHEILA+&34							;restore using value retained in ramselCopy
+            STA ramsel							;restore using value retained in ramselCopy
             PLA
             PLP
             PHA
@@ -1680,12 +1678,12 @@ GUARD	&C000
 .L89C4      LDA #&00								;Set to 0
             CPX #&05								;Check if register &5 (LANG/FILE parameters)
             BNE L89D2								;No? Then branch
-            LDA &F4									;Read current ROM number
+            LDA romselCopy									;Read current ROM number
             ASL A
             ASL A
             ASL A
             ASL A									;move to upper 4 bits (LANG parameter)
-            ORA &F4									;Read current ROM number & save to lower 4 bits (FILE parameter)
+            ORA romselCopy									;Read current ROM number & save to lower 4 bits (FILE parameter)
 ;	  LDA #&EC								;Force LANG: 14, FILE: 12 in IBOS 1.21 (in place of ORA &F4 in line above)
 .L89D2      JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             DEX
@@ -1699,21 +1697,21 @@ GUARD	&C000
             JMP L2800								;Then jump to main memory
 			
 ;This code is relocated from IBOS ROM to RAM starting at &2800
-.L89E9      LDA &F4									;Get current SWR bank number.
+.L89E9      LDA romselCopy									;Get current SWR bank number.
             PHA									;Save it
             LDX #&0F								;Start at SWR bank 15
-.L89EE      STX &F4									;Select memory bank
-            STX SHEILA+&30
+.L89EE      STX romselCopy									;Select memory bank
+            STX romsel
             LDA #&80								;Start at address &8000
 	  JSR L8A46-L89E9+L2800							;Fill bank with &00 (will try both RAM & ROM) 
             DEX
             BPL L89EE								;Until all RAM banks are wiped.
             LDA #&F0								;Set Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
             STA ramselCopy
-            STA SHEILA+&34
+            STA ramsel
             LDA #&40								;Set Private RAM Enable (PRVEN) & Unset Shadow / Main toggle (MEMSEL)
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             LDA #&30								;Start at shadow address &3000
 	  JSR L8A46-L89E9+L2800							;Fill shadow and private memory with &00
             LDA #&FF								;Write &FF to PRVS1 &830C..&830F
@@ -1723,10 +1721,10 @@ GUARD	&C000
             STA prv83+&0F
             LDA #&00								;Unset Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
             STA ramselCopy
-            STA SHEILA+&34
+            STA ramsel
             PLA									;Restore SWR bank
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             LDY #&1E								;Number of entries in lookup table for IntegraB defaults
 .L8A2D	  LDX intDefault-L89E9+L2800+&00,Y						;address of relocated intDefault table:		(address for data)
 	  LDA intDefault-L89E9+L2800+&01,Y						;address of relocated intDefault table+1:	(data)
@@ -1810,7 +1808,7 @@ GUARD	&C000
             ROR prv82+&53
             ROR A
             STA ramselCopy
-            STA SHEILA+&34
+            STA ramsel
 .L8AC1      LDA prv82+&52
             TAX
             JSR PrvDis								;switch out private RAM
@@ -1842,7 +1840,7 @@ GUARD	&C000
             LDA ramselCopy
             ROR A
             STA ramselCopy
-            STA SHEILA+&34
+            STA ramsel
             LDA #&00
 .L8AF9      PLP
             ROL A
@@ -1905,7 +1903,7 @@ GUARD	&C000
             LDA #&49								;otherwise yes, and return &49
             STA L00F0
             PLA
-            LDA &F4
+            LDA romselCopy
             AND #&0F
             PHA
             JMP exitSC								;Exit Service Call
@@ -2170,7 +2168,7 @@ GUARD	&C000
             RTS
 }
 			
-.L8D46      LDA &F4
+.L8D46      LDA romselCopy
             AND #&0F
             ORA #&40
             STA prvPrintBufferBankList
@@ -2474,7 +2472,7 @@ GUARD	&C000
             BPL L8FA9
             LDA L028C
             BPL L8FBF
-            LDA &F4
+            LDA romselCopy
             AND #&0F
 .L8FBF      PHA
             JSR L8FC8
@@ -2558,11 +2556,11 @@ GUARD	&C000
             LDA ramselCopy
             ORA #ramselPrvs1
             STA ramselCopy
-            STA SHEILA+&34
-            LDA &F4
+            STA ramsel
+            LDA romselCopy
             ORA #romselPrvEn
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             PLA
             RTS
 			
@@ -2577,14 +2575,14 @@ GUARD	&C000
 ; SFTODO: I'm tempted to get rid of the PrvDis label but I'll leave it for now
 .pageOutPrv1
 .PrvDis	  PHA
-            LDA &F4
+            LDA romselCopy
             NOT_AND romselPrvEn                                                                     ;Clear PrvEn
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             LDA ramselCopy
             NOT_AND ramselPrvs1							;Clear PRVS1
             STA ramselCopy
-            STA SHEILA+&34
+            STA ramsel
             PLA
             RTS
 			
@@ -2638,7 +2636,7 @@ GUARD	&C000
             LDA L0103,X
             ORA #&40
             STA L0103,X
-            LDA &F4
+            LDA romselCopy
             AND #&0F
             STA L028C
             JSR L88D7
@@ -2658,7 +2656,7 @@ GUARD	&C000
 }
 
 ;*NLE Command
-.nle	  LDX &F4									;Get current ROM number
+.nle	  LDX romselCopy									;Get current ROM number
 .L90F4      LDA #&8E
             JMP OSBYTE								;Enter IBOS as a language ROM
 			
@@ -3405,7 +3403,7 @@ GUARD	&C000
             JSR OSBYTE
             CPX #&FF
             BEQ L9652
-.L964C      LDX &F4
+.L964C      LDX romselCopy
             DEX
             JMP L968D
 			
@@ -3418,7 +3416,7 @@ GUARD	&C000
             PLA
             AND #&7F
             TAX
-            CPX &F4
+            CPX romselCopy
             BCC L968D
 .L9668      JSR L966E
             JMP L9680
@@ -3438,7 +3436,7 @@ GUARD	&C000
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&0F
             TAX
-            CPX &F4
+            CPX romselCopy
             BCC L968D
             DEX
 .L968D      JSR L96BC
@@ -3451,7 +3449,7 @@ GUARD	&C000
             JSR L980B
             JMP L96A7
 			
-.L96A5      LDA &F4
+.L96A5      LDA romselCopy
 .L96A7      TAX
             LDA L02A1,X
             ROL A
@@ -3471,7 +3469,7 @@ GUARD	&C000
             TAY
             PLA
             TAX
-            LDA &F4
+            LDA romselCopy
             PHA
             LDA #&03
             JMP LF16E								;OSBYTE 143 - Pass service commands to sideways ROMs (http://mdfs.net/Docs/Comp/BBC/OS1-20/F135)
@@ -3481,13 +3479,13 @@ GUARD	&C000
 {
             LDA #&00
             STA ramselCopy
-            STA SHEILA+&34								;shadow off
+            STA ramsel								;shadow off
             LDX #&07								;start at address 7
             LDA #&FF								;set data to &FF
 .L96D9      JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             DEX									;repeat
             BNE L96D9								;until 0.
-            LDA &F4								;get current ROM number
+            LDA romselCopy								;get current ROM number
             AND #&0F								;mask
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             BIT L03A4								;?
@@ -3680,7 +3678,7 @@ GUARD	&C000
             PHA
             LDA #&00
             STA ramselCopy
-            STA SHEILA+&34
+            STA ramsel
             JSR PrvEn								;switch in private RAM
             PLA
             RTS
@@ -3689,7 +3687,7 @@ GUARD	&C000
             JSR PrvDis								;switch out private RAM
             PLA
             STA ramselCopy
-            STA SHEILA+&34
+            STA ramsel
             RTS
 
 ;Vectors claimed - Service call &0F
@@ -4449,9 +4447,9 @@ GUARD	&C000
 ;On entry A=ROM bank to test
 ;On exit A=X=ROM bank that has been tested. Z contains test result.
 ;this code is relocated to and executed at &03A7
-.L9E0A	  LDX &F4										;Read current ROM number from &F4 and store in X
-            STA &F4										;Write new ROM number from A to &F4
-            STA SHEILA+&30									;Write new ROM number from A to &FE30
+.L9E0A	  LDX romselCopy										;Read current ROM number from &F4 and store in X
+            STA romselCopy										;Write new ROM number from A to &F4
+            STA romsel									;Write new ROM number from A to &FE30
             LDA prv80+&08									;Read contents of &8008
             EOR #&FF									;and XOR with &FF 
             STA prv80+&08									;Write XORd data back to &8008
@@ -4463,18 +4461,18 @@ GUARD	&C000
             PHP										;Save test
             EOR #&FF									;XOR again with &FF to restore original data
             STA prv80+&08									;store original data back to &8008
-            LDA &F4										;read current ROM number from &F4 and store in A
-            STX &F4										;restore original ROM number to &F4
-            STX SHEILA+&30									;restore original ROM number to &FE30
+            LDA romselCopy										;read current ROM number from &F4 and store in A
+            STX romselCopy										;restore original ROM number to &F4
+            STX romsel									;restore original ROM number to &FE30
             TAX										;copy original ROM number from A to X
             PLP										;recover test
 .L9E37	  RTS
 
 ;Wipe RAM at bank A
 ;this code is relocated to and executed at &03A7
-.L9E38	  LDX &F4
-            STA &F4
-            STA SHEILA+&30
+.L9E38	  LDX romselCopy
+            STA romselCopy
+            STA romsel
             LDA #&00
 .L9E41      STA prv80+&00							
             INC L03A7+L9E41-L9E38+1								;Self modifying code - increment LSB of STA in line above
@@ -4482,24 +4480,24 @@ GUARD	&C000
             INC L03A7+L9E41-L9E38+2								;Increment MSB of STA in line above
             BIT L03A7+L9E41-L9E38+2								;test MSB bit 6 (have we reached &4000?)
             BVC L9E41									;No? Then loop
-            LDA &F4
-            STX &F4
-            STX SHEILA+&30
+            LDA romselCopy
+            STX romselCopy
+            STX romsel
             RTS
 
 ;write ROM header to RAM at bank A
 ;this code is relocated to and executed at &03A7
-.L9E59	  LDX &F4
-            STA &F4
-            STA SHEILA+&30
+.L9E59	  LDX romselCopy
+            STA romselCopy
+            STA romsel
             LDY #&0F
 .L9E62      LDA L03C1,Y									;Change this to srData relocated address
             STA prv80+&00,Y
             DEY
             BPL L9E62
-            LDA &F4
-            STX &F4
-            STX SHEILA+&30
+            LDA romselCopy
+            STX romselCopy
+            STX romsel
             RTS
 
 ;ROM Header
@@ -4514,9 +4512,9 @@ GUARD	&C000
 ;save ROM / RAM at bank X to file system
 ;this code is relocated to and executed at &03A7
 .L9E83	  TXA
-	  LDX &F4
-            STA &F4
-            STA SHEILA+&30
+	  LDX romselCopy
+            STA romselCopy
+            STA romsel
             INY
             STY L03D2								;Change this to relocated address (&03AF+&xx ???)
             LDY #&00
@@ -4528,18 +4526,18 @@ GUARD	&C000
             INY
 .L9EA0      CPY L03D2								;Change this to relocated address (&03AF+&xx ???)
             BNE L9E91
-            LDA &F4
-            STX &F4
-            STX SHEILA+&30
+            LDA romselCopy
+            STX romselCopy
+            STX romsel
             TAX
             RTS
 
 ;load ROM / RAM at bank X from file system
 ;this code is relocated to and executed at &03A7
 .L9EAE	  TXA
-            LDX &F4
-            STA &F4
-            STA SHEILA+&30
+            LDX romselCopy
+            STA romselCopy
+            STA romsel
             INY
             STY L03D2								;Change this to relocated address (&03AF+&xx ???)
             LDY #&00
@@ -4551,18 +4549,18 @@ GUARD	&C000
             INY
             CPY L03D2								;Change this to relocated address (&03AF+&xx ???)
             BNE L9EBC
-            LDA &F4
-            STX &F4
-            STX SHEILA+&30
+            LDA romselCopy
+            STX romselCopy
+            STX romsel
             TAX
             RTS
 
 ;Function TBC
 ;this code is relocated to and executed at &03A7
 .L9ED9	  TXA									;&03A7
-            LDX &F4									;&03A8
-            STA &F4									;&03AA
-            STA SHEILA+&30								;&03AC
+            LDX romselCopy									;&03A8
+            STA romselCopy									;&03AA
+            STA romsel								;&03AC
             CPY #&00								;&03AF
             BEQ L9EEC								;&03B1
 .L9EE5      LDA (L00A8),Y								;&03B3 - Note this is changed to &AA by code at &9FA4
@@ -4571,18 +4569,18 @@ GUARD	&C000
             BNE L9EE5								;&03B8
 .L9EEC      LDA (L00A8),Y								;&03BA - Note this is changed to &AA by code at &9FA4
             STA (L00AA),Y								;&03BC - Note this is changed to &A8 by code at &9FA4
-            LDA &F4									;&03BE
-            STX &F4									;&03C0
-            STX SHEILA+&30								;&03C2
+            LDA romselCopy									;&03BE
+            STX romselCopy									;&03C0
+            STX romsel								;&03C2
             TAX									;&03C5
             RTS									;&03C6
 
 ;Function TBC This is doing something with the Tube
 ;this code is relocated to and executed at &03A7
 .L9EF9	  TXA
-            LDX &F4
-            STA &F4
-            STA SHEILA+&30
+            LDX romselCopy
+            STA romselCopy
+            STA romsel
             INY
             STY L03D7								;Change this to relocated address (&03AF+&xx ???)
             LDY #&00
@@ -4596,9 +4594,9 @@ GUARD	&C000
             INY
             CPY L03D7								;Change this to relocated address (&03AF+&xx ???)
             BNE L9F07
-            LDA &F4
-            STX &F4
-            STX SHEILA+&30
+            LDA romselCopy
+            STX romselCopy
+            STX romsel
             TAX
             RTS
 
@@ -5479,7 +5477,7 @@ GUARD	&C000
 
 ;Set all bytes in ROM Type Table and Private RAM to 0
             LDX #&0F
-.LA5A6      CPX &F4
+.LA5A6      CPX romselCopy
             BEQ LA5B2
             LDA #&00
             STA L02A1,X
@@ -7182,18 +7180,18 @@ GUARD	&C000
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
 
 .LB35E      SEC
-.LB35F      LDA &F4
+.LB35F      LDA romselCopy
             PHA
             LDA ramselCopy
             PHA
             AND #&80
             ORA #&40
             STA ramselCopy
-            STA SHEILA+&34
-            LDA &F4
+            STA ramsel
+            LDA romselCopy
             ORA #&40
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             BCC LB3CA
 
 	  LDX #&33
@@ -7303,10 +7301,10 @@ GUARD	&C000
 
 .LB460      PLA
             STA ramselCopy
-            STA SHEILA+&34
+            STA ramsel
             PLA
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             RTS
 			
 .LB46E      DEX									;Select 'Register B' register on RTC: Register &0B
@@ -7951,10 +7949,10 @@ GUARD	&C000
             PLP
             RTS
 			
-.LB936      LDA &F4
+.LB936      LDA romselCopy
             ORA #&80
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             TSX
             LDA L0102,X
             STA (L00D6),Y
@@ -7967,10 +7965,10 @@ GUARD	&C000
 .setMemsel
 {
 .LB948      PHA
-            LDA &F4
+            LDA romselCopy
             ORA #romselMemsel
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             PLA
             RTS
 }
@@ -7986,7 +7984,7 @@ GUARD	&C000
             DEX
             BPL LB956
             ; Patch the stub so it contains our bank number.
-            LDA &F4
+            LDA romselCopy
             AND #&0F
             STA osPrintBuf + (romCodeStubLoadBankImm + 1 - romCodeStub)
             RTS
@@ -8031,16 +8029,16 @@ ramCodeStub = osPrintBuf ; SFTODO: use ramCodeStub instead of osPrintBuf in some
 ramCodeStubCallIBOS = ramCodeStub + (romCodeStubCallIBOS - romCodeStub)
 .LR0895     PHA					;becomes address &895 when relocated.
             PHP
-            LDA &F4
+            LDA romselCopy
             PHA
 .^romCodeStubLoadBankImm
             LDA #&00				;The value at this address is patched at run time by installOSPrintBufStub
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             JSR vectorEntry
             PLA
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             PLP
             PLA
             RTS
@@ -8335,20 +8333,20 @@ ibosCNPVIndex = 6
             PHA
             ORA #&40
             STA ramselCopy
-            STA SHEILA+&34
-            LDA &F4
+            STA ramsel
+            LDA romselCopy
             PHA
             ORA #&40
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             LDA prv83+&3C						;read OSMODE
             CMP #&02
             PLA
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             PLA
             STA ramselCopy
-            STA SHEILA+&34
+            STA ramsel
             BCC LBACB
             CLC
             LDA (L00FA),Y
@@ -8508,7 +8506,7 @@ ibosCNPVIndex = 6
             LDA ramselCopy								;get RAM copy of RAMSEL
             NOT_AND ramselShen							;clear Shadow RAM enable bit
             STA ramselCopy								;and save RAM copy of RAMSEL
-            STA SHEILA+&34							          ;save RAMSEL
+            STA ramsel							          ;save RAMSEL
             PLA                                                                                     ;get original OSWRCH A=new mode
             PHA                                                                                     ;save it again
             AND #&7F								;clear Shadow RAM enable bit SFTODO: isn't this redundant? We'd have done "BCS enteringShadowMode" above if top bit was set, wouldn't we?
@@ -8523,7 +8521,7 @@ ibosCNPVIndex = 6
 .LBBBD      LDA ramselCopy								;get RAM copy of RAMSEL
             ORA #ramselShen								;set Shadow RAM enable bit
             STA ramselCopy								;and save RAM copy of RAMSEL
-            STA SHEILA+&34							          ;save RAMSEL
+            STA ramsel							          ;save RAMSEL
             JSR maybeSwapShadow1
             PLA
             PHA
@@ -8629,7 +8627,7 @@ ibosCNPVIndex = 6
             STA crtcHorzTotal
             LDA #&F0
             STA crtcHorzDisplayed
-            ; SFTODO: Next few lines are temporarily (note we PHA the old &F4)
+            ; SFTODO: Next few lines are temporarily (note we PHA the old romselCopy)
             ; clearing PRVEN/MEMSEL
             ; SFTODO: Since we use EOR to toggle MEMSEL in the swap loop,
             ; couldn't we get away with not doing this (and of course not bother
@@ -8637,11 +8635,11 @@ ibosCNPVIndex = 6
             ; if MEMSEL is currently set or not, since the operation is
             ; symmetrical, and we'd do an even number of toggles so we'd finish
             ; in the original state.
-            LDA &F4
+            LDA romselCopy
             PHA
             AND #&0F
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             ; We're going to L00A8 as temporary zp workspace, so stack the existing values.
             LDA L00A8
             PHA
@@ -8654,18 +8652,18 @@ ibosCNPVIndex = 6
             LDY #&00
 .LBC66      LDA (L00A8),Y
             TAX
-            LDA &F4
+            LDA romselCopy
             EOR #romselMemsel ; SFTODO: Why not just AND #romselMemsel? We cleared PRVEN/MEMSEL above and I can't see any other entries to this code (e.g. via LBC66) To be fair this code is fine and maybe it is clearer to think of repeatedly flipping than setting or clearing.
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             LDA (L00A8),Y
             PHA
             TXA
             STA (L00A8),Y
-            LDA &F4
+            LDA romselCopy
             EOR #&80 ; SFTODO: Why not just NOT_AND romselMemsel?
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             PLA
             STA (L00A8),Y
             INY
@@ -8678,15 +8676,15 @@ ibosCNPVIndex = 6
             STA L00A8
             ; Restore the original value of ROMSEL which we stacked above.
             PLA
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
 .rts
 .LBC97      RTS
 }
 
 .LBC98      LDA #&00
             STA ramselCopy
-            STA SHEILA+&34
+            STA ramsel
             LDX #&3C								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBCF2
@@ -8724,7 +8722,7 @@ ibosCNPVIndex = 6
             BPL LBCF2
             LDA #&80								;set Shadow RAM enable bit
             STA ramselCopy								;store at RAMID
-            STA SHEILA+&34							;store at RAMSEL
+            STA ramsel							;store at RAMSEL
             LDA vduStatus								;Get VDU status
             ORA #&10								;set bit 4
             STA vduStatus								;save VDU status
@@ -8734,7 +8732,7 @@ ibosCNPVIndex = 6
 			
 .LBCF2      LDA #&00								;clear Shadow RAM enable bit
             STA ramselCopy								;store at RAMID
-            STA SHEILA+&34							;store at RAMSEL
+            STA ramsel							;store at RAMSEL
             LDA vduStatus								;get VDU status
             AND #&EF								;clear bit 4
             STA vduStatus								;save VDU status
@@ -8776,15 +8774,15 @@ ibosCNPVIndex = 6
 ; properly/formally/some other term.
 .pageInPrvs81
 {
-.LBD45      LDA &F4
+.LBD45      LDA romselCopy
             ORA #romselPrvEn
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             LDA ramselCopy
             PHA
             ORA #ramselPrvs81
             STA ramselCopy
-            STA SHEILA+&34
+            STA ramsel
             PLA
             RTS
 }
@@ -8879,11 +8877,11 @@ ibosCNPVIndex = 6
 {
 .LBDDD      PLA
             STA ramselCopy
-            STA SHEILA+&34
-            LDA &F4
+            STA ramsel
+            LDA romselCopy
             NOT_AND romselPrvEn
-            STA &F4
-            STA SHEILA+&30
+            STA romselCopy
+            STA romsel
             JMP returnFromVectorHandler
 }
 
@@ -8957,7 +8955,7 @@ ibosCNPVIndex = 6
             LDA prvPrintBufferBankEnd
             SBC prvPrintBufferBankStart
             STA prvPrintBufferSizeMid
-            LDA &F4
+            LDA romselCopy
             ORA #&40
             STA prvPrintBufferBankList
             LDA #&FF
@@ -9152,15 +9150,15 @@ ibosCNPVIndex = 6
 ; natural for the name of this subroutine to include "Rom" it gets a little confusing.
 ramRomAccessSubroutine = &0380 ; SFTODO: Move this line?
 .romRomAccessSubroutine
-.LBF5A      LDX &F4				;relocates to &0380
-            STY &F4				;relocates to &0382
-            STY SHEILA+&30			;relocates to &0384
+.LBF5A      LDX romselCopy				;relocates to &0380
+            STY romselCopy				;relocates to &0382
+            STY romsel			;relocates to &0384
 .romRomAccessSubroutineVariableInsn
 ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubroutineVariableInsn - romRomAccessSubroutine)
 	  EQUB &00			;relocates to &0387. Note this byte gets dynamically changed by the code to &AD (LDA &), &8D (STA &) and &CD (CMP &)
 	  EQUB $00,$80			;relocates to &0388. So this becomes either LDA &8000, STA &8000 or CMP &8000
-            STX &F4				;relocates to &038A
-            STX SHEILA+&30			;relocates to &038C
+            STX romselCopy				;relocates to &038A
+            STX romsel			;relocates to &038C
             RTS				;relocates to &038F
 .romRomAccessSubroutineEnd
 
