@@ -2582,16 +2582,17 @@ GUARD	&C000
             PLA
             RTS
 			
-			
+
+{
 ;execute '*S*' command
 ;switches to shadow, executes command, then switches back out of shadow?
-.L9083      CLV
+.^L9083     CLV
             SEC
             BCS L9088
 
 ;execute '*X*' command
 ;switches from shadow, executes command, then switches back to shadow
-.L9087      CLC
+.^L9087     CLC
 .L9088      PHP
             INY
             INY
@@ -2645,6 +2646,8 @@ GUARD	&C000
 .L90ED      JMP exitSC								;Exit Service Call
 
 .L90F0      BVC L90ED
+            FALLTHROUGH_TO nle
+}
 
 ;*NLE Command
 .nle	  LDX &F4									;Get current ROM number
