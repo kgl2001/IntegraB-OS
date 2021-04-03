@@ -8837,7 +8837,7 @@ ibosCNPVIndex = 6
 .LBDA3      JSR pageInPrvs81
             PHA
             TSX
-            JSR LBEF8
+            JSR checkPrintBufferEmpty
             BCC LBDB8
             ; SFTODO: Some similarity with insvHandler here, could we factor out common code?
             LDA L0107,X ; get original flags
@@ -9057,6 +9057,9 @@ ibosCNPVIndex = 6
 }
 
 ; SFTODO: This has only one caller
+; Return with carry set if and only if the printer buffer is empty.
+.checkPrintBufferEmpty
+{
 .LBEF8      LDA prvPrintBufferFreeLow
             CMP prvPrintBufferSizeLow
             BNE LBF12
@@ -9068,9 +9071,11 @@ ibosCNPVIndex = 6
             BNE LBF12
             SEC
             RTS
-			
+
+; SFTODO: We could share this code with the tail of LBEE9 to save two bytes.
 .LBF12      CLC
             RTS
+}
 
 ; SFTODO: This currently only has one caller, so could be inlined. Although
 ; maybe there's some critical alignment stuff going on, which means certain code
