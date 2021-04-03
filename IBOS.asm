@@ -3860,7 +3860,8 @@ GUARD	&C000
             CPX #&10
             BNE L998F
             JMP LA2DE
-			
+
+; SFTODO: This has only one caller, the code immediately above - could it just be inlined?
 .L99A0      JSR L9FC6
             BNE L99BF
             PHA
@@ -4468,6 +4469,9 @@ GUARD	&C000
 ;On entry A=ROM bank to test
 ;On exit A=X=ROM bank that has been tested. Z contains test result.
 ;this code is relocated to and executed at &03A7
+; SFTODO: Change prv80 refs to just &8008 etc? This is accessing arbitrary sideways RAM, not specifically private RAM.
+.testRamTemplate
+{
 .L9E0A	  LDX romselCopy										;Read current ROM number from &F4 and store in X
             STA romselCopy										;Write new ROM number from A to &F4
             STA romsel									;Write new ROM number from A to &FE30
@@ -4488,6 +4492,8 @@ GUARD	&C000
             TAX										;copy original ROM number from A to X
             PLP										;recover test
 .L9E37	  RTS
+            ASSERT P% - testRamTemplate <= variableMainRamSubroutineMaxSize
+}
 
 ;Wipe RAM at bank A
 ;this code is relocated to and executed at &03A7
@@ -4497,7 +4503,7 @@ GUARD	&C000
             STA romselCopy
             STA romsel
             LDA #&00
-.L9E41      STA prv80+&00							
+.L9E41      STA prv80+&00 ; SFTODO: Change to &8000? I think this is wiping arbitrary banks, not particular private RAM.
             INC variableMainRamSubroutine+L9E41-L9E38+1								;Self modifying code - increment LSB of STA in line above
             BNE L9E41									;Test for overflow
             INC variableMainRamSubroutine+L9E41-L9E38+2								;Increment MSB of STA in line above
@@ -4720,8 +4726,8 @@ GUARD	&C000
 ;Relocation code then check for RAM banks. 
 .L9FC6      TXA
             PHA
-            LDX #L9E0A MOD &100							;was LDX #&0A
-            LDY #L9E0A DIV &100							;was LDY #&9E
+            LDX #lo(testRamTemplate)
+            LDY #hi(testRamTemplate)
             JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9E0A to &03A7
             PLA
             JMP variableMainRamSubroutine								;Call relocated code
