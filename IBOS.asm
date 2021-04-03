@@ -122,7 +122,8 @@ modeChangeStateSeenVduSetMode = 1 ; we've seen VDU 22, we're waiting for mode by
 modeChangeStateEnteringShadowMode = 2 ; we're changing into a shadow mode
 modeChangeStateEnteringNonShadowMode = 3 ; we're changing into a non-shadow mode
 
-; This is a byte of unused VDU variable workspace which IBOS uses. SFTODO: Say *how* IBOS uses it, once that becomes clear!
+; This is a byte of unused VDU variable workspace which IBOS uses for the RAM copy of RAMSEL,
+; in the same way &F4 is used as a RAM copy of ROMSEL.
 ramselCopy = &037F
 
 vduSetMode = 22
