@@ -295,6 +295,11 @@ prv81       = &8100
 prv82       = &8200
 prv83       = &8300
 
+; SFTODO: The following are grouped "logically" for now, rather than by address.
+; This is probably easiest to understand, and if we're going to create a table
+; showing all the addresses in order later on, there's no need for these labels
+; to be in physical address order.
+
 ; The printer buffer is implemented using two "extended pointers" - one for
 ; reading, one for writing. Each consists of a two byte address and a one byte
 ; index to a bank in prvPrintBufferBankList; note that these addresses are
@@ -337,6 +342,8 @@ prvPrintBufferBankList  = prv83 + &18 ; 4 bytes
 prvPrvPrintBufferStart = prv83 + &45 ; working copy of userRegPrvPrintBufferStart
 
 prvShx = prv83 + &3D ; &08 on, &FF off SFTODO: Not sure about those on/off values, we test this against 0 in some places - is it &00 on?
+
+prvSFTODOSHADOW = prv83 + &3F ; SFTODO: something to do with shadow RAM, b7 at least is used, maybe others?
 
 LDBE6       = &DBE6
 LDC16       = &DC16
@@ -3540,8 +3547,8 @@ GUARD	&C000
             LDX #&3C								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ L9758								;branch if OSMODE=0
-            LDX #&3F								;read mode?
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
+            LDX #prvSFTODOSHADOW - prv83						;read mode? SFTODO: OK, so probably prvSFTODOSHADOW is the (configured?) screen mode? That would account for b7 being shadow-ish
+            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             JSR OSWRCH								;write mode?
             JMP L9768
 			
@@ -3970,7 +3977,7 @@ GUARD	&C000
             JSR OSWRCH								;Write to screen
             LDA prv83+&08,Y								;read absolute bank assigned to psuedo bank
             BPL L9A98								;check if valid bank has been assigned
-            LDA #&3F								;'?'
+            LDA #'?'
             JSR OSWRCH								;Write to screen
             JMP L9A9C								;Next
 			
@@ -7978,7 +7985,9 @@ GUARD	&C000
 ; SFTODO: This only has one caller at the moment and could be inlined.
 .installOSPrintBufStub
 {
-.LB954      LDX #&3F
+bytesToCopy = &40
+ASSERT romCodeStubEnd - romCodeStub <= bytesToCopy
+.LB954      LDX #bytesToCopy - 1
 .LB956      LDA romCodeStub,X
             STA osPrintBuf,X
             DEX
@@ -8510,7 +8519,7 @@ ibosCNPVIndex = 6
             PLA                                                                                     ;get original OSWRCH A=new mode
             PHA                                                                                     ;save it again
             AND #&7F								;clear Shadow RAM enable bit SFTODO: isn't this redundant? We'd have done "BCS enteringShadowMode" above if top bit was set, wouldn't we?
-            LDX #&3F
+            LDX #prvSFTODOSHADOW - prv83
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #modeChangeStateEnteringNonShadowMode
             STA modeChangeState
@@ -8526,7 +8535,7 @@ ibosCNPVIndex = 6
             PLA
             PHA
             ORA #&80								;set Shadow RAM enable bit
-            LDX #&3F								
+            LDX #prvSFTODOSHADOW - prv83
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #modeChangeStateEnteringShadowMode
             STA modeChangeState
@@ -8717,7 +8726,7 @@ ibosCNPVIndex = 6
             JSR initPrintBuffer
             LDA lastBreakType
             BNE LBCF2
-            LDX #&3F
+            LDX #prvSFTODOSHADOW - prv83
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BPL LBCF2
             LDA #ramselShen								;set Shadow RAM enable bit
@@ -8743,9 +8752,9 @@ ibosCNPVIndex = 6
             STA osShadowRamFlag
 .SFTODOCOMMON1
             JSR PrvEn								;switch in private RAM
-            LDA prv83+&3F
+            LDA prvSFTODOSHADOW
             AND #&7F
-            STA prv83+&3F
+            STA prvSFTODOSHADOW
             JMP PrvDis								;switch out private RAM
 
 ; SFTODO: This has only one caller
@@ -8766,10 +8775,9 @@ ibosCNPVIndex = 6
             PLP
             ; SFTODO: The next few lines (down to and including JSR PrvDis) could be replaced by JSR SFTODOCOMMON1, I think.
             JSR PrvEn								;switch in private RAM
-            ; SFTODO: We seem to set b7 of prv83+&3F here and in a couple of places but never read it!?
-            LDA prv83+&3F
+            LDA prvSFTODOSHADOW
             AND #&7F
-            STA prv83+&3F
+            STA prvSFTODOSHADOW
             JSR PrvDis								;switch out private RAM
             JSR maybeSwapShadow2
             JMP LBCF2
