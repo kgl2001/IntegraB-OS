@@ -3950,7 +3950,8 @@ GUARD	&C000
 .L9A2F      RTS
 
 ;*SRSET Command
-.srset      LDA (L00A8),Y
+{
+.^srset     LDA (L00A8),Y
             CMP #&3F
             BEQ L9A79
             JSR LA40C
@@ -4015,6 +4016,7 @@ GUARD	&C000
             BNE L9A7F								;Loop for 'X', 'Y' & 'Z'
 .L9AAB      JSR OSNEWL								;New Line
             JMP LA2DE
+}
 
 {
 ;*SRROM Command
@@ -5283,8 +5285,9 @@ GUARD	&C000
             CMP L00AB								;at copyright offset pointer (end of title string + version string)?
             BCC LA3F5								;loop if not.
             JMP OSNEWL								;otherwise finished for this rom so write new line and return
-			
-.LA40C      LDA #&00
+
+{
+.^LA40C      LDA #&00
             STA L00AE
             STA L00AF
 .LA412      JSR LA458
@@ -5306,6 +5309,7 @@ GUARD	&C000
 			
 .LA431      SEC
             RTS
+}
 			
 .LA433      PHA
             LDA #&00
