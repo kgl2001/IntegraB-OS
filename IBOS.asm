@@ -382,9 +382,9 @@ LF16E       = &F16E
 
 bufNumPrinter = 3 ; OS buffer number for the printer buffer
 
-opcodeStaAbs = &8D
+opcodeCmpAbs = &CD
 opcodeLdaAbs = &AD
-opcodeCmdAbs = &CD
+opcodeStaAbs = &8D
 
 ; SFTODO: Define romselCopy = &F4, romsel = &FE30, ramselCopy = &37F, ramsel =
 ; &FE34 and use those everywhere instead of the raw hex or SHEILA+&xx we have
@@ -2325,7 +2325,7 @@ GUARD	&C000
             TXA
             JSR ramRomAccessSubroutine							;switch to ROM Bank Y and write value of A to &8000
             TAX
-            LDA #opcodeCmdAbs
+            LDA #opcodeCmpAbs
             STA ramRomAccessSubroutineVariableInsn
             TXA
             JSR ramRomAccessSubroutine							;switch to ROM Bank Y and compare value of &8000 with A
@@ -4655,16 +4655,21 @@ GUARD	&C000
 
 ;Function TBC
 ;this code is relocated to and executed at &03A7
+.mainRamTransferTemplate
+{
 .L9ED9	  TXA									;&03A7
             LDX romselCopy									;&03A8
             STA romselCopy									;&03AA
             STA romsel								;&03AC
             CPY #&00								;&03AF
             BEQ L9EEC								;&03B1
+.^mainRamTransferTemplateLdaStaPair1
 .L9EE5      LDA (L00A8),Y								;&03B3 - Note this is changed to &AA by code at &9FA4
             STA (L00AA),Y								;&03B5 - Note this is changed to &A8 by code at &9FA4
             DEY									;&03B7
             BNE L9EE5								;&03B8
+
+.^mainRamTransferTemplateLdaStaPair2
 .L9EEC      LDA (L00A8),Y								;&03BA - Note this is changed to &AA by code at &9FA4
             STA (L00AA),Y								;&03BC - Note this is changed to &A8 by code at &9FA4
             LDA romselCopy									;&03BE
@@ -4672,6 +4677,8 @@ GUARD	&C000
             STX romsel								;&03C2
             TAX									;&03C5
             RTS									;&03C6
+            ASSERT P% - mainRamTransferTemplate <= variableMainRamSubroutineMaxSize
+}
 
 ; Transfer Y+1 bytes between host (sideways RAM, starting at address in L00A8)
 ; and parasite (starting at address set up when initiating tube transfer before
@@ -4815,18 +4822,18 @@ GUARD	&C000
 .notTube
 .L9FA4      LDA #&00
             STA prv83+&42
-            LDX #L9ED9 MOD &100							;was LDX #&D9 SFTODO!
-            LDY #L9ED9 DIV &100							;was LDY #&9E
+            LDX #lo(mainRamTransferTemplate)
+            LDY #hi(mainRamTransferTemplate)
             JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9ED9 to &03A7
-            BIT prvOswordBlockCopy								;check if we need to swap &AA with &A8 in code at &9ED9
-            BPL L9FC5
-            LDA #&AA
-            STA L03B4								;Change this to relocated address (&03AF+&xx ???)
-            STA L03BB								;Change this to relocated address (&03AF+&xx ???)
-            LDA #&A8
-            STA L03B6								;Change this to relocated address (&03AF+&xx ???)
-            STA L03BD								;Change this to relocated address (&03AF+&xx ???)
-.L9FC5      RTS
+            BIT prvOswordBlockCopy                                                                  ;test function
+            BPL rts2                                                                                ;if this is read (from sideways RAM) we're done
+            LDA #L00AA
+            STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair1 + 1 - mainRamTransferTemplate)
+            STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair2 + 1 - mainRamTransferTemplate)
+            LDA #L00A8
+            STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair1 + 3 - mainRamTransferTemplate)
+            STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair2 + 3 - mainRamTransferTemplate)
+.rts2       RTS
 }
 
 ;Relocation code then check for RAM banks.
