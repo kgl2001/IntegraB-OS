@@ -3885,10 +3885,11 @@ GUARD	&C000
 ; SFTODO: How are these strings accessed? Which label?
 		EQUS "RAM","ROM"
 
+; SFTODO: This has only one caller
 {
 .^L99C6	  PHA
-	  LDX #L9E59 MOD &100							;was LDX #&59
-	  LDY #L9E59 DIV &100							;was LDY #&9E
+	  LDX #lo(writeRomHeaderTemplate)
+	  LDY #hi(writeRomHeaderTemplate)
 	  JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9E59 to &03A7
             PLA
             BEQ L99D6
@@ -4522,18 +4523,22 @@ GUARD	&C000
 
 ;write ROM header to RAM at bank A
 ;this code is relocated to and executed at &03A7
+.writeRomHeaderTemplate
+{
 .L9E59	  LDX romselCopy
             STA romselCopy
             STA romsel
             LDY #&0F
 .L9E62      LDA L03C1,Y									;Change this to srData relocated address
-            STA prv80+&00,Y
+            STA &8000,Y    
             DEY
             BPL L9E62
             LDA romselCopy
             STX romselCopy
             STX romsel
             RTS
+            ASSERT P% - writeRomHeaderTemplate <= variableMainRamSubroutineMaxSize
+}
 
 ;ROM Header
 .srData		EQUB &60,&00,&00
