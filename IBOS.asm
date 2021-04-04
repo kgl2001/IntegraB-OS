@@ -4512,8 +4512,8 @@ GUARD	&C000
             TAX
 .absoluteAddress
 .L9DA0      JSR transferBlock
-            LDA L00AE
-            ORA L00AF
+            LDA transientOs42MainAddrHighWord
+            ORA transientOs42MainAddrHighWord + 1
             BEQ rts
             JSR SFTODOsetVandCBasedOnSomethingAndMaybeSwizzleStuff
             BCC L9D8E
