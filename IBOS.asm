@@ -4684,12 +4684,12 @@ GUARD	&C000
             INY
             STY L03D7								;Change this to relocated address (&03AF+&xx ???)
             LDY #&00
-.^tubeTransferTemplatePatchA
+.^tubeTransferTemplateReadSwr
 .L9F07      BIT SHEILA+&E4
             BVC L9F07
             LDA (L00A8),Y
             STA SHEILA+&E5
-.^tubeTransferTemplatePatchAEnd
+.^tubeTransferTemplateReadSwrEnd
             JSR L03D6								;Change this to relocated address (&03AF+&xx ???)
             JSR L03D6								;Change this to relocated address (&03AF+&xx ???)
             JSR L03D6								;Change this to relocated address (&03AF+&xx ???)
@@ -4707,12 +4707,12 @@ GUARD	&C000
 ;This code is relocated to &03B5. Refer to code at &9F98
 ; SFTODO: The first three bytes of patched code are the same either way, unless
 ; there's another hidden patch we could save three bytes by not patching those.
-.^tubeTransferTemplatePatchB
+.^tubeTransferTemplateWriteSwr
 .L9F29      BIT SHEILA+&E4
             BPL L9F29
             LDA SHEILA+&E5
             STA (L00A8),Y
-            ASSERT P% - tubeTransferTemplatePatchB == tubeTransferTemplatePatchAEnd - tubeTransferTemplatePatchA
+            ASSERT P% - tubeTransferTemplateWriteSwr == tubeTransferTemplateReadSwrEnd - tubeTransferTemplateReadSwr
 }
 
 ;relocate &32 bytes of code from address X (LSB) & Y (MSB) to &03A7
@@ -4791,9 +4791,9 @@ GUARD	&C000
             BPL rts                                                                                 ;if this is read (from sideways RAM) we're done
 
             ; Patch the tubeTransfer code at variableMainRamSubroutine for writing (to sideways RAM) instead of reading.
-            LDY #tubeTransferTemplatePatchAEnd - tubeTransferTemplatePatchA - 1
-.L9F9A      LDA tubeTransferTemplatePatchB,Y
-            STA variableMainRamSubroutine + (tubeTransferTemplatePatchA - tubeTransferTemplate),Y
+            LDY #tubeTransferTemplateReadSwrEnd - tubeTransferTemplateReadSwr - 1
+.L9F9A      LDA tubeTransferTemplateWriteSwr,Y
+            STA variableMainRamSubroutine + (tubeTransferTemplateReadSwr - tubeTransferTemplate),Y
             DEY
             BPL L9F9A
 .rts        RTS
