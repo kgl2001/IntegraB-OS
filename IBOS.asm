@@ -5747,6 +5747,8 @@ GUARD	&C000
             JMP LB1E4
 
 ;Read 'Sec Alarm', 'Min Alarm' & 'Hr Alarm' from RTC and Store in Private RAM (&82xx)
+.copyRtcAlarmToPrv
+{
 .LA732      JSR LA775								;Check if RTC Update in Progress, and wait if necessary
             LDX #&01								;Select 'Sec Alarm' register on RTC: Register &01
             JSR rdRTCRAM								;Read data from RTC memory location X into A
@@ -5758,8 +5760,11 @@ GUARD	&C000
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             STA prv82+&2D								;Store 'Hr Alarm' at &822D
             RTS
+}
 
 ;Read 'Sec Alarm', 'Min Alarm' & 'Hr Alarm' from Private RAM (&82xx) and write to RTC
+.copyPrvAlarmToRtc
+{
 .LA74E      JSR LA775								;Check if RTC Update in Progress, and wait if necessary
             LDX #&01								;Select 'Sec Alarm' register on RTC: Register &01
             LDA prv82+&2F								;Get 'Sec Alarm' from &822F
@@ -5770,6 +5775,7 @@ GUARD	&C000
             LDX #&05								;Select 'Hr Alarm' register on RTC: Register &05
             LDA prv82+&2D								;Get 'Hr Alarm' from &822D
             JMP wrRTCRAM								;Write data from A to RTC memory location X
+}
 			
 .LA769      JSR LA70F								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from RTC and Store in Private RAM (&82xx)
             JMP LA6F3								;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
@@ -7587,7 +7593,7 @@ GUARD	&C000
 .LB62A      JMP LB4CF
 
 .LB62D      PLP
-            JSR LA74E
+            JSR copyPrvAlarmToRtc
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y
             AND #&DF                                                                                ; convert to upper case (imperfectly)
@@ -7651,7 +7657,7 @@ GUARD	&C000
             STA prv82+&24
             LDA #&80
             STA prv82+&25
-            JSR LA732
+            JSR copyRtcAlarmToPrv
             JSR LAD63
             DEC prv82+&21
             JSR LA5DE
@@ -7947,7 +7953,7 @@ GUARD	&C000
 ;XY?0=&64
 ;OSWORD &49 (73) - Integra-B calls
 .LB8C6		JSR LB774
-            JSR LA732
+            JSR copyRtcAlarmToPrv
             LDX #&0B								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&60
@@ -7969,7 +7975,7 @@ GUARD	&C000
 			
 ;XY?0=&67
 ;OSWORD &49 (73) - Integra-B calls
-.LB8E2		JSR LA74E
+.LB8E2		JSR copyPrvAlarmToRtc
             LDA prv82+&21
             AND #&60
             STA prv82+&21
