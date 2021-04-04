@@ -4882,9 +4882,11 @@ GUARD	&C000
 ;&80 - Write to absolute address
 ;&C0 - Write to pseudo-address
 
-.osword42	  JSR L9FD3						;copy osword42 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
+.osword42
+{
+	  JSR L9FD3						;copy osword42 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
             JSR L9B93						;convert pseudo RAM bank to absolute and shuffle parameter block
-.LA0A6      JSR L9DDD
+.^LA0A6      JSR L9DDD
             BCS LA0B1
             JSR L9F4E
             JSR L9D8E
@@ -4894,6 +4896,7 @@ GUARD	&C000
             LDA #&BF
             JSR L0406
 .LA0BC      JMP L9983
+}
 
 .LA0BF      SEC
             LDA prv82+&2A
