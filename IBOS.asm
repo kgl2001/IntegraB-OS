@@ -4452,7 +4452,7 @@ GUARD	&C000
 
 {
 .^L9D62     BIT prvOswordBlockCopy                                                                  ;get function
-            BVC absoluteAddress
+            BVC sevSecRts                                                                            ;branch if we have an absolute address
             ; We're dealing with a pseudo-address.
             BIT L00A9
             BVC L9D84
@@ -4460,23 +4460,29 @@ GUARD	&C000
             STA L00A8
             LDA #&80
             STA L00A9
-            INC prvOswordBlockCopy + 1
-            LDA prvOswordBlockCopy + 1
+            ; SFTODO: is this an "absolute" ROM number after all? I think
+            ; blockCopy+1 is the bank number 0-3 for the 64K pseudo address
+            ; space in this code path (which, if correct, means comment at
+            ; adjustPrvOsword42Block needs tweaking and so maybe do other
+            ; comments on Copy+1 like those immediately below)
+            INC prvOswordBlockCopy + 1                                                              ;increment absolute ROM number
+            LDA prvOswordBlockCopy + 1                                                              ;get absolute ROM number
             CMP #&04
-            BCS L9D86
+            BCS sevSecRts
             TAX
             LDA prv83+&0C,X
-            BMI L9D8B
+            BMI clvSecRts
             TAX
 .L9D84      CLC
             RTS
 
-.absoluteAddress
+.sevSecRts
 .L9D86      BIT rts ; set V
             SEC
 .rts
 .L9D8A      RTS
 
+.clvSecRts
 .L9D8B      CLV
             SEC
             RTS
