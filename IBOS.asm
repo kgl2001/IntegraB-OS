@@ -4515,7 +4515,11 @@ GUARD	&C000
 .L9DAE      LDA L02EE
             BEQ errorBadAddress
             PHP
-            JSR LA098
+            ; SFTODO: I am reading this code in the context of OSWORD &42, so
+            ; closing a file handle seems really weird; am I missing something?
+            ; To be fair, provided L02EE is 0 we don't even try to close it, and
+            ; presumably this is used on some other code paths too.
+            JSR closeHandleL02EE
             PLP
 .errorBadAddress
 .L9DB8      BVC errorNotAllocated
@@ -4980,10 +4984,13 @@ GUARD	&C000
             BEQ LA084
             STA L02EE
             RTS
-			
+
+.closeHandleL02EE
+{
 .LA098      LDA #&00
             LDY L02EE
             JMP OSFIND
+}
 			
 ;OSWORD &42 (66) - Sideways RAM transfer
 ;
@@ -5202,7 +5209,7 @@ GUARD	&C000
             BCC LA216
             LDA L02EE
             BEQ LA22E
-.LA22B      JSR LA098
+.LA22B      JSR closeHandleL02EE
 .LA22E      BIT prvOswordBlockCopy
             BPL LA24E
             BVS LA24E
