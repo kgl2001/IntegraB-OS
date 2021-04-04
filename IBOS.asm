@@ -130,6 +130,7 @@ modeChangeStateEnteringNonShadowMode = 3 ; we're changing into a non-shadow mode
 variableMainRamSubroutine = &03A7 ; SFTODO: POOR NAME
 variableMainRamSubroutineMaxSize = &32 ; SFTODO: ASSERT ALL THE SUBROUTINES ARE SMALLER THAN THIS
 
+vduCr = 13
 vduSetMode = 22
 
 lastBreakType = &028D
@@ -967,19 +968,21 @@ GUARD	&C000
 			
 ;Find next character after space.
 ;On exit A=character Y=offset for character. Carry set if end of line
-.L853E      INY
-.L853F      LDA (L00A8),Y
-            CMP #&20								;' '
+{
+.^L853E      INY
+.^L853F      LDA (L00A8),Y
+            CMP #' '
             BEQ L853E
-            CMP #&0D								;CR
+            CMP #vduCr
             BEQ L854B
             CLC
             RTS
-			
+
+; SFTODO: Many copies of these two instructions, can we share?
 .L854B      SEC
             RTS
-			
-.L854D      JSR L853F								;find next character. offset stored in Y
+
+.^L854D      JSR L853F								;find next character. offset stored in Y
             BCS L854B
             LDA (L00A8),Y
             CMP #&2C								;','
@@ -987,6 +990,7 @@ GUARD	&C000
             INY
 .L8559      CLC
             RTS
+}
 
 ;Unrecognised Star command
 .service04  JSR L85FE								;store end of command parameter address at &A8 / &A9. Set A=0, Y=0
