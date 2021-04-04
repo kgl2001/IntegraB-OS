@@ -684,7 +684,7 @@ GUARD	&C000
             CPY #&03								;check length of command.
             BCC L838D								;If less than 3, then too short, even if initial characters match, so check next command
             INY									;next character
-.L8387      JSR L853F								;Command recognised. find first command parameter after ' '. offset stored in Y.
+.L8387      JSR findNextCharAfterSpace								;Command recognised. find first command parameter after ' '. offset stored in Y.
             CLC									;clear carry - ???
             BCC L83A0								;and jump
 .L838D      INX									;next command
@@ -969,8 +969,9 @@ GUARD	&C000
 ;Find next character after space.
 ;On exit A=character Y=offset for character. Carry set if end of line
 {
-.^L853E      INY
-.^L853F      LDA (L00A8),Y
+.L853E      INY
+.^findNextCharAfterSpace
+.L853F      LDA (L00A8),Y
             CMP #' '
             BEQ L853E
             CMP #vduCr
@@ -982,7 +983,7 @@ GUARD	&C000
 .L854B      SEC
             RTS
 
-.^L854D      JSR L853F								;find next character. offset stored in Y
+.^L854D      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             BCS L854B
             LDA (L00A8),Y
             CMP #&2C								;','
@@ -1194,7 +1195,7 @@ GUARD	&C000
             JMP L0100
 			
 			
-.L8699      JSR L853F								;find next character. offset stored in Y
+.L8699      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y
             AND #&DF
             CMP #&4F
@@ -1290,7 +1291,7 @@ GUARD	&C000
 {
 .^L872B     LDA #&0A
 .^L872D     STA L00B8
-            JSR L853F								;find next character. offset stored in Y
+            JSR findNextCharAfterSpace								;find next character. offset stored in Y
             BCS L8729
             STY L00BA
             STY L00BB
@@ -2629,7 +2630,7 @@ GUARD	&C000
 .L9088      PHP
             INY
             INY
-            JSR L853F								;find next character. offset stored in Y
+            JSR findNextCharAfterSpace								;find next character. offset stored in Y
             CLC
             TYA
             ADC L00A8
@@ -2701,7 +2702,7 @@ GUARD	&C000
             CMP #&29
             BNE L9110
             INY
-.L9110      JSR L853F								;find next character. offset stored in Y
+.L9110      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA #&4C
             PLP
             BNE L911A
@@ -2865,7 +2866,7 @@ GUARD	&C000
 			
 			
 ;get start and end of file name offset and store in Y & X
-.L9247      JSR L853F								;find next character. offset stored in Y
+.L9247      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y								;read character
             CMP #&0D								;CR?
             BNE L9253								;not CR, so jump
@@ -2931,7 +2932,7 @@ GUARD	&C000
 
 ;*STATUS Command
 .status		LDX #&29
-.L92BB      JSR L853F								;find next character. offset stored in Y
+.L92BB      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA #&FF								;load &FF
             PHA									;and store
             LDA (L00A8),Y								;read character
@@ -3168,7 +3169,7 @@ GUARD	&C000
 .L946D      PLP
             JMP exitSCa								;restore service call parameters and exit
 			
-.L9471      JSR L853F								;find next character. offset stored in Y
+.L9471      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             PLP
             JSR L947B
             JMP exitSC								;Exit Service Call
@@ -3226,7 +3227,7 @@ GUARD	&C000
             JSR L93E3
             PLA
             TAY
-            JSR L853F								;find next character. offset stored in Y
+            JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y							;Read File system type
             AND #&DF								;Capitalise
             CMP #&4E								;Is 'N' - NFS
@@ -4209,7 +4210,7 @@ GUARD	&C000
 .L9BE9      LDA #&00
             STA prv82+&26							;Clear &8226
             STA prv82+&27							;Clear &8227
-.L9BF1      JSR L853F								;find next character. offset stored in Y
+.L9BF1      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y
             CMP #&0D								;CR?
             BEQ L9C21								;Yes? Then jump to end
@@ -4260,7 +4261,7 @@ GUARD	&C000
             STA prv82+&29
             RTS
 			
-.L9C52      JSR L853F								;find next character. offset stored in Y
+.L9C52      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y
             CMP #&40
             BNE L9C82
@@ -4297,7 +4298,7 @@ GUARD	&C000
             STA prv82+&25
             RTS
 			
-.L9C9C      JSR L853F								;find next character. offset stored in Y
+.L9C9C      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y
             CMP #&2B
             PHP
@@ -5173,7 +5174,7 @@ GUARD	&C000
 .LA317      JMP exitSC								;Exit Service Call
 
 .LA31A      JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
-            JSR L853F								;find next character. offset stored in Y
+            JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y
             AND #&DF								;Capitalise
             CMP #&49								;and check for 'I' (Immediate)
@@ -5347,7 +5348,7 @@ GUARD	&C000
             RTS
 
 {
-.^LA458     JSR L853F								;find next character. offset stored in Y
+.^LA458     JSR findNextCharAfterSpace								;find next character. offset stored in Y
             BCS LA490
             LDA (L00A8),Y
             CMP #','
@@ -6966,7 +6967,7 @@ GUARD	&C000
 .LB137      STA prv82+&28,X
             DEX
             BPL LB137
-            JSR L853F								;find next character. offset stored in Y
+            JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y
             CMP #&0D
             BEQ LB197
@@ -6975,7 +6976,7 @@ GUARD	&C000
             STA prv82+&2C
             CMP #&FF
             BEQ LB15C
-            JSR L853F								;find next character. offset stored in Y
+            JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y
             CMP #&2C
             BNE LB197
@@ -6984,7 +6985,7 @@ GUARD	&C000
             BCC LB163
             LDA #&FF
 .LB163      STA prv82+&2B
-            JSR L853F								;find next character. offset stored in Y
+            JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y
             CMP #&2F
             BNE LB197
@@ -6993,7 +6994,7 @@ GUARD	&C000
             BCC LB177
             LDA #&FF
 .LB177      STA prv82+&2A
-            JSR L853F								;find next character. offset stored in Y
+            JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y
             CMP #&2F
             BNE LB197
@@ -7050,7 +7051,7 @@ GUARD	&C000
 .LB1ED      STY prv82+&4E
             LDA #&00
             STA L00AB
-            JSR L853F								;find next character. offset stored in Y
+            JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y
             CMP #&2B
             BEQ LB215
@@ -7587,7 +7588,7 @@ GUARD	&C000
 
 .LB62D      PLP
             JSR LA74E
-            JSR L853F								;find next character. offset stored in Y
+            JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y
             AND #&DF
             CMP #&52
