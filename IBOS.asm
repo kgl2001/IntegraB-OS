@@ -4529,7 +4529,7 @@ GUARD	&C000
             STA romselCopy
             STA romsel
             LDY #&0F
-.L9E62      LDA L03C1,Y									;Change this to srData relocated address
+.L9E62      LDA variableMainRamSubroutine + srData - writeRomHeaderTemplate,Y
             STA &8000,Y    
             DEY
             BPL L9E62
