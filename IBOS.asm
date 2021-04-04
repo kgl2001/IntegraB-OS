@@ -5025,7 +5025,6 @@ GUARD	&C000
 ;&80 - Write to absolute address
 ;&C0 - Write to pseudo-address
 
-; SFTODOWIP
 .osword42
 {
 	  JSR copyOswordDetailsToPrv						;copy osword42 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
@@ -5123,8 +5122,10 @@ GUARD	&C000
 ;  buffer length is larger than &7FFF, then language
 ;  workspace from PAGE to HIMEM is used.
 
-
-.osword43	  JSR copyOswordDetailsToPrv						;copy osword43 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
+; SFTODOWIP
+.osword43
+{
+	  JSR copyOswordDetailsToPrv						;copy osword43 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
             JSR L9B50						;convert pseudo RAM bank to absolute and shuffle parameter block
             BIT tubePresenceFlag						;check for Tube - &00: not present, &ff: present
             BPL LA18B						;branch if tube not present
@@ -5156,7 +5157,7 @@ GUARD	&C000
             STA prvOswordBlockCopy + 12
             LDA #&07
             STA prvOswordBlockCopy + 13
-.LA18B      JSR LA02D
+.^LA18B      JSR LA02D
             LDA prvOswordBlockCopy + 6
             ORA prvOswordBlockCopy + 7
             BNE LA1C7
@@ -5290,13 +5291,13 @@ GUARD	&C000
             LDX #&EE
             LDY #&02
             JSR OSFILE
-.LA2DE      JSR PrvDis								;switch out private RAM
+.^LA2DE      JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call
 			
-.LA2E4      JSR LA40C
+.^LA2E4      JSR LA40C
             BCC LA2F9
             BVC LA2F6
-.LA2EB      JSR raiseError								;Goto error handling, where calling address is pulled from stack
+.^LA2EB      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
 			EQUB &80
 			EQUS "Bad id", &00
@@ -5304,6 +5305,7 @@ GUARD	&C000
 .LA2F6      JMP L860E
 
 .LA2F9      RTS
+}
 
 ;*INSERT Command
 .insert     JSR LA2E4								;Error check input data
