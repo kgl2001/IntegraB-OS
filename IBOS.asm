@@ -368,7 +368,7 @@ prvOsMode = prv83 + &3C ; OSMODE, extracted from relevant bits of userRegOsModeS
 
 prvPseudoBankNumbers = prv83 + &08 ; 4 bytes, absolute RAM bank number for the Pseudo RAM banks W, X, Y, Z
 
-prvSFTODOSHADOW = prv83 + &3F ; SFTODO: something to do with shadow RAM, b7 at least is used, maybe others?
+prvSFTODOMODE = prv83 + &3F ; SFTODO: this is a screen mode (including a shadow flag in b7), but I'm not sure exactly what screen mode yet - current? *CONFIGUREd? something else?
 
 LDBE6       = &DBE6
 LDC16       = &DC16
@@ -3579,7 +3579,7 @@ GUARD	&C000
             LDX #prvOsMode - prv83									;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ L9758								;branch if OSMODE=0
-            LDX #prvSFTODOSHADOW - prv83						;read mode? SFTODO: OK, so probably prvSFTODOSHADOW is the (configured?) screen mode? That would account for b7 being shadow-ish
+            LDX #prvSFTODOMODE - prv83						;read mode? SFTODO: OK, so probably prvSFTODOMODE is the (configured?) screen mode? That would account for b7 being shadow-ish
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             JSR OSWRCH								;write mode?
             JMP L9768
@@ -8633,7 +8633,7 @@ ibosCNPVIndex = 6
             PLA                                                                                     ;get original OSWRCH A=new mode
             PHA                                                                                     ;save it again
             AND #&7F								;clear Shadow RAM enable bit SFTODO: isn't this redundant? We'd have done "BCS enteringShadowMode" above if top bit was set, wouldn't we?
-            LDX #prvSFTODOSHADOW - prv83
+            LDX #prvSFTODOMODE - prv83
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #modeChangeStateEnteringNonShadowMode
             STA modeChangeState
@@ -8649,7 +8649,7 @@ ibosCNPVIndex = 6
             PLA
             PHA
             ORA #&80								;set Shadow RAM enable bit
-            LDX #prvSFTODOSHADOW - prv83
+            LDX #prvSFTODOMODE - prv83
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #modeChangeStateEnteringShadowMode
             STA modeChangeState
@@ -8840,7 +8840,7 @@ ibosCNPVIndex = 6
             JSR initPrintBuffer
             LDA lastBreakType
             BNE LBCF2
-            LDX #prvSFTODOSHADOW - prv83
+            LDX #prvSFTODOMODE - prv83
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BPL LBCF2
             LDA #ramselShen								;set Shadow RAM enable bit
@@ -8866,9 +8866,9 @@ ibosCNPVIndex = 6
             STA osShadowRamFlag
 .SFTODOCOMMON1
             JSR PrvEn								;switch in private RAM
-            LDA prvSFTODOSHADOW
+            LDA prvSFTODOMODE
             AND #&7F
-            STA prvSFTODOSHADOW
+            STA prvSFTODOMODE
             JMP PrvDis								;switch out private RAM
 
 ; SFTODO: This has only one caller
@@ -8889,9 +8889,9 @@ ibosCNPVIndex = 6
             PLP
             ; SFTODO: The next few lines (down to and including JSR PrvDis) could be replaced by JSR SFTODOCOMMON1, I think.
             JSR PrvEn								;switch in private RAM
-            LDA prvSFTODOSHADOW
+            LDA prvSFTODOMODE
             AND #&7F
-            STA prvSFTODOSHADOW
+            STA prvSFTODOMODE
             JSR PrvDis								;switch out private RAM
             JSR maybeSwapShadow2
             JMP LBCF2
