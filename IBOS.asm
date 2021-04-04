@@ -4473,12 +4473,15 @@ GUARD	&C000
 {
 .^L9D8E      JSR adjustTransferParameters
             LDX prvOswordBlockCopy + 1
-            BIT prvOswordBlockCopy
-            BVC L9DA0
+            BIT prvOswordBlockCopy                                                                  ; get function
+            BVC absoluteAddress
+            ; We're dealing with a pseudo-address.
+            ; SFTODO: What do next four lines do?
             LDA prv83+&0C,X
             CLV
             BMI L9DAE
             TAX
+.absoluteAddress
 .L9DA0      JSR L9CF6
             LDA L00AE
             ORA L00AF
