@@ -355,6 +355,8 @@ prvOsMode = prv83 + &3C ; OSMODE, extracted from relevant bits of userRegOsModeS
 ; prvOsMode and not bother with the copy in the low bits of userRegOsModeShx?
 ; That would save some code.
 
+prvPseudoBankNumbers = prv83 + &08 ; 4 bytes, absolute RAM bank number for the Pseudo RAM banks W, X, Y, Z
+
 prvSFTODOSHADOW = prv83 + &3F ; SFTODO: something to do with shadow RAM, b7 at least is used, maybe others?
 
 LDBE6       = &DBE6
@@ -5362,7 +5364,7 @@ GUARD	&C000
             BCC LA492
             SBC #'W'
             CLC
-            ADC #&08
+            ADC #prvPseudoBankNumbers - prv83
             TAX
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
 .LA48B      INY
