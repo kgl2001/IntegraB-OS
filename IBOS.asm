@@ -3886,6 +3886,7 @@ GUARD	&C000
 		EQUS "RAM","ROM"
 
 ; SFTODO: This has only one caller
+.writeRomHeaderAndPatchUsingVariableMainRamSubroutine
 {
 .^L99C6	  PHA
 	  LDX #lo(writeRomHeaderTemplate)
@@ -3895,11 +3896,11 @@ GUARD	&C000
             BEQ ram
             ; ROM - so patch variableMainRamSubroutine's ROM header to say "ROM" instead of "RAM"
             LDA #'O'
-            STA variableMainRamSubroutine + writeRomHeaderTemplateDataAO - writeRomHeaderTemplate
+            STA variableMainRamSubroutine + (writeRomHeaderTemplateDataAO - writeRomHeaderTemplate)
 .ram        LDA prv82+&21
             JSR L9B18
             STA prv82+&21
-            STA variableMainRamSubroutine + writeRomHeaderTemplateSFTODO - writeRomHeaderTemplate
+            STA variableMainRamSubroutine + (writeRomHeaderTemplateSFTODO - writeRomHeaderTemplate)
             JMP variableMainRamSubroutine								;Call relocated code
 }
 			
@@ -4055,7 +4056,7 @@ GUARD	&C000
             JSR L9A18
             BCS L9B12
 .L9AF9      LDA L00AD
-            JSR L99C6
+            JSR writeRomHeaderAndPatchUsingVariableMainRamSubroutine
             LDX prv82+&21
             LDA #&02
             STA prv83+&2C,X
@@ -4541,7 +4542,7 @@ GUARD	&C000
 
 ;ROM Header
 .srData	  EQUB &60
-.^writeRomHeaderTemplateSFTODO
+.^writeRomHeaderTemplateSFTODO ; SFTODO: Why do we modify this byte of the header?
             EQUB     &00,&00
 	  EQUB &60,&00,&00
 	  EQUB &02
