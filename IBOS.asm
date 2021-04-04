@@ -116,6 +116,7 @@ transientOs42MainAddrHighWord = &AE ; 2 bytes
 vduStatus = &D0
 vduStatusShadow = &10
 negativeVduQueueSize = &026A
+tubePresenceFlag = &027A
 osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force shadow modes (note that AllMem.txt seems to have this wrong, at least my copy does)
 currentMode = &0355
 
@@ -2512,7 +2513,7 @@ GUARD	&C000
             CMP #&3F
             BNE L8FAC
             JSR L83EC
-            LDA L027A
+            LDA tubePresenceFlag
 .L8FA3      JSR L86C8
             JSR OSNEWL
 .L8FA9      JMP exitSC								;Exit Service Call
@@ -2520,7 +2521,7 @@ GUARD	&C000
 .L8FAC      JMP L860E
 
 .L8FAF      BNE L8FF1
-            BIT L027A								;check for Tube - &00: not present, &ff: present
+            BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BPL L8FA9
             LDA L028C
             BPL L8FBF
@@ -2540,7 +2541,7 @@ GUARD	&C000
             LDX #&41
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&00
-            STA L027A
+            STA tubePresenceFlag
             LDA #&00
             LDX #&A8
             LDY #&00
@@ -2563,7 +2564,7 @@ GUARD	&C000
 	  EQUS "No Tube!", &00
 
 ;Initialise Tube
-.L9009      BIT L027A								;check for Tube - &00: not present, &ff: present
+.L9009      BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BMI L8FA9
             LDA #&FF
             LDX #&40
@@ -2574,7 +2575,7 @@ GUARD	&C000
             LDY #&00
             JSR L9050								;issue paged ROM service request
             LDA #&FF
-            STA L027A
+            STA tubePresenceFlag
             LDX #&FE								;service type &FE - tube system post initialisation
             LDY #&00
             JSR L9050								;issue paged ROM service request
@@ -2681,7 +2682,7 @@ GUARD	&C000
             JSR OSWRCH
             LDA currentMode								;current screen mode
             JSR OSWRCH
-            BIT L027A								;check for Tube - &00: not present, &ff: present
+            BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BPL L90DE
             JSR L8FC8
             TSX
@@ -3508,7 +3509,7 @@ GUARD	&C000
             BPL L96B1
             JMP LDBE6								;OSBYTE 142 - ENTER LANGUAGE ROM AT &8000 (http://mdfs.net/Docs/Comp/BBC/OS1-20/D940)
 			
-.L96B1      BIT L027A								;check for Tube - &00: not present, &ff: present
+.L96B1      BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BPL L96A5
             LDA #&00
             CLC
@@ -3825,7 +3826,7 @@ GUARD	&C000
 .L990D      LDA #'K'
             JSR OSWRCH								;Write to screen
 .L9912      JSR OSNEWL								;New Line
-            BIT L027A								;check for Tube - &00: not present, &ff: present
+            BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BMI L991D
             JMP OSNEWL								;New Line
 			
@@ -4303,7 +4304,7 @@ GUARD	&C000
             INY
             TYA
             PHA
-            LDA L027A
+            LDA tubePresenceFlag
             BPL L9C67
             LDA #&08
             BNE L9C71
@@ -4815,7 +4816,7 @@ GUARD	&C000
 {
 .^L9F4E     BIT prvOswordBlockCopy + 5                                                              ;test high bit of 32-bit main memory address
             BMI notTube
-            BIT L027A								;check for Tube - &00: not present, &ff: present
+            BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BPL notTube
             LDA #&FF
             STA prv83+&42
@@ -5120,7 +5121,7 @@ GUARD	&C000
 
 .osword43	  JSR copyOswordDetailsToPrv						;copy osword43 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
             JSR L9B50						;convert pseudo RAM bank to absolute and shuffle parameter block
-            BIT L027A						;check for Tube - &00: not present, &ff: present
+            BIT tubePresenceFlag						;check for Tube - &00: not present, &ff: present
             BPL LA18B						;branch if tube not present
 .LA146      LDA #tubeEntryClaim + tubeClaimId				;tube present code
             JSR tubeEntry
@@ -7940,7 +7941,7 @@ GUARD	&C000
 			
 .LB7BC	  BIT prvOswordBlockCopy + 7
             BMI LB7F9
-            BIT L027A								;check for Tube - &00: not present, &ff: present
+            BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BPL LB7F9
 .LB7C6      LDA #tubeEntryClaim + tubeClaimId
             JSR tubeEntry
