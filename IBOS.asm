@@ -173,6 +173,11 @@ romselCopy = &F4
 ramsel = SHEILA + &34
 ramselCopy = &037F ; unused VDU variable workspace repurposed by IBOS
 
+tubeEntry = &0406
+tubeEntryClaim = &C0 ; plus claim ID
+tubeEntryRelease = &80 ; plus claim ID
+tubeClaimId = &3F ; SFTODO: not officially allocated? not that it matters any more... :-)
+
 L0000       = &0000
 L0032       = &0032
 L006D       = &006D
@@ -4738,25 +4743,25 @@ GUARD	&C000
             BPL notTube
             LDA #&FF
             STA prv83+&42
-.L9F5D      LDA #&FF
-            JSR L0406
+.L9F5D      LDA #tubeEntryClaim + tubeClaimId
+            JSR tubeEntry
             BCC L9F5D
-            LDA prvOswordBlockCopy + 2
+            LDA prvOswordBlockCopy + 2                                                              ;get byte 0 of 32-bit main memory address
             STA L0100
-            LDA prvOswordBlockCopy + 3
+            LDA prvOswordBlockCopy + 3                                                              ;get byte 1 of 32-bit main memory address
             STA L0101
-            LDA prvOswordBlockCopy + 4
+            LDA prvOswordBlockCopy + 4                                                              ;get byte 2 of 32-bit main memory address
             STA L0102
-            LDA prvOswordBlockCopy + 5
+            LDA prvOswordBlockCopy + 5                                                              ;get byte 3 of 32-bit main memory address
             STA L0103
-            LDA prvOswordBlockCopy
+            LDA prvOswordBlockCopy                                                                  ;get function
             EOR #&80
             ROL A
             LDA #&00
             ROL A
             LDX #&00
             LDY #&01
-            JSR L0406								;Change this to relocated address (&03AF+&xx ???)
+            JSR tubeEntry								;Change this to relocated address (&03AF+&xx ???)
 
             LDX #&9EF9 MOD &100							;was LDX #&F9
             LDY #&9EF9 DIV &100							;was LDY #&9E
@@ -4935,7 +4940,7 @@ GUARD	&C000
             BIT prv83+&42
             BPL LA0BC
             LDA #&BF
-            JSR L0406
+            JSR tubeEntry
 .LA0BC      JMP L9983
 }
 
@@ -5026,7 +5031,7 @@ GUARD	&C000
             BIT L027A						;check for Tube - &00: not present, &ff: present
             BPL LA18B						;branch if tube not present
 .LA146      LDA #&FF						;tube present code
-            JSR L0406
+            JSR tubeEntry
             BCC LA146
             LDA prvOswordBlockCopy + 12
             STA L0100
@@ -5037,7 +5042,7 @@ GUARD	&C000
             STA L0103
             LDX #&00
             LDY #&01
-            JSR L0406
+            JSR tubeEntry
             LDY #&00
 .LA16A      BIT SHEILA+&E4
             BPL LA16A
@@ -5048,7 +5053,7 @@ GUARD	&C000
             INY
             BNE LA16A
 .LA17C      LDA #&BF
-            JSR L0406
+            JSR tubeEntry
             LDA #&00
             STA prvOswordBlockCopy + 12
             LDA #&07
@@ -7846,7 +7851,7 @@ GUARD	&C000
             BIT L027A								;check for Tube - &00: not present, &ff: present
             BPL LB7F9
 .LB7C6      LDA #&FF
-            JSR L0406
+            JSR tubeEntry
             BCC LB7C6
             CLC
             LDA prvOswordBlockOrigAddr
@@ -7856,7 +7861,7 @@ GUARD	&C000
             ADC #&00
             TAY
             LDA #&01
-            JSR L0406
+            JSR tubeEntry
             LDY #&00
 .LB7E1      LDA prv80+&00,Y
 .LB7E4      BIT SHEILA+&E4
@@ -7866,7 +7871,7 @@ GUARD	&C000
             CPY prvOswordBlockCopy + 1
             BNE LB7E1
             LDA #&BF
-            JSR L0406
+            JSR tubeEntry
             CLC
             RTS
 			
