@@ -5377,8 +5377,8 @@ GUARD	&C000
             CLV
             RTS
 			
-.LA495      BIT LA498
-.LA498      RTS
+.LA495      BIT rts ; set V
+.rts        RTS
 }
 
 .LA499      JSR LA433
