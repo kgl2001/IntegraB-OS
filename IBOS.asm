@@ -107,6 +107,11 @@ userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
 
+; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
+transientOs42SwrAddr = &A8 ; 2 bytes
+transientOs42MainAddrLowWord = &AA ; 2 bytes
+transientOs42MainAddrHighWord = &AE
+
 vduStatus = &D0
 vduStatusShadow = &10
 negativeVduQueueSize = &026A
@@ -4549,16 +4554,16 @@ GUARD	&C000
             JSR L9B2E ; SFTODO: presumably swizzles pseudo address to absolute address, not checked yet
             STX prvOswordBlockCopy + 1
 .absoluteAddress
-            STY L00A8
-            STA L00A9
+            STY transientOs42SwrAddr
+            STA transientOs42SwrAddr + 1
 .^L9DF2      LDA prvOswordBlockCopy + 2 ; get low byte of main memory address
-            STA L00AA
+            STA transientOs42MainAddrLowWord
             LDA prvOswordBlockCopy + 3 ; get high byte of main memory address
-            STA L00AB
+            STA transientOs42MainAddrLowWord + 1
             LDA prvOswordBlockCopy + 6 ; get low byte of data length
-            STA L00AE
+            STA transientOs42MainAddrHighWord
             LDA prvOswordBlockCopy + 7 ; get high byte of data length
-            STA L00AF
+            STA transientOs42MainAddrHighWord + 1
             CLC ; SFTODO: callers seem to test carry, but it's not clear it can ever be sett - if so, we can delete those checks and associated code...
             RTS
 
