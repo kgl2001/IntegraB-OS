@@ -4752,6 +4752,13 @@ GUARD	&C000
             RTS
 }
 
+; Prepare for a data transfer between main and sideways RAM, handling case where
+; "main" RAM is in parasite, and leave a suitable transfer subroutine at
+; variableMainRamSubroutine.
+.prepareMainSidewaysRamTransfer
+; SFTODO: Having been through tube case I am guessing the non-tube case is
+; similar and have named this subroutine accordingly, but check once been
+; through all code
 ; SFTODO: I am assuming prvOswordBlockCopy has always been through adjustPrvOsword42Block when this code is called
 {
 .^L9F4E     BIT prvOswordBlockCopy + 5                                                              ;test high bit of 32-bit main memory address
@@ -4808,7 +4815,7 @@ GUARD	&C000
 .notTube
 .L9FA4      LDA #&00
             STA prv83+&42
-            LDX #L9ED9 MOD &100							;was LDX #&D9
+            LDX #L9ED9 MOD &100							;was LDX #&D9 SFTODO!
             LDY #L9ED9 DIV &100							;was LDY #&9E
             JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9ED9 to &03A7
             BIT prvOswordBlockCopy								;check if we need to swap &AA with &A8 in code at &9ED9
@@ -4962,7 +4969,7 @@ GUARD	&C000
             JSR adjustPrvOsword42Block						;convert pseudo RAM bank to absolute and shuffle parameter block
 .^LA0A6      JSR getAddressesAndLengthFromPrvOswordBlockCopy
             BCS LA0B1
-            JSR L9F4E
+            JSR prepareMainSidewaysRamTransfer
             JSR L9D8E
 .LA0B1      PHP
             BIT prv83+&42
@@ -5112,7 +5119,7 @@ GUARD	&C000
             JSR L9D8E
             JMP LA22B
 			
-.LA1C7      JSR L9F4E
+.LA1C7      JSR prepareMainSidewaysRamTransfer
             JSR getAddressesAndLengthFromPrvOswordBlockCopy
             BIT prvOswordBlockCopy
             BMI LA1D5
