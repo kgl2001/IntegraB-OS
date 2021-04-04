@@ -4485,7 +4485,8 @@ GUARD	&C000
 
 .L9DDC      RTS
 
-.L9DDD      LDY prvOswordBlockCopy + 8
+{
+.^L9DDD      LDY prvOswordBlockCopy + 8
             LDA prvOswordBlockCopy + 9
             BIT prvOswordBlockCopy
             BVC L9DEE
@@ -4493,7 +4494,7 @@ GUARD	&C000
             STX prvOswordBlockCopy + 1
 .L9DEE      STY L00A8
             STA L00A9
-.L9DF2      LDA prvOswordBlockCopy + 2
+.^L9DF2      LDA prvOswordBlockCopy + 2
             STA L00AA
             LDA prvOswordBlockCopy + 3
             STA L00AB
@@ -4503,9 +4504,11 @@ GUARD	&C000
             STA L00AF
             CLC
             RTS
-			
+
+; SFTODO: Are next two instructions unreachable?
             SEC										;address label missing?
             RTS
+}
 
 ;test slots for RAM by writing to &8008 - ROM header
 ;On entry A=ROM bank to test
