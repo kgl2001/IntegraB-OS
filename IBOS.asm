@@ -4403,9 +4403,15 @@ GUARD	&C000
             INC L00AB
 .L9D31      RTS
 
-; SFTODO: (AD AC) = &C000 - (A9 A8)
+; SFTODO: I am thinking if the &Ax addresses are used consistently-ish
+; throughout the transfer code, giving them meaningful names would probably
+; help. Should probably start with "transfer" as I'm sure the same addresses are
+; used for different things in other parts of the code.
+; SFTODO: This has only one caller
+.adjustTransferParameters ; SFTODO: temporary name, rename once I understand better
 {
-.^L9D32      SEC
+; SFTODO: (AD AC) = &C000 - (A9 A8), then L9D42
+.L9D32      SEC
             LDA #&00
             SBC L00A8
             STA L00AC
@@ -4425,7 +4431,8 @@ GUARD	&C000
             STA L00AF
             STY L00AE
             RTS
-			
+
+; SFTODO: (AD AC) = (AF AE), (AF AE) = 0, RTS
 .L9D53      LDA L00AE
             STA L00AC
             LDA L00AF
@@ -4464,7 +4471,7 @@ GUARD	&C000
             RTS
 
 {
-.^L9D8E      JSR L9D32
+.^L9D8E      JSR adjustTransferParameters
             LDX prvOswordBlockCopy + 1
             BIT prvOswordBlockCopy
             BVC L9DA0
