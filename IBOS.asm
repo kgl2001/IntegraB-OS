@@ -3893,7 +3893,7 @@ GUARD	&C000
 	  JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9E59 to &03A7
             PLA
             BEQ L99D6
-            LDA #&4F
+            LDA #&4F ; SFTODO: PROB AN OPCODE?
             STA L03CB
 .L99D6      LDA prv82+&21
             JSR L9B18
@@ -4537,17 +4537,17 @@ GUARD	&C000
             STX romselCopy
             STX romsel
             RTS
-            ASSERT P% - writeRomHeaderTemplate <= variableMainRamSubroutineMaxSize
-}
 
 ;ROM Header
-.srData		EQUB &60,&00,&00
-		EQUB &60,&00,&00
-		EQUB &02
-		EQUB &0C
-		EQUB &FF
-		EQUS "RAM", &00
-		EQUS "(C)"
+.srData	  EQUB &60,&00,&00
+	  EQUB &60,&00,&00
+	  EQUB &02
+	  EQUB &0C
+	  EQUB &FF
+	  EQUS "RAM", &00
+	  EQUS "(C)"
+            ASSERT P% - writeRomHeaderTemplate <= variableMainRamSubroutineMaxSize
+}
 
 ;save ROM / RAM at bank X to file system
 ;this code is relocated to and executed at &03A7
