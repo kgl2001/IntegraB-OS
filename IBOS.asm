@@ -3913,9 +3913,9 @@ GUARD	&C000
             ; ROM - so patch variableMainRamSubroutine's ROM header to say "ROM" instead of "RAM"
             LDA #'O'
             STA variableMainRamSubroutine + (writeRomHeaderTemplateDataAO - writeRomHeaderTemplate)
-.ram        LDA prv82+&21
+.ram        LDA prvOswordBlockCopy + 1
             JSR L9B18
-            STA prv82+&21
+            STA prvOswordBlockCopy + 1
             STA variableMainRamSubroutine + (writeRomHeaderTemplateSFTODO - writeRomHeaderTemplate)
             JMP variableMainRamSubroutine								;Call relocated code
 }
@@ -4057,7 +4057,7 @@ GUARD	&C000
             BNE L9ABE
             JMP L9983
 			
-.L9AD1      STX prv82+&21
+.L9AD1      STX prvOswordBlockCopy + 1
             PHP
             LDA #&00
             ROR A
@@ -4068,20 +4068,20 @@ GUARD	&C000
             BEQ L9AE8
             CMP #&02
             BNE L9B0D
-.L9AE8      LDA prv82+&21
+.L9AE8      LDA prvOswordBlockCopy + 1
             JSR L99E5
             PLP
             BCS L9AF9
-            LDA prv82+&21
+            LDA prvOswordBlockCopy + 1
             JSR L9A18
             BCS L9B12
 .L9AF9      LDA L00AD
             JSR writeRomHeaderAndPatchUsingVariableMainRamSubroutine
-            LDX prv82+&21
+            LDX prvOswordBlockCopy + 1
             LDA #&02
             STA prv83+&2C,X
             STA L02A1,X
-.L9B09      LDX prv82+&21
+.L9B09      LDX prvOswordBlockCopy + 1
 .L9B0C      RTS
 
 .L9B0D      PLP
@@ -4141,7 +4141,7 @@ GUARD	&C000
 ; XY+12..13=>filename in I/O processor
 
 
-.L9B50      LDA prv82+&21
+.L9B50      LDA prvOswordBlockCopy + 1
             STA prv82+&2C
             LDA prv82+&22
             STA prv82+&2D
@@ -4190,26 +4190,26 @@ GUARD	&C000
             STA prv82+&24
             LDA prv82+&22
             STA prv82+&23
-            LDA prv82+&21
+            LDA prvOswordBlockCopy + 1
             STA prv82+&22
             PLA
 .L9BBC      JSR L9B18						;convert pseudo RAM bank to absolute RAM bank
-            STA prv82+&21						;and save to private address &8221
+            STA prvOswordBlockCopy + 1						;and save to private address &8221
             RTS
 			
 .L9BC3      JSR LA458
             BCC L9BCA
             LDA #&FF
-.L9BCA      STA prv82+&21
+.L9BCA      STA prvOswordBlockCopy + 1
             BCC L9BE5
             LDA prv83+&0C
             AND prv83+&0D
             AND prv83+&0E
             AND prv83+&0F
             BMI L9BE6
-            LDA prv82+&20
+            LDA prvOswordBlockCopy
             ORA #&40
-            STA prv82+&20
+            STA prvOswordBlockCopy
 .L9BE5      RTS
 
 .L9BE6      JMP LA2EB
@@ -4229,14 +4229,14 @@ GUARD	&C000
             BNE L9C1E								;Increment and loop
 .L9C07      CMP #&49								;'I'
             BNE L9C12								;No? Goto next check
-            LDA prv82+&20							;get value from &8220
+            LDA prvOswordBlockCopy							;get value from &8220
             ORA #&01								;set bit 0
             BNE L9C1B								;write value to &8220, increment and loop
 .L9C12      CMP #&50								;'P'
             BNE L9C1E								;Increment and loop
-            LDA prv82+&20							;get value from &8220
+            LDA prvOswordBlockCopy							;get value from &8220
             ORA #&02								;set bit 1
-.L9C1B      STA prv82+&20							;write value to &8220
+.L9C1B      STA prvOswordBlockCopy							;write value to &8220
 .L9C1E      INY										;Next Character
             BNE L9BF1								;Loop
 .L9C21      RTS										;End
@@ -4341,7 +4341,7 @@ GUARD	&C000
 ;*SRWRITE Command
 .srwrite	  JSR PrvEn								;switch in private RAM
             LDA #&80
-.L9CDF      STA prv82+&20
+.L9CDF      STA prvOswordBlockCopy
             LDA #&00
             STA L02EE
             JSR L9C52
@@ -4413,7 +4413,7 @@ GUARD	&C000
             STA L00AF
             RTS
 			
-.L9D62      BIT prv82+&20
+.L9D62      BIT prvOswordBlockCopy
             BVC L9D86
             BIT L00A9
             BVC L9D84
@@ -4421,8 +4421,8 @@ GUARD	&C000
             STA L00A8
             LDA #&80
             STA L00A9
-            INC prv82+&21
-            LDA prv82+&21
+            INC prvOswordBlockCopy + 1
+            LDA prvOswordBlockCopy + 1
             CMP #&04
             BCS L9D86
             TAX
@@ -4441,8 +4441,8 @@ GUARD	&C000
             RTS
 			
 .L9D8E      JSR L9D32
-            LDX prv82+&21
-            BIT prv82+&20
+            LDX prvOswordBlockCopy + 1
+            BIT prvOswordBlockCopy
             BVC L9DA0
             LDA prv83+&0C,X
             CLV
@@ -4474,10 +4474,10 @@ GUARD	&C000
 
 .L9DDD      LDY prv82+&28
             LDA prv82+&29
-            BIT prv82+&20
+            BIT prvOswordBlockCopy
             BVC L9DEE
             JSR L9B2E
-            STX prv82+&21
+            STX prvOswordBlockCopy + 1
 .L9DEE      STY L00A8
             STA L00A9
 .L9DF2      LDA prv82+&22
@@ -4721,7 +4721,7 @@ GUARD	&C000
             STA L0102
             LDA prv82+&25
             STA L0103
-            LDA prv82+&20
+            LDA prvOswordBlockCopy
             EOR #&80
             ROL A
             LDA #&00
@@ -4733,7 +4733,7 @@ GUARD	&C000
             LDX #&9EF9 MOD &100							;was LDX #&F9
             LDY #&9EF9 DIV &100							;was LDY #&9E
             JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9EF9 to &03A7
-            BIT prv82+&20
+            BIT prvOswordBlockCopy
             BPL L9FA3
 
 ;relocate 10 bytes from &9F29
@@ -4749,7 +4749,7 @@ GUARD	&C000
             LDX #L9ED9 MOD &100							;was LDX #&D9
             LDY #L9ED9 DIV &100							;was LDY #&9E
             JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9ED9 to &03A7
-            BIT prv82+&20								;check if we need to swap &AA with &A8 in code at &9ED9
+            BIT prvOswordBlockCopy								;check if we need to swap &AA with &A8 in code at &9ED9
             BPL L9FC5
             LDA #&AA
             STA L03B4								;Change this to relocated address (&03AF+&xx ???)
@@ -4787,7 +4787,7 @@ GUARD	&C000
             STA prvOswordBlockOrigAddr								;and save to private memory &8230  <-This looks wrong. Should this be &8231??? SFTODO: Looks odd indeed, maybe prvOswordBlockOrigAddr is never actually used?! (I haven't checked yet)
             LDY #&0F
 .L9FE2      LDA (oswdbtX),Y								;copy the parameter block from its current location in memory
-            STA prv82+&20,Y								;to private memory &8220..&822F
+            STA prvOswordBlockCopy,Y								;to private memory &8220..&822F
             DEY									;total of 16 bytes
             BPL L9FE2
             RTS
@@ -4801,10 +4801,10 @@ GUARD	&C000
 ;*SRLOAD Command
 .srload	  JSR PrvEn								;switch in private RAM
             LDA #&80
-.L9FF8      STA prv82+&20
+.L9FF8      STA prvOswordBlockCopy
             JSR L9C22
             JSR L9C82
-            BIT prv82+&20
+            BIT prvOswordBlockCopy
             BMI LA015
             JSR L9C9C
             LDA prv82+&26
@@ -4838,7 +4838,7 @@ GUARD	&C000
             SEC
             SBC prv82+&23
             STA prv82+&27
-.LA059      BIT prv82+&20
+.LA059      BIT prvOswordBlockCopy
             BPL LA083
             LDA prv82+&2C
             STA L02EE
@@ -5025,7 +5025,7 @@ GUARD	&C000
             LDA prv82+&26
             ORA prv82+&27
             BNE LA1C7
-            BIT prv82+&20
+            BIT prvOswordBlockCopy
             BPL LA1A4								;Relocate code from &9E83
             LDA #&40
             LDX #L9EAE MOD &100
@@ -5049,7 +5049,7 @@ GUARD	&C000
 			
 .LA1C7      JSR L9F4E
             JSR L9DDD
-            BIT prv82+&20
+            BIT prvOswordBlockCopy
             BMI LA1D5
             JMP LA251
 			
@@ -5087,17 +5087,17 @@ GUARD	&C000
             LDA L02EE
             BEQ LA22E
 .LA22B      JSR LA098
-.LA22E      BIT prv82+&20
+.LA22E      BIT prvOswordBlockCopy
             BPL LA24E
             BVS LA24E
-            LSR prv82+&20
+            LSR prvOswordBlockCopy
             BCC LA240
-            LDA prv82+&21
+            LDA prvOswordBlockCopy + 1
             JSR LA499
 .LA240      JSR PrvEn								;switch in private RAM
-            LSR prv82+&20
+            LSR prvOswordBlockCopy
             BCC LA24E
-.LA248      LDA prv82+&21
+.LA248      LDA prvOswordBlockCopy + 1
             JMP LA4FE
 			
 .LA24E      JMP LA2DE
@@ -5595,15 +5595,15 @@ GUARD	&C000
             BEQ LA5EE
             JSR OSASCI
             INX
-            CPX prv82+&21
+            CPX prvOswordBlockCopy + 1
             BCC LA5E0
 .LA5EE      RTS
 
 ;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223, but why???
 .LA5EF      LDA #&05
-            STA prv82+&20
+            STA prvOswordBlockCopy
             LDA #&84
-            STA prv82+&21
+            STA prvOswordBlockCopy + 1
             LDA #&44
             STA prv82+&22
             LDA #&EB
@@ -5980,13 +5980,13 @@ GUARD	&C000
             JSR LA8DB
             LDA #&01
 .LA8C9      BCC LA8D2
-            ORA prv82+&20
-            STA prv82+&20
+            ORA prvOswordBlockCopy
+            STA prvOswordBlockCopy
             RTS
 
 .LA8D2      EOR #&FF
-            AND prv82+&20
-            STA prv82+&20
+            AND prvOswordBlockCopy
+            STA prvOswordBlockCopy
             RTS
 
 .LA8DB      STA prv82+&4E
@@ -6108,8 +6108,8 @@ GUARD	&C000
             CMP prv82+&2C
             BEQ LA9DF
             LDA #&08
-            ORA prv82+&20
-            STA prv82+&20
+            ORA prvOswordBlockCopy
+            STA prvOswordBlockCopy
 .LA9DF      LDA prv82+&4A
             STA prv82+&2C
 .LA9E5      RTS
@@ -6429,7 +6429,7 @@ GUARD	&C000
             BNE LACA0
             JMP LAD5A
 			
-.LACA0      LDA prv82+&21
+.LACA0      LDA prvOswordBlockCopy + 1
             AND #&0F
             STA L00AB
             CMP #&04
@@ -6464,7 +6464,7 @@ GUARD	&C000
 .LACE5      LDA prv82+&23
             AND #&F8
             BEQ LAD5A
-            LDA prv82+&21
+            LDA prvOswordBlockCopy + 1
             AND #&03								;mask lower 3 bits
             TAX
             LDA LAC6E,X								;get character from look up table
@@ -6498,7 +6498,7 @@ GUARD	&C000
 .LAD2A      LDA prv82+&23
             AND #&C0
             BEQ LAD5A
-            LDA prv82+&21
+            LDA prvOswordBlockCopy + 1
             AND #&03								;mask lower 3 bits
             TAX
             LDA LAC6E,X								;get character from look up table
@@ -6535,10 +6535,10 @@ GUARD	&C000
             LDA #&0D
             JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDY L00AA								;get buffer pointer
-            STY prv82+&21
+            STY prvOswordBlockCopy + 1
 .LAD7E      RTS
 
-.LAD7F      BIT prv82+&21							;
+.LAD7F      BIT prvOswordBlockCopy + 1							;
             BMI LAD8D								;do the reverse of below
             JSR LABEA
             JSR LAD96
@@ -6548,7 +6548,7 @@ GUARD	&C000
             JSR LAD96
             JMP LABEA
 			
-.LAD96      LDA prv82+&21
+.LAD96      LDA prvOswordBlockCopy + 1
             AND #&F0
             CMP #&D0
             BEQ LADBE
@@ -6575,7 +6575,7 @@ GUARD	&C000
             JMP LADB9
 			
 .LADCB      LDA #&00
-            STA prv82+&20
+            STA prvOswordBlockCopy
             SEC
             LDA prv82+&28
             SBC #&13
@@ -6618,7 +6618,7 @@ GUARD	&C000
             RTS
 			
 .LAE26      LDA #&FF
-            STA prv82+&20
+            STA prvOswordBlockCopy
             RTS
 			
 .LAE2C      LDA #&13
@@ -6819,7 +6819,7 @@ GUARD	&C000
 .LAFEC      JSR LA908
             STA prv82+&2C
             LDA #&00
-            STA prv82+&20
+            STA prvOswordBlockCopy
             CLC
             RTS
 
@@ -6843,7 +6843,7 @@ GUARD	&C000
             CMP #&FF
             BNE LB033
             JSR LA838
-            LDA prv82+&20
+            LDA prvOswordBlockCopy
             AND #&F0
             BNE LB02E
             CLC
@@ -6864,7 +6864,7 @@ GUARD	&C000
             AND #&0E
             BNE LB04F
             JSR LA838
-            LDA prv82+&20
+            LDA prvOswordBlockCopy
             AND #&F0
             BNE LB07E
 .LB04F      INC prv82+&47
@@ -6882,7 +6882,7 @@ GUARD	&C000
             JMP LB052
 			
 .LB071      JSR LA838
-            LDA prv82+&20
+            LDA prvOswordBlockCopy
             AND #&F0
             BNE LB05A
 .LB07B      CLV
@@ -7028,25 +7028,25 @@ GUARD	&C000
 			
 .LB194      JSR LB1CA
 .LB197      JSR LA83B
-            LDA prv82+&20
+            LDA prvOswordBlockCopy
             LSR A
             LSR A
             LSR A
             LSR A
             PHA
             LDX #&00
-            STX prv82+&20
+            STX prvOswordBlockCopy
 .LB1A7      LDA prv82+&28,X
             CMP #&FF
-            ROL prv82+&20
+            ROL prvOswordBlockCopy
             INX
             CPX #&04
             BNE LB1A7
-            LDA prv82+&20
+            LDA prvOswordBlockCopy
             EOR #&0F
-            STA prv82+&20
+            STA prvOswordBlockCopy
             PLA
-            AND prv82+&20
+            AND prvOswordBlockCopy
             AND #&0F
             BNE LB1C7
             JMP LAFF9
@@ -7202,7 +7202,7 @@ GUARD	&C000
             JSR LA83B
             PLA
             TAY
-            LDA prv82+&20
+            LDA prvOswordBlockCopy
             AND #&07
             BNE LB2F3
             CLC
@@ -7231,7 +7231,7 @@ GUARD	&C000
             BCS LB32F
             JSR LB1CA
             JSR LA83B
-            LDA prv82+&20
+            LDA prvOswordBlockCopy
             AND #&F0
             BNE LB32F
             JSR LA905
@@ -7526,9 +7526,9 @@ GUARD	&C000
             LDA #&80
             STA prv82+&25
             LDA #&05
-            STA prv82+&20
+            STA prvOswordBlockCopy
             LDA #&40
-            STA prv82+&21
+            STA prvOswordBlockCopy + 1
             LDA #&00
             STA prv82+&22
             LDA #&F8
@@ -7659,7 +7659,7 @@ GUARD	&C000
             JMP LB6E3
 			
 .LB690      LDA #&40
-            STA prv82+&21
+            STA prvOswordBlockCopy + 1
             LDA #&04
             STA prv82+&22
             LDA #&00
@@ -7673,7 +7673,7 @@ GUARD	&C000
             STA prv82+&25
             JSR copyRtcAlarmToPrv
             JSR LAD63
-            DEC prv82+&21
+            DEC prvOswordBlockCopy + 1
             JSR LA5DE
             LDA #&2F								;'/'
             JSR OSWRCH								;write to screen
@@ -7743,7 +7743,7 @@ GUARD	&C000
             STA L00AF
             LDY #&0F
 .oswordsva	LDA (L00AE),Y
-            STA prv82+&20,Y
+            STA prvOswordBlockCopy,Y
             DEY
             BPL oswordsva
             RTS
@@ -7754,7 +7754,7 @@ GUARD	&C000
             LDA prv82+&31
             STA L00AF
             LDY #&0F
-.oswordrsa	LDA prv82+&20,Y
+.oswordrsa	LDA prvOswordBlockCopy,Y
             STA (L00AE),Y
 			DEY
             BPL oswordrsa
@@ -7763,13 +7763,13 @@ GUARD	&C000
 ;Clear RTC buffer
 .LB774      LDY #&0F
             LDA #&00
-.LB778      STA prv82+&20,Y
+.LB778      STA prvOswordBlockCopy,Y
             DEY
             BPL LB778
             RTS
 			
 ;OSWORD &0E (14) Read real time clock XY?0 parameter lookup code
-.oswd0e_1   LDA prv82+&20							;get XY?0 value
+.oswd0e_1   LDA prvOswordBlockCopy							;get XY?0 value
             ASL A									;x2 (each entry in lookup table is 2 bytes)
             TAY
             LDA oswd0elu+1,Y						;get low byte
@@ -7785,7 +7785,7 @@ GUARD	&C000
 
 ;OSWORD &49 (73) - Integra-B calls XY?0 parameter lookup code
 .oswd49_1	SEC
-            LDA prv82+&20							;get XY?0 value
+            LDA prvOswordBlockCopy							;get XY?0 value
             SBC #&60								;XY?0 is in range &60-&6F. Convert to &00-&0F for lookup purposes
             ASL A									;x2 (each entry in lookup table is 2 bytes)
             TAY
@@ -7831,7 +7831,7 @@ GUARD	&C000
             BVC LB7E4
             STA SHEILA+&E5
             INY
-            CPY prv82+&21
+            CPY prvOswordBlockCopy + 1
             BNE LB7E1
             LDA #&BF
             JSR L0406
@@ -7853,7 +7853,7 @@ GUARD	&C000
 .LB811      LDA prv80+&00,Y
             STA (L00A8),Y
             INY
-            CPY prv82+&21
+            CPY prvOswordBlockCopy + 1
             BNE LB811
             CLC
             RTS
@@ -7884,7 +7884,7 @@ GUARD	&C000
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=2: Convert BCD values into string format
 .LB844      LDX #&06
-.LB846      LDA prv82+&21,X
+.LB846      LDA prvOswordBlockCopy + 1,X
             JSR LB87A
             STA prv82+&29,X
             DEX
@@ -7961,7 +7961,7 @@ GUARD	&C000
             STA prv82+&25
             JSR LA9E6
             LDA #&2A
-            STA prv82+&21
+            STA prvOswordBlockCopy + 1
             JMP LB7BC
 			
 ;XY?0=&64
@@ -7971,7 +7971,7 @@ GUARD	&C000
             LDX #&0B								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&60
-            STA prv82+&21
+            STA prvOswordBlockCopy + 1
             CLC
             RTS
 			
@@ -7990,13 +7990,13 @@ GUARD	&C000
 ;XY?0=&67
 ;OSWORD &49 (73) - Integra-B calls
 .LB8E2		JSR copyPrvAlarmToRtc
-            LDA prv82+&21
+            LDA prvOswordBlockCopy + 1
             AND #&60
-            STA prv82+&21
+            STA prvOswordBlockCopy + 1
             LDX #&0B								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&9F
-            ORA prv82+&21
+            ORA prvOswordBlockCopy + 1
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             SEC
             RTS
