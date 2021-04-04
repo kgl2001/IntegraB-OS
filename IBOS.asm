@@ -4785,12 +4785,12 @@ GUARD	&C000
 {
 .L9FD3      JSR PrvEn								;switch in private RAM
             LDA oswdbtX								;get value of X reg
-            STA prvOswordBlockOrigAddr								;and save to private memory &8230
+            STA prvOswordBlockOrigAddr							;and save to private memory &8230
             LDA oswdbtY								;get value of Y reg
-            STA prvOswordBlockOrigAddr								;and save to private memory &8230  <-This looks wrong. Should this be &8231??? SFTODO: Looks odd indeed, maybe prvOswordBlockOrigAddr is never actually used?! (I haven't checked yet)
+            STA prvOswordBlockOrigAddr							;and save to private memory &8230  <-This looks wrong. Should this be &8231??? SFTODO: Looks odd indeed, maybe prvOswordBlockOrigAddr is never actually used?! (I haven't checked yet)
             LDY #prvOswordBlockCopySize - 1
 .L9FE2      LDA (oswdbtX),Y								;copy the parameter block from its current location in memory
-            STA prvOswordBlockCopy,Y								;to private memory &8220..&822F
+            STA prvOswordBlockCopy,Y							;to private memory &8220..&822F
             DEY									;total of 16 bytes
             BPL L9FE2
             RTS
