@@ -4183,6 +4183,9 @@ GUARD	&C000
 ;&C0 - Write to pseudo-address
 
 ; SFTODO: Could this be rewritten more compactly as a loop?
+; SFTODO: This has only one caller
+.adjustPrvOsword42Block
+{
 .L9B93      LDA prvOswordBlockCopy + 7						;ROM number
             PHA
             LDA prvOswordBlockCopy + 6
@@ -4198,9 +4201,10 @@ GUARD	&C000
             LDA prvOswordBlockCopy + 1
             STA prvOswordBlockCopy + 2
             PLA
-.L9BBC      JSR checkRamBankAndMakeAbsolute						;convert pseudo RAM bank to absolute RAM bank
+.^L9BBC     JSR checkRamBankAndMakeAbsolute						;convert pseudo RAM bank to absolute RAM bank
             STA prvOswordBlockCopy + 1						;and save to private address &8221
             RTS
+}
 
 {
 .^L9BC3      JSR LA458
@@ -4905,7 +4909,7 @@ GUARD	&C000
 .osword42
 {
 	  JSR copyOswordDetailsToPrv						;copy osword42 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
-            JSR L9B93						;convert pseudo RAM bank to absolute and shuffle parameter block
+            JSR adjustPrvOsword42Block						;convert pseudo RAM bank to absolute and shuffle parameter block
 .^LA0A6      JSR L9DDD
             BCS LA0B1
             JSR L9F4E
