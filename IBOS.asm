@@ -4403,15 +4403,18 @@ GUARD	&C000
             INC L00AB
 .L9D31      RTS
 
-.L9D32      SEC
+; SFTODO: (AD AC) = &C000 - (A9 A8)
+{
+.^L9D32      SEC
             LDA #&00
             SBC L00A8
             STA L00AC
             LDA #&C0
             SBC L00A9
             STA L00AD
-            JMP L9D42
-			
+            JMP L9D42 ; SFTODO: This is redundant and could be replaced by FALLTHROUGH_TO L9D42
+
+; SFTODO: calculate n=(AF AE) - (AD AC), if n<0 go to L9D53 else (AE AF)=n:RTS
 .L9D42      SEC
             LDA L00AE
             SBC L00AC
@@ -4431,6 +4434,7 @@ GUARD	&C000
             STA L00AE
             STA L00AF
             RTS
+}
 			
 .L9D62      BIT prvOswordBlockCopy
             BVC L9D86
@@ -4974,7 +4978,7 @@ GUARD	&C000
 	  JSR copyOswordDetailsToPrv						;copy osword42 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
             JSR adjustPrvOsword42Block						;convert pseudo RAM bank to absolute and shuffle parameter block
 .^LA0A6      JSR getAddressesAndLengthFromPrvOswordBlockCopy
-            BCS LA0B1
+            BCS LA0B1 ; SFTODO: I don't believe this branch can ever be taken
             JSR prepareMainSidewaysRamTransfer
             JSR L9D8E
 .LA0B1      PHP
