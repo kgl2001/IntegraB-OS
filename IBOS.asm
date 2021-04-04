@@ -4732,10 +4732,10 @@ GUARD	&C000
 
 ; SFTODO: I am assuming prvOswordBlockCopy has always been through adjustPrvOsword42Block when this code is called
 {
-.^L9F4E      BIT prvOswordBlockCopy + 5
-            BMI L9FA4
+.^L9F4E     BIT prvOswordBlockCopy + 5                                                              ;test high bit of 32-bit main memory address
+            BMI notTube
             BIT L027A								;check for Tube - &00: not present, &ff: present
-            BPL L9FA4
+            BPL notTube
             LDA #&FF
             STA prv83+&42
 .L9F5D      LDA #&FF
@@ -4771,8 +4771,8 @@ GUARD	&C000
             DEY
             BPL L9F9A
 .L9FA3      RTS
-}
 
+.notTube
 .L9FA4      LDA #&00
             STA prv83+&42
             LDX #L9ED9 MOD &100							;was LDX #&D9
@@ -4787,6 +4787,7 @@ GUARD	&C000
             STA L03B6								;Change this to relocated address (&03AF+&xx ???)
             STA L03BD								;Change this to relocated address (&03AF+&xx ???)
 .L9FC5      RTS
+}
 
 ;Relocation code then check for RAM banks.
 ; SFTODO: "Using..." part of name is perhaps OTT, but it might be important to "remind" us that this tramples over variableMainRamSubroutine - perhaps change later once more code is labelled up
