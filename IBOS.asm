@@ -5058,7 +5058,7 @@ GUARD	&C000
             JSR L9B50						;convert pseudo RAM bank to absolute and shuffle parameter block
             BIT L027A						;check for Tube - &00: not present, &ff: present
             BPL LA18B						;branch if tube not present
-.LA146      LDA #&FF						;tube present code
+.LA146      LDA #tubeEntryClaim + tubeClaimId				;tube present code
             JSR tubeEntry
             BCC LA146
             LDA prvOswordBlockCopy + 12
@@ -5080,7 +5080,7 @@ GUARD	&C000
             BEQ LA17C
             INY
             BNE LA16A
-.LA17C      LDA #&BF
+.LA17C      LDA #tubeEntryRelease + tubeClaimId
             JSR tubeEntry
             LDA #&00
             STA prvOswordBlockCopy + 12
