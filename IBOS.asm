@@ -5287,7 +5287,7 @@ GUARD	&C000
             JMP OSNEWL								;otherwise finished for this rom so write new line and return
 
 {
-.^LA40C      LDA #&00
+.^LA40C     LDA #&00
             STA L00AE
             STA L00AF
 .LA412      JSR LA458
@@ -5306,7 +5306,8 @@ GUARD	&C000
             BEQ LA431
             CLC
             RTS
-			
+
+; SFTODO: There's probably another copy of these two instructions we could re-use, though it might require shuffling code round and be more trouble than it's worth
 .LA431      SEC
             RTS
 }
@@ -5336,11 +5337,12 @@ GUARD	&C000
             PLA
             TAY
             RTS
-			
-.LA458      JSR L853F								;find next character. offset stored in Y
+
+{
+.^LA458     JSR L853F								;find next character. offset stored in Y
             BCS LA490
             LDA (L00A8),Y
-            CMP #&2C
+            CMP #','
             BNE LA464
             INY
 .LA464      JSR L872B
@@ -5375,6 +5377,7 @@ GUARD	&C000
 			
 .LA495      BIT LA498
 .LA498      RTS
+}
 
 .LA499      JSR LA433
 .LA49C      JSR PrvEn								;switch in private RAM
