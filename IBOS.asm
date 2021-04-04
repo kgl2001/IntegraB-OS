@@ -4730,7 +4730,9 @@ GUARD	&C000
             RTS
 }
 
-.L9F4E      BIT prvOswordBlockCopy + 5
+; SFTODO: I am assuming prvOswordBlockCopy has always been through adjustPrvOsword42Block when this code is called
+{
+.^L9F4E      BIT prvOswordBlockCopy + 5
             BMI L9FA4
             BIT L027A								;check for Tube - &00: not present, &ff: present
             BPL L9FA4
@@ -4769,6 +4771,7 @@ GUARD	&C000
             DEY
             BPL L9F9A
 .L9FA3      RTS
+}
 
 .L9FA4      LDA #&00
             STA prv83+&42
