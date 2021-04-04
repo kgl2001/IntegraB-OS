@@ -4449,9 +4449,11 @@ GUARD	&C000
             STA L00AF
             RTS
 }
-			
-.L9D62      BIT prvOswordBlockCopy
-            BVC L9D86
+
+{
+.^L9D62     BIT prvOswordBlockCopy                                                                  ;get function
+            BVC absoluteAddress
+            ; We're dealing with a pseudo-address.
             BIT L00A9
             BVC L9D84
             LDA #&10
@@ -4468,14 +4470,17 @@ GUARD	&C000
             TAX
 .L9D84      CLC
             RTS
-			
-.L9D86      BIT L9D8A
+
+.absoluteAddress
+.L9D86      BIT rts ; set V
             SEC
+.rts
 .L9D8A      RTS
 
 .L9D8B      CLV
             SEC
             RTS
+}
 
 {
 .^L9D8E      JSR adjustTransferParameters
