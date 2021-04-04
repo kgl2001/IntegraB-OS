@@ -355,6 +355,7 @@ prvPrintBufferBankList  = prv83 + &18 ; 4 bytes
 prvPrvPrintBufferStart = prv83 + &45 ; working copy of userRegPrvPrintBufferStart
 
 prvOswordBlockCopy = prv82 + &20 ; 16 bytes, used for copy of OSWORD &42/&43 parameter block
+; SFTODO: Split prvOswordBlockOrigAddr into two addresses prvOswordX and prvOswordY? Might better reflect how code uses it, not sure yet.
 prvOswordBlockOrigAddr = prv82 + &30 ; 2 bytes, used for address of original OSWORD &42/&43 parameter block
 
 prvShx = prv83 + &3D ; &08 on, &FF off SFTODO: Not sure about those on/off values, we test this against 0 in some places - is it &00 on?
@@ -7699,14 +7700,14 @@ GUARD	&C000
             LDA oswdbtX								;get X register value of most recent OSWORD call
             STA prvOswordBlockOrigAddr							;and save to &8230
             LDA oswdbtY								;get Y register value of most recent OSWORD call
-            STA prv82+&31							;and save to &8231
+            STA prvOswordBlockOrigAddr + 1							;and save to &8231
             JSR oswordsv							;save XY entry table
             JSR oswd0e_1							;execute OSWORD &0E
             BCS osword0ea							;successful so don't restore XY entry table
             JSR oswordrs							;restore XY entry table
 .osword0ea	LDA prvOswordBlockOrigAddr							;get X register value of most recent OSWORD call
             STA oswdbtX								;and restore to &F0
-            LDA prv82+&31							;get Y register value of most recent OSWORD call
+            LDA prvOswordBlockOrigAddr + 1							;get Y register value of most recent OSWORD call
             STA oswdbtY								;and restore to &F1
             LDA #&0E								;load A register value of most recent OSWORD call (&0E)
             STA oswdbtA								;and restore to &EF
@@ -7720,14 +7721,14 @@ GUARD	&C000
             LDA oswdbtX								;get X register value of most recent OSWORD call
             STA prvOswordBlockOrigAddr							;and save to &8230
             LDA oswdbtY								;get Y register value of most recent OSWORD call
-            STA prv82+&31							;and save to &8231
+            STA prvOswordBlockOrigAddr + 1							;and save to &8231
             JSR oswordsv							;save XY entry table
             JSR oswd49_1							;execute OSWORD &49
             BCS osword49a							;successful so don't restore XY entry table
             JSR oswordrs							;restore table
 .osword49a	LDA prvOswordBlockOrigAddr							;get X register value of most recent OSWORD call
             STA oswdbtX								;and restore to &F0
-            LDA prv82+&31							;get Y register value of most recent OSWORD call
+            LDA prvOswordBlockOrigAddr + 1							;get Y register value of most recent OSWORD call
             STA oswdbtY								;and restore to &F1
             LDA #&49								;load A register value of most recent OSWORD call (&49)
             STA oswdbtA								;and restore to &EF
@@ -7739,7 +7740,7 @@ GUARD	&C000
 ;Save OSWORD XY entry table
 .oswordsv	LDA prvOswordBlockOrigAddr
             STA L00AE
-            LDA prv82+&31
+            LDA prvOswordBlockOrigAddr + 1
             STA L00AF
             LDY #&0F
 .oswordsva	LDA (L00AE),Y
@@ -7751,7 +7752,7 @@ GUARD	&C000
 ;Restore OSWORD XY entry table
 .oswordrs	LDA prvOswordBlockOrigAddr
             STA L00AE
-            LDA prv82+&31
+            LDA prvOswordBlockOrigAddr + 1
             STA L00AF
             LDY #&0F
 .oswordrsa	LDA prvOswordBlockCopy,Y
@@ -7820,7 +7821,7 @@ GUARD	&C000
             LDA prvOswordBlockOrigAddr
             ADC #&04
             TAX
-            LDA prv82+&31
+            LDA prvOswordBlockOrigAddr + 1
             ADC #&00
             TAY
             LDA #&01
@@ -7840,7 +7841,7 @@ GUARD	&C000
 			
 .LB7F9      LDA prvOswordBlockOrigAddr
             STA L00A8
-            LDA prv82+&31
+            LDA prvOswordBlockOrigAddr + 1
             STA L00A9
             LDY #&04
             LDA (L00A8),Y
@@ -7864,7 +7865,7 @@ GUARD	&C000
 .LB821      JSR LA5EF								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
             LDA prvOswordBlockOrigAddr							;get OSWORD X register (lookup table LSB)
             STA prvOswordBlockCopy + 4							;save OSWORD X register (lookup table LSB)
-            LDA prv82+&31							;get OSWORD Y register (lookup table MSB)
+            LDA prvOswordBlockOrigAddr + 1							;get OSWORD Y register (lookup table MSB)
             STA prvOswordBlockCopy + 5							;save OSWORD Y register (lookup table MSB)
             JSR LAD63
             SEC
