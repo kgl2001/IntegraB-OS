@@ -4763,9 +4763,6 @@ GUARD	&C000
 ; "main" RAM is in parasite, and leave a suitable transfer subroutine at
 ; variableMainRamSubroutine.
 .prepareMainSidewaysRamTransfer
-; SFTODO: Having been through tube case I am guessing the non-tube case is
-; similar and have named this subroutine accordingly, but check once been
-; through all code
 ; SFTODO: I am assuming prvOswordBlockCopy has always been through adjustPrvOsword42Block when this code is called
 {
 .^L9F4E     BIT prvOswordBlockCopy + 5                                                              ;test high bit of 32-bit main memory address
@@ -4824,9 +4821,11 @@ GUARD	&C000
             STA prv83+&42
             LDX #lo(mainRamTransferTemplate)
             LDY #hi(mainRamTransferTemplate)
-            JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9ED9 to &03A7
+            JSR copyYxToVariableMainRamSubroutine					;relocate &32 bytes of code from &9ED9 to &03A7
             BIT prvOswordBlockCopy                                                                  ;test function
             BPL rts2                                                                                ;if this is read (from sideways RAM) we're done
+            ; Patch the code at variableMainRamSubroutine to swap the operands
+            ; of LDA and STA, thereby swapping the transfer direction.
             LDA #L00AA
             STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair1 + 1 - mainRamTransferTemplate)
             STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair2 + 1 - mainRamTransferTemplate)
