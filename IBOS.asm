@@ -4487,24 +4487,31 @@ GUARD	&C000
 .L9DDC      RTS
 }
 
+.getAddressesAndLengthFromPrvOswordBlockCopy
+; SFTODO: The comments on what's in the OSWORD block are based on OSWORD &42
+; after adjustPrvOsword42Block has been called; I see this is used with OSWORD
+; &43 too, which has a very different looking parameter block, but I'm guessing
+; there's a swizzling routine analogous I haven't labelled yet
+; (adjustPrvOsword43Block-to-be, presumably)
 {
-.^L9DDD      LDY prvOswordBlockCopy + 8
-            LDA prvOswordBlockCopy + 9
-            BIT prvOswordBlockCopy
-            BVC L9DEE
-            JSR L9B2E
+.^L9DDD      LDY prvOswordBlockCopy + 8 ; get low byte of sideways address
+            LDA prvOswordBlockCopy + 9 ; get high byte of sideways address
+            BIT prvOswordBlockCopy ; test function
+            BVC absoluteAddress
+            JSR L9B2E ; SFTODO: presumably swizzles pseudo address to absolute address, not checked yet
             STX prvOswordBlockCopy + 1
-.L9DEE      STY L00A8
+.absoluteAddress
+            STY L00A8
             STA L00A9
-.^L9DF2      LDA prvOswordBlockCopy + 2
+.^L9DF2      LDA prvOswordBlockCopy + 2 ; get low byte of main memory address
             STA L00AA
-            LDA prvOswordBlockCopy + 3
+            LDA prvOswordBlockCopy + 3 ; get high byte of main memory address
             STA L00AB
-            LDA prvOswordBlockCopy + 6
+            LDA prvOswordBlockCopy + 6 ; get low byte of data length
             STA L00AE
-            LDA prvOswordBlockCopy + 7
+            LDA prvOswordBlockCopy + 7 ; get high byte of data length
             STA L00AF
-            CLC
+            CLC ; SFTODO: callers seem to test carry, but it's not clear it can ever be sett - if so, we can delete those checks and associated code...
             RTS
 
 ; SFTODO: Are next two instructions unreachable?
@@ -4915,7 +4922,7 @@ GUARD	&C000
 {
 	  JSR copyOswordDetailsToPrv						;copy osword42 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
             JSR adjustPrvOsword42Block						;convert pseudo RAM bank to absolute and shuffle parameter block
-.^LA0A6      JSR L9DDD
+.^LA0A6      JSR getAddressesAndLengthFromPrvOswordBlockCopy
             BCS LA0B1
             JSR L9F4E
             JSR L9D8E
@@ -5063,12 +5070,12 @@ GUARD	&C000
             STA prvOswordBlockCopy + 7
             PLA
             JSR LA087
-            JSR L9DDD
+            JSR getAddressesAndLengthFromPrvOswordBlockCopy
             JSR L9D8E
             JMP LA22B
 			
 .LA1C7      JSR L9F4E
-            JSR L9DDD
+            JSR getAddressesAndLengthFromPrvOswordBlockCopy
             BIT prvOswordBlockCopy
             BMI LA1D5
             JMP LA251
