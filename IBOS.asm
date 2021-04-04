@@ -374,6 +374,7 @@ prvOswordBlockOrigAddr = prv82 + &30 ; 2 bytes, used for address of original OSW
 
 prvShx = prv83 + &3D ; &08 on, &FF off SFTODO: Not sure about those on/off values, we test this against 0 in some places - is it &00 on?
 prvOsMode = prv83 + &3C ; OSMODE, extracted from relevant bits of userRegOsModeShx SFTODO: WHEN/BY WHAT CODE?
+prvTubeReleasePending = prv83 + &42 ; used during OSWORD 42; &FF means we have claimed the tube and need to release it at end of transfer, 0 means we don't
 ; SFTODO: If private RAM is battery backed, could we just keep OSMODE in
 ; prvOsMode and not bother with the copy in the low bits of userRegOsModeShx?
 ; That would save some code.
@@ -4819,7 +4820,7 @@ GUARD	&C000
             BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BPL notTube
             LDA #&FF
-            STA prv83+&42
+            STA prvTubeReleasePending
 .L9F5D      LDA #tubeEntryClaim + tubeClaimId
             JSR tubeEntry
             BCC L9F5D
@@ -4867,7 +4868,7 @@ GUARD	&C000
 
 .notTube
 .L9FA4      LDA #&00
-            STA prv83+&42
+            STA prvTubeReleasePending
             LDX #lo(mainRamTransferTemplate)
             LDY #hi(mainRamTransferTemplate)
             JSR copyYxToVariableMainRamSubroutine					;relocate &32 bytes of code from &9ED9 to &03A7
@@ -5030,7 +5031,7 @@ GUARD	&C000
             JSR prepareMainSidewaysRamTransfer
             JSR L9D8E
 .LA0B1      PHP
-            BIT prv83+&42 ; SFTODO: So this is some sort of tube flag, presumably? why do we use this, don't we sometimes use the tube flag in low OS RAM?
+            BIT prvTubeReleasePending
             BPL LA0BC
             LDA #tubeEntryRelease + tubeClaimId
             JSR tubeEntry
