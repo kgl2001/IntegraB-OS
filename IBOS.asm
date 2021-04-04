@@ -4218,7 +4218,8 @@ GUARD	&C000
 .L9BE6      JMP LA2EB
 }
 
-.L9BE9      LDA #&00
+{
+.^L9BE9      LDA #&00
             STA prvOswordBlockCopy + 6							;Clear &8226
             STA prvOswordBlockCopy + 7							;Clear &8227
 .L9BF1      JSR findNextCharAfterSpace								;find next character. offset stored in Y
@@ -4244,6 +4245,7 @@ GUARD	&C000
 .L9C1E      INY										;Next Character
             BNE L9BF1								;Loop
 .L9C21      RTS										;End
+}
 
 .L9C22      CLC
             TYA
