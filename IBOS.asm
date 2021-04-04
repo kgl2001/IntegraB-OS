@@ -1195,6 +1195,8 @@ GUARD	&C000
 }
 
 ;error handling routine
+.raiseError
+{
 .L867E      JSR PrvDis								;switch out private RAM
             PLA
             STA L00FD
@@ -1208,6 +1210,7 @@ GUARD	&C000
             BNE L8689
 .L8693      STA L0100								;forced BRK
             JMP L0100
+}
 			
 			
 .L8699      JSR findNextCharAfterSpace								;find next character. offset stored in Y
@@ -1426,7 +1429,7 @@ GUARD	&C000
 .L8806      JMP L92E3
 }
 
-.L8809      JSR L867E								;Goto error handling, where calling address is pulled from stack
+.L8809      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
 		EQUB &D6
 		EQUS "Not found", &00
@@ -2057,7 +2060,7 @@ GUARD	&C000
             BCC L8C19								;check for error
             JMP exitSC								;Exit Service Call
 			
-.L8C19      JSR L867E								;Goto error handling, where calling address is pulled from stack
+.L8C19      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
 		EQUB &FD
 		EQUS "Too long", &00
@@ -2128,7 +2131,7 @@ GUARD	&C000
             JSR PrvEn								;switch in private RAM
             LDA prvOsMode								;read OSMODE
             BNE L8CAE								;error if OSMODE 0, otherwise continue
-            JSR L867E								;Goto error handling, where calling address is pulled from stack
+            JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
 		EQUB &80
 		EQUS "No Buffer!", &00
@@ -2370,7 +2373,7 @@ GUARD	&C000
             BCC L8E7E								;Buffer not empty: error
             RTS
 			
-.L8E7E      JSR L867E								;Goto error handling, where calling address is pulled from stack
+.L8E7E      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
 		EQUB &80
 		EQUS "Printing!", &00
@@ -2548,7 +2551,7 @@ GUARD	&C000
             LDA SHEILA+&E0
             LSR A
             BCS L9009								;Tube exists - Initialise
-            JSR L867E								;Goto error handling, where calling address is pulled from stack
+            JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
 	  EQUB &80
 	  EQUS "No Tube!", &00
@@ -2831,7 +2834,7 @@ GUARD	&C000
 .L91EE      JSR L9201
 .L91F1      LDA #&7E
             JSR OSBYTE
-            JSR L867E								;Goto error handling, where calling address is pulled from stack
+            JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
 			EQUB &11
 			EQUS "Escape", &00
@@ -2970,7 +2973,7 @@ GUARD	&C000
             BEQ L92F5
             CPX #&00
             BEQ L92F5
-.L92E3      JSR L867E								;Goto error handling, where calling address is pulled from stack
+.L92E3      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
 			EQUB &FE
 			EQUS "Bad parameter", &00
@@ -4516,12 +4519,12 @@ GUARD	&C000
             PLP
 .errorBadAddress
 .L9DB8      BVC errorNotAllocated
-            JSR L867E								;Goto error handling, where calling address is pulled from stack
+            JSR raiseError								;Goto error handling, where calling address is pulled from stack
 	  EQUB &80
 	  EQUS "Bad address", &00
 
 .errorNotAllocated
-.L9DCA      JSR L867E								;Goto error handling, where calling address is pulled from stack
+.L9DCA      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 	  EQUB &80
 	  EQUS "Not allocated", &00
 
@@ -5274,7 +5277,7 @@ GUARD	&C000
 .LA2E4      JSR LA40C
             BCC LA2F9
             BVC LA2F6
-.LA2EB      JSR L867E								;Goto error handling, where calling address is pulled from stack
+.LA2EB      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
 			EQUB &80
 			EQUS "Bad id", &00
@@ -7548,19 +7551,19 @@ GUARD	&C000
 .LB4AC      JMP exitSC								;Exit Service Call
 
 .LB4AF      JSR PrvDis								;switch out private RAM
-            JSR L867E								;Goto error handling, where calling address is pulled from stack
+            JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
             EQUB &80
 			EQUS "Mismatch", &00
 
 .LB4BF      JSR PrvDis								;switch out private RAM
-            JSR L867E								;Goto error handling, where calling address is pulled from stack
+            JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
             EQUB &80
 			EQUS "Bad date", &00
 
 .LB4CF      JSR PrvDis								;switch out private RAM
-            JSR L867E								;Goto error handling, where calling address is pulled from stack
+            JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
             EQUB &80
 			EQUS "Bad time", &00
