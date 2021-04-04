@@ -4673,9 +4673,11 @@ GUARD	&C000
             TAX									;&03C5
             RTS									;&03C6
 
-;Function TBC This is doing something with the Tube
-; SFTODO: This is transferring some amount of data determined (SFTODO: how?) by Y between host (sideways RAM) and parasite.
-;this code is relocated to and executed at &03A7
+; Transfer Y+1 bytes between host (sideways RAM, starting at address in L00A8)
+; and parasite (starting at address set up when initiating tube transfer before
+; this code was called). The code is patched when it's transferred into RAM to
+; do the transfer in the appropriate direction.
+; SFTODO: If Y=255 on entry I think we will transfer 256 bytes, but double-check that later.
 .tubeTransferTemplate
 {
 .L9EF9	  TXA
@@ -4704,9 +4706,8 @@ GUARD	&C000
 .tubeTransferTemplateRts
             RTS
 .tubeTransferTemplateCount ; SFTODO: Not sure *precisely* what we're counting; clearly this controls how many bytes we transfer, but need to see what callers pass in in Y
-            ; There is conceptually a byte of space used here when this copied
-            ; into RAM, but it's not present in the ROM, hence P% + 1 in the
-            ; next line.
+            ; There is a byte of space used here when this copied into RAM, but
+            ; it's not present in the ROM, hence P% + 1 in the next line.
             ASSERT (P% + 1) - tubeTransferTemplate <= variableMainRamSubroutineMaxSize
 
 
