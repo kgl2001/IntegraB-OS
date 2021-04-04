@@ -3899,7 +3899,7 @@ GUARD	&C000
 .ram        LDA prv82+&21
             JSR L9B18
             STA prv82+&21
-            STA L03C2
+            STA variableMainRamSubroutine + writeRomHeaderTemplateSFTODO - writeRomHeaderTemplate
             JMP variableMainRamSubroutine								;Call relocated code
 }
 			
@@ -4540,7 +4540,9 @@ GUARD	&C000
             RTS
 
 ;ROM Header
-.srData	  EQUB &60,&00,&00
+.srData	  EQUB &60
+.^writeRomHeaderTemplateSFTODO
+            EQUB     &00,&00
 	  EQUB &60,&00,&00
 	  EQUB &02
 	  EQUB &0C
