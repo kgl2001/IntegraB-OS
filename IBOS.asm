@@ -110,7 +110,7 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 ; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
 transientOs42SwrAddr = &A8 ; 2 bytes
 transientOs42MainAddrLowWord = &AA ; 2 bytes
-transientOs42MainAddrHighWord = &AE
+transientOs42MainAddrHighWord = &AE ; 2 bytes
 
 vduStatus = &D0
 vduStatusShadow = &10
@@ -4547,7 +4547,7 @@ GUARD	&C000
 ; there's a swizzling routine analogous I haven't labelled yet
 ; (adjustPrvOsword43Block-to-be, presumably)
 {
-.^L9DDD      LDY prvOswordBlockCopy + 8 ; get low byte of sideways address
+.L9DDD      LDY prvOswordBlockCopy + 8 ; get low byte of sideways address
             LDA prvOswordBlockCopy + 9 ; get high byte of sideways address
             BIT prvOswordBlockCopy ; test function
             BVC absoluteAddress
