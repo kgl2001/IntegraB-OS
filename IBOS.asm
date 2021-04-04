@@ -4763,23 +4763,35 @@ GUARD	&C000
             ROL A
             LDA #&00
             ROL A
-            LDX #&00
-            LDY #&01
+            ; At this point b0 of A has !b7 of function, all other bits of A
+            ; clear. SFTODO: We have ignored b6 of function - is that safe? do
+            ; we just not support pseudo-addresses? I don't think this is the
+            ; same as the pseudo to absolute bank conversion done inside
+            ; checkRamBankAndMakeAbsolute - that converts W=10->4 (for example),
+            ; I *think* pseudo-addresses make the 64K of SWR look like a flat
+            ; memory space. I could be wrong, I can't find any documentation on
+            ; this right now.
+            ; A=0 means multi-byte transfer, parasite to host
+            ; A=1 means multi-byte transfer, host to parasite
+            ; So this has converted the function into the correct transfer type.
+            LDX #lo(L0100)
+            LDY #hi(L0101)
             JSR tubeEntry								;Change this to relocated address (&03AF+&xx ???)
 
             LDX #lo(tubeSFTODOTemplate)
             LDY #hi(tubeSFTODOTemplate)
             JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9EF9 to &03A7
-            BIT prvOswordBlockCopy
-            BPL L9FA3
+            BIT prvOswordBlockCopy                                                                  ;test function
+            BPL rts                                                                                 ;if this is read (from sideways RAM) we're done
 
 ;relocate 10 bytes from &9F29
+; SFTODO: What's going on here?
             LDY #&09
 .L9F9A      LDA L9F29,Y
             STA L03B5,Y								;Change this to relocated address (&03AF+&xx ???)
             DEY
             BPL L9F9A
-.L9FA3      RTS
+.rts        RTS
 
 .notTube
 .L9FA4      LDA #&00
