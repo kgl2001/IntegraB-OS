@@ -1194,7 +1194,7 @@ GUARD	&C000
 		EQUW service07-1							;Address for unrecognised OSBYTE call
 }
 
-;error handling routine
+; Generate an error using the error number and error string immediately following the "JSR raiseError" call.
 .raiseError
 {
 .L867E      JSR PrvDis								;switch out private RAM
