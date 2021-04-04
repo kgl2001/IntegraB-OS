@@ -7878,7 +7878,7 @@ GUARD	&C000
             BMI LB7F9
             BIT L027A								;check for Tube - &00: not present, &ff: present
             BPL LB7F9
-.LB7C6      LDA #&FF
+.LB7C6      LDA #tubeEntryClaim + tubeClaimId
             JSR tubeEntry
             BCC LB7C6
             CLC
@@ -7898,7 +7898,7 @@ GUARD	&C000
             INY
             CPY prvOswordBlockCopy + 1
             BNE LB7E1
-            LDA #&BF
+            LDA #tubeEntryRelease + tubeClaimId
             JSR tubeEntry
             CLC
             RTS
