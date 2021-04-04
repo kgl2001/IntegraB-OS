@@ -4711,14 +4711,14 @@ GUARD	&C000
             CPY #&00								;&03AF
             BEQ L9EEC								;&03B1
 .^mainRamTransferTemplateLdaStaPair1
-.L9EE5      LDA (L00A8),Y								;&03B3 - Note this is changed to &AA by code at &9FA4
-            STA (L00AA),Y								;&03B5 - Note this is changed to &A8 by code at &9FA4
+.L9EE5      LDA (transientOs42SwrAddr),Y								;&03B3 - Note this is changed to &AA by code at &9FA4
+            STA (transientOs42MainAddrLowWord),Y								;&03B5 - Note this is changed to &A8 by code at &9FA4
             DEY									;&03B7
             BNE L9EE5								;&03B8
 
 .^mainRamTransferTemplateLdaStaPair2
-.L9EEC      LDA (L00A8),Y								;&03BA - Note this is changed to &AA by code at &9FA4
-            STA (L00AA),Y								;&03BC - Note this is changed to &A8 by code at &9FA4
+.L9EEC      LDA (transientOs42SwrAddr),Y								;&03BA - Note this is changed to &AA by code at &9FA4
+            STA (transientOs42MainAddrLowWord),Y								;&03BC - Note this is changed to &A8 by code at &9FA4
             LDA romselCopy									;&03BE
             STX romselCopy									;&03C0
             STX romsel								;&03C2
