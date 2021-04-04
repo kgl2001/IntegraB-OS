@@ -6810,8 +6810,9 @@ GUARD	&C000
             STA prv82+&20
             CLC
             RTS
-			
-.LAFF9      LDX #&04
+
+{
+.^LAFF9      LDX #&04
 .LAFFB      LDA prv82+&28,X
             STA prv82+&43,X
             DEX
@@ -6835,6 +6836,7 @@ GUARD	&C000
             BNE LB02E
             CLC
             RTS
+}
 			
 .LB02E      BIT LB032
             SEC
