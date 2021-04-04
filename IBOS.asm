@@ -4502,8 +4502,12 @@ GUARD	&C000
             RTS
 }
 
+; SFTODO: Not the most descriptive name but will do for now - I am looking at
+; this in context of OSWORD &42, but I think it's used in quite a few places so
+; can name it properly once more code labelled up
+.doTransfer
 {
-.^L9D8E      JSR adjustTransferParameters
+.L9D8E      JSR adjustTransferParameters
             LDX prvOswordBlockCopy + 1
             BIT prvOswordBlockCopy                                                                  ; get function
             BVC absoluteAddress
@@ -4519,7 +4523,7 @@ GUARD	&C000
             ORA transientOs42MainAddrHighWord + 1
             BEQ rts
             JSR SFTODOsetVandCBasedOnSomethingAndMaybeSwizzleStuff
-            BCC L9D8E
+            BCC doTransfer
 .L9DAE      LDA L02EE
             BEQ errorBadAddress
             PHP
@@ -5029,7 +5033,7 @@ GUARD	&C000
 .^LA0A6      JSR getAddressesAndLengthFromPrvOswordBlockCopy
             BCS LA0B1 ; SFTODO: I don't believe this branch can ever be taken
             JSR prepareMainSidewaysRamTransfer
-            JSR L9D8E
+            JSR doTransfer
 .LA0B1      PHP
             BIT prvTubeReleasePending
             BPL LA0BC
@@ -5175,7 +5179,7 @@ GUARD	&C000
             PLA
             JSR LA087
             JSR getAddressesAndLengthFromPrvOswordBlockCopy
-            JSR L9D8E
+            JSR doTransfer
             JMP LA22B
 			
 .LA1C7      JSR prepareMainSidewaysRamTransfer
@@ -5212,7 +5216,7 @@ GUARD	&C000
 .LA216      LDA #&04
             JSR LA10A
 .LA21B      JSR L9DF2
-            JSR L9D8E
+            JSR doTransfer
             JSR LA0DC
             BCC LA216
             LDA L02EE
@@ -5243,7 +5247,7 @@ GUARD	&C000
 .LA261      LDA #&80
             JSR LA087
 .LA266      JSR L9DF2
-            JSR L9D8E
+            JSR doTransfer
             LDA L02EE
             BEQ LA27E
             LDA #&02
