@@ -4450,12 +4450,14 @@ GUARD	&C000
             RTS
 }
 
+.SFTODOsetVandCBasedOnSomethingAndMaybeSwizzleStuff
+; SFTODO: This has only one caller
 {
 .^L9D62     BIT prvOswordBlockCopy                                                                  ;get function
             BVC sevSecRts                                                                            ;branch if we have an absolute address
             ; We're dealing with a pseudo-address.
             BIT L00A9
-            BVC L9D84
+            BVC clcRts
             LDA #&10
             STA L00A8
             LDA #&80
@@ -4473,6 +4475,7 @@ GUARD	&C000
             LDA prv83+&0C,X
             BMI clvSecRts
             TAX
+.clcRts
 .L9D84      CLC
             RTS
 
@@ -4504,23 +4507,23 @@ GUARD	&C000
             LDA L00AE
             ORA L00AF
             BEQ rts
-            JSR L9D62
+            JSR SFTODOsetVandCBasedOnSomethingAndMaybeSwizzleStuff
             BCC L9D8E
 .L9DAE      LDA L02EE
-            BEQ L9DB8
+            BEQ errorBadAddress
             PHP
             JSR LA098
             PLP
-.L9DB8      BVC L9DCA
+.errorBadAddress
+.L9DB8      BVC errorNotAllocated
             JSR L867E								;Goto error handling, where calling address is pulled from stack
+	  EQUB &80
+	  EQUS "Bad address", &00
 
-			EQUB &80
-			EQUS "Bad address", &00
-
+.errorNotAllocated
 .L9DCA      JSR L867E								;Goto error handling, where calling address is pulled from stack
-
-			EQUB &80
-			EQUS "Not allocated", &00
+	  EQUB &80
+	  EQUS "Not allocated", &00
 
 .rts        RTS
 }
