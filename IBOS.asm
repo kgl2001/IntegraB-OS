@@ -110,6 +110,7 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 ; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
 transientOs42SwrAddr = &A8 ; 2 bytes
 transientOs42MainAddrLowWord = &AA ; 2 bytes
+; SFTODO: &AC/&AD IS USED FOR ANOTHER 16-BIT WORD, SEE adjustTransferParameters
 transientOs42MainAddrHighWord = &AE ; 2 bytes
 
 vduStatus = &D0
@@ -5028,7 +5029,7 @@ GUARD	&C000
             JSR prepareMainSidewaysRamTransfer
             JSR L9D8E
 .LA0B1      PHP
-            BIT prv83+&42
+            BIT prv83+&42 ; SFTODO: So this is some sort of tube flag, presumably? why do we use this, don't we sometimes use the tube flag in low OS RAM?
             BPL LA0BC
             LDA #tubeEntryRelease + tubeClaimId
             JSR tubeEntry
