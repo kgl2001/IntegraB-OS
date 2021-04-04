@@ -3825,7 +3825,7 @@ GUARD	&C000
             STA oswdbtX
             LDY #&03
 .L9933      STY prv82+&52
-            LDA prv83+&08,Y
+            LDA prvPseudoBankNumbers,Y
             BMI L994A
             TAX
             JSR testRamUsingVariableMainRamSubroutine
@@ -3851,7 +3851,7 @@ GUARD	&C000
             STA oswdbtX
             LDY #&03
 .L9967      STY prv82+&52
-            LDA prv83+&08,Y
+            LDA prvPseudoBankNumbers,Y
             BMI L9974
             JSR L9A25
             BPL L9977
@@ -3994,7 +3994,7 @@ GUARD	&C000
             TAY
             BCS L9A67
             TXA
-            STA prv83+&08,Y
+            STA prvPseudoBankNumbers,Y
             INY
             CPY #&04
             BCS L9A76
@@ -4002,7 +4002,7 @@ GUARD	&C000
             CPX #&10
             BNE L9A40
             LDA #&FF
-.L9A6E      STA prv83+&08,Y
+.L9A6E      STA prvPseudoBankNumbers,Y
             INY
             CPY #&04
             BCC L9A6E
@@ -4017,7 +4017,7 @@ GUARD	&C000
             JSR OSWRCH
             LDA #'='
             JSR OSWRCH								;Write to screen
-            LDA prv83+&08,Y								;read absolute bank assigned to psuedo bank
+            LDA prvPseudoBankNumbers,Y								;read absolute bank assigned to psuedo bank
             BPL L9A98								;check if valid bank has been assigned
             LDA #'?'
             JSR OSWRCH								;Write to screen
@@ -4097,7 +4097,7 @@ GUARD	&C000
             CMP #&10						;check if RAM bank is absolute or pseudo address 
             BCC L9B24
             TAX
-            LDA prv83+&08,X						;lookup table to convert pseudo RAM W, X, Y, Z into absolute address???
+            LDA prvPseudoBankNumbers,X						;lookup table to convert pseudo RAM W, X, Y, Z into absolute address???
             BMI L9B2B						;check for Bad ID
 .L9B24      RTS
 }
@@ -4180,6 +4180,7 @@ GUARD	&C000
 ;&80 - Write to absolute address
 ;&C0 - Write to pseudo-address
 
+; SFTODO: Could this be rewritten more compactly as a loop?
 .L9B93      LDA prvOswordBlockCopy + 7						;ROM number
             PHA
             LDA prvOswordBlockCopy + 6
@@ -4898,6 +4899,7 @@ GUARD	&C000
 ;&80 - Write to absolute address
 ;&C0 - Write to pseudo-address
 
+; SFTODOWIP
 .osword42
 {
 	  JSR copyOswordDetailsToPrv						;copy osword42 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
@@ -5469,7 +5471,7 @@ GUARD	&C000
             BNE LA4F3
             LDY #&0F								;if osmode is 2, absolute banks are 12..15
 .LA4F3      TYA									;
-            STA prv83+&08,X								;assign pseudo bank to the appropriate absolute bank
+            STA prvPseudoBankNumbers,X								;assign pseudo bank to the appropriate absolute bank
             DEY									;reduce absolute bank number by 1
             DEX									;reduce pseudo bank number by 1
             BPL LA4F3								;until all 4 pseudo banks have been assigned an appropriate absolute bank
