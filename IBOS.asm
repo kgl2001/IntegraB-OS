@@ -3892,10 +3892,11 @@ GUARD	&C000
 	  LDY #hi(writeRomHeaderTemplate)
 	  JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9E59 to &03A7
             PLA
-            BEQ L99D6
+            BEQ ram
+            ; ROM - so patch variableMainRamSubroutine's ROM header to say "ROM" instead of "RAM"
             LDA #'O'
             STA variableMainRamSubroutine + writeRomHeaderTemplateDataAO - writeRomHeaderTemplate
-.L99D6      LDA prv82+&21
+.ram        LDA prv82+&21
             JSR L9B18
             STA prv82+&21
             STA L03C2
