@@ -4492,7 +4492,7 @@ GUARD	&C000
 .L9DA0      JSR transferBlock
             LDA L00AE
             ORA L00AF
-            BEQ L9DDC
+            BEQ rts
             JSR L9D62
             BCC L9D8E
 .L9DAE      LDA L02EE
@@ -4511,7 +4511,7 @@ GUARD	&C000
 			EQUB &80
 			EQUS "Not allocated", &00
 
-.L9DDC      RTS
+.rts        RTS
 }
 
 .getAddressesAndLengthFromPrvOswordBlockCopy
