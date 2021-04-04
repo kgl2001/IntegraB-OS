@@ -4967,7 +4967,7 @@ GUARD	&C000
 .LA0B1      PHP
             BIT prv83+&42
             BPL LA0BC
-            LDA #&BF
+            LDA #tubeEntryRelease + tubeClaimId
             JSR tubeEntry
 .LA0BC      JMP L9983
 }
