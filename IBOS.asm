@@ -3916,7 +3916,7 @@ GUARD	&C000
             LDA #'O'
             STA variableMainRamSubroutine + (writeRomHeaderTemplateDataAO - writeRomHeaderTemplate)
 .ram        LDA prvOswordBlockCopy + 1
-            JSR L9B18
+            JSR checkRamBankAndMakeAbsolute
             STA prvOswordBlockCopy + 1
             STA variableMainRamSubroutine + (writeRomHeaderTemplateSFTODO - writeRomHeaderTemplate)
             JMP variableMainRamSubroutine								;Call relocated code
@@ -4093,10 +4093,12 @@ GUARD	&C000
 .L9B12      SEC
             BIT L9B0C
             BCS L9B09
-.^L9B18     AND #&7F						;drop the highest bit
+.^checkRamBankAndMakeAbsolute
+.L9B18     AND #&7F						;drop the highest bit
             CMP #&10						;check if RAM bank is absolute or pseudo address 
             BCC L9B24
             TAX
+            ; SFTODO: Any danger this is ever going to have X>3 and access an arbitrary byte?
             LDA prvPseudoBankNumbers,X						;lookup table to convert pseudo RAM W, X, Y, Z into absolute address???
             BMI L9B2B						;check for Bad ID
 .L9B24      RTS
@@ -4196,7 +4198,7 @@ GUARD	&C000
             LDA prvOswordBlockCopy + 1
             STA prvOswordBlockCopy + 2
             PLA
-.L9BBC      JSR L9B18						;convert pseudo RAM bank to absolute RAM bank
+.L9BBC      JSR checkRamBankAndMakeAbsolute						;convert pseudo RAM bank to absolute RAM bank
             STA prvOswordBlockCopy + 1						;and save to private address &8221
             RTS
 
