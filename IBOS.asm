@@ -115,6 +115,10 @@ currentMode = &0355
 
 romBinaryVersion = &8008
 
+oswordA = &EF
+oswordX = &F0
+oswordY = &F1
+
 ; This is a byte of unused CFS/RFS workspace which IBOS repurposes to track
 ; state during mode changes. This is probably done because it's quicker than
 ; paging in private RAM; OSWRCH is relatively performance sensitive and we check
@@ -1979,7 +1983,7 @@ GUARD	&C000
 .L8BB0      RTS
 
 ;Unrecognised OSWORD call - Service call &08
-.service08  LDA L00EF								;read OSWORD call number
+.service08  LDA oswordA								;read OSWORD call number
 
 	  CMP #&0E								;OSWORD &0E (14) Read real time clock
 	  BNE service08a
@@ -1998,7 +2002,7 @@ GUARD	&C000
             TYA
             PHA
             LDY #&00
-            LDA (L00F0),Y
+            LDA (oswordX),Y
             TAX
             PLA
             TAY
@@ -4772,17 +4776,19 @@ GUARD	&C000
 ;where X contains low byte of the parameter block address
 ;and   Y contains high byte of the parameter block address. 
 
-.L9FD3      JSR PrvEn								;switch in private RAM
-            LDA L00F0								;get value of X reg
+{
+.^L9FD3      JSR PrvEn								;switch in private RAM
+            LDA oswordX								;get value of X reg
             STA prv82+&30								;and save to private memory &8230
-            LDA L00F1								;get value of Y reg
+            LDA oswordY								;get value of Y reg
             STA prv82+&30								;and save to private memory &8230  <-This looks wrong. Should this be &8231???
             LDY #&0F
-.L9FE2      LDA (L00F0),Y								;copy the parameter block from its current location in memory
+.L9FE2      LDA (oswordX),Y								;copy the parameter block from its current location in memory
             STA prv82+&20,Y								;to private memory &8220..&822F
             DEY									;total of 16 bytes
             BPL L9FE2
             RTS
+}
 			
 ;*SRSAVE Command
 .srsave	  JSR PrvEn								;switch in private RAM
@@ -7687,20 +7693,20 @@ GUARD	&C000
 ;OSWORD &0E (14) Read real time clock
 .osword0e	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
             JSR PrvEn								;switch in private RAM
-            LDA L00F0								;get X register value of most recent OSWORD call
+            LDA oswordX								;get X register value of most recent OSWORD call
             STA prv82+&30							;and save to &8230
-            LDA L00F1								;get Y register value of most recent OSWORD call
+            LDA oswordY								;get Y register value of most recent OSWORD call
             STA prv82+&31							;and save to &8231
             JSR oswordsv							;save XY entry table
             JSR oswd0e_1							;execute OSWORD &0E
             BCS osword0ea							;successful so don't restore XY entry table
             JSR oswordrs							;restore XY entry table
 .osword0ea	LDA prv82+&30							;get X register value of most recent OSWORD call
-            STA L00F0								;and restore to &F0
+            STA oswordX								;and restore to &F0
             LDA prv82+&31							;get Y register value of most recent OSWORD call
-            STA L00F1								;and restore to &F1
+            STA oswordY								;and restore to &F1
             LDA #&0E								;load A register value of most recent OSWORD call (&0E)
-            STA L00EF								;and restore to &EF
+            STA oswordA								;and restore to &EF
             JSR PrvDis								;switch out private RAM
 
             JMP osword49b							;restore 8 bytes of data to &A8 from the stack and exit
@@ -7708,20 +7714,20 @@ GUARD	&C000
 ;OSWORD &49 (73) - Integra-B calls
 .osword49	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
             JSR PrvEn								;switch in private RAM
-            LDA L00F0								;get X register value of most recent OSWORD call
+            LDA oswordX								;get X register value of most recent OSWORD call
             STA prv82+&30							;and save to &8230
-            LDA L00F1								;get Y register value of most recent OSWORD call
+            LDA oswordY								;get Y register value of most recent OSWORD call
             STA prv82+&31							;and save to &8231
             JSR oswordsv							;save XY entry table
             JSR oswd49_1							;execute OSWORD &49
             BCS osword49a							;successful so don't restore XY entry table
             JSR oswordrs							;restore table
 .osword49a	LDA prv82+&30							;get X register value of most recent OSWORD call
-            STA L00F0								;and restore to &F0
+            STA oswordX								;and restore to &F0
             LDA prv82+&31							;get Y register value of most recent OSWORD call
-            STA L00F1								;and restore to &F1
+            STA oswordY								;and restore to &F1
             LDA #&49								;load A register value of most recent OSWORD call (&49)
-            STA L00EF								;and restore to &EF
+            STA oswordA								;and restore to &EF
             JSR PrvDis								;switch out private RAM
 
 .osword49b	JSR unstackTransientCmdSpace						;restore 8 bytes of data to &A8 from the stack
@@ -7866,7 +7872,7 @@ GUARD	&C000
 .LB835      JSR LA769								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
             LDY #&06
 .LB83A      JSR LB85A
-            STA (L00F0),Y
+            STA (oswordX),Y
             DEY
             BPL LB83A
             SEC
