@@ -4147,21 +4147,21 @@ GUARD	&C000
             STA prv82+&2D
             LDA prvOswordBlockCopy + 3
             JSR L9BBC							;convert pseudo RAM bank to absolute RAM bank & save to private address &21
-            LDA prv82+&28
+            LDA prvOswordBlockCopy + 8
             STA prvOswordBlockCopy + 2
-            LDA prv82+&29
+            LDA prvOswordBlockCopy + 9
             STA prvOswordBlockCopy + 3
             LDA prvOswordBlockCopy + 4
-            STA prv82+&28
+            STA prvOswordBlockCopy + 8
             LDA prvOswordBlockCopy + 5
-            STA prv82+&29
+            STA prvOswordBlockCopy + 9
             LDA prv82+&2A
-            STA prv82+&26
+            STA prvOswordBlockCopy + 6
             LDA prv82+&2B
-            STA prv82+&27
-            LDA prv82+&26							;<----This won't work, because we've already overwritten &26 with &2A!!!
+            STA prvOswordBlockCopy + 7
+            LDA prvOswordBlockCopy + 6							;<----This won't work, because we've already overwritten &26 with &2A!!!
             STA prv82+&2A							;<----This won't work, because we've already overwritten &26 with &2A!!!
-            LDA prv82+&27							;<----This won't work, because we've already overwritten &27 with &2B!!!
+            LDA prvOswordBlockCopy + 7							;<----This won't work, because we've already overwritten &27 with &2B!!!
             STA prv82+&2B							;<----This won't work, because we've already overwritten &27 with &2B!!!
             RTS
 			
@@ -4178,12 +4178,12 @@ GUARD	&C000
 ;&80 - Write to absolute address
 ;&C0 - Write to pseudo-address
 
-.L9B93      LDA prv82+&27						;ROM number
+.L9B93      LDA prvOswordBlockCopy + 7						;ROM number
             PHA
-            LDA prv82+&26
-            STA prv82+&27
+            LDA prvOswordBlockCopy + 6
+            STA prvOswordBlockCopy + 7
             LDA prvOswordBlockCopy + 5
-            STA prv82+&26
+            STA prvOswordBlockCopy + 6
             LDA prvOswordBlockCopy + 4
             STA prvOswordBlockCopy + 5
             LDA prvOswordBlockCopy + 3
@@ -4215,8 +4215,8 @@ GUARD	&C000
 .L9BE6      JMP LA2EB
 
 .L9BE9      LDA #&00
-            STA prv82+&26							;Clear &8226
-            STA prv82+&27							;Clear &8227
+            STA prvOswordBlockCopy + 6							;Clear &8226
+            STA prvOswordBlockCopy + 7							;Clear &8227
 .L9BF1      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y
             CMP #&0D								;CR?
@@ -4225,7 +4225,7 @@ GUARD	&C000
             CMP #&51								;'Q'
             BNE L9C07								;No? Goto next check
             LDA #&80								;set bit 7
-            STA prv82+&27							;write value to &8227
+            STA prvOswordBlockCopy + 7							;write value to &8227
             BNE L9C1E								;Increment and loop
 .L9C07      CMP #&49								;'I'
             BNE L9C12								;No? Goto next check
@@ -4263,9 +4263,9 @@ GUARD	&C000
 .L9C42      JSR L8724
             BCS L9C3F
             LDA L00B0
-            STA prv82+&28
+            STA prvOswordBlockCopy + 8
             LDA L00B1
-            STA prv82+&29
+            STA prvOswordBlockCopy + 9
             RTS
 			
 .L9C52      JSR findNextCharAfterSpace								;find next character. offset stored in Y
@@ -4321,16 +4321,16 @@ GUARD	&C000
 .L9CB5      SEC
             LDA L00B0
             SBC prvOswordBlockCopy + 2
-            STA prv82+&26
+            STA prvOswordBlockCopy + 6
             LDA L00B1
             SBC prvOswordBlockCopy + 3
-            STA prv82+&27
+            STA prvOswordBlockCopy + 7
             RTS
 			
 .L9CC7      LDA L00B0
-            STA prv82+&26
+            STA prvOswordBlockCopy + 6
             LDA L00B1
-            STA prv82+&27
+            STA prvOswordBlockCopy + 7
             RTS
 			
 ;*SRREAD Command
@@ -4472,8 +4472,8 @@ GUARD	&C000
 
 .L9DDC      RTS
 
-.L9DDD      LDY prv82+&28
-            LDA prv82+&29
+.L9DDD      LDY prvOswordBlockCopy + 8
+            LDA prvOswordBlockCopy + 9
             BIT prvOswordBlockCopy
             BVC L9DEE
             JSR L9B2E
@@ -4484,9 +4484,9 @@ GUARD	&C000
             STA L00AA
             LDA prvOswordBlockCopy + 3
             STA L00AB
-            LDA prv82+&26
+            LDA prvOswordBlockCopy + 6
             STA L00AE
-            LDA prv82+&27
+            LDA prvOswordBlockCopy + 7
             STA L00AF
             CLC
             RTS
@@ -4807,28 +4807,28 @@ GUARD	&C000
             BIT prvOswordBlockCopy
             BMI LA015
             JSR L9C9C
-            LDA prv82+&26
+            LDA prvOswordBlockCopy + 6
             STA prv82+&2A
-            LDA prv82+&27
+            LDA prvOswordBlockCopy + 7
             STA prv82+&2B
 .LA015      JSR L9BC3
             JSR L9BE9
             LDA prvOswordBlockCopy + 2
-            STA prv82+&28
+            STA prvOswordBlockCopy + 8
             LDA prvOswordBlockCopy + 3
-            STA prv82+&29
-            BIT prv82+&27
+            STA prvOswordBlockCopy + 9
+            BIT prvOswordBlockCopy + 7
             JMP LA18B
 			
 .LA02D      LDA #&FF
             STA prvOswordBlockCopy + 4
             STA prvOswordBlockCopy + 5
-            BIT prv82+&27
+            BIT prvOswordBlockCopy + 7
             BPL LA059
             LDA #&B4
             LDX #&00
             STX prvOswordBlockCopy + 2
-            STX prv82+&26
+            STX prvOswordBlockCopy + 6
             LDY #&FF
             JSR OSBYTE
             STX prvOswordBlockCopy + 3
@@ -4837,7 +4837,7 @@ GUARD	&C000
             TYA
             SEC
             SBC prvOswordBlockCopy + 3
-            STA prv82+&27
+            STA prvOswordBlockCopy + 7
 .LA059      BIT prvOswordBlockCopy
             BPL LA083
             LDA prv82+&2C
@@ -4909,11 +4909,11 @@ GUARD	&C000
 
 .LA0BF      SEC
             LDA prv82+&2A
-            SBC prv82+&26
+            SBC prvOswordBlockCopy + 6
             PHP
             TAY
             LDA prv82+&2B
-            SBC prv82+&27
+            SBC prvOswordBlockCopy + 7
             BEQ LA0D4
             TAX
             PLA
@@ -4936,9 +4936,9 @@ GUARD	&C000
             JSR LA0BF
             BCS LA106
 .LA0F2      LDA prv82+&2A
-            STA prv82+&26
+            STA prvOswordBlockCopy + 6
             LDA prv82+&2B
-            STA prv82+&27
+            STA prvOswordBlockCopy + 7
             LDA #&00
             STA prv82+&2A
             STA prv82+&2B
@@ -4956,9 +4956,9 @@ GUARD	&C000
             LDA #&FF
             STA L02F1
             STA L02F2
-            LDA prv82+&26
+            LDA prvOswordBlockCopy + 6
             STA L02F3
-            LDA prv82+&27
+            LDA prvOswordBlockCopy + 7
             STA L02F4
             LDA #&00
             STA L02F5
@@ -5022,8 +5022,8 @@ GUARD	&C000
             LDA #&07
             STA prv82+&2D
 .LA18B      JSR LA02D
-            LDA prv82+&26
-            ORA prv82+&27
+            LDA prvOswordBlockCopy + 6
+            ORA prvOswordBlockCopy + 7
             BNE LA1C7
             BIT prvOswordBlockCopy
             BPL LA1A4								;Relocate code from &9E83
@@ -5038,9 +5038,9 @@ GUARD	&C000
 .LA1AA      PHA
             JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from either &9E83 or &9EAE to &03A7
             LDA prv82+&2A
-            STA prv82+&26
+            STA prvOswordBlockCopy + 6
             LDA prv82+&2B
-            STA prv82+&27
+            STA prvOswordBlockCopy + 7
             PLA
             JSR LA087
             JSR L9DDD
@@ -5129,10 +5129,10 @@ GUARD	&C000
             STA L02F8
             LDA prvOswordBlockCopy + 3
             STA L02F9
-            LDA prv82+&28
+            LDA prvOswordBlockCopy + 8
             STA L02F0
             STA L02F4
-            LDA prv82+&29
+            LDA prvOswordBlockCopy + 9
             STA L02F1
             STA L02F5
             LDA #&FF
@@ -5146,10 +5146,10 @@ GUARD	&C000
             STA L02FF
             CLC
             LDA prvOswordBlockCopy + 2
-            ADC prv82+&26
+            ADC prvOswordBlockCopy + 6
             STA L02FC
             LDA prvOswordBlockCopy + 3
-            ADC prv82+&27
+            ADC prvOswordBlockCopy + 7
             STA L02FD
             LDA #&00
             LDX #&EE
@@ -5723,10 +5723,10 @@ GUARD	&C000
             LDA prv82+&2A								;Get 'Month' from &822A
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             INX									;Select 'Year' register on RTC: Register &09
-            LDA prv82+&29								;Get 'Year' from &8229
+            LDA prvOswordBlockCopy + 9								;Get 'Year' from &8229
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             LDX #&35
-            LDA prv82+&28
+            LDA prvOswordBlockCopy + 8
             JMP writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
@@ -5755,7 +5755,7 @@ GUARD	&C000
             STA prv82+&2A								;Store 'Month' at &822A
             INX									;Select 'Year' register on RTC: Register &09
 .LA729      JSR rdRTCRAM								;Read data from RTC memory location X into A
-            STA prv82+&29								;Store 'Year' at &8229
+            STA prvOswordBlockCopy + 9								;Store 'Year' at &8229
             JMP LB1E4
 
 ;Read 'Sec Alarm', 'Min Alarm' & 'Hr Alarm' from RTC and Store in Private RAM (&82xx)
@@ -5852,10 +5852,10 @@ GUARD	&C000
             SEC
             RTS
 
-.LA7CD      LDA prv82+&29
+.LA7CD      LDA prvOswordBlockCopy + 9
             CMP #&00
             BNE LA7D7
-            LDA prv82+&28
+            LDA prvOswordBlockCopy + 8
 .LA7D7      LSR A
             BCS LA7C0
             LSR A
@@ -5921,13 +5921,13 @@ GUARD	&C000
             BCC LA83C
 .LA83B      SEC
 .LA83C      PHP
-            LDA prv82+&28
+            LDA prvOswordBlockCopy + 8
             LDX #&00
             LDY #&63
             JSR LA8DB
             LDA #&80
             JSR LA8C9
-            LDA prv82+&29
+            LDA prvOswordBlockCopy + 9
             LDX #&00
             LDY #&63
             JSR LA8DB
@@ -6017,9 +6017,9 @@ GUARD	&C000
             BCC LA909
 .LA908      SEC
 .LA909      PHP
-            LDA prv82+&29
+            LDA prvOswordBlockCopy + 9
             STA prv82+&4F
-            LDA prv82+&28
+            LDA prvOswordBlockCopy + 8
             STA prv82+&4E
             SEC
             LDA prv82+&2A
@@ -6510,10 +6510,10 @@ GUARD	&C000
             BCC LAD52
             BEQ LAD5B
             LDX #&00
-            LDA prv82+&28								;read century
+            LDA prvOswordBlockCopy + 8								;read century
             JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 .LAD52      LDX #&00
-            LDA prv82+&29								;read year
+            LDA prvOswordBlockCopy + 9								;read year
             JMP LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 			
 .LAD5A      RTS
@@ -6577,7 +6577,7 @@ GUARD	&C000
 .LADCB      LDA #&00
             STA prvOswordBlockCopy
             SEC
-            LDA prv82+&28
+            LDA prvOswordBlockCopy + 8
             SBC #&13
             BCC LAE26
             BEQ LADE0
@@ -6585,7 +6585,7 @@ GUARD	&C000
             BNE LAE26
             LDA #&64
 .LADE0      CLC
-            ADC prv82+&29
+            ADC prvOswordBlockCopy + 9
             PHA
             STA prv82+&4A
             LDA #&6D
@@ -6622,7 +6622,7 @@ GUARD	&C000
             RTS
 			
 .LAE2C      LDA #&13
-            STA prv82+&28
+            STA prvOswordBlockCopy + 8
             SEC
             LDA prvOswordBlockCopy + 4
             SBC #&AC
@@ -6633,9 +6633,9 @@ GUARD	&C000
             STA prvOswordBlockCopy + 5
             LDA prv82+&4A
             STA prvOswordBlockCopy + 4
-            INC prv82+&28
+            INC prvOswordBlockCopy + 8
 .LAE4D      LDA #&00
-            STA prv82+&29
+            STA prvOswordBlockCopy + 9
 .LAE52      JSR LA7CD
             LDA #&6D
             ADC #&00
@@ -6652,7 +6652,7 @@ GUARD	&C000
             STA prvOswordBlockCopy + 5
             LDA prv82+&4A
             STA prvOswordBlockCopy + 4
-            INC prv82+&29
+            INC prvOswordBlockCopy + 9
             JMP LAE52
 			
 .LAE82      LDA #&01
@@ -6715,21 +6715,21 @@ GUARD	&C000
 .LAF0E      LDA #&08
             BIT prv82+&42
             BEQ LAF24
-            INC prv82+&29
-            LDA prv82+&29
+            INC prvOswordBlockCopy + 9
+            LDA prvOswordBlockCopy + 9
             CMP #&64
             BCC LAF3F
             LDA #&00
-            STA prv82+&29
+            STA prvOswordBlockCopy + 9
 .LAF24      LDA #&10
             BIT prv82+&42
             BEQ LAF3F
-            INC prv82+&28
-            LDA prv82+&28
+            INC prvOswordBlockCopy + 8
+            LDA prvOswordBlockCopy + 8
             CMP #&64
             BCC LAF3F
             LDA #&00
-            STA prv82+&28
+            STA prvOswordBlockCopy + 8
             SEC
             RTS
 			
@@ -6752,14 +6752,14 @@ GUARD	&C000
             STY prv82+&2A
             CPY #&0C
             BCC LAF3C
-            DEC prv82+&29
-            LDA prv82+&29
+            DEC prvOswordBlockCopy + 9
+            LDA prvOswordBlockCopy + 9
             CMP #&FF
             BNE LAF3F
             LDA #&63
-            STA prv82+&29
-            DEC prv82+&28
-            LDA prv82+&28
+            STA prvOswordBlockCopy + 9
+            DEC prvOswordBlockCopy + 8
+            LDA prvOswordBlockCopy + 8
             CMP #&FF
             BNE LAF3F
             SEC
@@ -6772,17 +6772,17 @@ GUARD	&C000
             AND #&10
             BEQ LAF94
             LDA #&13
-            STA prv82+&28
+            STA prvOswordBlockCopy + 8
             LDA prv82+&42
             AND #&0F
             STA prv82+&42
 .LAF94      LDX #&00
-.LAF96      LDA prv82+&28,X
+.LAF96      LDA prvOswordBlockCopy + 8,X
             CMP #&FF
             BNE LAF9F
             TXA
             LSR A
-.LAF9F      STA prv82+&28,X
+.LAF9F      STA prvOswordBlockCopy + 8,X
             INX
             CPX #&04
             BNE LAF96
@@ -6825,13 +6825,13 @@ GUARD	&C000
 
 {
 .^LAFF9      LDX #&04
-.LAFFB      LDA prv82+&28,X
+.LAFFB      LDA prvOswordBlockCopy + 8,X
             STA prv82+&43,X
             DEX
             BPL LAFFB
             LDX #&00
             STX prv82+&42
-.LB009      LDA prv82+&28,X
+.LB009      LDA prvOswordBlockCopy + 8,X
             CMP #&FF
             ROL prv82+&42
             INX
@@ -6984,7 +6984,7 @@ GUARD	&C000
 
 .LB133      LDX #&04
             LDA #&FF
-.LB137      STA prv82+&28,X
+.LB137      STA prvOswordBlockCopy + 8,X
             DEX
             BPL LB137
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
@@ -7022,8 +7022,8 @@ GUARD	&C000
             JSR L872B
             BCC LB194
             LDA #&FF
-            STA prv82+&29
-            STA prv82+&28
+            STA prvOswordBlockCopy + 9
+            STA prvOswordBlockCopy + 8
             JMP LB197
 			
 .LB194      JSR LB1CA
@@ -7036,7 +7036,7 @@ GUARD	&C000
             PHA
             LDX #&00
             STX prvOswordBlockCopy
-.LB1A7      LDA prv82+&28,X
+.LB1A7      LDA prvOswordBlockCopy + 8,X
             CMP #&FF
             ROL prvOswordBlockCopy
             INX
@@ -7060,12 +7060,12 @@ GUARD	&C000
             LDA #&64
             STA prv82+&4C
             JSR LA624
-            STA prv82+&29
+            STA prvOswordBlockCopy + 9
             LDA prv82+&4D
             BNE LB1E9
 .LB1E4      LDX #&35
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-.LB1E9      STA prv82+&28
+.LB1E9      STA prvOswordBlockCopy + 8
             RTS
 			
 .LB1ED      STY prv82+&4E
@@ -7459,8 +7459,8 @@ GUARD	&C000
             BEQ LB50C								;if '=' then set time, else read time
             JSR LA5EF								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
             LDA #&FF
-            STA prv82+&27							;store #&FF to address &8227
-            STA prv82+&26							;store #&FF to address &8226
+            STA prvOswordBlockCopy + 7							;store #&FF to address &8227
+            STA prvOswordBlockCopy + 6							;store #&FF to address &8226
             LDA #&00
             STA prvOswordBlockCopy + 4							;store #&00 to address &8224
             LDA #&80
@@ -7665,8 +7665,8 @@ GUARD	&C000
             LDA #&00
             STA prvOswordBlockCopy + 3
             LDA #&FF
-            STA prv82+&27
-            STA prv82+&26
+            STA prvOswordBlockCopy + 7
+            STA prvOswordBlockCopy + 6
             LDA #&00
             STA prvOswordBlockCopy + 4
             LDA #&80
@@ -7809,7 +7809,7 @@ GUARD	&C000
 		EQUW LB8FC-1							;XY?0=&6A: Function TBC
 		EQUW LB901-1							;XY?0=&6B: Function TBC
 			
-.LB7BC	  BIT prv82+&27
+.LB7BC	  BIT prvOswordBlockCopy + 7
             BMI LB7F9
             BIT L027A								;check for Tube - &00: not present, &ff: present
             BPL LB7F9
@@ -7886,14 +7886,14 @@ GUARD	&C000
 .LB844      LDX #&06
 .LB846      LDA prvOswordBlockCopy + 1,X
             JSR LB87A
-            STA prv82+&29,X
+            STA prvOswordBlockCopy + 9,X
             DEX
             BPL LB846
             LDA #&13
-            STA prv82+&28
+            STA prvOswordBlockCopy + 8
             JMP LB821
 			
-.LB85A      LDA prv82+&29,Y
+.LB85A      LDA prvOswordBlockCopy + 9,Y
             SEC
             SBC #&64
             BCS LB85A
@@ -7904,13 +7904,13 @@ GUARD	&C000
             SBC #&0A
             BCS LB867
             ADC #&0A
-            STA prv82+&29,Y
+            STA prvOswordBlockCopy + 9,Y
             TXA
             ASL A
             ASL A
             ASL A
             ASL A
-            ORA prv82+&29,Y
+            ORA prvOswordBlockCopy + 9,Y
             RTS
 			
 .LB87A      PHA
