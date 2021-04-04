@@ -4015,13 +4015,15 @@ GUARD	&C000
             BNE L9A7F								;Loop for 'X', 'Y' & 'Z'
 .L9AAB      JSR OSNEWL								;New Line
             JMP LA2DE
-			
+
+{
 ;*SRROM Command
-.srrom		SEC
+.^srrom	  SEC
             BCS L9AB5
 
 ;*SRDATA Command
-.srdata		CLC
+.^srdata
+            CLC
 .L9AB5      PHP
             JSR L9B25
             JSR PrvEn								;switch in private RAM
@@ -4071,13 +4073,14 @@ GUARD	&C000
 .L9B12      SEC
             BIT L9B0C
             BCS L9B09
-.L9B18      AND #&7F						;drop the highest bit
+.^L9B18     AND #&7F						;drop the highest bit
             CMP #&10						;check if RAM bank is absolute or pseudo address 
             BCC L9B24
             TAX
             LDA prv83+&08,X						;lookup table to convert pseudo RAM W, X, Y, Z into absolute address???
             BMI L9B2B						;check for Bad ID
 .L9B24      RTS
+}
 
 .L9B25      JSR LA40C
             BCS L9B2B
