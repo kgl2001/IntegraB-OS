@@ -354,7 +354,8 @@ prvPrintBufferSizeHigh  = prv82 + &0B
 prvPrintBufferBankList  = prv83 + &18 ; 4 bytes
 prvPrvPrintBufferStart = prv83 + &45 ; working copy of userRegPrvPrintBufferStart
 
-prvOswordBlockCopy = prv82 + &30 ; 16 bytes, used for copy of OSWORD &42/&43 parameter block
+prvOswordBlockCopy = prv82 + &20 ; 16 bytes, used for copy of OSWORD &42/&43 parameter block
+prvOswordBlockOrigAddr = prv82 + &30 ; 2 bytes, used for address of original OSWORD &42/&43 parameter block
 
 prvShx = prv83 + &3D ; &08 on, &FF off SFTODO: Not sure about those on/off values, we test this against 0 in some places - is it &00 on?
 prvOsMode = prv83 + &3C ; OSMODE, extracted from relevant bits of userRegOsModeShx SFTODO: WHEN/BY WHAT CODE?
@@ -4781,9 +4782,9 @@ GUARD	&C000
 {
 .^L9FD3      JSR PrvEn								;switch in private RAM
             LDA oswdbtX								;get value of X reg
-            STA prvOswordBlockCopy								;and save to private memory &8230
+            STA prvOswordBlockOrigAddr								;and save to private memory &8230
             LDA oswdbtY								;get value of Y reg
-            STA prvOswordBlockCopy								;and save to private memory &8230  <-This looks wrong. Should this be &8231???
+            STA prvOswordBlockOrigAddr								;and save to private memory &8230  <-This looks wrong. Should this be &8231??? SFTODO: Looks odd indeed, maybe prvOswordBlockOrigAddr is never actually used?! (I haven't checked yet)
             LDY #&0F
 .L9FE2      LDA (oswdbtX),Y								;copy the parameter block from its current location in memory
             STA prv82+&20,Y								;to private memory &8220..&822F
@@ -7696,14 +7697,14 @@ GUARD	&C000
 .osword0e	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
             JSR PrvEn								;switch in private RAM
             LDA oswdbtX								;get X register value of most recent OSWORD call
-            STA prvOswordBlockCopy							;and save to &8230
+            STA prvOswordBlockOrigAddr							;and save to &8230
             LDA oswdbtY								;get Y register value of most recent OSWORD call
             STA prv82+&31							;and save to &8231
             JSR oswordsv							;save XY entry table
             JSR oswd0e_1							;execute OSWORD &0E
             BCS osword0ea							;successful so don't restore XY entry table
             JSR oswordrs							;restore XY entry table
-.osword0ea	LDA prvOswordBlockCopy							;get X register value of most recent OSWORD call
+.osword0ea	LDA prvOswordBlockOrigAddr							;get X register value of most recent OSWORD call
             STA oswdbtX								;and restore to &F0
             LDA prv82+&31							;get Y register value of most recent OSWORD call
             STA oswdbtY								;and restore to &F1
@@ -7717,14 +7718,14 @@ GUARD	&C000
 .osword49	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
             JSR PrvEn								;switch in private RAM
             LDA oswdbtX								;get X register value of most recent OSWORD call
-            STA prvOswordBlockCopy							;and save to &8230
+            STA prvOswordBlockOrigAddr							;and save to &8230
             LDA oswdbtY								;get Y register value of most recent OSWORD call
             STA prv82+&31							;and save to &8231
             JSR oswordsv							;save XY entry table
             JSR oswd49_1							;execute OSWORD &49
             BCS osword49a							;successful so don't restore XY entry table
             JSR oswordrs							;restore table
-.osword49a	LDA prvOswordBlockCopy							;get X register value of most recent OSWORD call
+.osword49a	LDA prvOswordBlockOrigAddr							;get X register value of most recent OSWORD call
             STA oswdbtX								;and restore to &F0
             LDA prv82+&31							;get Y register value of most recent OSWORD call
             STA oswdbtY								;and restore to &F1
@@ -7736,7 +7737,7 @@ GUARD	&C000
             JMP exitSC								;Exit Service Call
 			
 ;Save OSWORD XY entry table
-.oswordsv	LDA prvOswordBlockCopy
+.oswordsv	LDA prvOswordBlockOrigAddr
             STA L00AE
             LDA prv82+&31
             STA L00AF
@@ -7748,7 +7749,7 @@ GUARD	&C000
             RTS
 			
 ;Restore OSWORD XY entry table
-.oswordrs	LDA prvOswordBlockCopy
+.oswordrs	LDA prvOswordBlockOrigAddr
             STA L00AE
             LDA prv82+&31
             STA L00AF
@@ -7816,7 +7817,7 @@ GUARD	&C000
             JSR L0406
             BCC LB7C6
             CLC
-            LDA prvOswordBlockCopy
+            LDA prvOswordBlockOrigAddr
             ADC #&04
             TAX
             LDA prv82+&31
@@ -7837,7 +7838,7 @@ GUARD	&C000
             CLC
             RTS
 			
-.LB7F9      LDA prvOswordBlockCopy
+.LB7F9      LDA prvOswordBlockOrigAddr
             STA L00A8
             LDA prv82+&31
             STA L00A9
@@ -7861,7 +7862,7 @@ GUARD	&C000
 ;XY&0=0: Read time and date in string format
 .LB81E      JSR LA769								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
 .LB821      JSR LA5EF								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
-            LDA prvOswordBlockCopy							;get OSWORD X register (lookup table LSB)
+            LDA prvOswordBlockOrigAddr							;get OSWORD X register (lookup table LSB)
             STA prv82+&24							;save OSWORD X register (lookup table LSB)
             LDA prv82+&31							;get OSWORD Y register (lookup table MSB)
             STA prv82+&25							;save OSWORD Y register (lookup table MSB)
