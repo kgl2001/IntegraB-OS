@@ -333,6 +333,7 @@ prvPrintBufferFreeMid   = prv82 + &07
 prvPrintBufferFreeHigh  = prv82 + &08
 prvPrintBufferSizeLow   = prv82 + &09
 prvPrintBufferSizeMid   = prv82 + &0A
+prvPrintBufferSizeHigh  = prv82 + &0B
 ; prvPrintBufferBankStart is the high byte of the start address of the banks
 ; used for the printer buffer. This is &80 for sideways RAM, or a copy of
 ; prvPrvPrintBufferStart (&90-&AC) for private RAM.
@@ -346,7 +347,6 @@ prvPrintBufferFirstBankIndex = prv82 + &0D
 ; banks used for the printer buffer. This is &C0 for sideways RAM or &B0 for
 ; private RAM.
 prvPrintBufferBankEnd   = prv82 + &0E
-prvPrintBufferSizeHigh  = prv82 + &0B
 ; prvPrintBufferBankList is a 4 byte list of private/sideways RAM banks used by
 ; the printer buffer. If there are less than 4 banks, the unused entries will be
 ; &FF. If the buffer is in private RAM, the first entry will be &4X where X is
