@@ -354,6 +354,7 @@ prvPrintBufferSizeHigh  = prv82 + &0B
 prvPrintBufferBankList  = prv83 + &18 ; 4 bytes
 prvPrvPrintBufferStart = prv83 + &45 ; working copy of userRegPrvPrintBufferStart
 
+; SFTODO: I believe we do this copy because we want to swizzle it and we mustn't corrupt the user's version, but wait until I've examined more code before writing permanent comment to that effect
 prvOswordBlockCopy = prv82 + &20 ; 16 bytes, used for copy of OSWORD &42/&43 parameter block
 prvOswordBlockCopySize = 16
 ; SFTODO: Split prvOswordBlockOrigAddr into two addresses prvOswordX and prvOswordY? Might better reflect how code uses it, not sure yet.
