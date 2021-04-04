@@ -4744,7 +4744,7 @@ GUARD	&C000
 .^tubeTransferTemplateReadSwr
 .L9F07      BIT SHEILA+&E4
             BVC L9F07
-            LDA (L00A8),Y
+            LDA (transientOs42SwrAddr),Y
             STA SHEILA+&E5
 .^tubeTransferTemplateReadSwrEnd
             JSR variableMainRamSubroutine + (tubeTransferTemplateRts - tubeTransferTemplate)
@@ -4772,7 +4772,7 @@ GUARD	&C000
 .L9F29      BIT SHEILA+&E4
             BPL L9F29
             LDA SHEILA+&E5
-            STA (L00A8),Y
+            STA (transientOs42SwrAddr),Y
             ASSERT P% - tubeTransferTemplateWriteSwr == tubeTransferTemplateReadSwrEnd - tubeTransferTemplateReadSwr
 }
 
@@ -4873,10 +4873,10 @@ GUARD	&C000
             BPL rts2                                                                                ;if this is read (from sideways RAM) we're done
             ; Patch the code at variableMainRamSubroutine to swap the operands
             ; of LDA and STA, thereby swapping the transfer direction.
-            LDA #L00AA
+            LDA #transientOs42MainAddrLowWord
             STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair1 + 1 - mainRamTransferTemplate)
             STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair2 + 1 - mainRamTransferTemplate)
-            LDA #L00A8
+            LDA #transientOs42SwrAddr
             STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair1 + 3 - mainRamTransferTemplate)
             STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair2 + 3 - mainRamTransferTemplate)
 .rts2       RTS
