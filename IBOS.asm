@@ -4685,7 +4685,7 @@ GUARD	&C000
             STA romselCopy
             STA romsel
             INY
-            STY variableMainRamSubroutine + (tubeTransferTemplateCount - tubeTransferTemplate)
+            STY variableMainRamSubroutine + (tubeTransferTemplateTransferSize - tubeTransferTemplate)
             LDY #&00
 .^tubeTransferTemplateReadSwr
 .L9F07      BIT SHEILA+&E4
@@ -4697,7 +4697,7 @@ GUARD	&C000
             JSR variableMainRamSubroutine + (tubeTransferTemplateRts - tubeTransferTemplate)
             JSR variableMainRamSubroutine + (tubeTransferTemplateRts - tubeTransferTemplate)
             INY
-            CPY variableMainRamSubroutine + (tubeTransferTemplateCount - tubeTransferTemplate)
+            CPY variableMainRamSubroutine + (tubeTransferTemplateTransferSize - tubeTransferTemplate)
             BNE L9F07
             LDA romselCopy
             STX romselCopy
@@ -4705,7 +4705,7 @@ GUARD	&C000
             TAX
 .tubeTransferTemplateRts
             RTS
-.tubeTransferTemplateCount ; SFTODO: Not sure *precisely* what we're counting; clearly this controls how many bytes we transfer, but need to see what callers pass in in Y
+.tubeTransferTemplateTransferSize
             ; There is a byte of space used here when this copied into RAM, but
             ; it's not present in the ROM, hence P% + 1 in the next line.
             ASSERT (P% + 1) - tubeTransferTemplate <= variableMainRamSubroutineMaxSize
