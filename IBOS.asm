@@ -4368,7 +4368,13 @@ GUARD	&C000
             JSR L9C42
             JSR L9BC3
             JMP LA0A6
-			
+
+; SFTODO: slightly poor name based on quick scan of code below, I don't know
+; exactly how much data this is transferring and be good to document where
+; from/to
+; SFTODO: This has only one caller
+.transferBlock
+{
 .L9CF6      LDA L00AD
             PHA
             LDA L00AC
@@ -4402,6 +4408,7 @@ GUARD	&C000
             BCC L9D31
             INC L00AB
 .L9D31      RTS
+}
 
 ; SFTODO: I am thinking if the &Ax addresses are used consistently-ish
 ; throughout the transfer code, giving them meaningful names would probably
@@ -4482,7 +4489,7 @@ GUARD	&C000
             BMI L9DAE
             TAX
 .absoluteAddress
-.L9DA0      JSR L9CF6
+.L9DA0      JSR transferBlock
             LDA L00AE
             ORA L00AF
             BEQ L9DDC
