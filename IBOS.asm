@@ -4674,6 +4674,7 @@ GUARD	&C000
             RTS									;&03C6
 
 ;Function TBC This is doing something with the Tube
+; SFTODO: This is transferring some amount of data determined (SFTODO: how?) by Y between host (sideways RAM) and parasite.
 ;this code is relocated to and executed at &03A7
 .tubeTransferTemplate
 {
@@ -4682,7 +4683,7 @@ GUARD	&C000
             STA romselCopy
             STA romsel
             INY
-            STY L03D7								;Change this to relocated address (&03AF+&xx ???)
+            STY variableMainRamSubroutine + (tubeTransferTemplateCount - tubeTransferTemplate)
             LDY #&00
 .^tubeTransferTemplateReadSwr
 .L9F07      BIT SHEILA+&E4
@@ -4690,19 +4691,23 @@ GUARD	&C000
             LDA (L00A8),Y
             STA SHEILA+&E5
 .^tubeTransferTemplateReadSwrEnd
-            JSR variableMainRamSubroutine + (rts - tubeTransferTemplate)
-            JSR variableMainRamSubroutine + (rts - tubeTransferTemplate)
-            JSR variableMainRamSubroutine + (rts - tubeTransferTemplate)
+            JSR variableMainRamSubroutine + (tubeTransferTemplateRts - tubeTransferTemplate)
+            JSR variableMainRamSubroutine + (tubeTransferTemplateRts - tubeTransferTemplate)
+            JSR variableMainRamSubroutine + (tubeTransferTemplateRts - tubeTransferTemplate)
             INY
-            CPY L03D7								;Change this to relocated address (&03AF+&xx ???)
+            CPY variableMainRamSubroutine + (tubeTransferTemplateCount - tubeTransferTemplate)
             BNE L9F07
             LDA romselCopy
             STX romselCopy
             STX romsel
             TAX
-.rts
+.tubeTransferTemplateRts
             RTS
-            ASSERT P% - tubeTransferTemplate <= variableMainRamSubroutineMaxSize
+.tubeTransferTemplateCount ; SFTODO: Not sure *precisely* what we're counting; clearly this controls how many bytes we transfer, but need to see what callers pass in in Y
+            ; There is conceptually a byte of space used here when this copied
+            ; into RAM, but it's not present in the ROM, hence P% + 1 in the
+            ; next line.
+            ASSERT (P% + 1) - tubeTransferTemplate <= variableMainRamSubroutineMaxSize
 
 
 ;This code is relocated to &03B5. Refer to code at &9F98
