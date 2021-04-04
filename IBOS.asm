@@ -3994,9 +3994,9 @@ GUARD	&C000
             LDY #&00
 .L9A7F      CLC
             TYA
-            ADC #&57								;Start at 'W'
+            ADC #'W'								;Start at 'W'
             JSR OSWRCH
-            LDA #&3D								;'='
+            LDA #'='
             JSR OSWRCH								;Write to screen
             LDA prv83+&08,Y								;read absolute bank assigned to psuedo bank
             BPL L9A98								;check if valid bank has been assigned
@@ -4008,7 +4008,7 @@ GUARD	&C000
             JSR L86DE								;Convert binary number to numeric characters and write characters to screen
 .L9A9C      CPY #&03								;Check for 4th bank
             BEQ L9AAB								;Yes? Then end
-            LDA #&2C								;','
+            LDA #','
             JSR OSWRCH								;Write to screen
             JSR L91B9								;write ' ' to screen
             INY										;Next
