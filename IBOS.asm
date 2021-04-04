@@ -4675,7 +4675,7 @@ GUARD	&C000
 
 ;Function TBC This is doing something with the Tube
 ;this code is relocated to and executed at &03A7
-.tubeSFTODOTemplate
+.tubeTransferTemplate
 {
 .L9EF9	  TXA
             LDX romselCopy
@@ -4684,10 +4684,12 @@ GUARD	&C000
             INY
             STY L03D7								;Change this to relocated address (&03AF+&xx ???)
             LDY #&00
+.^tubeTransferTemplatePatchA
 .L9F07      BIT SHEILA+&E4
             BVC L9F07
             LDA (L00A8),Y
             STA SHEILA+&E5
+.^tubeTransferTemplatePatchAEnd
             JSR L03D6								;Change this to relocated address (&03AF+&xx ???)
             JSR L03D6								;Change this to relocated address (&03AF+&xx ???)
             JSR L03D6								;Change this to relocated address (&03AF+&xx ???)
@@ -4699,15 +4701,19 @@ GUARD	&C000
             STX romsel
             TAX
             RTS
-            ASSERT P% - tubeSFTODOTemplate <= variableMainRamSubroutineMaxSize
-}
+            ASSERT P% - tubeTransferTemplate <= variableMainRamSubroutineMaxSize
 
 
 ;This code is relocated to &03B5. Refer to code at &9F98
+; SFTODO: The first three bytes of patched code are the same either way, unless
+; there's another hidden patch we could save three bytes by not patching those.
+.^tubeTransferTemplatePatchB
 .L9F29      BIT SHEILA+&E4
             BPL L9F29
             LDA SHEILA+&E5
             STA (L00A8),Y
+            ASSERT P% - tubeTransferTemplatePatchB == tubeTransferTemplatePatchAEnd - tubeTransferTemplatePatchA
+}
 
 ;relocate &32 bytes of code from address X (LSB) & Y (MSB) to &03A7
 ;This code is called by several routines and relocates the following code:
@@ -4776,19 +4782,18 @@ GUARD	&C000
             ; So this has converted the function into the correct transfer type.
             LDX #lo(L0100)
             LDY #hi(L0101)
-            JSR tubeEntry								;Change this to relocated address (&03AF+&xx ???)
+            JSR tubeEntry
 
-            LDX #lo(tubeSFTODOTemplate)
-            LDY #hi(tubeSFTODOTemplate)
-            JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9EF9 to &03A7
+            LDX #lo(tubeTransferTemplate)
+            LDY #hi(tubeTransferTemplate)
+            JSR copyYxToVariableMainRamSubroutine					;relocate &32 bytes of code from &9EF9 to &03A7
             BIT prvOswordBlockCopy                                                                  ;test function
             BPL rts                                                                                 ;if this is read (from sideways RAM) we're done
 
-;relocate 10 bytes from &9F29
-; SFTODO: What's going on here?
-            LDY #&09
-.L9F9A      LDA L9F29,Y
-            STA L03B5,Y								;Change this to relocated address (&03AF+&xx ???)
+            ; Patch the tubeTransfer code at variableMainRamSubroutine for writing (to sideways RAM) instead of reading.
+            LDY #tubeTransferTemplatePatchAEnd - tubeTransferTemplatePatchA - 1
+.L9F9A      LDA tubeTransferTemplatePatchB,Y
+            STA variableMainRamSubroutine + (tubeTransferTemplatePatchA - tubeTransferTemplate),Y
             DEY
             BPL L9F9A
 .rts        RTS
