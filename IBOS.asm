@@ -4452,8 +4452,9 @@ GUARD	&C000
 .L9D8B      CLV
             SEC
             RTS
-			
-.L9D8E      JSR L9D32
+
+{
+.^L9D8E      JSR L9D32
             LDX prvOswordBlockCopy + 1
             BIT prvOswordBlockCopy
             BVC L9DA0
@@ -4484,6 +4485,7 @@ GUARD	&C000
 			EQUS "Not allocated", &00
 
 .L9DDC      RTS
+}
 
 {
 .^L9DDD      LDY prvOswordBlockCopy + 8
