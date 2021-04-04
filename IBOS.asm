@@ -4448,13 +4448,13 @@ GUARD	&C000
             RTS
 
 ; SFTODO: (AD AC) = (AF AE), (AF AE) = 0, RTS
-.L9D53      LDA L00AE
+.L9D53      LDA transientOs42MainAddrHighWord
             STA L00AC
-            LDA L00AF
+            LDA transientOs42MainAddrHighWord + 1
             STA L00AD
             LDA #&00
-            STA L00AE
-            STA L00AF
+            STA transientOs42MainAddrHighWord
+            STA transientOs42MainAddrHighWord + 1
             RTS
 }
 
