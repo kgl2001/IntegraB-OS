@@ -4690,9 +4690,9 @@ GUARD	&C000
             LDA (L00A8),Y
             STA SHEILA+&E5
 .^tubeTransferTemplateReadSwrEnd
-            JSR L03D6								;Change this to relocated address (&03AF+&xx ???)
-            JSR L03D6								;Change this to relocated address (&03AF+&xx ???)
-            JSR L03D6								;Change this to relocated address (&03AF+&xx ???)
+            JSR variableMainRamSubroutine + (rts - tubeTransferTemplate)
+            JSR variableMainRamSubroutine + (rts - tubeTransferTemplate)
+            JSR variableMainRamSubroutine + (rts - tubeTransferTemplate)
             INY
             CPY L03D7								;Change this to relocated address (&03AF+&xx ???)
             BNE L9F07
@@ -4700,6 +4700,7 @@ GUARD	&C000
             STX romselCopy
             STX romsel
             TAX
+.rts
             RTS
             ASSERT P% - tubeTransferTemplate <= variableMainRamSubroutineMaxSize
 
