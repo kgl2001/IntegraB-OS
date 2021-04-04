@@ -1282,9 +1282,10 @@ GUARD	&C000
 			
 .L8729      CLV
             RTS
-			
-.L872B      LDA #&0A
-.L872D      STA L00B8
+
+{
+.^L872B     LDA #&0A
+.^L872D     STA L00B8
             JSR L853F								;find next character. offset stored in Y
             BCS L8729
             STY L00BA
@@ -1403,6 +1404,7 @@ GUARD	&C000
 .L8805      RTS
 
 .L8806      JMP L92E3
+}
 
 .L8809      JSR L867E								;Goto error handling, where calling address is pulled from stack
 
