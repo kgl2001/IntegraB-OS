@@ -4198,8 +4198,9 @@ GUARD	&C000
 .L9BBC      JSR L9B18						;convert pseudo RAM bank to absolute RAM bank
             STA prvOswordBlockCopy + 1						;and save to private address &8221
             RTS
-			
-.L9BC3      JSR LA458
+
+{
+.^L9BC3      JSR LA458
             BCC L9BCA
             LDA #&FF
 .L9BCA      STA prvOswordBlockCopy + 1
@@ -4215,6 +4216,7 @@ GUARD	&C000
 .L9BE5      RTS
 
 .L9BE6      JMP LA2EB
+}
 
 .L9BE9      LDA #&00
             STA prvOswordBlockCopy + 6							;Clear &8226
