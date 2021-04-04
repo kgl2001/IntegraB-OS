@@ -7590,8 +7590,8 @@ GUARD	&C000
             JSR LA74E
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y
-            AND #&DF
-            CMP #&52
+            AND #&DF                                                                                ; convert to upper case (imperfectly)
+            CMP #'R'
             PHP
             PLA
             LSR A
@@ -7607,12 +7607,12 @@ GUARD	&C000
 ;*ALARM Command
 .alarm      JSR PrvEn								;switch in private RAM
             LDA (L00A8),Y
-            CMP #&3D								;'='
+            CMP #'='
             CLC
             BEQ LB61A
-            CMP #&3F								;?'
+            CMP #'?'
             BEQ LB690
-            CMP #&0D
+            CMP #vduCr
             BEQ LB690
             JSR L8699
             BCS LB61B
