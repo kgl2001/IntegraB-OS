@@ -5348,19 +5348,19 @@ GUARD	&C000
 .LA464      JSR L872B
             BCC LA48C
             LDA (L00A8),Y
-            AND #&DF
-            CMP #&47
+            AND #&DF                                                                                ;convert to upper case (imperfect but presumably good enough)
+            CMP #'F'+1
             BCS LA47A
-            CMP #&41
+            CMP #'A'
             BCC LA492
-            SBC #&37
-            JMP LA48B
+            SBC #'A'-10
+            JMP LA48B ; SFTODO: could probably do "BPL LA48B ; branch always" to save a byte
 			
-.LA47A      CMP #&5B
+.LA47A      CMP #'Z'+1
             BCS LA492
-            CMP #&57
+            CMP #'W'
             BCC LA492
-            SBC #&57
+            SBC #'W'
             CLC
             ADC #&08
             TAX
