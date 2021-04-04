@@ -4675,6 +4675,8 @@ GUARD	&C000
 
 ;Function TBC This is doing something with the Tube
 ;this code is relocated to and executed at &03A7
+.tubeSFTODOTemplate
+{
 .L9EF9	  TXA
             LDX romselCopy
             STA romselCopy
@@ -4697,6 +4699,8 @@ GUARD	&C000
             STX romsel
             TAX
             RTS
+            ASSERT P% - tubeSFTODOTemplate <= variableMainRamSubroutineMaxSize
+}
 
 
 ;This code is relocated to &03B5. Refer to code at &9F98
@@ -4763,8 +4767,8 @@ GUARD	&C000
             LDY #&01
             JSR tubeEntry								;Change this to relocated address (&03AF+&xx ???)
 
-            LDX #&9EF9 MOD &100							;was LDX #&F9
-            LDY #&9EF9 DIV &100							;was LDY #&9E
+            LDX #lo(tubeSFTODOTemplate)
+            LDY #hi(tubeSFTODOTemplate)
             JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9EF9 to &03A7
             BIT prvOswordBlockCopy
             BPL L9FA3
