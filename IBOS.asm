@@ -115,9 +115,9 @@ currentMode = &0355
 
 romBinaryVersion = &8008
 
-oswordA = &EF
-oswordX = &F0
-oswordY = &F1
+oswdbtA = &EF
+oswdbtX = &F0
+oswdbtY = &F1
 
 ; This is a byte of unused CFS/RFS workspace which IBOS repurposes to track
 ; state during mode changes. This is probably done because it's quicker than
@@ -1860,7 +1860,7 @@ GUARD	&C000
 .osbyte6C	  LDA L00EF								;get OSBYTE command
             CMP #&6C								;OSBYTE &6C - Select Shadow/Screen memory for direct access
             BNE osbyte72
-            LDA L00F0
+            LDA oswdbtX
             BEQ L8AE4
             LDA #&01
 .L8AE4      PHP
@@ -1877,7 +1877,7 @@ GUARD	&C000
 .L8AF9      PLP
             ROL A
             EOR #&01
-            STA L00F0
+            STA oswdbtX
             PLP
             JMP exitSC								;Exit Service Call
 			
@@ -1885,32 +1885,32 @@ GUARD	&C000
 .osbyte72	  CMP #&72								;OSBYTE &72 - Specify video memory to use on next MODE change
             BNE osbyteA1
             LDA #&EF								;OSBYTE call - write to &27F
-            LDX L00F0
+            LDX oswdbtX
             BEQ L8B0F								;if '0' then retain '0'
             LDX #&01								;otherwise set to '1'
 .L8B0F      LDY #&00
             JSR OSBYTE								;write to &27F
-            STX L00F0
+            STX oswdbtX
             JMP exitSC								;Exit Service Call
 			
 ;Test for OSBYTE &A1 - Read configuration RAM/EEPROM
 .osbyteA1	  CMP #&A1								;OSBYTE &A1 - Read configuration RAM/EEPROM
             BNE osbyteA2
             PLA
-            LDX L00F0
+            LDX oswdbtX
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            STA L00F1
+            STA oswdbtY
             PHA
             JMP exitSC								;Exit Service Call
 			
 ;Test for OSBYTE &A2 - Write configuration RAM/EEPROM
 .osbyteA2	  CMP #&A2								;OSBYTE &A2 - configuration RAM/EEPROM
             BNE osbyte44
-            LDX L00F0
-            LDA L00F1
+            LDX oswdbtX
+            LDA oswdbtY
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             PLA
-            LDA L00F1
+            LDA oswdbtY
             PHA
             JMP exitSC								;Exit Service Call
 			
@@ -1929,11 +1929,11 @@ GUARD	&C000
             BEQ L8B50
             JMP exitSCa								;restore service call parameters and exit
 			
-.L8B50      LDA L00F0
+.L8B50      LDA oswdbtX
             CMP #&FF								;test X for &FF
             BNE L8B63								;if not, branch
             LDA #&49								;otherwise yes, and return &49
-            STA L00F0
+            STA oswdbtX
             PLA
             LDA romselCopy
             AND #&0F
@@ -1948,12 +1948,12 @@ GUARD	&C000
 .L8B6D      LDX #&44								;read data from &8344???
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             PHA
-            STA L00F1
-            LDA L00F0
+            STA oswdbtY
+            LDA oswdbtX
             LSR A
             LSR A
-            AND L00F1
-            EOR L00F0
+            AND oswdbtY
+            EOR oswdbtX
             AND #&03
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX #&0B
@@ -1967,7 +1967,7 @@ GUARD	&C000
             ORA #&10
 .L8B95      JSR wrRTCRAM								;Write data from A to RTC memory location X
             PLA
-            STA L00F0
+            STA oswdbtX
             JMP exitSC								;Exit Service Call
 
             LDA vduStatus								;get VDU status   ***missing reference address***
@@ -1983,7 +1983,7 @@ GUARD	&C000
 .L8BB0      RTS
 
 ;Unrecognised OSWORD call - Service call &08
-.service08  LDA oswordA								;read OSWORD call number
+.service08  LDA oswdbtA								;read OSWORD call number
 
 	  CMP #&0E								;OSWORD &0E (14) Read real time clock
 	  BNE service08a
@@ -2002,7 +2002,7 @@ GUARD	&C000
             TYA
             PHA
             LDY #&00
-            LDA (oswordX),Y
+            LDA (oswdbtX),Y
             TAX
             PLA
             TAY
@@ -3817,7 +3817,7 @@ GUARD	&C000
             PHP
             SEI
             LDA #&00
-            STA L00F0
+            STA oswdbtX
             LDY #&03
 .L9933      STY prv82+&52
             LDA prv83+&08,Y
@@ -3832,7 +3832,7 @@ GUARD	&C000
 .L994A      CLC
             BCC L994E
 .L994D      SEC
-.L994E      ROL L00F0
+.L994E      ROL oswdbtX
             LDY prv82+&52
             DEY
             STY prv82+&52
@@ -3843,7 +3843,7 @@ GUARD	&C000
             PHP
             SEI
             LDA #&00
-            STA L00F0
+            STA oswdbtX
             LDY #&03
 .L9967      STY prv82+&52
             LDA prv83+&08,Y
@@ -3853,7 +3853,7 @@ GUARD	&C000
 .L9974      CLC
             BCC L9978
 .L9977      SEC
-.L9978      ROL L00F0
+.L9978      ROL oswdbtX
             LDY prv82+&52
             DEY
             STY prv82+&52
@@ -4778,12 +4778,12 @@ GUARD	&C000
 
 {
 .^L9FD3      JSR PrvEn								;switch in private RAM
-            LDA oswordX								;get value of X reg
+            LDA oswdbtX								;get value of X reg
             STA prv82+&30								;and save to private memory &8230
-            LDA oswordY								;get value of Y reg
+            LDA oswdbtY								;get value of Y reg
             STA prv82+&30								;and save to private memory &8230  <-This looks wrong. Should this be &8231???
             LDY #&0F
-.L9FE2      LDA (oswordX),Y								;copy the parameter block from its current location in memory
+.L9FE2      LDA (oswdbtX),Y								;copy the parameter block from its current location in memory
             STA prv82+&20,Y								;to private memory &8220..&822F
             DEY									;total of 16 bytes
             BPL L9FE2
@@ -7693,20 +7693,20 @@ GUARD	&C000
 ;OSWORD &0E (14) Read real time clock
 .osword0e	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
             JSR PrvEn								;switch in private RAM
-            LDA oswordX								;get X register value of most recent OSWORD call
+            LDA oswdbtX								;get X register value of most recent OSWORD call
             STA prv82+&30							;and save to &8230
-            LDA oswordY								;get Y register value of most recent OSWORD call
+            LDA oswdbtY								;get Y register value of most recent OSWORD call
             STA prv82+&31							;and save to &8231
             JSR oswordsv							;save XY entry table
             JSR oswd0e_1							;execute OSWORD &0E
             BCS osword0ea							;successful so don't restore XY entry table
             JSR oswordrs							;restore XY entry table
 .osword0ea	LDA prv82+&30							;get X register value of most recent OSWORD call
-            STA oswordX								;and restore to &F0
+            STA oswdbtX								;and restore to &F0
             LDA prv82+&31							;get Y register value of most recent OSWORD call
-            STA oswordY								;and restore to &F1
+            STA oswdbtY								;and restore to &F1
             LDA #&0E								;load A register value of most recent OSWORD call (&0E)
-            STA oswordA								;and restore to &EF
+            STA oswdbtA								;and restore to &EF
             JSR PrvDis								;switch out private RAM
 
             JMP osword49b							;restore 8 bytes of data to &A8 from the stack and exit
@@ -7714,20 +7714,20 @@ GUARD	&C000
 ;OSWORD &49 (73) - Integra-B calls
 .osword49	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
             JSR PrvEn								;switch in private RAM
-            LDA oswordX								;get X register value of most recent OSWORD call
+            LDA oswdbtX								;get X register value of most recent OSWORD call
             STA prv82+&30							;and save to &8230
-            LDA oswordY								;get Y register value of most recent OSWORD call
+            LDA oswdbtY								;get Y register value of most recent OSWORD call
             STA prv82+&31							;and save to &8231
             JSR oswordsv							;save XY entry table
             JSR oswd49_1							;execute OSWORD &49
             BCS osword49a							;successful so don't restore XY entry table
             JSR oswordrs							;restore table
 .osword49a	LDA prv82+&30							;get X register value of most recent OSWORD call
-            STA oswordX								;and restore to &F0
+            STA oswdbtX								;and restore to &F0
             LDA prv82+&31							;get Y register value of most recent OSWORD call
-            STA oswordY								;and restore to &F1
+            STA oswdbtY								;and restore to &F1
             LDA #&49								;load A register value of most recent OSWORD call (&49)
-            STA oswordA								;and restore to &EF
+            STA oswdbtA								;and restore to &EF
             JSR PrvDis								;switch out private RAM
 
 .osword49b	JSR unstackTransientCmdSpace						;restore 8 bytes of data to &A8 from the stack
@@ -7872,7 +7872,7 @@ GUARD	&C000
 .LB835      JSR LA769								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
             LDY #&06
 .LB83A      JSR LB85A
-            STA (oswordX),Y
+            STA (oswdbtX),Y
             DEY
             BPL LB83A
             SEC
@@ -8016,7 +8016,7 @@ GUARD	&C000
 .service06	LDA L00FE
             CMP #&FF
             BNE LB906
-            LDX L00F0
+            LDX oswdbtX ; SFTODO: seems a bit odd using this address in this service call
             TXS
             LDA #&88
             PHA
