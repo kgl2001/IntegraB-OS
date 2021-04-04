@@ -355,6 +355,7 @@ prvPrintBufferBankList  = prv83 + &18 ; 4 bytes
 prvPrvPrintBufferStart = prv83 + &45 ; working copy of userRegPrvPrintBufferStart
 
 prvOswordBlockCopy = prv82 + &20 ; 16 bytes, used for copy of OSWORD &42/&43 parameter block
+prvOswordBlockCopySize = 16
 ; SFTODO: Split prvOswordBlockOrigAddr into two addresses prvOswordX and prvOswordY? Might better reflect how code uses it, not sure yet.
 prvOswordBlockOrigAddr = prv82 + &30 ; 2 bytes, used for address of original OSWORD &42/&43 parameter block
 
@@ -4780,13 +4781,14 @@ GUARD	&C000
 ;where X contains low byte of the parameter block address
 ;and   Y contains high byte of the parameter block address. 
 
+.copyOswordDetailsToPrv
 {
-.^L9FD3      JSR PrvEn								;switch in private RAM
+.L9FD3      JSR PrvEn								;switch in private RAM
             LDA oswdbtX								;get value of X reg
             STA prvOswordBlockOrigAddr								;and save to private memory &8230
             LDA oswdbtY								;get value of Y reg
             STA prvOswordBlockOrigAddr								;and save to private memory &8230  <-This looks wrong. Should this be &8231??? SFTODO: Looks odd indeed, maybe prvOswordBlockOrigAddr is never actually used?! (I haven't checked yet)
-            LDY #&0F
+            LDY #prvOswordBlockCopySize - 1
 .L9FE2      LDA (oswdbtX),Y								;copy the parameter block from its current location in memory
             STA prvOswordBlockCopy,Y								;to private memory &8220..&822F
             DEY									;total of 16 bytes
@@ -4894,7 +4896,7 @@ GUARD	&C000
 
 .osword42
 {
-	  JSR L9FD3						;copy osword42 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
+	  JSR copyOswordDetailsToPrv						;copy osword42 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
             JSR L9B93						;convert pseudo RAM bank to absolute and shuffle parameter block
 .^LA0A6      JSR L9DDD
             BCS LA0B1
@@ -4990,7 +4992,7 @@ GUARD	&C000
 ;  workspace from PAGE to HIMEM is used.
 
 
-.osword43	  JSR L9FD3						;copy osword43 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
+.osword43	  JSR copyOswordDetailsToPrv						;copy osword43 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
             JSR L9B50						;convert pseudo RAM bank to absolute and shuffle parameter block
             BIT L027A						;check for Tube - &00: not present, &ff: present
             BPL LA18B						;branch if tube not present
