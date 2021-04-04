@@ -4428,23 +4428,23 @@ GUARD	&C000
 ; SFTODO: (AD AC) = &C000 - (A9 A8), then L9D42
 .L9D32      SEC
             LDA #&00
-            SBC L00A8
+            SBC transientOs42SwrAddr
             STA L00AC
             LDA #&C0
-            SBC L00A9
+            SBC transientOs42SwrAddr + 1
             STA L00AD
             JMP L9D42 ; SFTODO: This is redundant and could be replaced by FALLTHROUGH_TO L9D42
 
 ; SFTODO: calculate n=(AF AE) - (AD AC), if n<0 go to L9D53 else (AE AF)=n:RTS
 .L9D42      SEC
-            LDA L00AE
+            LDA transientOs42MainAddrHighWord
             SBC L00AC
             TAY
-            LDA L00AF
+            LDA transientOs42MainAddrHighWord + 1
             SBC L00AD
             BCC L9D53
-            STA L00AF
-            STY L00AE
+            STA transientOs42MainAddrHighWord + 1
+            STY transientOs42MainAddrHighWord
             RTS
 
 ; SFTODO: (AD AC) = (AF AE), (AF AE) = 0, RTS
