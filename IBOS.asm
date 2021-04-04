@@ -116,7 +116,7 @@ transientOs42MainAddrHighWord = &AE ; 2 bytes
 vduStatus = &D0
 vduStatusShadow = &10
 negativeVduQueueSize = &026A
-tubePresenceFlag = &027A
+tubePresenceFlag = &027A ; SFTODO: allmem says 0=inactive, is there actually a specific bit or value for active? what does this code rely on?
 osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force shadow modes (note that AllMem.txt seems to have this wrong, at least my copy does)
 currentMode = &0355
 
