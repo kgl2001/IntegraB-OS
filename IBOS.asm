@@ -4712,6 +4712,8 @@ firstDigitCmdPtrY = &BB
 
 ;save ROM / RAM at bank X to file system
 ;this code is relocated to and executed at &03A7
+.saveSwrTemplate
+{
 .L9E83	  TXA
 	  LDX romselCopy
             STA romselCopy
@@ -4732,6 +4734,7 @@ firstDigitCmdPtrY = &BB
             STX romsel
             TAX
             RTS
+}
 
 ;load ROM / RAM at bank X from file system
 ;this code is relocated to and executed at &03A7
@@ -5245,19 +5248,21 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             STA prvOswordBlockCopy + 13
 .noTube
 .^LA18B     JSR LA02D
-            LDA prvOswordBlockCopy + 6
-            ORA prvOswordBlockCopy + 7
-            BNE LA1C7
-            BIT prvOswordBlockCopy
-            BPL LA1A4								;Relocate code from &9E83
+            LDA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
+            ORA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
+            BNE bufferLengthNotZero
+            BIT prvOswordBlockCopy                                                                  ;function
+            BPL readFromSwr
+            ; We're writing to sideways RAM.
             LDA #&40
             LDX #lo(loadSwrTemplate)
             LDY #hi(loadSwrTemplate)
             JMP LA1AA								;Relocate code from &9EAE
-			
+
+.readFromSwr
 .LA1A4      LDA #&80
-            LDX #L9E83 MOD &100						;
-            LDY #L9E83 DIV &100						;
+            LDX #lo(saveSwrTemplate)
+            LDY #hi(saveSwrTemplate)
 .LA1AA      PHA
             JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from either &9E83 or &9EAE to &03A7
             LDA prvOswordBlockCopy + 10
@@ -5269,7 +5274,8 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             JSR getAddressesAndLengthFromPrvOswordBlockCopy
             JSR doTransfer
             JMP LA22B
-			
+
+.bufferLengthNotZero
 .LA1C7      JSR prepareMainSidewaysRamTransfer
             JSR getAddressesAndLengthFromPrvOswordBlockCopy
             BIT prvOswordBlockCopy
