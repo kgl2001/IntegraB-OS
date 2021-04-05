@@ -5306,6 +5306,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             JMP LA22B
 
 .bufferLengthNotZero
+; SFTODO: Does this assume the entire file fits into the buffer? Is that OK? Maybe 1770 DFS does the same?
 .LA1C7      JSR prepareMainSidewaysRamTransfer
             JSR getAddressesAndLengthFromPrvOswordBlockCopy
             BIT prvOswordBlockCopy
