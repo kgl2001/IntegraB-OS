@@ -122,7 +122,7 @@ tubePresenceFlag = &027A ; SFTODO: allmem says 0=inactive, is there actually a s
 osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force shadow modes (note that AllMem.txt seems to have this wrong, at least my copy does)
 currentMode = &0355
 
-; SFTODO: Create and use osfindClose = &00
+osfindClose = &00
 osfindOpenInput = &40
 osfindOpenOutput = &80
 
@@ -2963,7 +2963,7 @@ firstDigitCmdPtrY = &BB
 			
 			
 ;Close file with file handle at &A8
-.L9268      LDA #&00
+.L9268      LDA #osfindClose
             LDY L00A8
             JMP OSFIND
 			
@@ -5072,7 +5072,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 
 .closeHandleL02EE
 {
-.LA098      LDA #&00
+.LA098      LDA #osfindClose
             LDY L02EE
             JMP OSFIND
 }
