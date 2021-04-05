@@ -1321,10 +1321,12 @@ GUARD	&C000
 ; Convert an number expressed in ASCII at (transientCmdPtr),Y into a 32-bit
 ; integer. It may be prefixed with '-' for negative, '&' indicates hex, '%'
 ; indicates binary and '+' indicates decimal.
-; If we succeed, C and V are both set, the integer is at &B0 (SFTODO: do we use
-; this?) and the low byte is in A.
-; If we fail, we beep, C and V are both clear, and A is 0.
-; SFTODO: Do we really need to set/clear C *and* V? It seems redundant.
+;
+; Returns with V clear if there is no number to parse; C is not altered.
+; Otherwise C is set if and only if a number is parsed successfully.
+; If we parse successfully, the integer is at &B0 (SFTODO: do we use this?
+; probably) and the low byte is in A.
+; If we fail to parse successfully, we beep and return with A=0.
 ; SFTODO: Use of &Bx zp here seems iffy, this is filing system workspace. Did we
 ; save it somewhere first? Even so, seems less than ideal - what if an interrupt
 ; occurs?
@@ -1336,14 +1338,15 @@ negateFlag = &B9
 originalCmdPtrY = &BA
 firstDigitCmdPtrY = &BB
 
+; SFTODO: Could we share this fragment?
 .clvRts
 .L8729      CLV
             RTS
 
 .^convertIntegerDefaultDecimal
-.L872B     LDA #10
+.L872B      LDA #10
 .^convertIntegerDefaultBaseA
-.L872D     STA base
+.L872D      STA base
             JSR findNextCharAfterSpace							;find next character. offset stored in Y
             BCS clvRts                                                                              ;return with V set if it's a carriage return
             STY originalCmdPtrY
