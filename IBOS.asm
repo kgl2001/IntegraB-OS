@@ -1324,6 +1324,7 @@ GUARD	&C000
 {
 result = &B0 ; 4 bytes
 negateFlag = &B9
+originalCmdPtrY = &BA
 
 .clvRts
 .L8729      CLV
@@ -1333,7 +1334,7 @@ negateFlag = &B9
 .^L872D     STA L00B8
             JSR findNextCharAfterSpace							;find next character. offset stored in Y
             BCS clvRts                                                                              ;return with V set if it's a carriage return
-            STY L00BA
+            STY originalCmdPtrY
             STY L00BB
             LDA #&00
             STA result
@@ -1444,10 +1445,10 @@ negateFlag = &B9
 .L87F8      LDA #vduBell
             JSR OSWRCH								;Generate VDU 7 beep
             LDA #&00
-            LDY L00BA
+            LDY originalCmdPtrY
             SEC
-            BIT L8805
-.L8805      RTS
+            BIT rts
+.rts        RTS
 
 .L8806      JMP L92E3
 }
