@@ -1474,10 +1474,13 @@ firstDigitCmdPtrY = &BB
 .L8806      JMP L92E3
 }
 
+.errorNotFound
+{
 .L8809      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
 		EQUB &D6
 		EQUS "Not found", &00
+}
 
 {
 ;Condition then read from Private RAM &83xx (Addr = X, Data = A)
@@ -2932,7 +2935,7 @@ firstDigitCmdPtrY = &BB
             JSR OSFIND								;and open file
             CMP #&00								;has error occurred?
             BNE L9244								;no error, so save file handle and exit
-            JMP L8809								;otherwise error.
+            JMP errorNotFound								;otherwise error.
 			
 .L9244      STA L00A8								;save file handle to &A8
             RTS									;and return
@@ -5060,7 +5063,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             STA prvOswordBlockCopy + 11
 .LA083      RTS
 
-.LA084      JMP L8809
+.LA084      JMP errorNotFound
 
 .LA087      LDX prvOswordBlockCopy + 12                                                   ;low byte of filename in I/O processor
             LDY prvOswordBlockCopy + 13                                                   ;high byte of filename in I/O processor
