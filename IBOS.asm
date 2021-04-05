@@ -4719,21 +4719,28 @@ firstDigitCmdPtrY = &BB
             STA romselCopy
             STA romsel
             INY
-            STY L03D2								;Change this to relocated address (&03AF+&xx ???)
+            ; SFTODO: We could STY this directly to immediate operand of CPY #n, saving a byte.
+            STY variableMainRamSubroutine + (saveSwrTemplateBytesToRead - saveSwrTemplate)
             LDY #&00
-.L9E91      STY L03D3								;Change this to relocated address (&03AF+&xx ???)
+            ; SFTODO: It would be shorter by one byte to just STY to overwrite the operand of LDY #n after JSR OSBPUT.
+.L9E91      STY variableMainRamSubroutine + (saveSwrTemplateSavedY - saveSwrTemplate)
             LDA (L00A8),Y
             LDY L02EE
             JSR OSBPUT
-            LDY L03D3								;Change this to relocated address (&03AF+&xx ???)
+            LDY variableMainRamSubroutine + (saveSwrTemplateSavedY - saveSwrTemplate)
             INY
-.L9EA0      CPY L03D2								;Change this to relocated address (&03AF+&xx ???)
+            CPY variableMainRamSubroutine + (saveSwrTemplateBytesToRead - saveSwrTemplate)
             BNE L9E91
             LDA romselCopy
             STX romselCopy
             STX romsel
             TAX
             RTS
+.saveSwrTemplateBytesToRead
+saveSwrTemplateSavedY = saveSwrTemplateBytesToRead + 1
+            ; There are two bytes of space used here when this copied into RAM, but
+            ; they're not present in the ROM, hence P% + 2 in the next line.
+            ASSERT (P% + 2) - saveSwrTemplate <= variableMainRamSubroutineMaxSize
 }
 
 ;load ROM / RAM at bank X from file system
