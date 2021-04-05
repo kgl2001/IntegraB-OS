@@ -4201,8 +4201,9 @@ firstDigitCmdPtrY = &BB
 ;  buffer length is larger than &7FFF, then language
 ;  workspace from PAGE to HIMEM is used.
 ; XY+8..9  =sideways start address
-; XY+10..11=data length - ignored on LOAD
+; XY+10..11=data length - ignored on LOAD SFTODO: except as Ken's comments below indicate, it will actually be another copy of buffer length
 ; XY+12..13=>filename in I/O processor
+; SFTODO: Is it possible we never use +10/11 even on SAVE? But we must, otherwise we wouldn't know how much to save.
 
 .adjustPrvOsword43Block
 ; SFTODO: Could this be rewritten more compactly as a loop?
@@ -4213,7 +4214,7 @@ firstDigitCmdPtrY = &BB
             LDA prvOswordBlockCopy + 2
             STA prvOswordBlockCopy + 13
             LDA prvOswordBlockCopy + 3
-            JSR L9BBC							;convert pseudo RAM bank to absolute RAM bank & save to private address &21
+            JSR checkRamBankAndMakeAbsoluteAndUpdatePrvOswordBlockCopy                    ;convert pseudo RAM bank to absolute RAM bank & save to private address &21
             LDA prvOswordBlockCopy + 8
             STA prvOswordBlockCopy + 2
             LDA prvOswordBlockCopy + 9
@@ -4265,7 +4266,8 @@ firstDigitCmdPtrY = &BB
             LDA prvOswordBlockCopy + 1
             STA prvOswordBlockCopy + 2
             PLA
-.^L9BBC     JSR checkRamBankAndMakeAbsolute						;convert pseudo RAM bank to absolute RAM bank
+.^checkRamBankAndMakeAbsoluteAndUpdatePrvOswordBlockCopy ; SFTODO: catchy!
+.L9BBC     JSR checkRamBankAndMakeAbsolute						;convert pseudo RAM bank to absolute RAM bank
             STA prvOswordBlockCopy + 1						;and save to private address &8221
             RTS
 }
