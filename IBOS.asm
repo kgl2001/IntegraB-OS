@@ -4735,34 +4735,35 @@ firstDigitCmdPtrY = &BB
 
 ;load ROM / RAM at bank X from file system
 ;this code is relocated to and executed at &03A7
-.SFTODOTEMPLATE
+.loadSwrTemplate
 {
 .L9EAE	  TXA
             LDX romselCopy
             STA romselCopy
             STA romsel
             INY
-            STY variableMainRamSubroutine + (SFTODOTEMPLATEBytesToRead - SFTODOTEMPLATE)
+            ; SFTODO: We could STY this directly to immediate operand of CPY #n, saving a byte.
+            STY variableMainRamSubroutine + (loadSwrTemplateBytesToRead - loadSwrTemplate)
             LDY #&00
             ; SFTODO: It would be shorter by one byte to just STY to overwrite the operand of LDY #n after JSR OSBGET.
-.L9EBC      STY variableMainRamSubroutine + (SFTODOTEMPLATESavedY - SFTODOTEMPLATE)
+.L9EBC      STY variableMainRamSubroutine + (loadSwrTemplateSavedY - loadSwrTemplate)
             LDY L02EE
             JSR OSBGET
-            LDY variableMainRamSubroutine + (SFTODOTEMPLATESavedY - SFTODOTEMPLATE)
-            STA (transientCmdPtr),Y
+            LDY variableMainRamSubroutine + (loadSwrTemplateSavedY - loadSwrTemplate)
+            STA (transientOs42SwrAddr),Y ; SFTODO: I think this is used by OSWORD &43, if so rename transientOs42SwrAddr TO INDICATE APPLIES TO BOTH (tho that's only a temp name)
             INY
-            CPY variableMainRamSubroutine + (SFTODOTEMPLATEBytesToRead - SFTODOTEMPLATE)
+            CPY variableMainRamSubroutine + (loadSwrTemplateBytesToRead - loadSwrTemplate)
             BNE L9EBC
             LDA romselCopy
             STX romselCopy
             STX romsel
             TAX
             RTS
-.SFTODOTEMPLATEBytesToRead
-SFTODOTEMPLATESavedY = SFTODOTEMPLATEBytesToRead + 1
+.loadSwrTemplateBytesToRead
+loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             ; There are two bytes of space used here when this copied into RAM, but
             ; they're not present in the ROM, hence P% + 2 in the next line.
-            ASSERT (P% + 2) - SFTODOTEMPLATE <= variableMainRamSubroutineMaxSize
+            ASSERT (P% + 2) - loadSwrTemplate <= variableMainRamSubroutineMaxSize
 }
 
 ;Function TBC
@@ -5250,8 +5251,8 @@ SFTODOTEMPLATESavedY = SFTODOTEMPLATEBytesToRead + 1
             BIT prvOswordBlockCopy
             BPL LA1A4								;Relocate code from &9E83
             LDA #&40
-            LDX #lo(SFTODOTEMPLATE)
-            LDY #hi(SFTODOTEMPLATE)
+            LDX #lo(loadSwrTemplate)
+            LDY #hi(loadSwrTemplate)
             JMP LA1AA								;Relocate code from &9EAE
 			
 .LA1A4      LDA #&80
