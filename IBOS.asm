@@ -4742,23 +4742,24 @@ firstDigitCmdPtrY = &BB
             STA romselCopy
             STA romsel
             INY
-            STY variableMainRamSubroutine + (SFTODOTEMPLATECOUNT - SFTODOTEMPLATE)
+            STY variableMainRamSubroutine + (SFTODOTEMPLATEBytesToRead - SFTODOTEMPLATE)
             LDY #&00
-.L9EBC      STY variableMainRamSubroutine + (SFTODOSAVEDY - SFTODOTEMPLATE)
+            ; SFTODO: It would be shorter by one byte to just STY to overwrite the operand of LDY #n after JSR OSBGET.
+.L9EBC      STY variableMainRamSubroutine + (SFTODOTEMPLATESavedY - SFTODOTEMPLATE)
             LDY L02EE
             JSR OSBGET
-            LDY variableMainRamSubroutine + (SFTODOSAVEDY - SFTODOTEMPLATE)
+            LDY variableMainRamSubroutine + (SFTODOTEMPLATESavedY - SFTODOTEMPLATE)
             STA (transientCmdPtr),Y
             INY
-            CPY variableMainRamSubroutine + (SFTODOTEMPLATECOUNT - SFTODOTEMPLATE)
+            CPY variableMainRamSubroutine + (SFTODOTEMPLATEBytesToRead - SFTODOTEMPLATE)
             BNE L9EBC
             LDA romselCopy
             STX romselCopy
             STX romsel
             TAX
             RTS
-.SFTODOTEMPLATECOUNT
-SFTODOSAVEDY = SFTODOTEMPLATECOUNT + 1
+.SFTODOTEMPLATEBytesToRead
+SFTODOTEMPLATESavedY = SFTODOTEMPLATEBytesToRead + 1
             ; There are two bytes of space used here when this copied into RAM, but
             ; they're not present in the ROM, hence P% + 2 in the next line.
             ASSERT (P% + 2) - SFTODOTEMPLATE <= variableMainRamSubroutineMaxSize
