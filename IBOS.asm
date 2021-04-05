@@ -1321,6 +1321,8 @@ GUARD	&C000
 ; SFTODOWIP
 ; SFTODO: Use of &Bx zp here seems iffy, this is filing system workspace. Did we save it somewhere first? Even so, seems less than ideal - what if an interrupt occurs?
 {
+negateFlag = &B9
+
 .clvRts
 .L8729      CLV
             RTS
@@ -1336,12 +1338,12 @@ GUARD	&C000
             STA L00B1
             STA L00B2
             STA L00B3
-            STA L00B9
+            STA negateFlag
             LDA (transientCmdPtr),Y
             CMP #'-'
             BNE L8753
             LDA #&FF
-            STA L00B9
+            STA negateFlag
 .L874E      LDA #&0A
             JMP L8766
 			
@@ -1415,7 +1417,7 @@ GUARD	&C000
             BCC L87D2
 .L87CE      CMP L00B8
             BCC L876E
-.L87D2      BIT L00B9
+.L87D2      BIT negateFlag
             BPL L87EF
             SEC
             LDA #&00
