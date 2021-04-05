@@ -2454,7 +2454,9 @@ GUARD	&C000
             JMP L8EFA
 			
 ;*SHADOW Command
-.shadow	  JSR L872B
+.shadow
+{
+	  JSR L872B
             BCC L8F41
             LDA (L00A8),Y								;get next character from command parameter
             CMP #'?'								;check for '='
@@ -2470,11 +2472,14 @@ GUARD	&C000
 			
 .L8F41      STA osShadowRamFlag
             JMP exitSC								;Exit Service Call
+}
 
 .L8F47      JMP L860E
 
 ;*SHX Command
-.shx      JSR L8699
+.shx
+{
+            JSR L8699
             BCC L8F60
             LDA (L00A8),Y
             CMP #'?'
@@ -2487,9 +2492,12 @@ GUARD	&C000
 .L8F60      LDX #&3D								;select SHX register (&08: On, &FF: Off)
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             JMP exitSC								;Exit Service Call
+}
 			
 ;*CSAVE Command
-.csave      LDA #&80								;open file for output
+.csave
+{
+            LDA #&80								;open file for output
             JSR L922B								;get address of file name and open file
             TAY									;move file handle to Y
             LDX #&00								;start at RTC clock User area 0
@@ -2498,6 +2506,7 @@ GUARD	&C000
             INX									;next byte
             BPL L8F70								;for 128 bytes
             BMI L8F8C								;close file and exit
+}
 
 ;*CLOAD Command
 .cload      LDA #&40								;open file for input
