@@ -1320,7 +1320,9 @@ GUARD	&C000
 
 ; SFTODOWIP
 ; SFTODO: Use of &Bx zp here seems iffy, this is filing system workspace. Did we save it somewhere first? Even so, seems less than ideal - what if an interrupt occurs?
+; SFTODO: Any chance of shrinking this code using loops to work on the 4-byte values?
 {
+result = &B0 ; 4 bytes
 negateFlag = &B9
 
 .clvRts
@@ -1334,10 +1336,10 @@ negateFlag = &B9
             STY L00BA
             STY L00BB
             LDA #&00
-            STA L00B0
-            STA L00B1
-            STA L00B2
-            STA L00B3
+            STA result
+            STA result + 1
+            STA result + 2
+            STA result + 3
             STA negateFlag
             LDA (transientCmdPtr),Y
             CMP #'-'
@@ -1364,37 +1366,37 @@ negateFlag = &B9
             JMP L87B9
 			
 .L876E      TAX
-            LDA L00B0
+            LDA result
             STA L00B4
-            STX L00B0
+            STX result
             LDX #&00
-            LDA L00B1
+            LDA result + 1
             STA L00B5
-            STX L00B1
-            LDA L00B2
+            STX result + 1
+            LDA result + 2
             STA L00B6
-            STX L00B2
-            LDA L00B3
+            STX result + 2
+            LDA result + 3
             STA L00B7
-            STX L00B3
+            STX result + 3
             LDA L00B8
             LDX #&08
 .L878D      LSR A
             BCC L87AD
             PHA
             CLC
-            LDA L00B0
+            LDA result
             ADC L00B4
-            STA L00B0
-            LDA L00B1
+            STA result
+            LDA result + 1
             ADC L00B5
-            STA L00B1
-            LDA L00B2
+            STA result + 1
+            LDA result + 2
             ADC L00B6
-            STA L00B2
-            LDA L00B3
+            STA result + 2
+            LDA result + 3
             ADC L00B7
-            STA L00B3
+            STA result + 3
             PLA
             BVS L8806
 .L87AD      ASL L00B4
