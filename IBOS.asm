@@ -1323,19 +1323,21 @@ GUARD	&C000
 ; SFTODO: Any chance of shrinking this code using loops to work on the 4-byte values?
 {
 result = &B0 ; 4 bytes
+base = &B8
 negateFlag = &B9
 originalCmdPtrY = &BA
+firstDigitCmdPtrY = &BB
 
 .clvRts
 .L8729      CLV
             RTS
 
-.^L872B     LDA #&0A
-.^L872D     STA L00B8
+.^L872B     LDA #10
+.^L872D     STA base
             JSR findNextCharAfterSpace							;find next character. offset stored in Y
             BCS clvRts                                                                              ;return with V set if it's a carriage return
             STY originalCmdPtrY
-            STY L00BB
+            STY firstDigitCmdPtrY
             LDA #&00
             STA result
             STA result + 1
@@ -1359,11 +1361,10 @@ originalCmdPtrY = &BA
 			
 .L8760      CMP #'%'
             BNE L87B9
-            LDA #&02
-; SFTODO: I suspect this is an ASCII-to-integer conversion with base stored in A
-.L8766      STA L00B8
+            LDA #2
+.L8766      STA base
             INY
-            STY L00BB
+            STY firstDigitCmdPtrY
             JMP L87B9
 			
 .L876E      TAX
@@ -1380,7 +1381,7 @@ originalCmdPtrY = &BA
             LDA result + 3
             STA L00B7
             STX result + 3
-            LDA L00B8
+            LDA base
             LDX #&08
 .L878D      LSR A
             BCC L87AD
@@ -1418,7 +1419,7 @@ originalCmdPtrY = &BA
             SBC #('A' - 10) - '0'
             CMP #10
             BCC L87D2
-.L87CE      CMP L00B8
+.L87CE      CMP base
             BCC L876E
 .L87D2      BIT negateFlag
             BPL L87EF
@@ -1435,7 +1436,7 @@ originalCmdPtrY = &BA
             LDA #&00
             SBC result + 3
             STA result + 3
-.L87EF      CPY L00BB
+.L87EF      CPY firstDigitCmdPtrY
             BEQ L87F8
             CLC
             CLV
