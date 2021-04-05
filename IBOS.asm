@@ -5272,10 +5272,16 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             LDY #hi(saveSwrTemplate)
 .LA1AA      PHA
             JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from either &9E83 or &9EAE to &03A7
-            LDA prvOswordBlockCopy + 10
-            STA prvOswordBlockCopy + 6
-            LDA prvOswordBlockCopy + 11
-            STA prvOswordBlockCopy + 7
+            ; SFTODO: Is this code correct even ignoring the possible bug at
+            ; adjustPrvOsword43Block? We seem to be trying to treat the data
+            ; length as the buffer length - what if the data is longer than the
+            ; buffer? Just possibly the "bug" is a misguided attempt to work
+            ; around that. Speculation really as I still don't have the whole
+            ; picture.
+            LDA prvOswordBlockCopy + 10                                                             ;low byte of buffer length (SFTODO: bug? see adjustPrvOsword43Block)
+            STA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
+            LDA prvOswordBlockCopy + 11                                                             ;high byte of buffer length (SFTODO: bug? see adjustProvOsword43Block)
+            STA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
             PLA
             JSR LA087
             JSR getAddressesAndLengthFromPrvOswordBlockCopy
