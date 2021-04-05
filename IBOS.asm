@@ -5068,8 +5068,13 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 .LA084      JMP errorNotFound
 }
 
+; Open file pointed to by prvOswordBlockCopy in OSFIND mode A, generating a "Not Found" error if it fails.
+; After a successful call file handle is stored at L02EE.
+; SFTODO: Perhaps rename openOswordFile or similar, as I suspect there are other
+; file-opening calls (e.g. *CREATE) in IBOS
+.openFile
 {
-.^LA087      LDX prvOswordBlockCopy + 12                                                   ;low byte of filename in I/O processor
+.LA087      LDX prvOswordBlockCopy + 12                                                   ;low byte of filename in I/O processor
             LDY prvOswordBlockCopy + 13                                                   ;high byte of filename in I/O processor
             JSR OSFIND
             CMP #&00
@@ -5295,7 +5300,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             LDA prvOswordBlockCopy + 11                                                             ;high byte of buffer length (SFTODO: bug? see adjustProvOsword43Block)
             STA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
             PLA
-            JSR LA087
+            JSR openFile
             JSR getAddressesAndLengthFromPrvOswordBlockCopy
             JSR doTransfer
             JMP LA22B
@@ -5331,7 +5336,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             JMP LA21B
 			
 .LA211      LDA #osfindOpenInput
-            JSR LA087
+            JSR openFile
 .LA216      LDA #&04
             JSR LA10A
 .LA21B      JSR L9DF2
@@ -5364,7 +5369,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             JMP LA266
 			
 .LA261      LDA #osfindOpenOutput
-            JSR LA087
+            JSR openFile
 .LA266      JSR L9DF2
             JSR doTransfer
             LDA L02EE
