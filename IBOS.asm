@@ -1337,23 +1337,24 @@ GUARD	&C000
             STA L00B3
             STA L00B9
             LDA (transientCmdPtr),Y
-            CMP #&2D
+            CMP #'-'
             BNE L8753
             LDA #&FF
             STA L00B9
 .L874E      LDA #&0A
             JMP L8766
 			
-.L8753      CMP #&2B
+.L8753      CMP #'+'
             BEQ L874E
-            CMP #&26
+            CMP #'&'
             BNE L8760
             LDA #&10
             JMP L8766
 			
-.L8760      CMP #&25
+.L8760      CMP #'%'
             BNE L87B9
             LDA #&02
+; SFTODO: I suspect this is an ASCII-to-integer conversion with base stored in A
 .L8766      STA L00B8
             INY
             STY L00BB
@@ -1400,10 +1401,10 @@ GUARD	&C000
             DEX
             BNE L878D
             INY
-.L87B9      LDA (L00A8),Y
-            CMP #&5B
+.L87B9      LDA (transientCmdPtr),Y
+            CMP #'Z'+1
             BCC L87C1
-            AND #&DF
+            AND #&DF                                                                                ;convert to upper case (imperfectly)
 .L87C1      SEC
             SBC #&30
             CMP #&0A
