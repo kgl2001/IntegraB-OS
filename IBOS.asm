@@ -4742,22 +4742,25 @@ firstDigitCmdPtrY = &BB
             STA romselCopy
             STA romsel
             INY
-            STY L03D2								;Change this to relocated address (&03AF+&xx ???)
+            STY variableMainRamSubroutine + (SFTODOTEMPLATECOUNT - SFTODOTEMPLATE)
             LDY #&00
-.L9EBC      STY L03D3								;Change this to relocated address (&03AF+&xx ???)
+.L9EBC      STY variableMainRamSubroutine + (SFTODOTEMPLATECOUNT + 1 - SFTODOTEMPLATE)
             LDY L02EE
             JSR OSBGET
-            LDY L03D3								;Change this to relocated address (&03AF+&xx ???)
-            STA (L00A8),Y
+            LDY variableMainRamSubroutine + (SFTODOTEMPLATECOUNT + 1 - SFTODOTEMPLATE)
+            STA (transientCmdPtr),Y
             INY
-            CPY L03D2								;Change this to relocated address (&03AF+&xx ???)
+            CPY variableMainRamSubroutine + (SFTODOTEMPLATECOUNT - SFTODOTEMPLATE)
             BNE L9EBC
             LDA romselCopy
             STX romselCopy
             STX romsel
             TAX
             RTS
-            ASSERT P% - SFTODOTEMPLATE <= variableMainRamSubroutineMaxSize
+.SFTODOTEMPLATECOUNT
+            ; There are two bytes of space used here when this copied into RAM, but
+            ; they're not present in the ROM, hence P% + 2 in the next line.
+            ASSERT (P% + 2) - SFTODOTEMPLATE <= variableMainRamSubroutineMaxSize
 }
 
 ;Function TBC
