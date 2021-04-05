@@ -1327,6 +1327,9 @@ GUARD	&C000
 ; If we parse successfully, the integer is at &B0 (SFTODO: do we use this?
 ; probably) and the low byte is in A.
 ; If we fail to parse successfully, we beep and return with A=0.
+; SFTODO: I guess it's an IBOS thing, but that beep seems a bit odd - I think
+; this is used for commands implemented on B+/Master like SRLOAD and I don't
+; think their SRLOAD will ever beep.
 ; SFTODO: Use of &Bx zp here seems iffy, this is filing system workspace. Did we
 ; save it somewhere first? Even so, seems less than ideal - what if an interrupt
 ; occurs?
