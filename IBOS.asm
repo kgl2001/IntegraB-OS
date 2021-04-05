@@ -1316,10 +1316,18 @@ GUARD	&C000
             RTS
 			
 .L8724      LDA #&10
-            JMP L872D
+            JMP convertIntegerDefaultBaseA
 
-; SFTODOWIP
-; SFTODO: Use of &Bx zp here seems iffy, this is filing system workspace. Did we save it somewhere first? Even so, seems less than ideal - what if an interrupt occurs?
+; Convert an number expressed in ASCII at (transientCmdPtr),Y into a 32-bit
+; integer. It may be prefixed with '-' for negative, '&' indicates hex, '%'
+; indicates binary and '+' indicates decimal.
+; If we succeed, C and V are both set, the integer is at &B0 (SFTODO: do we use
+; this?) and the low byte is in A.
+; If we fail, we beep, C and V are both clear, and A is 0.
+; SFTODO: Do we really need to set/clear C *and* V? It seems redundant.
+; SFTODO: Use of &Bx zp here seems iffy, this is filing system workspace. Did we
+; save it somewhere first? Even so, seems less than ideal - what if an interrupt
+; occurs?
 ; SFTODO: Any chance of shrinking this code using loops to work on the 4-byte values?
 {
 result = &B0 ; 4 bytes
@@ -1332,8 +1340,10 @@ firstDigitCmdPtrY = &BB
 .L8729      CLV
             RTS
 
-.^L872B     LDA #10
-.^L872D     STA base
+.^convertIntegerDefaultDecimal
+.L872B     LDA #10
+.^convertIntegerDefaultBaseA
+.L872D     STA base
             JSR findNextCharAfterSpace							;find next character. offset stored in Y
             BCS clvRts                                                                              ;return with V set if it's a carriage return
             STY originalCmdPtrY
@@ -1349,7 +1359,7 @@ firstDigitCmdPtrY = &BB
             BNE L8753
             LDA #&FF
             STA negateFlag
-.L874E      LDA #&0A
+.L874E      LDA #10
             JMP L8766
 			
 .L8753      CMP #'+'
@@ -2162,7 +2172,7 @@ firstDigitCmdPtrY = &BB
 		EQUB &80
 		EQUS "No Buffer!", &00
 
-.L8CAE      JSR L872B
+.L8CAE      JSR convertIntegerDefaultDecimal
             BCC L8CC6
             LDA (L00A8),Y								;get byte from keyboard buffer SFTODO: command argument, not keyboard buffer?
             CMP #'#'								;check for '#'
@@ -2418,7 +2428,7 @@ firstDigitCmdPtrY = &BB
 		EQUS "k in Sideways RAM ", &00
 
 ;*OSMODE Command
-.osmode      JSR L872B
+.osmode      JSR convertIntegerDefaultDecimal
             BCC L8ED0
             LDA (L00A8),Y
             CMP #&3F
@@ -2469,7 +2479,7 @@ firstDigitCmdPtrY = &BB
 ;*SHADOW Command
 .shadow
 {
-	  JSR L872B
+	  JSR convertIntegerDefaultDecimal
             BCC L8F41
             LDA (L00A8),Y								;get next character from command parameter
             CMP #'?'								;check for '='
@@ -3311,7 +3321,7 @@ firstDigitCmdPtrY = &BB
 .L94FC      JSR L94F8
             JMP OSNEWL
 			
-.L9502      JSR L872B
+.L9502      JSR convertIntegerDefaultDecimal
             BCS L9508
             RTS
 			
@@ -5552,7 +5562,7 @@ firstDigitCmdPtrY = &BB
             CMP #','
             BNE LA464
             INY
-.LA464      JSR L872B
+.LA464      JSR convertIntegerDefaultDecimal
             BCC LA48C
             LDA (L00A8),Y
             AND #&DF                                                                                ;convert to upper case (imperfect but presumably good enough)
@@ -7187,7 +7197,7 @@ firstDigitCmdPtrY = &BB
             CMP #&2C
             BNE LB197
             INY
-.LB15C      JSR L872B
+.LB15C      JSR convertIntegerDefaultDecimal
             BCC LB163
             LDA #&FF
 .LB163      STA prvOswordBlockCopy + 11
@@ -7196,7 +7206,7 @@ firstDigitCmdPtrY = &BB
             CMP #&2F
             BNE LB197
             INY
-            JSR L872B
+            JSR convertIntegerDefaultDecimal
             BCC LB177
             LDA #&FF
 .LB177      STA prvOswordBlockCopy + 10
@@ -7205,7 +7215,7 @@ firstDigitCmdPtrY = &BB
             CMP #&2F
             BNE LB197
             INY
-            JSR L872B
+            JSR convertIntegerDefaultDecimal
             BCC LB194
             LDA #&FF
             STA prvOswordBlockCopy + 9
@@ -7264,7 +7274,7 @@ firstDigitCmdPtrY = &BB
             CMP #&2D
             BNE LB22D
             INY
-            JSR L872B
+            JSR convertIntegerDefaultDecimal
             BCS LB20B
             CMP #&00
             BNE LB20D
@@ -7276,7 +7286,7 @@ firstDigitCmdPtrY = &BB
             RTS
 			
 .LB215      INY
-            JSR L872B
+            JSR convertIntegerDefaultDecimal
             BCS LB21F
             CMP #&00
             BNE LB221
@@ -7362,14 +7372,14 @@ firstDigitCmdPtrY = &BB
             CLC
             RTS
 			
-.LB2B5      JSR L872B
+.LB2B5      JSR convertIntegerDefaultDecimal
             BCS LB2F3
             STA prvOswordBlockCopy + 13
             LDA (L00A8),Y
             INY
             CMP #&3A
             BNE LB2F3
-            JSR L872B
+            JSR convertIntegerDefaultDecimal
             BCS LB2F3
             STA prvOswordBlockCopy + 14
             LDA (L00A8),Y
@@ -7380,7 +7390,7 @@ firstDigitCmdPtrY = &BB
             LDA #&00
             BEQ LB2E0
 .LB2DA      INY
-            JSR L872B
+            JSR convertIntegerDefaultDecimal
             BCS LB2F3
 .LB2E0      STA prvOswordBlockCopy + 15
             TYA
@@ -7399,21 +7409,21 @@ firstDigitCmdPtrY = &BB
 			
 .LB2F5      LDA #&00
             STA prvOswordBlockCopy + 12
-            JSR L872B
+            JSR convertIntegerDefaultDecimal
             BCS LB32F
             STA prvOswordBlockCopy + 11
             LDA (L00A8),Y
             INY
             CMP #&2F
             BNE LB32F
-            JSR L872B
+            JSR convertIntegerDefaultDecimal
             BCS LB32F
             STA prvOswordBlockCopy + 10
             LDA (L00A8),Y
             INY
             CMP #&2F
             BNE LB32F
-            JSR L872B
+            JSR convertIntegerDefaultDecimal
             BCS LB32F
             JSR LB1CA
             JSR LA83B
