@@ -5206,7 +5206,7 @@ firstDigitCmdPtrY = &BB
             BPL LA16A
             LDA SHEILA+&E5
             STA L0700,Y
-            CMP #&0D
+            CMP #vduCr
             BEQ LA17C
             INY
             BNE LA16A
