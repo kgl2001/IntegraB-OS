@@ -4204,7 +4204,10 @@ firstDigitCmdPtrY = &BB
 ; XY+10..11=data length - ignored on LOAD
 ; XY+12..13=>filename in I/O processor
 
-
+.adjustPrvOsword43Block
+; SFTODO: Could this be rewritten more compactly as a loop?
+; SFTODO: This only has one caller
+{
 .L9B50      LDA prvOswordBlockCopy + 1
             STA prvOswordBlockCopy + 12
             LDA prvOswordBlockCopy + 2
@@ -4228,6 +4231,7 @@ firstDigitCmdPtrY = &BB
             LDA prvOswordBlockCopy + 7							;<----This won't work, because we've already overwritten &27 with &2B!!!
             STA prvOswordBlockCopy + 11							;<----This won't work, because we've already overwritten &27 with &2B!!!
             RTS
+}
 			
 ;this routine moves the contents of the osword42 parameter block up by one byte
 ;and inserts the absolute ROM number into offset 1, so block becomes:
@@ -5168,9 +5172,9 @@ firstDigitCmdPtrY = &BB
 ; SFTODOWIP
 .osword43
 {
-	  JSR copyOswordDetailsToPrv						;copy osword43 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
-            JSR L9B50						;convert pseudo RAM bank to absolute and shuffle parameter block
-            BIT tubePresenceFlag						;check for Tube - &00: not present, &ff: present
+	  JSR copyOswordDetailsToPrv					;copy osword43 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
+            JSR adjustPrvOsword43Block					;convert pseudo RAM bank to absolute and shuffle parameter block
+            BIT tubePresenceFlag					;check for Tube - &00: not present, &ff: present
             BPL noTube 						;branch if tube not present
 .LA146      LDA #tubeEntryClaim + tubeClaimId				;tube present code
             JSR tubeEntry
