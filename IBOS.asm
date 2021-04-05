@@ -113,6 +113,8 @@ transientOs42MainAddrLowWord = &AA ; 2 bytes
 ; SFTODO: &AC/&AD IS USED FOR ANOTHER 16-BIT WORD, SEE adjustTransferParameters
 transientOs42MainAddrHighWord = &AE ; 2 bytes
 
+transientCmdPtr = &A8 ; 2 bytes
+
 vduStatus = &D0
 vduStatusShadow = &10
 negativeVduQueueSize = &026A
@@ -998,7 +1000,7 @@ GUARD	&C000
 {
 .L853E      INY
 .^findNextCharAfterSpace
-.L853F      LDA (L00A8),Y
+.L853F      LDA (transientCmdPtr),Y
             CMP #' '
             BEQ L853E
             CMP #vduCr
@@ -1012,7 +1014,7 @@ GUARD	&C000
 
 .^L854D      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             BCS L854B
-            LDA (L00A8),Y
+            LDA (transientCmdPtr),Y
             CMP #&2C								;','
             BNE L8559
             INY
@@ -1026,7 +1028,7 @@ GUARD	&C000
             JSR L833C								;test for valid * command
             BCC L8598
             TAY
-            LDA (L00A8),Y
+            LDA (transientCmdPtr),Y
             AND #&DF								;capitalise
             CMP #&49								;'I' - All Integra-B commands can be prefixed with 'I' to distinguish from other commands
             BNE L857E								; if not 'I', then test for '*X*' or '*S*' commands
@@ -1314,15 +1316,18 @@ GUARD	&C000
 			
 .L8724      LDA #&10
             JMP L872D
-			
+
+; SFTODOWIP
+; SFTODO: Use of &Bx zp here seems iffy, this is filing system workspace. Did we save it somewhere first? Even so, seems less than ideal - what if an interrupt occurs?
+{
+.clvRts
 .L8729      CLV
             RTS
 
-{
 .^L872B     LDA #&0A
 .^L872D     STA L00B8
-            JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            BCS L8729
+            JSR findNextCharAfterSpace							;find next character. offset stored in Y
+            BCS clvRts                                                                              ;return with V set if it's a carriage return
             STY L00BA
             STY L00BB
             LDA #&00
@@ -1331,7 +1336,7 @@ GUARD	&C000
             STA L00B2
             STA L00B3
             STA L00B9
-            LDA (L00A8),Y
+            LDA (transientCmdPtr),Y
             CMP #&2D
             BNE L8753
             LDA #&FF
