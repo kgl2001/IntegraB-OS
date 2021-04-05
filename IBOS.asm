@@ -5184,7 +5184,7 @@ firstDigitCmdPtrY = &BB
             ; 256 bytes of CR-terminated data from the parasite at &0000xxxx
             ; into the host (BASIC!) keyboard buffer at &700, where xxxx is this
             ; prvOswordBlockCopy + 12 value, although I don't see why that will
-            ; contain anything relevant.
+            ; contain anything relevant. SFTODO: D'OH, I WAS IGNORING adjustPrvOsword43Block!
             LDA prvOswordBlockCopy + 12
             STA L0100
             LDA prvOswordBlockCopy + 13
