@@ -5189,8 +5189,9 @@ firstDigitCmdPtrY = &BB
             ; the data into the host, and IBOS is now going to copy from the
             ; corresponding address in the parasite where there's probably just
             ; junk. IBOS is also trampling all over language workspace in page
-            ; 7; this will be OK in BASIC as it keeps its OSWORD 0 input buffer
-            ; there, but any other current language is probably going to crash.
+            ; 7; since the tube host code is the "current language" this is
+            ; *probably* OK in practice, but I think it's strictly speaking
+            ; *incorrect.
             LDA prvOswordBlockCopy + 12
             STA L0100
             LDA prvOswordBlockCopy + 13
