@@ -4735,6 +4735,8 @@ firstDigitCmdPtrY = &BB
 
 ;load ROM / RAM at bank X from file system
 ;this code is relocated to and executed at &03A7
+.SFTODOTEMPLATE
+{
 .L9EAE	  TXA
             LDX romselCopy
             STA romselCopy
@@ -4755,6 +4757,8 @@ firstDigitCmdPtrY = &BB
             STX romsel
             TAX
             RTS
+            ASSERT P% - SFTODOTEMPLATE <= variableMainRamSubroutineMaxSize
+}
 
 ;Function TBC
 ;this code is relocated to and executed at &03A7
@@ -5241,8 +5245,8 @@ firstDigitCmdPtrY = &BB
             BIT prvOswordBlockCopy
             BPL LA1A4								;Relocate code from &9E83
             LDA #&40
-            LDX #L9EAE MOD &100
-            LDY #L9EAE DIV &100
+            LDX #lo(SFTODOTEMPLATE)
+            LDY #hi(SFTODOTEMPLATE)
             JMP LA1AA								;Relocate code from &9EAE
 			
 .LA1A4      LDA #&80
