@@ -5056,22 +5056,27 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             LDA #&05
             JSR OSFILE
             CMP #&01
-            BNE LA084
+            BNE errorNotFoundIndirect
             LDA L02F8
             STA prvOswordBlockCopy + 10
             LDA L02F9
             STA prvOswordBlockCopy + 11
 .LA083      RTS
 
+.errorNotFoundIndirect
+{
 .LA084      JMP errorNotFound
+}
 
-.LA087      LDX prvOswordBlockCopy + 12                                                   ;low byte of filename in I/O processor
+{
+.^LA087      LDX prvOswordBlockCopy + 12                                                   ;low byte of filename in I/O processor
             LDY prvOswordBlockCopy + 13                                                   ;high byte of filename in I/O processor
             JSR OSFIND
             CMP #&00
-            BEQ LA084
+            BEQ errorNotFoundIndirect
             STA L02EE
             RTS
+}
 
 .closeHandleL02EE
 {
