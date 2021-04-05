@@ -1705,6 +1705,7 @@ GUARD	&C000
 			
 .L899E
 ;OSWORD A=&0, Read line from input - Parameter block
+; SFTODO: Use of L0700 in next line is potentially iffy, but I suspect this is used only when we're in NLE when IBOS *is* current language, so that would be fine
 		EQUW L0700							;buffer address
 		EQUB &FF								;maximum line length
 		EQUB &20								;minimum acceptable ASCII value
@@ -5128,10 +5129,16 @@ GUARD	&C000
 	  JSR copyOswordDetailsToPrv						;copy osword43 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
             JSR L9B50						;convert pseudo RAM bank to absolute and shuffle parameter block
             BIT tubePresenceFlag						;check for Tube - &00: not present, &ff: present
-            BPL LA18B						;branch if tube not present
+            BPL noTube 						;branch if tube not present
 .LA146      LDA #tubeEntryClaim + tubeClaimId				;tube present code
             JSR tubeEntry
             BCC LA146
+            ; SFTODO: What is this code doing? The OSWORD block only goes up to
+            ; prvOswordBlockCopy + 11! This code seems to be transferring up to
+            ; 256 bytes of CR-terminated data from the parasite at &0000xxxx
+            ; into the host (BASIC!) keyboard buffer at &700, where xxxx is this
+            ; prvOswordBlockCopy + 12 value, although I don't see why that will
+            ; contain anything relevant.
             LDA prvOswordBlockCopy + 12
             STA L0100
             LDA prvOswordBlockCopy + 13
@@ -5139,13 +5146,23 @@ GUARD	&C000
             LDA #&00
             STA L0102
             STA L0103
-            LDX #&00
-            LDY #&01
-            JSR tubeEntry
+            LDX #lo(L0100)
+            LDY #hi(L0100)
+            JSR tubeEntry                                                       ;A=0 => multi-byte transfer, parasite to host
             LDY #&00
 .LA16A      BIT SHEILA+&E4
             BPL LA16A
             LDA SHEILA+&E5
+            ; SFTODO: Next line looks very iffy, trampling over language
+            ; workspace. In BASIC we'll probably get away with this as I think
+            ; this is the OSWORD 0 buffer for INPUT etc, but in principle we
+            ; could be running anything (e.g. a machine code program which has
+            ; taken over as current language, FORTH, etc)
+            ; SFTODO: We also superficially never seem to use L0700 again
+            ; (ignoring OSWORD 0 use, which is probably unrelated). I can't help
+            ; wondering if this is a bug and OSWORD &43 is broken when there's a
+            ; tube present, but it's probably too early to jump to that
+            ; conclusion.
             STA L0700,Y
             CMP #&0D
             BEQ LA17C
@@ -5153,10 +5170,16 @@ GUARD	&C000
             BNE LA16A
 .LA17C      LDA #tubeEntryRelease + tubeClaimId
             JSR tubeEntry
+            ; SFTODO: OK, now we've done the transfer, we are populating
+            ; block+12/13 with &700 - which kinda sorta makes sense if we take
+            ; what we just did for granted, we've copied the data across from
+            ; the parasite so we now just work in the host (but the whole thing
+            ; still doesn't make sense)
             LDA #&00
             STA prvOswordBlockCopy + 12
             LDA #&07
             STA prvOswordBlockCopy + 13
+.noTube
 .^LA18B      JSR LA02D
             LDA prvOswordBlockCopy + 6
             ORA prvOswordBlockCopy + 7
