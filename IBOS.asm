@@ -183,7 +183,11 @@ ramselCopy = &037F ; unused VDU variable workspace repurposed by IBOS
 tubeEntry = &0406
 tubeEntryClaim = &C0 ; plus claim ID
 tubeEntryRelease = &80 ; plus claim ID
-tubeClaimId = &3F ; SFTODO: not officially allocated? not that it matters any more... :-)
+; http://beebwiki.mdfs.net/Tube_Protocol says tube claimant ID &3F is allocated
+; to "Language startup"; I suspect IBOS's use of this is technically wrong but
+; as long as no one else is using it it will probably be fine, because we won't
+; be trying to claim the tube while a language is starting up.
+tubeClaimId = &3F
 
 L0000       = &0000
 L0032       = &0032
