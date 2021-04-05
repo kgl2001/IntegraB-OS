@@ -5221,13 +5221,20 @@ firstDigitCmdPtrY = &BB
             ; it, so I don't think that's really reasonable - what if this is
             ; being called from an ARM copro, or an 80186, etc - they all have
             ; >64K of address space? *Maybe* 1770 DFS does this too and BeebWiki
-            ; has wrong info, but I suspect IBOS is wrong here.
+            ; has wrong info, but I suspect IBOS is wrong here. OK, having now
+            ; seen Master Reference Manual (thansk Ken!) it does say "in main
+            ; RAM". To be super cautious we should maybe write a test program
+            ; and compare behaviour with tube on a) a B+/Master with Acorn DFS
+            ; and IBOS b) Integra-B, but I think this is an IBOS bug. Which is
+            ; good, because the fix is simply to get rid of all this tube code
+            ; (not in the transfer, just here), freeing up space at the same
+            ; time - win-win!
             LDA #lo(L0700)
             STA prvOswordBlockCopy + 12
             LDA #hi(L0700)
             STA prvOswordBlockCopy + 13
 .noTube
-.^LA18B      JSR LA02D
+.^LA18B     JSR LA02D
             LDA prvOswordBlockCopy + 6
             ORA prvOswordBlockCopy + 7
             BNE LA1C7
