@@ -1423,22 +1423,22 @@ negateFlag = &B9
             BPL L87EF
             SEC
             LDA #&00
-            SBC L00B0
-            STA L00B0
+            SBC result
+            STA result
             LDA #&00
-            SBC L00B1
-            STA L00B1
+            SBC result + 1
+            STA result + 1
             LDA #&00
-            SBC L00B2
-            STA L00B2
+            SBC result + 2
+            STA result + 2
             LDA #&00
-            SBC L00B3
-            STA L00B3
+            SBC result + 3
+            STA result + 3
 .L87EF      CPY L00BB
             BEQ L87F8
             CLC
             CLV
-            LDA L00B0
+            LDA result
             RTS
 			
 .L87F8      LDA #vduBell
