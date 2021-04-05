@@ -122,6 +122,10 @@ tubePresenceFlag = &027A ; SFTODO: allmem says 0=inactive, is there actually a s
 osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force shadow modes (note that AllMem.txt seems to have this wrong, at least my copy does)
 currentMode = &0355
 
+; SFTODO: Create and use osfindClose = &00
+osfindOpenInput = &40
+osfindOpenOutput = &80
+
 romBinaryVersion = &8008
 
 oswdbtA = &EF
@@ -5058,8 +5062,8 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 
 .LA084      JMP L8809
 
-.LA087      LDX prvOswordBlockCopy + 12
-            LDY prvOswordBlockCopy + 13
+.LA087      LDX prvOswordBlockCopy + 12                                                   ;low byte of filename in I/O processor
+            LDY prvOswordBlockCopy + 13                                                   ;high byte of filename in I/O processor
             JSR OSFIND
             CMP #&00
             BEQ LA084
@@ -5261,13 +5265,13 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             BIT prvOswordBlockCopy                                                                  ;function
             BPL readFromSwr
             ; We're writing to sideways RAM.
-            LDA #&40
+            LDA #osfindOpenInput
             LDX #lo(loadSwrTemplate)
             LDY #hi(loadSwrTemplate)
             JMP LA1AA								;Relocate code from &9EAE
 
 .readFromSwr
-.LA1A4      LDA #&80
+.LA1A4      LDA #osfindOpenOutput
             LDX #lo(saveSwrTemplate)
             LDY #hi(saveSwrTemplate)
 .LA1AA      PHA
@@ -5318,7 +5322,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             STA L02EE
             JMP LA21B
 			
-.LA211      LDA #&40
+.LA211      LDA #osfindOpenInput
             JSR LA087
 .LA216      LDA #&04
             JSR LA10A
@@ -5351,7 +5355,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             STA L02EE
             JMP LA266
 			
-.LA261      LDA #&80
+.LA261      LDA #osfindOpenOutput
             JSR LA087
 .LA266      JSR L9DF2
             JSR doTransfer
