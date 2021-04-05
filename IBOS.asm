@@ -143,6 +143,7 @@ modeChangeStateEnteringNonShadowMode = 3 ; we're changing into a non-shadow mode
 variableMainRamSubroutine = &03A7 ; SFTODO: POOR NAME
 variableMainRamSubroutineMaxSize = &32 ; SFTODO: ASSERT ALL THE SUBROUTINES ARE SMALLER THAN THIS
 
+vduBell = 7
 vduCr = 13
 vduSetMode = 22
 
@@ -1404,13 +1405,13 @@ GUARD	&C000
 .L87B9      LDA (transientCmdPtr),Y
             CMP #'Z'+1
             BCC L87C1
-            AND #&DF                                                                                ;convert to upper case (imperfectly)
+            AND #&DF                                                                                ;convert to upper case
 .L87C1      SEC
-            SBC #&30
-            CMP #&0A
+            SBC #'0'
+            CMP #10
             BCC L87CE
-            SBC #&07
-            CMP #&0A
+            SBC #('A' - 10) - '0'
+            CMP #10
             BCC L87D2
 .L87CE      CMP L00B8
             BCC L876E
@@ -1436,7 +1437,7 @@ GUARD	&C000
             LDA L00B0
             RTS
 			
-.L87F8      LDA #&07								;
+.L87F8      LDA #vduBell
             JSR OSWRCH								;Generate VDU 7 beep
             LDA #&00
             LDY L00BA
