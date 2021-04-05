@@ -5181,12 +5181,16 @@ firstDigitCmdPtrY = &BB
 .LA146      LDA #tubeEntryClaim + tubeClaimId				;tube present code
             JSR tubeEntry
             BCC LA146
-            ; SFTODO: What is this code doing? The OSWORD block only goes up to
-            ; prvOswordBlockCopy + 11! This code seems to be transferring up to
-            ; 256 bytes of CR-terminated data from the parasite at &0000xxxx
-            ; into the host (BASIC!) keyboard buffer at &700, where xxxx is this
-            ; prvOswordBlockCopy + 12 value, although I don't see why that will
-            ; contain anything relevant. SFTODO: D'OH, I WAS IGNORING adjustPrvOsword43Block!
+            ; The following code is copying the CR-terminated "filename in I/O
+            ; processor" across from the parasite into the host at L0700.
+            ; SFTODO: This seems wrong, although I can't find any OSWORD &43
+            ; docs right now to check. BeebWiki says this is *in I/O processor*,
+            ; so presumably any client code running on the tube will have poked
+            ; the data into the host, and IBOS is now going to copy from the
+            ; corresponding address in the parasite where there's probably just
+            ; junk. IBOS is also trampling all over language workspace in page
+            ; 7; this will be OK in BASIC as it keeps its OSWORD 0 input buffer
+            ; there, but any other current language is probably going to crash.
             LDA prvOswordBlockCopy + 12
             STA L0100
             LDA prvOswordBlockCopy + 13
@@ -5201,16 +5205,6 @@ firstDigitCmdPtrY = &BB
 .LA16A      BIT SHEILA+&E4
             BPL LA16A
             LDA SHEILA+&E5
-            ; SFTODO: Next line looks very iffy, trampling over language
-            ; workspace. In BASIC we'll probably get away with this as I think
-            ; this is the OSWORD 0 buffer for INPUT etc, but in principle we
-            ; could be running anything (e.g. a machine code program which has
-            ; taken over as current language, FORTH, etc)
-            ; SFTODO: We also superficially never seem to use L0700 again
-            ; (ignoring OSWORD 0 use, which is probably unrelated). I can't help
-            ; wondering if this is a bug and OSWORD &43 is broken when there's a
-            ; tube present, but it's probably too early to jump to that
-            ; conclusion.
             STA L0700,Y
             CMP #&0D
             BEQ LA17C
@@ -5218,14 +5212,18 @@ firstDigitCmdPtrY = &BB
             BNE LA16A
 .LA17C      LDA #tubeEntryRelease + tubeClaimId
             JSR tubeEntry
-            ; SFTODO: OK, now we've done the transfer, we are populating
-            ; block+12/13 with &700 - which kinda sorta makes sense if we take
-            ; what we just did for granted, we've copied the data across from
-            ; the parasite so we now just work in the host (but the whole thing
-            ; still doesn't make sense)
-            LDA #&00
+            ; Now patch up the OSWORD block so it refers to the data we just
+            ; copied across from the parasite. SFTODO: But as noted above, I'm
+            ; not sure we should have done that at all. This makes sense if we
+            ; interpret the filename pointer in the OSWORD block as "in the
+            ; language processor", *but* there are only two bytes allocated for
+            ; it, so I don't think that's really reasonable - what if this is
+            ; being called from an ARM copro, or an 80186, etc - they all have
+            ; >64K of address space? *Maybe* 1770 DFS does this too and BeebWiki
+            ; has wrong info, but I suspect IBOS is wrong here.
+            LDA #lo(L0700)
             STA prvOswordBlockCopy + 12
-            LDA #&07
+            LDA #hi(L0700)
             STA prvOswordBlockCopy + 13
 .noTube
 .^LA18B      JSR LA02D
