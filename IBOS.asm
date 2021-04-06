@@ -5350,14 +5350,16 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 .LA22E      BIT prvOswordBlockCopy                                                                  ;function
             BPL readOrPseudoAddress
             BVS readOrPseudoAddress
-            LSR prvOswordBlockCopy
+            LSR prvOswordBlockCopy                                                                  ;function
+            ; SFTODO: Why are we testing the low bit of 'function' here? The defined values always have this 0. Is something setting this internally to flag something?
             BCC LA240
-            LDA prvOswordBlockCopy + 1
+            LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number
             JSR LA499
 .LA240      JSR PrvEn								;switch in private RAM
             LSR prvOswordBlockCopy
-            BCC LA24E
-.LA248      LDA prvOswordBlockCopy + 1
+            ; SFTODO: And again, we're testing what was b1 of 'function' before we started shifting - why? Is this an internal flag?
+            BCC readOrPseudoAddress ; SFTODO: label name chosen on basis of above code, may need revising in light of this
+.LA248      LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number
             JMP LA4FE
 
 .readOrPseudoAddress
