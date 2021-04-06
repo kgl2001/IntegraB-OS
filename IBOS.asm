@@ -3931,7 +3931,7 @@ firstDigitCmdPtrY = &BB
             STY prv82+&52
             BPL L9967
 .L9983      PLP
-            JMP LA2DE
+            JMP PrvDisexitSc
 			
 ;*SRWIPE Command
 .srwipe
@@ -3946,7 +3946,7 @@ firstDigitCmdPtrY = &BB
 .L9998      INX
             CPX #&10
             BNE L998F
-            JMP LA2DE
+            JMP PrvDisexitSc
 
 ; SFTODO: This has only one caller, the code immediately above - could it just be inlined?
 .L99A0      JSR testRamUsingVariableMainRamSubroutine
@@ -4073,7 +4073,7 @@ firstDigitCmdPtrY = &BB
             INY
             CPY #&04
             BCC L9A6E
-.L9A76      JMP LA2DE
+.L9A76      JMP PrvDisexitSc
 
 .L9A79      CLC
             JSR PrvEn								;switch in private RAM
@@ -4100,7 +4100,7 @@ firstDigitCmdPtrY = &BB
             INY										;Next
             BNE L9A7F								;Loop for 'X', 'Y' & 'Z'
 .L9AAB      JSR OSNEWL								;New Line
-            JMP LA2DE
+            JMP PrvDisexitSc
 }
 
 {
@@ -5348,8 +5348,8 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             BEQ LA22E
 .LA22B      JSR closeHandleL02EE
 .LA22E      BIT prvOswordBlockCopy                                                                  ;function
-            BPL readOrPseudoAddress
-            BVS readOrPseudoAddress
+            BPL PrvDisexitScIndirect                                                                 ;branch if read
+            BVS PrvDisexitScIndirect                                                                 ;branch if pseudo-address
             LSR prvOswordBlockCopy                                                                  ;function
             ; SFTODO: Why are we testing the low bit of 'function' here? The defined values always have this 0. Is something setting this internally to flag something?
             BCC LA240
@@ -5358,12 +5358,12 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 .LA240      JSR PrvEn								;switch in private RAM
             LSR prvOswordBlockCopy
             ; SFTODO: And again, we're testing what was b1 of 'function' before we started shifting - why? Is this an internal flag?
-            BCC readOrPseudoAddress ; SFTODO: label name chosen on basis of above code, may need revising in light of this
+            BCC PrvDisexitScIndirect
 .LA248      LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number
             JMP LA4FE
 
-.readOrPseudoAddress
-.LA24E      JMP LA2DE
+.PrvDisexitScIndirect
+.LA24E      JMP PrvDisexitSc
 
 .LA251      JSR LA0BF
             BCS LA261
@@ -5418,7 +5418,8 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             LDX #&EE
             LDY #&02
             JSR OSFILE
-.^LA2DE      JSR PrvDis								;switch out private RAM
+.^PrvDisexitSc
+.LA2DE      JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call
 			
 .^LA2E4      JSR LA40C
