@@ -5347,9 +5347,9 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             LDA L02EE
             BEQ LA22E
 .LA22B      JSR closeHandleL02EE
-.LA22E      BIT prvOswordBlockCopy
-            BPL LA24E
-            BVS LA24E
+.LA22E      BIT prvOswordBlockCopy                                                                  ;function
+            BPL readOrPseudoAddress
+            BVS readOrPseudoAddress
             LSR prvOswordBlockCopy
             BCC LA240
             LDA prvOswordBlockCopy + 1
@@ -5359,7 +5359,8 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             BCC LA24E
 .LA248      LDA prvOswordBlockCopy + 1
             JMP LA4FE
-			
+
+.readOrPseudoAddress
 .LA24E      JMP LA2DE
 
 .LA251      JSR LA0BF
