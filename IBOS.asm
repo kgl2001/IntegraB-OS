@@ -5169,24 +5169,26 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 			
 .LA108      SEC
             RTS
-			
+
+; SFTODO: Fairly sure this is only used within OSWORD &43 and so have used its adjusted osword block in comments
+; SFTODO: This sets up an OSGBPB block and calls OSGBPB, A is OSGBPB reason code on entry
 .LA10A      PHA
-            LDA prvOswordBlockCopy + 2
+            LDA prvOswordBlockCopy + 2                                                    ;low byte of buffer address
             STA L02EF
-            LDA prvOswordBlockCopy + 3
+            LDA prvOswordBlockCopy + 3                                                    ;high byte of buffer address
             STA L02F0
             LDA #&FF
             STA L02F1
             STA L02F2
-            LDA prvOswordBlockCopy + 6
+            LDA prvOswordBlockCopy + 6                                                    ;low byte of buffer length
             STA L02F3
-            LDA prvOswordBlockCopy + 7
+            LDA prvOswordBlockCopy + 7                                                    ;high byte of buffer length
             STA L02F4
             LDA #&00
             STA L02F5
             STA L02F6
-            LDX #&EE
-            LDY #&02
+            LDX #lo(L02EE)
+            LDY #hi(L02EE)
             PLA
             JMP OSGBPB
 			
@@ -5373,14 +5375,14 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             BCS LA261
             JSR LA0F2
             LDA #&00
-            STA L02EE
+            STA L02EE ; SFTODO: I *suspect* L02EE is playing its file handle role here
             JMP LA266
 			
 .LA261      LDA #osfindOpenOutput
             JSR openFile
 .LA266      JSR getBufferAddressAndLengthFromPrvOswordBlockCopy
             JSR doTransfer
-            LDA L02EE
+            LDA L02EE ; SFTODO: almost certainly playing its file handle role here
             BEQ LA27E
             LDA #&02
             JSR LA10A
