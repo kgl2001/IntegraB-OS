@@ -5599,13 +5599,14 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 .LA431      SEC
             RTS
 }
-			
-.LA433      PHA
+
+{
+.^LA433      PHA
             LDA #&00
             STA L00AE
             STA L00AF
             PLA
-.LA43B      TAX
+.^LA43B      TAX
             TYA
             PHA
             TXA
@@ -5625,6 +5626,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             PLA
             TAY
             RTS
+}
 
 {
 .^LA458     JSR findNextCharAfterSpace								;find next character. offset stored in Y
@@ -5667,11 +5669,12 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 .rts        RTS
 }
 
+; SFTODO: This only has one caller
 .LA499      JSR LA433
 .LA49C      JSR PrvEn								;switch in private RAM
 
 
-;Called by *INSERT Immediate
+;Called by *INSERT Immediate (SFTODO: but note we also fall through into it from code above)
 ;Read ROM Type from ROM header and save to ROM Type Table and Private RAM
             LDY #&0F
 .LA4A1      ASL L00AE
