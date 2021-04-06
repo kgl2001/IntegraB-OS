@@ -125,6 +125,7 @@ currentMode = &0355
 osfindClose = &00
 osfindOpenInput = &40
 osfindOpenOutput = &80
+osfileLoad = &FF
 
 romBinaryVersion = &8008
 
@@ -4603,7 +4604,7 @@ firstDigitCmdPtrY = &BB
 .rts        RTS
 }
 
-.getAddressesAndLengthFromPrvOswordBlockCopy
+.getAddressesAndLengthFromPrvOswordBlockCopy ; SFTODO: entry when used for OSWORD &42?
 ; SFTODO: The comments on what's in the OSWORD block are based on OSWORD &42
 ; after adjustPrvOsword42Block has been called; I see this is used with OSWORD
 ; &43 too, which has a very different looking parameter block, but I'm guessing
@@ -4619,13 +4620,14 @@ firstDigitCmdPtrY = &BB
 .absoluteAddress
             STY transientOs42SwrAddr
             STA transientOs42SwrAddr + 1
-.^L9DF2      LDA prvOswordBlockCopy + 2 ; get low byte of main memory address
+.^getBufferAddressAndLengthFromPrvOswordBlockCopy ; SFTODO: entry when used for OSWORD &43?
+.L9DF2      LDA prvOswordBlockCopy + 2 ; get low byte of main memory address (OSWORD &42) or buffer address (OSWORD &43)
             STA transientOs42MainAddrLowWord
-            LDA prvOswordBlockCopy + 3 ; get high byte of main memory address
+            LDA prvOswordBlockCopy + 3 ; get high byte of main memory address (OSWORD &42) or buffer address (OSWORD &43)
             STA transientOs42MainAddrLowWord + 1
-            LDA prvOswordBlockCopy + 6 ; get low byte of data length
+            LDA prvOswordBlockCopy + 6 ; get low byte of data length (OSWORD &42) or buffer length (OSWORD &43)
             STA transientOs42MainAddrHighWord
-            LDA prvOswordBlockCopy + 7 ; get high byte of data length
+            LDA prvOswordBlockCopy + 7 ; get high byte of data length (OSWORD &42) or buffer length (OSOWRD &43)
             STA transientOs42MainAddrHighWord + 1
             CLC ; SFTODO: callers seem to test carry, but it's not clear it can ever be sett - if so, we can delete those checks and associated code...
             RTS
@@ -5317,21 +5319,21 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 .LA1D5      JSR LA0BF
             BCS LA211
             JSR LA0F2
-            LDA prvOswordBlockCopy + 12
+            LDA prvOswordBlockCopy + 12                                                             ;low byte of filename in I/O processor
             STA L02EE
-            LDA prvOswordBlockCopy + 13
+            LDA prvOswordBlockCopy + 13                                                             ;high byte of filename in I/O processor
             STA L02EF
-            LDA prvOswordBlockCopy + 2
+            LDA prvOswordBlockCopy + 2                                                              ;low byte of buffer address
             STA L02F0
-            LDA prvOswordBlockCopy + 3
+            LDA prvOswordBlockCopy + 3                                                              ;high byte of buffer address
             STA L02F1
             LDA #&00
             STA L02F4
-            LDA #&FF
+            LDA #&FF                                                                                ;osfileLoad
             STA L02F2
             STA L02F3
-            LDX #&EE
-            LDY #&02
+            LDX #lo(L02EE)
+            LDY #hi(L02EE)
             JSR OSFILE
             LDA #&00
             STA L02EE
@@ -5341,7 +5343,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             JSR openFile
 .LA216      LDA #&04
             JSR LA10A
-.LA21B      JSR L9DF2
+.LA21B      JSR getBufferAddressAndLengthFromPrvOswordBlockCopy
             JSR doTransfer
             JSR LA0DC
             BCC LA216
@@ -5376,7 +5378,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 			
 .LA261      LDA #osfindOpenOutput
             JSR openFile
-.LA266      JSR L9DF2
+.LA266      JSR getBufferAddressAndLengthFromPrvOswordBlockCopy
             JSR doTransfer
             LDA L02EE
             BEQ LA27E
@@ -5737,7 +5739,8 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             DEX									;reduce pseudo bank number by 1
             BPL LA4F3								;until all 4 pseudo banks have been assigned an appropriate absolute bank
             JMP PrvDis								;switch out private RAM
-			
+
+; SFTODO: This little fragment of code is only called once via JMP, can't it just be moved to avoid the JMP (and improve readability)?
 .LA4FE      JSR LA433
             SEC
             PHP
