@@ -127,6 +127,9 @@ osfindOpenInput = &40
 osfindOpenOutput = &80
 osfileLoad = &FF
 
+osbyteReadHimem = &84
+osbyteReadWriteOshwm = &B4
+
 romBinaryVersion = &8008
 
 oswdbtA = &EF
@@ -5028,25 +5031,28 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             STA prvOswordBlockCopy + 9
             BIT prvOswordBlockCopy + 7
             JMP LA18B
-			
-.LA02D      LDA #&FF
-            STA prvOswordBlockCopy + 4
-            STA prvOswordBlockCopy + 5
-            BIT prvOswordBlockCopy + 7
-            BPL LA059
-            LDA #&B4
+
+; SFTODO: I am assuming (probably true) this is used only by OSWORD 43 and therefore block is the adjusted 43 block
+{
+.^LA02D      LDA #&FF
+            STA prvOswordBlockCopy + 4                                                    ;SFTODO: what's this? do we ever use it?
+            STA prvOswordBlockCopy + 5                                                    ;SFTODO: what's this - do we ever use it?
+            BIT prvOswordBlockCopy + 7                                                    ;high byte of buffer length
+            BPL bufferNotPageToHimem
+            LDA #osbyteReadWriteOshwm
             LDX #&00
-            STX prvOswordBlockCopy + 2
-            STX prvOswordBlockCopy + 6
+            STX prvOswordBlockCopy + 2                                                    ;low byte of (16-bit) buffer address
+            STX prvOswordBlockCopy + 6                                                    ;low byte of buffer length
             LDY #&FF
             JSR OSBYTE
-            STX prvOswordBlockCopy + 3
-            LDA #&84
+            STX prvOswordBlockCopy + 3                                                    ;high byte of (16-bit) buffer address
+            LDA #osbyteReadHimem
             JSR OSBYTE
             TYA
             SEC
-            SBC prvOswordBlockCopy + 3
-            STA prvOswordBlockCopy + 7
+            SBC prvOswordBlockCopy + 3                                                    ;high byte of (16-bit) buffer address (=PAGE)
+            STA prvOswordBlockCopy + 7                                                    ;high byte of buffer length
+.bufferNotPageToHimem
 .LA059      BIT prvOswordBlockCopy
             BPL LA083
             LDA prvOswordBlockCopy + 12
@@ -5064,6 +5070,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             LDA L02F9
             STA prvOswordBlockCopy + 11
 .LA083      RTS
+}
 
 .errorNotFoundIndirect
 {
