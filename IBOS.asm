@@ -5036,6 +5036,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 
 ; SFTODO: I am assuming (probably true) this is used only by OSWORD 43 and therefore block is the adjusted 43 block
 {
+osfileBlock = L02EE
 .^LA02D      LDA #&FF
             STA prvOswordBlockCopy + 4                                                    ;SFTODO: what's this? do we ever use it?
             STA prvOswordBlockCopy + 5                                                    ;SFTODO: what's this - do we ever use it?
@@ -5058,19 +5059,19 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 .LA059      BIT prvOswordBlockCopy                                                        ;function
             BPL readFromSwr
             LDA prvOswordBlockCopy + 12                                                   ;low byte of filename in I/O processor
-            STA L02EE
+            STA osfileBlock
             LDA prvOswordBlockCopy + 13                                                   ;high byte of filename in I/O processor
             STA L02EF
-            LDX #lo(L02EE)
-            LDY #hi(L02EE)
+            LDX #lo(osfileBlock)
+            LDY #hi(osfileBlock)
             LDA #osfileReadInformation
             JSR OSFILE
             CMP #&01
             BNE errorNotFoundIndirect
-            LDA L02EE + osfileReadInformationLengthOffset
-            STA prvOswordBlockCopy + 10
-            LDA L02EE + osfileReadInformationLengthOffset + 1
-            STA prvOswordBlockCopy + 11
+            LDA osfileBlock + osfileReadInformationLengthOffset
+            STA prvOswordBlockCopy + 10                                                   ;low byte of data length
+            LDA osfileBlock + osfileReadInformationLengthOffset + 1
+            STA prvOswordBlockCopy + 11                                                   ;high byte of data length
 .readFromSwr
 .LA083      RTS
 }
