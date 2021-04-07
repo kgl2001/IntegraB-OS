@@ -5034,12 +5034,21 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             BIT prvOswordBlockCopy + 7
             JMP LA18B
 
-; SFTODO: I am assuming (probably true) this is used only by OSWORD 43 and therefore block is the adjusted 43 block
+; Fix up an adjusted OSWORD &43 buffer at prvOswordBlockCopy so:
+; - it has the right start address and size if we're supposed to use PAGE-HIMEM
+;   as the buffer
+; - it has the actual file length populated if we're doing a write to sideways
+;   RAM (the user-supplied one is ignored for OSWORD &43)
+; SFTODO: I am assuming (probably true) this is used only by OSWORD 43 and
+; therefore block is the adjusted 43 block
+; SFTODO: Not a perfect name but will do for now
+; SFTODO: This has only one caller
+.adjustOsword43LengthAndBuffer
 {
 osfileBlock = L02EE
 .^LA02D      LDA #&FF
-            STA prvOswordBlockCopy + 4                                                    ;SFTODO: what's this? do we ever use it?
-            STA prvOswordBlockCopy + 5                                                    ;SFTODO: what's this - do we ever use it?
+            STA prvOswordBlockCopy + 4                                                    ;SFTODO: what's this? do we ever use it? maybe setting (non-existent) high word of address to host, just in case??
+            STA prvOswordBlockCopy + 5                                                    ;SFTODO: ditto
             BIT prvOswordBlockCopy + 7                                                    ;high byte of buffer length
             BPL bufferNotPageToHimem
             LDA #osbyteReadWriteOshwm
@@ -5286,7 +5295,7 @@ osfileBlock = L02EE
             LDA #hi(L0700)
             STA prvOswordBlockCopy + 13
 .noTube
-.^LA18B     JSR LA02D
+.^LA18B     JSR adjustOsword43LengthAndBuffer
             LDA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
             ORA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
             BNE bufferLengthNotZero
