@@ -125,6 +125,8 @@ currentMode = &0355
 osfindClose = &00
 osfindOpenInput = &40
 osfindOpenOutput = &80
+osfileReadInformation = &05
+osfileReadInformationLengthOffset = &0A
 osfileLoad = &FF
 
 osbyteReadHimem = &84
@@ -5053,22 +5055,23 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             SBC prvOswordBlockCopy + 3                                                    ;high byte of (16-bit) buffer address (=PAGE)
             STA prvOswordBlockCopy + 7                                                    ;high byte of buffer length
 .bufferNotPageToHimem
-.LA059      BIT prvOswordBlockCopy
-            BPL LA083
-            LDA prvOswordBlockCopy + 12
+.LA059      BIT prvOswordBlockCopy                                                        ;function
+            BPL readFromSwr
+            LDA prvOswordBlockCopy + 12                                                   ;low byte of filename in I/O processor
             STA L02EE
-            LDA prvOswordBlockCopy + 13
+            LDA prvOswordBlockCopy + 13                                                   ;high byte of filename in I/O processor
             STA L02EF
-            LDX #&EE
-            LDY #&02
-            LDA #&05
+            LDX #lo(L02EE)
+            LDY #hi(L02EE)
+            LDA #osfileReadInformation
             JSR OSFILE
             CMP #&01
             BNE errorNotFoundIndirect
-            LDA L02F8
+            LDA L02EE + osfileReadInformationLengthOffset
             STA prvOswordBlockCopy + 10
-            LDA L02F9
+            LDA L02EE + osfileReadInformationLengthOffset + 1
             STA prvOswordBlockCopy + 11
+.readFromSwr
 .LA083      RTS
 }
 
