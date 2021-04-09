@@ -5246,6 +5246,7 @@ osfileBlock = L02EE
 ;  workspace from PAGE to HIMEM is used.
 
 ; SFTODOWIP
+; SFTODO: I am thinking I probably need to set up a few example OSWORD &43 calls on paper and trace through the code to see what it would do in that concrete situation - the possible bug in the data length is making it extremely hard to think about this in the abstract
 .osword43
 {
 	  JSR copyOswordDetailsToPrv					;copy osword43 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
