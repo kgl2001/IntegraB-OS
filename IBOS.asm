@@ -112,6 +112,7 @@ transientOs42SwrAddr = &A8 ; 2 bytes
 transientOs42MainAddrLowWord = &AA ; 2 bytes
 ; SFTODO: &AC/&AD IS USED FOR ANOTHER 16-BIT WORD, SEE adjustTransferParameters
 transientOs42MainAddrHighWord = &AE ; 2 bytes
+transientRomBankMask = &AE ; 2 bytes
 
 transientCmdPtr = &A8 ; 2 bytes
 
@@ -5600,21 +5601,21 @@ osfileBlock = L02EE
 
 {
 .^LA40C     LDA #&00
-            STA L00AE
-            STA L00AF
+            STA transientRomBankMask
+            STA transientRomBankMask + 1
 .LA412      JSR LA458
             BCS LA41D
             JSR addToRomBankMask
             JMP LA412
 			
 .LA41D      LDA (L00A8),Y
-            CMP #&2A
+            CMP #&2A ; SFTODO: '*'?
             BNE LA429
             BVS LA431
             INY
             JSR LA4D6								;Invert all bits in &AE and &AF
-.LA429      LDA L00AE
-            ORA L00AF
+.LA429      LDA transientRomBankMask
+            ORA transientRomBankMask + 1
             BEQ LA431
             CLC
             RTS
@@ -5624,17 +5625,17 @@ osfileBlock = L02EE
             RTS
 }
 
-; Set 16-bit word at L00AE to 1<<A, i.e. set it to 0 except bit A. Y is preserved.
+; Set 16-bit word at transientRomBankMask to 1<<A, i.e. set it to 0 except bit A. Y is preserved.
 ; SFTODO: Am I missing something, or wouldn't it be far easier just to do a 16-bit rotate left in a loop? Maybe that wouldn't be shorter. Maybe this is performance critical? (Doubt it)
 ; SFTODO: I suspect this is creating some sort of ROM bank mask, but that is speculation at moment so label may be misleading.
 .createRomBankMask
 {
 .LA433      PHA
             LDA #&00
-            STA L00AE
-            STA L00AF
+            STA transientRomBankMask
+            STA transientRomBankMask + 1
             PLA
-; Set bit A of the 16bit word at L00AE. Y is preserved.
+; Set bit A of the 16-bit word at transientRomBankMask. Y is preserved.
 ; SFTODO: Speculating this is ROM mask, hence label name, which may not be right.
 .^addToRomBankMask
 .LA43B      TAX
@@ -5652,8 +5653,8 @@ osfileBlock = L02EE
 .LA44D      ROL A
             DEY
             BPL LA44D
-            ORA L00AE,X
-            STA L00AE,X
+            ORA transientRomBankMask,X
+            STA transientRomBankMask,X
             PLA
             TAY
             RTS
@@ -5708,8 +5709,8 @@ osfileBlock = L02EE
 ;Called by *INSERT Immediate (SFTODO: but note we also fall through into it from code above)
 ;Read ROM Type from ROM header and save to ROM Type Table and Private RAM
             LDY #&0F
-.LA4A1      ASL L00AE
-            ROL L00AF
+.LA4A1      ASL transientRomBankMask
+            ROL transientRomBankMask + 1
             BCC LA4BE
             LDA #&06								;set address pointer to &8006 - ROM Type
             STA L00F6								;address pointer into paged ROM
