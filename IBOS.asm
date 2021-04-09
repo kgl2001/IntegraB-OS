@@ -127,6 +127,7 @@ currentMode = &0355
 osfindClose = &00
 osfindOpenInput = &40
 osfindOpenOutput = &80
+osgbpbReadCurPtr = &04
 osfileReadInformation = &05
 osfileReadInformationLengthOffset = &0A
 osfileLoad = &FF
@@ -5210,25 +5211,28 @@ osfileBlock = L02EE
 
 ; SFTODO: Fairly sure this is only used within OSWORD &43 and so have used its adjusted osword block in comments
 ; SFTODO: This sets up an OSGBPB block and calls OSGBPB, A is OSGBPB reason code on entry
+.doOsgbpbForOsword
+{
 .LA10A      PHA
             LDA prvOswordBlockCopy + 2                                                    ;low byte of buffer address
-            STA L02EF
+            STA L02EF                                                                     ;low byte of 32-bit data address
             LDA prvOswordBlockCopy + 3                                                    ;high byte of buffer address
             STA L02F0
             LDA #&FF
             STA L02F1
-            STA L02F2
+            STA L02F2                                                                     ;high byte of 32-bit data address
             LDA prvOswordBlockCopy + 6                                                    ;low byte of buffer length
-            STA L02F3
+            STA L02F3                                                                     ;low byte of 32-bit length
             LDA prvOswordBlockCopy + 7                                                    ;high byte of buffer length
             STA L02F4
             LDA #&00
             STA L02F5
-            STA L02F6
+            STA L02F6                                                                     ;high byte of 32-bit length
             LDX #lo(L02EE)
             LDY #hi(L02EE)
             PLA
             JMP OSGBPB
+}
 			
 ;OSWORD &43 (67) - Load/Save into/from sideways RAM
 ;
@@ -5383,8 +5387,8 @@ osfileBlock = L02EE
 .dataLengthGreaterThanBufferLength
 .LA211      LDA #osfindOpenInput
             JSR openFile
-.LA216      LDA #&04
-            JSR LA10A
+.LA216      LDA #osgbpbReadCurPtr
+            JSR doOsgbpbForOsword
 .LA21B      JSR getBufferAddressAndLengthFromPrvOswordBlockCopy
             JSR doTransfer
             JSR LA0DC
@@ -5425,7 +5429,7 @@ osfileBlock = L02EE
             LDA L02EE ; SFTODO: almost certainly playing its file handle role here
             BEQ LA27E
             LDA #&02
-            JSR LA10A
+            JSR doOsgbpbForOsword
             JSR LA0DC
             BCC LA266
             JMP LA22B
