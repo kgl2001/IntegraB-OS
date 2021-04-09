@@ -4211,7 +4211,7 @@ firstDigitCmdPtrY = &BB
 ; XY?0     =function as for OSWORD &42 (66)
 ; XY?1     =absolute ROM number as for OSWORD &42 (66)
 ; XY+2..3  =buffer address
-; (SFTODO: XY+4..5 =original sideways start address, not touched by this code - don't know if this matters)
+; XY+4..5  ="high word" of buffer address, always &FFFF (i.e. I/O processor) - this is set up by adjustOsword43LengthAndBuffer, for consistency with our internal OSWORD &42 block
 ; XY+6..7  =buffer length. If the buffer address is zero, a
 ;  default buffer is used in private workspace. If the
 ;  buffer length is larger than &7FFF, then language
@@ -4614,7 +4614,7 @@ firstDigitCmdPtrY = &BB
 .rts        RTS
 }
 
-.getAddressesAndLengthFromPrvOswordBlockCopy ; SFTODO: entry when used for OSWORD &42?
+.getAddressesAndLengthFromPrvOswordBlockCopy
 ; SFTODO: The comments on what's in the OSWORD block are based on OSWORD &42
 ; after adjustPrvOsword42Block has been called; I see this is used with OSWORD
 ; &43 too, which has a very different looking parameter block, but I'm guessing
@@ -4630,7 +4630,7 @@ firstDigitCmdPtrY = &BB
 .absoluteAddress
             STY transientOs42SwrAddr
             STA transientOs42SwrAddr + 1
-.^getBufferAddressAndLengthFromPrvOswordBlockCopy ; SFTODO: entry when used for OSWORD &43?
+.^getBufferAddressAndLengthFromPrvOswordBlockCopy
 .L9DF2      LDA prvOswordBlockCopy + 2 ; get low byte of main memory address (OSWORD &42) or buffer address (OSWORD &43)
             STA transientOs42MainAddrLowWord
             LDA prvOswordBlockCopy + 3 ; get high byte of main memory address (OSWORD &42) or buffer address (OSWORD &43)
@@ -5051,6 +5051,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 .adjustOsword43LengthAndBuffer
 {
 osfileBlock = L02EE
+            ; Although OSWORD &43 doesn't use 32-bit addresses, we want to be able to use prepareMainSidewaysRamTransfer to implement OSWORD &43 and that does respect the full 32-bit address, so we need to patch the OSWORD block to indicate the I/O processor for the sideways address.
 .^LA02D      LDA #&FF
             STA prvOswordBlockCopy + 4                                                    ;SFTODO: what's this? do we ever use it? maybe setting (non-existent) high word of address to host, just in case??
             STA prvOswordBlockCopy + 5                                                    ;SFTODO: ditto
