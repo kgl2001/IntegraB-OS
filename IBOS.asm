@@ -5158,7 +5158,7 @@ osfileBlock = L02EE
 
 ;SFTODOWIP
 ; SFTODO: I suspect this code could be rewritten more compactly using techniques described here: http://6502.org/tutorials/compare_beyond.html#4.2
-; SFTODO: Do any callers actually use A/Y on return? My initial trace through OSWORD &43 load-via-small-buffer suggests that code doesn't, just the carry flag.
+; SFTODO: Do any callers actually use A/Y on return? My initial trace through OSWORD &43 load-via-small-buffer suggests that code doesn't, just the carry flag. OK, decreaseDataLengthAndAdjustBufferLength does use the A/Y return values, which suggests to me there may be a bug if we can go down the LA0D4 branch (*probably* happens if buffer is not a whole number of pages, but not thought through in detail)
 .SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
 {
 .LA0BF      SEC
@@ -5175,7 +5175,7 @@ osfileBlock = L02EE
             ; SFTODO: returning with AY containing "data length" - buffer length, carry set iff "data length" > buffer length
 .rts        RTS
 
-.LA0D4      TXA                                                                           ;we will return with X on entry in A SFTODO:!?
+.LA0D4      TXA                                                                           ;we will return with X on entry in A SFTODO:!? if we *didn't* do this, A would be 0 and it would make sense that AY is the return value which is the number of bytes
             PLP
                                                                                           ;all the returns below have Y="data length"-buffer length (it's an 8-bit quantity, but SFTODO: I don't know how our caller knows that - it would make more sense if we returned with A=0, but we don't)
             BEQ LA0DA                                                                     ;return with carry clear if "data length" == buffer length
@@ -5185,23 +5185,30 @@ osfileBlock = L02EE
 }
 
 ;SFTODOWIP
+; SFTODO: Slightly optimistic summary based on partial understanding of code: Subtract buffer length from OSWORD block data length, adjusting the buffer length if we're at the end of the file and must not read an entire buffer to do the final chunk of the transfer.
+; Returns with carry set iff there's no more data to transfer ("data length" is 0).
+.decreaseDataLengthAndAdjustBufferLength
 {
-.^LA0DC      LDA prvOswordBlockCopy + 10                                                  ;low byte of "data length", actually buffer length
+.LA0DC      LDA prvOswordBlockCopy + 10                                                  ;low byte of "data length", actually buffer length
             ORA prvOswordBlockCopy + 11                                                   ;high byte of "data length", actually buffer length
             BEQ LA108
+            ; SFTODO: Can this go wrong if the result is negative? We don't check carry after calling SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength. Maybe this can't happen, but not immediately obvious.
             JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
             STY prvOswordBlockCopy + 10                                                   ;low byte of "data length", actually buffer length
             STA prvOswordBlockCopy + 11                                                   ;high byte of "data length", actually buffer length
             JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
-            BCS LA106
+            BCS remainingDataLargerThanBuffer
+            ; The remaining data will fit in the buffer, so shrink the buffer length so we transfer exactly the right amount of data on the next chunk.
 .^copySFTODOWouldBeDataLengthOverBufferLengthAndZeroWouldBeDataLength
 .LA0F2      LDA prvOswordBlockCopy + 10                                                  ;low byte of "data length", actually buffer length
             STA prvOswordBlockCopy + 6                                                    ;low byte of buffer length
             LDA prvOswordBlockCopy + 11                                                   ;high byte of "data length", actually buffer length
             STA prvOswordBlockCopy + 7                                                    ;high byte of buffer length
+            ; SFTODO: It's probably right when you see the whole loop structure, but it feels a bit premature to be setting the data length to 0 (as the next three lines do), surely we should wait until we've done the transfer and the test above at LA0DC realises the result is 0?
             LDA #&00
             STA prvOswordBlockCopy + 10                                                   ;low byte of data length SFTODO: or whatever it's appropriate to call it given the probably bug and this munging
             STA prvOswordBlockCopy + 11                                                   ;high byte of data length SFTODO: ditto
+.remainingDataLargerThanBuffer
 .LA106      CLC
             RTS
 			
@@ -5391,7 +5398,7 @@ osfileBlock = L02EE
             JSR doOsgbpbForOsword
 .LA21B      JSR getBufferAddressAndLengthFromPrvOswordBlockCopy
             JSR doTransfer
-            JSR LA0DC
+            JSR decreaseDataLengthAndAdjustBufferLength
             BCC LA216
             LDA L02EE
             BEQ LA22E
@@ -5430,7 +5437,7 @@ osfileBlock = L02EE
             BEQ LA27E
             LDA #&02
             JSR doOsgbpbForOsword
-            JSR LA0DC
+            JSR decreaseDataLengthAndAdjustBufferLength
             BCC LA266
             JMP LA22B
 			
