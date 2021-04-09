@@ -4211,6 +4211,7 @@ firstDigitCmdPtrY = &BB
 ; XY?0     =function as for OSWORD &42 (66)
 ; XY?1     =absolute ROM number as for OSWORD &42 (66)
 ; XY+2..3  =buffer address
+; (SFTODO: XY+4..5 =original sideways start address, not touched by this code - don't know if this matters)
 ; XY+6..7  =buffer length. If the buffer address is zero, a
 ;  default buffer is used in private workspace. If the
 ;  buffer length is larger than &7FFF, then language
@@ -5073,7 +5074,7 @@ osfileBlock = L02EE
             LDA prvOswordBlockCopy + 12                                                   ;low byte of filename in I/O processor
             STA osfileBlock
             LDA prvOswordBlockCopy + 13                                                   ;high byte of filename in I/O processor
-            STA L02EF
+            STA osfileBlock + 1
             LDX #lo(osfileBlock)
             LDY #hi(osfileBlock)
             LDA #osfileReadInformation
