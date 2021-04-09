@@ -5408,7 +5408,7 @@ osfileBlock = L02EE
             BVS PrvDisexitScIndirect                                                                ;branch if pseudo-address
             LSR prvOswordBlockCopy                                                                  ;function
             ; SFTODO: Why are we testing the low bit of 'function' here? The defined values always have this 0. Is something setting this internally to flag something?
-            BCC LA240
+            BCC LA240 ; SFTODO: always branch? At least during an official user-called OSWORD &43 we will, as low bit should always be 0 according to e.g. Master Ref Manual
             LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number
             JSR LA499
 .LA240      JSR PrvEn								;switch in private RAM
