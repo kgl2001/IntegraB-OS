@@ -5522,7 +5522,7 @@ osfileBlock = L02EE
             CLC
             JSR L86DE								;Convert binary number to numeric characters and write characters to screen
             JSR L91B9								;write ' ' to screen
-            LDA #&28								;'('
+            LDA #'('								;'('
             JSR OSWRCH								;write to screen
             LDA L00AA								;Get ROM Number
 	  LSR A
@@ -5539,7 +5539,7 @@ osfileBlock = L02EE
             LDA #'E'								;'E' (Enabled)
             PLP
             BEQ LA38D								;jump to write to screen
-            LDA #&50								;'P' (Protected)
+            LDA #'P'								;'P' (Protected)
 .LA38D      JSR OSWRCH								;write to screen
             JSR PrvEn								;switch in private RAM
             LDX L00AA								;Get ROM Number
@@ -5569,14 +5569,14 @@ osfileBlock = L02EE
             LDX #' '								;otherwise write ' '
 .LA3C9      TXA
             JSR OSWRCH								;write either 'S' or ' ' to screen
-            LDX #&4C								;'L' (Language)
+            LDX #'L'								;'L' (Language)
             PLA									;recover ROM Type
             AND #&40								;check bit 6 (Language Entry exists)
             BNE LA3D6								;write 'L'
-            LDX #&20								;otherwise write ' '
+            LDX #' '								;otherwise write ' '
 .LA3D6      TXA
             JSR OSWRCH								;write either 'L' or ' ' to screen
-            LDA #&29								;')'
+            LDA #')'
             JSR OSWRCH								;write to screen
             JSR L91B9								;write ' ' to screen
             LDA #&07
@@ -5591,7 +5591,7 @@ osfileBlock = L02EE
 .LA3F5      LDY L00AA								;Get ROM Number
             JSR OSRDRM								;read byte in paged ROM y
             BNE LA3FE								;0 indicates end of title string,
-            LDA #&20								;so write ' ' instead
+            LDA #' '								;so write ' ' instead
 .LA3FE      JSR OSWRCH								;write to screen
             INC L00F6								;next character
             LDA L00F6
