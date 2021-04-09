@@ -5151,25 +5151,29 @@ osfileBlock = L02EE
 }
 
 ;SFTODOWIP
+; SFTODO: I suspect this code could be rewritten more compactly using techniques described here: http://6502.org/tutorials/compare_beyond.html#4.2
+.SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
 {
-.^LA0BF      SEC
-            LDA prvOswordBlockCopy + 10
-            SBC prvOswordBlockCopy + 6
+.LA0BF      SEC
+            LDA prvOswordBlockCopy + 10                                                   ;low byte of "data length", actually buffer length
+            SBC prvOswordBlockCopy + 6                                                    ;low byte of buffer length
             PHP
             TAY
-            LDA prvOswordBlockCopy + 11
-            SBC prvOswordBlockCopy + 7
+            LDA prvOswordBlockCopy + 11                                                   ;high byte of "data length", actually buffer length
+            SBC prvOswordBlockCopy + 7                                                    ;high byte of buffer length
             BEQ LA0D4
             TAX
-            PLA
+            PLA                                                                           ;discard stacked flags
             TXA
-.LA0D3      RTS
+            ; SFTODO: returning with AY containing "data length" - buffer length, carry set iff "data length" > buffer length
+.rts        RTS
 
-.LA0D4      TXA
+.LA0D4      TXA                                                                           ;we will return with X on entry in A SFTODO:!?
             PLP
-            BEQ LA0DA
-            BCS LA0D3
-.LA0DA      CLC
+                                                                                          ;all the returns below have Y="data length"-buffer length (it's an 8-bit quantity, but SFTODO: I don't know how our caller knows that - it would make more sense if we returned with A=0, but we don't)
+            BEQ LA0DA                                                                     ;return with carry clear if "data length" == buffer length
+            BCS rts                                                                       ;return with carry set if "data length" > buffer length
+.LA0DA      CLC                                                                           ;return with carry clear if "data length" < buffer length
             RTS
 }
 
@@ -5178,10 +5182,10 @@ osfileBlock = L02EE
 .^LA0DC      LDA prvOswordBlockCopy + 10                                                  ;low byte of "data length", actually buffer length
             ORA prvOswordBlockCopy + 11                                                   ;high byte of "data length", actually buffer length
             BEQ LA108
-            JSR LA0BF
+            JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
             STY prvOswordBlockCopy + 10                                                   ;low byte of "data length", actually buffer length
             STA prvOswordBlockCopy + 11                                                   ;high byte of "data length", actually buffer length
-            JSR LA0BF
+            JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
             BCS LA106
 .^LA0F2      LDA prvOswordBlockCopy + 10                                                  ;low byte of "data length", actually buffer length
             STA prvOswordBlockCopy + 6                                                    ;low byte of buffer length
@@ -5345,7 +5349,7 @@ osfileBlock = L02EE
             JMP bufferLengthNotZeroReadFromSwr
 
 .bufferLengthNotZeroWriteToSwr
-.LA1D5      JSR LA0BF
+.LA1D5      JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
             BCS LA211
             JSR LA0F2
             LDA prvOswordBlockCopy + 12                                                             ;low byte of filename in I/O processor
@@ -5398,7 +5402,7 @@ osfileBlock = L02EE
 .LA24E      JMP PrvDisexitSc
 
 .bufferLengthNotZeroReadFromSwr
-.LA251      JSR LA0BF
+.LA251      JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
             BCS LA261
             JSR LA0F2
             LDA #&00
