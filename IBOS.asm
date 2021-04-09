@@ -5634,7 +5634,7 @@ osfileBlock = L02EE
             STA L00AE
             STA L00AF
             PLA
-; Set bit A of the 16bit word at L00AE.
+; Set bit A of the 16bit word at L00AE. Y is preserved.
 ; SFTODO: Speculating this is ROM mask, hence label name, which may not be right.
 .^addToRomBankMask
 .LA43B      TAX
