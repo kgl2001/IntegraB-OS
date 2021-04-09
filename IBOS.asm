@@ -5188,7 +5188,8 @@ osfileBlock = L02EE
             STA prvOswordBlockCopy + 11                                                   ;high byte of "data length", actually buffer length
             JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
             BCS LA106
-.^LA0F2      LDA prvOswordBlockCopy + 10                                                  ;low byte of "data length", actually buffer length
+.^copySFTODOWouldBeDataLengthOverBufferLengthAndZeroWouldBeDataLength
+.LA0F2      LDA prvOswordBlockCopy + 10                                                  ;low byte of "data length", actually buffer length
             STA prvOswordBlockCopy + 6                                                    ;low byte of buffer length
             LDA prvOswordBlockCopy + 11                                                   ;high byte of "data length", actually buffer length
             STA prvOswordBlockCopy + 7                                                    ;high byte of buffer length
@@ -5352,7 +5353,7 @@ osfileBlock = L02EE
 .bufferLengthNotZeroWriteToSwr
 .LA1D5      JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
             BCS LA211
-            JSR LA0F2
+            JSR copySFTODOWouldBeDataLengthOverBufferLengthAndZeroWouldBeDataLength
             LDA prvOswordBlockCopy + 12                                                             ;low byte of filename in I/O processor
             STA L02EE
             LDA prvOswordBlockCopy + 13                                                             ;high byte of filename in I/O processor
@@ -5405,7 +5406,7 @@ osfileBlock = L02EE
 .bufferLengthNotZeroReadFromSwr
 .LA251      JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
             BCS LA261
-            JSR LA0F2
+            JSR copySFTODOWouldBeDataLengthOverBufferLengthAndZeroWouldBeDataLength
             LDA #&00
             STA L02EE ; SFTODO: I *suspect* L02EE is playing its file handle role here
             JMP LA266
