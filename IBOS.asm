@@ -4218,6 +4218,7 @@ firstDigitCmdPtrY = &BB
 ; XY+10..11=data length - ignored on LOAD SFTODO: except as Ken's comments below indicate, it will actually be another copy of buffer length
 ; XY+12..13=>filename in I/O processor
 ; SFTODO: Is it possible we never use +10/11 even on SAVE? But we must, otherwise we wouldn't know how much to save.
+; SFTODO: Is it possible XY+10..11 *is* deliberately being set to be a copy of buffer length, because we adjust one or other copy, and it works out correctly in the end? I am dubious but maybe... The way the code's written below is a very odd way of achieving this if it's deliberate.
 
 .adjustPrvOsword43Block
 ; SFTODO: Could this be rewritten more compactly as a loop?
