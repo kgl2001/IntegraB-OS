@@ -5373,8 +5373,8 @@ osfileBlock = L02EE
             BEQ LA22E
 .LA22B      JSR closeHandleL02EE
 .LA22E      BIT prvOswordBlockCopy                                                                  ;function
-            BPL PrvDisexitScIndirect                                                                 ;branch if read
-            BVS PrvDisexitScIndirect                                                                 ;branch if pseudo-address
+            BPL PrvDisexitScIndirect                                                                ;branch if read
+            BVS PrvDisexitScIndirect                                                                ;branch if pseudo-address
             LSR prvOswordBlockCopy                                                                  ;function
             ; SFTODO: Why are we testing the low bit of 'function' here? The defined values always have this 0. Is something setting this internally to flag something?
             BCC LA240
@@ -5624,8 +5624,11 @@ osfileBlock = L02EE
             RTS
 }
 
+; Set 16-bit word at L00AE to 1<<A. Y is preserved.
+; SFTODO: I suspect this is creating some sort of ROM bank mask, but that is speculation at moment so label may be misleading.
+.createRomBankMask
 {
-.^LA433      PHA
+.LA433      PHA
             LDA #&00
             STA L00AE
             STA L00AF
@@ -5633,7 +5636,7 @@ osfileBlock = L02EE
 .^LA43B      TAX
             TYA
             PHA
-            TXA
+            TXA                                                                                     ;A is now same as on entry
             LDX #&00
             CMP #&08
             BCC LA447
@@ -5694,7 +5697,7 @@ osfileBlock = L02EE
 }
 
 ; SFTODO: This only has one caller
-.LA499      JSR LA433
+.LA499      JSR createRomBankMask
 .LA49C      JSR PrvEn								;switch in private RAM
 
 
@@ -5763,7 +5766,7 @@ osfileBlock = L02EE
             JMP PrvDis								;switch out private RAM
 
 ; SFTODO: This little fragment of code is only called once via JMP, can't it just be moved to avoid the JMP (and improve readability)?
-.LA4FE      JSR LA433
+.LA4FE      JSR createRomBankMask
             SEC
             PHP
             JMP LA513
