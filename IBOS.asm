@@ -5604,7 +5604,7 @@ osfileBlock = L02EE
             STA L00AF
 .LA412      JSR LA458
             BCS LA41D
-            JSR LA43B
+            JSR addToRomBankMask
             JMP LA412
 			
 .LA41D      LDA (L00A8),Y
@@ -5624,7 +5624,7 @@ osfileBlock = L02EE
             RTS
 }
 
-; Set 16-bit word at L00AE to 1<<A. Y is preserved.
+; Set 16-bit word at L00AE to 1<<A, i.e. set it to 0 except bit A. Y is preserved.
 ; SFTODO: Am I missing something, or wouldn't it be far easier just to do a 16-bit rotate left in a loop? Maybe that wouldn't be shorter. Maybe this is performance critical? (Doubt it)
 ; SFTODO: I suspect this is creating some sort of ROM bank mask, but that is speculation at moment so label may be misleading.
 .createRomBankMask
@@ -5634,7 +5634,10 @@ osfileBlock = L02EE
             STA L00AE
             STA L00AF
             PLA
-.^LA43B      TAX
+; Set bit A of the 16bit word at L00AE.
+; SFTODO: Speculating this is ROM mask, hence label name, which may not be right.
+.^addToRomBankMask
+.LA43B      TAX
             TYA
             PHA
             TXA                                                                                     ;A is now same as on entry
