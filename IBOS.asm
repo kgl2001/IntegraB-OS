@@ -5157,6 +5157,7 @@ osfileBlock = L02EE
 
 ;SFTODOWIP
 ; SFTODO: I suspect this code could be rewritten more compactly using techniques described here: http://6502.org/tutorials/compare_beyond.html#4.2
+; SFTODO: Do any callers actually use A/Y on return? My initial trace through OSWORD &43 load-via-small-buffer suggests that code doesn't, just the carry flag.
 .SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
 {
 .LA0BF      SEC
@@ -5357,7 +5358,7 @@ osfileBlock = L02EE
 
 .bufferLengthNotZeroWriteToSwr
 .LA1D5      JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
-            BCS LA211
+            BCS dataLengthGreaterThanBufferLength
             JSR copySFTODOWouldBeDataLengthOverBufferLengthAndZeroWouldBeDataLength
             LDA prvOswordBlockCopy + 12                                                             ;low byte of filename in I/O processor
             STA L02EE
@@ -5378,7 +5379,8 @@ osfileBlock = L02EE
             LDA #&00
             STA L02EE
             JMP LA21B
-			
+
+.dataLengthGreaterThanBufferLength
 .LA211      LDA #osfindOpenInput
             JSR openFile
 .LA216      LDA #&04
