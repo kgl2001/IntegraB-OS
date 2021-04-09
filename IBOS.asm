@@ -5150,7 +5150,9 @@ osfileBlock = L02EE
 .LA0BC      JMP L9983
 }
 
-.LA0BF      SEC
+;SFTODOWIP
+{
+.^LA0BF      SEC
             LDA prvOswordBlockCopy + 10
             SBC prvOswordBlockCopy + 6
             PHP
@@ -5169,23 +5171,25 @@ osfileBlock = L02EE
             BCS LA0D3
 .LA0DA      CLC
             RTS
+}
 
+;SFTODOWIP
 {
-.^LA0DC      LDA prvOswordBlockCopy + 10
-            ORA prvOswordBlockCopy + 11
+.^LA0DC      LDA prvOswordBlockCopy + 10                                                  ;low byte of "data length", actually buffer length
+            ORA prvOswordBlockCopy + 11                                                   ;high byte of "data length", actually buffer length
             BEQ LA108
             JSR LA0BF
-            STY prvOswordBlockCopy + 10
-            STA prvOswordBlockCopy + 11
+            STY prvOswordBlockCopy + 10                                                   ;low byte of "data length", actually buffer length
+            STA prvOswordBlockCopy + 11                                                   ;high byte of "data length", actually buffer length
             JSR LA0BF
             BCS LA106
-.^LA0F2      LDA prvOswordBlockCopy + 10
-            STA prvOswordBlockCopy + 6
-            LDA prvOswordBlockCopy + 11
-            STA prvOswordBlockCopy + 7
+.^LA0F2      LDA prvOswordBlockCopy + 10                                                  ;low byte of "data length", actually buffer length
+            STA prvOswordBlockCopy + 6                                                    ;low byte of buffer length
+            LDA prvOswordBlockCopy + 11                                                   ;high byte of "data length", actually buffer length
+            STA prvOswordBlockCopy + 7                                                    ;high byte of buffer length
             LDA #&00
-            STA prvOswordBlockCopy + 10
-            STA prvOswordBlockCopy + 11
+            STA prvOswordBlockCopy + 10                                                   ;low byte of data length SFTODO: or whatever it's appropriate to call it given the probably bug and this munging
+            STA prvOswordBlockCopy + 11                                                   ;high byte of data length SFTODO: ditto
 .LA106      CLC
             RTS
 			
