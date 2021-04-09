@@ -5625,6 +5625,7 @@ osfileBlock = L02EE
 }
 
 ; Set 16-bit word at L00AE to 1<<A. Y is preserved.
+; SFTODO: Am I missing something, or wouldn't it be far easier just to do a 16-bit rotate left in a loop? Maybe that wouldn't be shorter. Maybe this is performance critical? (Doubt it)
 ; SFTODO: I suspect this is creating some sort of ROM bank mask, but that is speculation at moment so label may be misleading.
 .createRomBankMask
 {
