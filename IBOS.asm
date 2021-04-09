@@ -1326,7 +1326,7 @@ GUARD	&C000
             PLA
             RTS
 			
-.L8724      LDA #&10
+.L8724      LDA #16
             JMP convertIntegerDefaultBaseA
 
 ; Convert an number expressed in ASCII at (transientCmdPtr),Y into a 32-bit
@@ -5169,8 +5169,9 @@ osfileBlock = L02EE
             BCS LA0D3
 .LA0DA      CLC
             RTS
-			
-.LA0DC      LDA prvOswordBlockCopy + 10
+
+{
+.^LA0DC      LDA prvOswordBlockCopy + 10
             ORA prvOswordBlockCopy + 11
             BEQ LA108
             JSR LA0BF
@@ -5178,7 +5179,7 @@ osfileBlock = L02EE
             STA prvOswordBlockCopy + 11
             JSR LA0BF
             BCS LA106
-.LA0F2      LDA prvOswordBlockCopy + 10
+.^LA0F2      LDA prvOswordBlockCopy + 10
             STA prvOswordBlockCopy + 6
             LDA prvOswordBlockCopy + 11
             STA prvOswordBlockCopy + 7
@@ -5190,6 +5191,7 @@ osfileBlock = L02EE
 			
 .LA108      SEC
             RTS
+}
 
 ; SFTODO: Fairly sure this is only used within OSWORD &43 and so have used its adjusted osword block in comments
 ; SFTODO: This sets up an OSGBPB block and calls OSGBPB, A is OSGBPB reason code on entry
