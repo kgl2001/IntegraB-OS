@@ -5168,7 +5168,7 @@ osfileBlock = L02EE
             TAY
             LDA prvOswordBlockCopy + 11                                                   ;high byte of "data length", actually buffer length
             SBC prvOswordBlockCopy + 7                                                    ;high byte of buffer length
-            BEQ LA0D4
+            BEQ LA0D4         ; SFTODO: save-with-buffer will always branch here, because of bug (?) copying buffer length as save length
             TAX
             PLA                                                                           ;discard stacked flags
             TXA
