@@ -4494,6 +4494,7 @@ firstDigitCmdPtrY = &BB
 ; help. Should probably start with "transfer" as I'm sure the same addresses are
 ; used for different things in other parts of the code.
 ; SFTODO: This has only one caller
+; SFTODO: I think this has something to do with stopping at the end of the current SWR bank even if we request more data transfer (probably so we can adjust the absolute bank when doing a pseudo-addressing transfer before continuning on next pass round the loop), and we return with "bytes to do in this chunk" (16-bit) at L00AC and the misnamed transientOs42MainAddrHighWord adjusted to indicate how much data remains to transfer this this chunk. *This code* makes me think the bug in the osword 43 adjustment is that prvOswordBlockCopy+6/7 should be the data length; see getBufferAddressAndLengthFromPrvOswordBlockCopy, which is used for both OSWORD &42 and &43 and where using these conventions would be a lot more consistent. (I *think* I/we had been thinking the bug was that ...blockCopy+10/11 "should" be the data length, but I am now thinking they are meant to be the buffer length. Needs a fresh look with this new perspective.)
 .adjustTransferParameters ; SFTODO: temporary name, rename once I understand better
 {
 ; SFTODO: (AD AC) = &C000 - (A9 A8), then L9D42
@@ -4576,7 +4577,7 @@ firstDigitCmdPtrY = &BB
 .doTransfer
 {
 .L9D8E      JSR adjustTransferParameters
-            LDX prvOswordBlockCopy + 1
+            LDX prvOswordBlockCopy + 1	; SFTODO: We seem to be treating this as a ROM bank of some kind, but prvOswordBlockCopy+1 will be the leftover low byte of the filename in the OSWORD &43 case, won't it?! In any case, it's not clear to me we use this outside the few instructions before absoluteAddress, so why not just do it *after* the BVC? Negligible performance gain but I think it's clearer (if it's really *not* used on the other code path)
             BIT prvOswordBlockCopy                                                                  ; get function
             BVC absoluteAddress
             ; We're dealing with a pseudo-address.
@@ -4631,6 +4632,7 @@ firstDigitCmdPtrY = &BB
 .absoluteAddress
             STY transientOs42SwrAddr
             STA transientOs42SwrAddr + 1
+	  ; SFTODO: In the context of the following the "MainAddr{High,Low}Word" names are deeply misleading; this needs fixing
 .^getBufferAddressAndLengthFromPrvOswordBlockCopy
 .L9DF2      LDA prvOswordBlockCopy + 2 ; get low byte of main memory address (OSWORD &42) or buffer address (OSWORD &43)
             STA transientOs42MainAddrLowWord
@@ -4638,9 +4640,9 @@ firstDigitCmdPtrY = &BB
             STA transientOs42MainAddrLowWord + 1
             LDA prvOswordBlockCopy + 6 ; get low byte of data length (OSWORD &42) or buffer length (OSWORD &43)
             STA transientOs42MainAddrHighWord
-            LDA prvOswordBlockCopy + 7 ; get high byte of data length (OSWORD &42) or buffer length (OSOWRD &43)
+            LDA prvOswordBlockCopy + 7 ; get high byte of data length (OSWORD &42) or buffer length (OSWORD &43)
             STA transientOs42MainAddrHighWord + 1
-            CLC ; SFTODO: callers seem to test carry, but it's not clear it can ever be sett - if so, we can delete those checks and associated code...
+            CLC ; SFTODO: callers seem to test carry, but it's not clear it can ever be set - if so, we can delete those checks and associated code...
             RTS
 
 ; SFTODO: Are next two instructions unreachable?
@@ -4908,7 +4910,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 .prepareMainSidewaysRamTransfer
 ; SFTODO: I am assuming prvOswordBlockCopy has always been through adjustPrvOsword42Block when this code is called
 {
-.L9F4E     BIT prvOswordBlockCopy + 5                                                              ;test high bit of 32-bit main memory address
+.L9F4E      BIT prvOswordBlockCopy + 5                                                              ;test high bit of 32-bit main memory address
             BMI notTube
             BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BPL notTube
