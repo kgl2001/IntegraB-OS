@@ -26,7 +26,7 @@ $filename_address="ROMB"
 block%?0=&80:REM write to absolute address
 block%!1=filename_address
 block%?3=test_bank
-block%!4=&8000:REM sideways star address
+block%!4=&8000:REM sideways start address
 block%!6=&EAEA:REM ignored, but let's be predictable
 block%!8=0:REM buffer address
 block%!10=0:REM buffer length; 0 => use private workspace
