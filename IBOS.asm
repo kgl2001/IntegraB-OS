@@ -4594,12 +4594,14 @@ firstDigitCmdPtrY = &BB
             JSR SFTODOsetVandCBasedOnSomethingAndMaybeSwizzleStuff
             BCC doTransfer
 .L9DAE      LDA L02EE
-            BEQ errorBadAddress
+            BEQ errorBadAddress ; SFTODO: Why would we generate a "Bad address" error if the file handle is 0?!
             PHP
             ; SFTODO: I am reading this code in the context of OSWORD &42, so
             ; closing a file handle seems really weird; am I missing something?
             ; To be fair, provided L02EE is 0 we don't even try to close it, and
-            ; presumably this is used on some other code paths too.
+            ; presumably this is used on some other code paths too. That's probably
+	  ; true, as this is used in OSWORD &43 too and L02EE probably is a file
+	  ; handle.
             JSR closeHandleL02EE
             PLP
 .errorBadAddress
