@@ -4908,7 +4908,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 .prepareMainSidewaysRamTransfer
 ; SFTODO: I am assuming prvOswordBlockCopy has always been through adjustPrvOsword42Block when this code is called
 {
-.^L9F4E     BIT prvOswordBlockCopy + 5                                                              ;test high bit of 32-bit main memory address
+.L9F4E     BIT prvOswordBlockCopy + 5                                                              ;test high bit of 32-bit main memory address
             BMI notTube
             BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BPL notTube
