@@ -5042,7 +5042,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             LDA prvOswordBlockCopy + 3
             STA prvOswordBlockCopy + 9
             BIT prvOswordBlockCopy + 7
-            JMP LA18B
+            JMP osword43Internal
 
 ; Fix up an adjusted OSWORD &43 buffer at prvOswordBlockCopy so:
 ; - it has the right start address and size if we're supposed to use PAGE-HIMEM
@@ -5329,7 +5329,8 @@ osfileBlock = L02EE
             LDA #hi(L0700)
             STA prvOswordBlockCopy + 13
 .noTube
-.^LA18B     JSR adjustOsword43LengthAndBuffer
+.^osword43Internal
+.LA18B     JSR adjustOsword43LengthAndBuffer
             LDA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
             ORA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
             BNE bufferLengthNotZero
