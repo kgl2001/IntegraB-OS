@@ -5017,13 +5017,14 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             RTS
 }
 			
+{
 ;*SRSAVE Command
-.srsave	  JSR PrvEn								;switch in private RAM
+.^srsave	  JSR PrvEn								;switch in private RAM
             LDA #&00
             JMP L9FF8
 			
 ;*SRLOAD Command
-.srload	  JSR PrvEn								;switch in private RAM
+.^srload	  JSR PrvEn								;switch in private RAM
             LDA #&80
 .L9FF8      STA prvOswordBlockCopy
             JSR L9C22
@@ -5043,6 +5044,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             STA prvOswordBlockCopy + 9
             BIT prvOswordBlockCopy + 7
             JMP osword43Internal
+}
 
 ; Fix up an adjusted OSWORD &43 buffer at prvOswordBlockCopy so:
 ; - it has the right start address and size if we're supposed to use PAGE-HIMEM
