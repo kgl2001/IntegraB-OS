@@ -5019,6 +5019,11 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 			
 ; SFTODO: Could we move JSR PrvEn to L9FF8 before the STA and save three bytes by not duplicating it for srsave and srload? Note that PrvEn preserves A.
 {
+; SFTODO: *SRSAVE seems quite badly broken, I think because of problems with
+; OSWORD &43.
+; "*SRSAVE FOO A000 C000 4 Q" generates "Bad address" and saves nothing.
+; "*SRSAVE FOO A000 C000 4" does seem to create the file correctly but then
+; generates a "Bad address" error.
 ;*SRSAVE Command
 .^srsave	  JSR PrvEn								;switch in private RAM
             LDA #&00
@@ -5065,6 +5070,7 @@ osfileBlock = L02EE
             STA prvOswordBlockCopy + 5                                                    ;SFTODO: ditto
             BIT prvOswordBlockCopy + 7                                                    ;high byte of buffer length
             BPL bufferNotPageToHimem
+	  ; SFTODO: I think the stores here to block+6/7 show that these *are* supposed to be the buffer length
             LDA #osbyteReadWriteOshwm
             LDX #&00
             STX prvOswordBlockCopy + 2                                                    ;low byte of (16-bit) buffer address
@@ -5091,6 +5097,7 @@ osfileBlock = L02EE
             JSR OSFILE
             CMP #&01
             BNE errorNotFoundIndirect
+	  ; SFTODO: And following on from above, these stores to block+10/11 do suggest it really is meant to the be the data length
             LDA osfileBlock + osfileReadInformationLengthOffset
             STA prvOswordBlockCopy + 10                                                   ;low byte of data length
             LDA osfileBlock + osfileReadInformationLengthOffset + 1
@@ -5333,7 +5340,7 @@ osfileBlock = L02EE
             STA prvOswordBlockCopy + 13
 .noTube
 .^osword43Internal
-.LA18B     JSR adjustOsword43LengthAndBuffer
+.LA18B      JSR adjustOsword43LengthAndBuffer
             LDA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
             ORA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
             BNE bufferLengthNotZero
@@ -5372,6 +5379,7 @@ osfileBlock = L02EE
 .LA1C7      JSR prepareMainSidewaysRamTransfer
             JSR getAddressesAndLengthFromPrvOswordBlockCopy
             BIT prvOswordBlockCopy                                                                  ;function
+	  ; SFTODO: Can we just use BPL bufferLengthNotZeroReadFromSwr? Probably too far...
             BMI bufferLengthNotZeroWriteToSwr
             JMP bufferLengthNotZeroReadFromSwr
 
@@ -5435,7 +5443,7 @@ osfileBlock = L02EE
             JSR copySFTODOWouldBeDataLengthOverBufferLengthAndZeroWouldBeDataLength
             LDA #&00
             STA L02EE ; SFTODO: I *suspect* L02EE is playing its file handle role here
-            JMP LA266
+            JMP LA266 ; SFTODO: we just set A=0 so we could BEQ to save a byte
 			
 .LA261      LDA #osfindOpenOutput
             JSR openFile

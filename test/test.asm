@@ -20,3 +20,5 @@ testrom 1
 save "ROMB", &8000, P%
 putbasic "osword43-a.bas", "OSW43A"
 putbasic "osword43-b.bas", "OSW43B"
+putbasic "osword43-c.bas", "OSW43C"
+putbasic "osword43-d.bas", "OSW43D"
