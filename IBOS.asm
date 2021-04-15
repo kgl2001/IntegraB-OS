@@ -5024,6 +5024,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 ; "*SRSAVE FOO A000 C000 4 Q" generates "Bad address" and saves nothing.
 ; "*SRSAVE FOO A000 C000 4" does seem to create the file correctly but then
 ; generates a "Bad address" error.
+; SFTODO: Ken has pointed out those commands are (using Integra-B *SRSAVE conventions) trying to save one byte past the end of sideways RAM, hence "Bad address". I don't know if we should consider changing this to be more Acorn DFS SRAM utils-like in a new version of IBOS or not, but those actual commands do work fine if the end address is fixed. (We could potentially quibble about whether it's right that one of those error-generating command creates an empty file and the other doesn't, but I don't think this is a big deal, and I have no idea what Acorn DFS does either.)
 ;*SRSAVE Command
 .^srsave	  JSR PrvEn								;switch in private RAM
             LDA #&00
