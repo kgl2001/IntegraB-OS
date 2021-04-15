@@ -5017,6 +5017,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             RTS
 }
 			
+; SFTODO: Could we move JSR PrvEn to L9FF8 before the STA and save three bytes by not duplicating it for srsave and srload? Note that PrvEn preserves A.
 {
 ;*SRSAVE Command
 .^srsave	  JSR PrvEn								;switch in private RAM
