@@ -551,7 +551,7 @@ GUARD	&C000
 		EQUS &04, "(", &98, &A0						;Parameter &9B:			'(<id>(,<id>).../?)'
 		EQUS &05, &94, &AB, &A3, &A2						;Parameter &9C:			'<fsp> <sraddr> (<id>) (Q)(I)'
 		EQUS &05, &94, &AB, &A9, &A3						;Parameter &9D:			'<fsp> (<end>/+<len>) (<id>) (Q)'
-		EQUS &06, "<", &AA, &A9, &AB, &A4					;Parameter &9E:			'<addr> (<end>/+<len>) <sraddr> (<id>)'
+		EQUS &06, "<", &AA, &A9, &AB, &A4					;Parameter &9E:			'<addr> (<end>/+<len>) <sraddr> (<id>)' ; SFTODO: I'm no expert on this BNF-ish stuff, but in at least some cases (*SRLOAD, *SRSAVE) we seem to be indicating the <id> (i.e. the bank number) is optional by surrounding it with brackets, but it isn't. Is this right? I think Acorn's SRAM utils might do the same, though I haven't done a particularly careful comparison yet.
 		EQUS &02, &9E							;Parameter &9F:			'<addr> (<end>/+<len>) <sraddr> (<id>)'
 		EQUS &04, "/?)"							;Parameter &A0:			'/?)'
 		EQUS &08, "ON/OFF", &A0						;Parameter &A1:			'ON/OFF/?)'
@@ -5070,12 +5070,12 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 ; SFTODO: Ken has pointed out those commands are (using Integra-B *SRSAVE conventions) trying to save one byte past the end of sideways RAM, hence "Bad address". I don't know if we should consider changing this to be more Acorn DFS SRAM utils-like in a new version of IBOS or not, but those actual commands do work fine if the end address is fixed. (We could potentially quibble about whether it's right that one of those error-generating command creates an empty file and the other doesn't, but I don't think this is a big deal, and I have no idea what Acorn DFS does either.)
 ;*SRSAVE Command
 .^srsave	  JSR PrvEn								;switch in private RAM
-            LDA #&00
+            LDA #&00								;function "save absolute"
             JMP L9FF8
 			
 ;*SRLOAD Command
 .^srload	  JSR PrvEn								;switch in private RAM
-            LDA #&80
+            LDA #&80								;function "load absolute"
 .L9FF8      STA prvOswordBlockCopy
             JSR getSrsaveLoadFilename
             JSR parseOsword4243BufferAddress
