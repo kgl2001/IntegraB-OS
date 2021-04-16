@@ -729,7 +729,7 @@ transientTblCmdLength = L00AC
             BNE L837E								;if not equal do further checks (check for short command '.') 
             INY									;next character
             CPY transientTblCmdLength								;until end of command string
-            BEQ L8387								;reached the end of the check. All good, so process.
+            BEQ cmdMatchesTbl								;reached the end of the check. All good, so process.
             JMP L836A								;loop
 			
 .L837E      CMP #'.'
@@ -737,7 +737,10 @@ transientTblCmdLength = L00AC
             CPY #&03								;check length of command.
             BCC L838D								;If less than 3, then too short, even if initial characters match, so check next command
             INY									;next character
-.L8387      JSR findNextCharAfterSpace								;Command recognised. find first command parameter after ' '. offset stored in Y.
+.cmdMatchesTbl
+	  ; SFTODO: Note that we don't check for a space or CR following the command, so IBOS will (arguably incorrectly) recognise things like "*STATUSFILE" as "*STATUS FILE" instead of not claiming them and allowing lower priority ROMs to match against them. To be fair this is probably OK, it looks like a Master 128 does the same at least with *SRLOAD, and I think "*SHADOW1" is relatively conventional.
+	  ; SFTODO: Possibly related and possibly not - doing "*CREATEME" on (emulated) IBOS 1.20 seems to sometimes do nothing and sometimes generate a pseudo-error, as if the parsing is going wrong. Changing "ME" for other strings can make a difference.
+	  JSR findNextCharAfterSpace								;Command recognised. find first command parameter after ' '. offset stored in Y.
             CLC									;clear carry - ???
             BCC L83A0								;and jump
 .L838D      INX									;next command
