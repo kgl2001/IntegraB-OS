@@ -124,6 +124,8 @@ tubePresenceFlag = &027A ; SFTODO: allmem says 0=inactive, is there actually a s
 osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force shadow modes (note that AllMem.txt seems to have this wrong, at least my copy does)
 currentMode = &0355
 
+osCmdPtr = &F2
+
 osfindClose = &00
 osfindOpenInput = &40
 osfindOpenOutput = &80
@@ -1054,7 +1056,7 @@ GUARD	&C000
             JSR L833C								;test for valid * command
             BCC L8598
 
-.L8579      LDA #&04
+.L8579      LDA #&04 ; SFTODO: redundant? exitSCa immediately does PLA
             JMP exitSCa								;restore service call parameters and exit
 			
 .L857E      INY									;
@@ -1132,9 +1134,9 @@ GUARD	&C000
 ;end of the * command parameter address = start address + length of command parameter
 .L85FE      CLC
             TYA										;length of command
-            ADC L00F2			
+            ADC osCmdPtr			
 .L8602      STA L00A8								;end of command parameter lo byte
-            LDA L00F3
+            LDA osCmdPtr + 1
             ADC #&00
             STA L00A9								;end of command parameter hi byte
             LDA #&00								;A=0
@@ -2100,9 +2102,9 @@ firstDigitCmdPtrY = &BB
             CMP #'?'
             BEQ L8C26								;Print *BOOT parameters
             LDA L00A8
-            STA L00F2
+            STA osCmdPtr
             LDA L00A9
-            STA L00F3
+            STA osCmdPtr + 1
             SEC
             JSR GSINIT
             SEC
@@ -3032,9 +3034,9 @@ firstDigitCmdPtrY = &BB
 .L92CB      TXA									;move *CONF (*&28) / *STAT (*&29) to A
             PHA									;and store
             LDA L00A8								;copy command location LSB
-            STA L00F2								;to &F2
+            STA osCmdPtr								;to &F2
             LDA L00A9								;copy command location MSB
-            STA L00F3								;to &F3
+            STA osCmdPtr + 1								;to &F3
             PLA									;pull *CONF (*&28) / *STAT (*&29)
             TAX									;and transfer to X
             LDA #&8F								;select paged ROM service request
