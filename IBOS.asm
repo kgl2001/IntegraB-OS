@@ -1164,11 +1164,15 @@ transientTblCmdLength = L00AC
             RTS
 }
 			
+; SFTODO: I haven't traced through this code yet, but I infer that it's reponsible for printing "Syntax: " followed by the *HELP definition of the command.
+.syntaxError
+{
 .L860E      JSR PrvDis								;switch out private RAM
             LDA L00AA
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
             SEC
             JMP L83FB
+}
 
 ;service entry point
 .service
@@ -2230,7 +2234,7 @@ firstDigitCmdPtrY = &BB
             JMP L8DCA								;report number of banks set
 			
 .L8CC0      JSR PrvDis								;switch out private RAM
-            JMP L860E
+            JMP syntaxError
 			
 .L8CC6      CMP #&05
             BCC L8CCD
@@ -2481,7 +2485,7 @@ firstDigitCmdPtrY = &BB
             LDA (L00A8),Y
             CMP #&3F
             BEQ L8ED6
-            JMP L860E
+            JMP syntaxError
 			
 .L8ED0      JSR L8EE5
             JMP exitSC								;Exit Service Call
@@ -2545,7 +2549,7 @@ firstDigitCmdPtrY = &BB
             JMP exitSC								;Exit Service Call
 }
 
-.L8F47      JMP L860E
+.L8F47      JMP syntaxError
 
 ;*SHX Command
 .shx
@@ -2604,7 +2608,7 @@ firstDigitCmdPtrY = &BB
             JSR OSNEWL
 .L8FA9      JMP exitSC								;Exit Service Call
 
-.L8FAC      JMP L860E
+.L8FAC      JMP syntaxError
 
 .L8FAF      BNE L8FF1
             BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
@@ -2807,7 +2811,7 @@ firstDigitCmdPtrY = &BB
             INY
 .L9101      JSR L8724
             BCC L9109
-            JMP L860E
+            JMP syntaxError
 			
 .L9109      LDA (L00A8),Y
             CMP #&29
@@ -2981,7 +2985,7 @@ firstDigitCmdPtrY = &BB
             LDA (L00A8),Y								;read character
             CMP #&0D								;CR?
             BNE L9253								;not CR, so jump
-.L9250      JMP L860E								;no file name, so error with 'Syntax:'
+.L9250      JMP syntaxError								;no file name, so error with 'Syntax:'
 
 .L9253      TYA
             PHA
@@ -4386,7 +4390,7 @@ firstDigitCmdPtrY = &BB
             RTS
 }
 			
-.L9C3F      JMP L860E
+.L9C3F      JMP syntaxError
 
 .L9C42      JSR L8724
             BCS L9C3F
@@ -5533,7 +5537,7 @@ osfileBlock = L02EE
 			EQUB &80
 			EQUS "Bad id", &00
 
-.LA2F6      JMP L860E
+.LA2F6      JMP syntaxError
 
 .LA2F9      RTS
 }
@@ -7981,7 +7985,7 @@ osfileBlock = L02EE
             PLP
             BCC LB62A
             JSR PrvDis								;switch out private RAM
-            JMP L860E
+            JMP syntaxError
 			
 .LB62A      JMP LB4CF
 
