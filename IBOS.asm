@@ -5758,14 +5758,14 @@ osfileBlock = L02EE
 
 {
 .^LA458     JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            BCS LA490
-            LDA (L00A8),Y
+            BCS endOfLine
+            LDA (transientCmdPtr),Y
             CMP #','
             BNE LA464
             INY
 .LA464      JSR convertIntegerDefaultDecimal
             BCC LA48C
-            LDA (L00A8),Y
+            LDA (transientCmdPtr),Y
             AND #&DF                                                                                ;convert to upper case (imperfect but presumably good enough)
             CMP #'F'+1
             BCS LA47A
@@ -5786,7 +5786,7 @@ osfileBlock = L02EE
 .LA48B      INY
 .LA48C      CMP #&10
             BCS LA495
-.LA490      CLV
+.endOfLine  CLV
             RTS
 			
 .LA492      SEC
