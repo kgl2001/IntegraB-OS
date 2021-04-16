@@ -143,6 +143,8 @@ oswdbtA = &EF
 oswdbtX = &F0
 oswdbtY = &F1
 
+CmdTblOffset = 6
+
 ; This is a byte of unused CFS/RFS workspace which IBOS repurposes to track
 ; state during mode changes. This is probably done because it's quicker than
 ; paging in private RAM; OSWRCH is relatively performance sensitive and we check
@@ -469,6 +471,7 @@ GUARD	&C000
 		RTS
 		
 		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used
+		ASSERT P% == CmdRef + CmdTblOffset
 		EQUW CmdTbl							;Start of * command table
 		EQUW CmdParTbl							;Start of * command parameter table
 		EQUW CmdExTbl							;Start of * command execute address table
@@ -696,7 +699,7 @@ GUARD	&C000
             INC transientCmdPtr + 1
 .L8346      STX L00AA								;look up table address at &AA / &AB
             STY L00AB
-            LDY #&06								;lookup table initial offset to get first address 
+            LDY #CmdTblOffset								;lookup table initial offset to get first address 
             LDA (L00AA),Y
             TAX
             INY									;Y=&07
