@@ -1358,8 +1358,11 @@ transientTblCmdLength = L00AC
             PLA
             RTS
 			
+.convertIntegerDefaultBaseHex
+{
 .L8724      LDA #16
             JMP convertIntegerDefaultBaseA
+}
 
 ; Convert an number expressed in ASCII at (transientCmdPtr),Y into a 32-bit
 ; integer. It may be prefixed with '-' for negative, '&' indicates hex, '%'
@@ -2809,7 +2812,7 @@ firstDigitCmdPtrY = &BB
             PHP
             BNE L9101
             INY
-.L9101      JSR L8724
+.L9101      JSR convertIntegerDefaultBaseHex
             BCC L9109
             JMP syntaxError
 			
@@ -3025,7 +3028,7 @@ firstDigitCmdPtrY = &BB
             STA L02FB
             TXA
             TAY
-            JSR L8724
+            JSR convertIntegerDefaultBaseHex
             BCS L9250
             LDA L00B0
             STA L02FC
@@ -4394,7 +4397,7 @@ firstDigitCmdPtrY = &BB
 .syntaxErrorIndirect
 	  JMP syntaxError
 
-.L9C42      JSR L8724
+.L9C42      JSR convertIntegerDefaultBaseHex
             BCS syntaxErrorIndirect
             LDA L00B0
             STA prvOswordBlockCopy + 8
@@ -4427,7 +4430,7 @@ firstDigitCmdPtrY = &BB
             TAY
             RTS
 			
-.L9C82      JSR L8724
+.L9C82      JSR convertIntegerDefaultBaseHex
             BCS syntaxErrorIndirect
             LDA L00B0
             STA prvOswordBlockCopy + 2
@@ -4445,7 +4448,7 @@ firstDigitCmdPtrY = &BB
             PHP
             BNE L9CA7
             INY
-.L9CA7      JSR L8724
+.L9CA7      JSR convertIntegerDefaultBaseHex
             BCS syntaxErrorIndirect
             PLP
             BEQ L9CC7
