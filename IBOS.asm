@@ -116,6 +116,7 @@ transientOs4243BytesToTransfer = &AE ; 2 bytes
 transientRomBankMask = &AE ; 2 bytes
 
 transientCmdPtr = &A8 ; 2 bytes
+transientTblPtr = &AA ; 2 bytes
 
 vduStatus = &D0
 vduStatusShadow = &10
@@ -697,31 +698,32 @@ GUARD	&C000
 	  STA transientCmdPtr	
 	  BCC L8346
             INC transientCmdPtr + 1
-.L8346      STX L00AA								;look up table address at &AA / &AB
-            STY L00AB
+.L8346      STX transientTblPtr								;look up table address at &AA / &AB
+            STY transientTblPtr + 1
             LDY #CmdTblOffset								;lookup table initial offset to get first address 
-            LDA (L00AA),Y
+            LDA (transientTblPtr),Y
             TAX
             INY									;Y=&07
-            LDA (L00AA),Y
-            STX L00AA
-            STA L00AB								;store first address from lookup table in &AA / &AB
+            LDA (transientTblPtr),Y
+            STX transientTblPtr
+            STA transientTblPtr + 1								;store first address from lookup table in &AA / &AB
+	  ; SFTODO: Can we shorten the following decrement-by-one using http://www.obelisk.me.uk/6502/algorithms.html technique?
             SEC
             LDA transientCmdPtr
             SBC #&01
             STA transientCmdPtr
             BCS L8361
-            DEC transientCmdPtr + 1								;and reduce end of command parameter address by 1
+            DEC transientCmdPtr + 1							;and reduce end of command parameter address by 1
 .L8361      LDX #&00								;set pointer to first command
             LDY #&00								;set pointer to first byte of command
-            LDA (L00AA),Y								;get first byte from lookup table address. This is the length of the command string
+            LDA (transientTblPtr),Y								;get first byte from lookup table address. This is the length of the command string
 .L8367      STA L00AC								;and save at &AC
             INY
 .L836A      LDA (transientCmdPtr),Y								;get character from input buffer
             CMP #&60								;'£'
             BCC L8372
             AND #&DF								;capitalise
-.L8372      CMP (L00AA),Y								;compare with character from lookup table
+.L8372      CMP (transientTblPtr),Y								;compare with character from lookup table
             BNE L837E								;if not equal do further checks (check for short command '.') 
             INY									;next character
             CPY L00AC								;until end of command string
@@ -738,13 +740,13 @@ GUARD	&C000
             BCC L83A0								;and jump
 .L838D      INX									;next command
             CLC
-            LDA L00AA
+            LDA transientTblPtr
             ADC L00AC								;get length of command string for previous command
-            STA L00AA								
+            STA transientTblPtr								
             BCC L8399
-            INC L00AB								;and update lookup table address to point at start of next command
+            INC transientTblPtr + 1								;and update lookup table address to point at start of next command
 .L8399      LDY #&00								;set pointer to first byte of command
-            LDA (L00AA),Y								;check for end of table
+            LDA (transientTblPtr),Y								;check for end of table
             BNE L8367								;if not end of table, then loop
             SEC									;set carry - ???
 
