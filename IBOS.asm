@@ -4218,7 +4218,7 @@ firstDigitCmdPtrY = &BB
             BCS L9B2B
             RTS
 			
-.L9B2B      JMP LA2EB						;Error Bad ID
+.L9B2B      JMP badId						;Error Bad ID
 
 .L9B2E      LDX #&00
 .L9B30      STY L00AC
@@ -4327,23 +4327,26 @@ firstDigitCmdPtrY = &BB
 }
 
 ; SFTODOWIP
+.parseBankNumberIfPresent ; SFTODO: probably imperfect name, will do until the mystery code in middle is cleared up
 {
-.^L9BC3      JSR parseBankNumber
-            BCC L9BCA
-            LDA #&FF
-.L9BCA      STA prvOswordBlockCopy + 1
-            BCC L9BE5
+.L9BC3      JSR parseBankNumber
+            BCC parsedOk
+            LDA #&FF ; SFTODO: What happens if we have the ROM number set to &FF later on?
+.parsedOk   STA prvOswordBlockCopy + 1						;absolute ROM number
+            BCC parsedOk2
+	  ; SFTODO: What do these addresses hold?
             LDA prv83+&0C
             AND prv83+&0D
             AND prv83+&0E
             AND prv83+&0F
-            BMI L9BE6
-            LDA prvOswordBlockCopy
-            ORA #&40
-            STA prvOswordBlockCopy
-.L9BE5      RTS
+            BMI badIdIndirect
+            LDA prvOswordBlockCopy						;function
+            ORA #&40							;set pseudo addressing mode
+            STA prvOswordBlockCopy						;function
+.parsedOk2  RTS
 
-.L9BE6      JMP LA2EB
+.badIdIndirect
+            JMP badId
 }
 
 {
@@ -4494,7 +4497,7 @@ firstDigitCmdPtrY = &BB
             JSR L9C52
             JSR parseOsword4243Length
             JSR L9C42
-            JSR L9BC3
+            JSR parseBankNumberIfPresent
             JMP LA0A6
 
 ; SFTODO: slightly poor name based on quick scan of code below, I don't know
@@ -5092,7 +5095,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             STA prvOswordBlockCopy + 10							;low byte of data length
             LDA prvOswordBlockCopy + 7							;high byte of buffer length
             STA prvOswordBlockCopy + 11							;high byte of data length
-.load       JSR L9BC3
+.load       JSR parseBankNumberIfPresent
             JSR L9BE9
             LDA prvOswordBlockCopy + 2							;byte 0 of "buffer address" we parsed earlier
             STA prvOswordBlockCopy + 8							;low byte of sideways start address
@@ -5548,7 +5551,8 @@ osfileBlock = L02EE
 .^LA2E4      JSR LA40C
             BCC LA2F9
             BVC LA2F6
-.^LA2EB      JSR raiseError								;Goto error handling, where calling address is pulled from stack
+.^badId
+.LA2EB      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
 			EQUB &80
 			EQUS "Bad id", &00
@@ -5887,7 +5891,7 @@ osfileBlock = L02EE
 .LA50A      PHP
             JSR LA40C
             BCC LA513
-            JMP LA2EB
+            JMP badId
 			
 .LA513      LDX #&38
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
