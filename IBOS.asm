@@ -5701,7 +5701,7 @@ osfileBlock = L02EE
             BCC LA3F5								;loop if not.
             JMP OSNEWL								;otherwise finished for this rom so write new line and return
 
-; SFTODO: Not entirely sure what this is for, but it seems to be parsing one or more bank numbers and populating transientRomBankMask accordingly. '*' seems to indicate the list is "everything except these". We return with C set iff at least one bit in the mask is set.
+; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be used to indicate "everything but the listed banks". Return with C set iff at least one bit of transientRomBankMask is set.
 .parseRomBankList
 {
 .LA40C      LDA #&00
