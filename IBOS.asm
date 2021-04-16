@@ -145,6 +145,7 @@ oswdbtX = &F0
 oswdbtY = &F1
 
 CmdTblOffset = 6
+CmdTblPtrOffset = 10
 
 ; This is a byte of unused CFS/RFS workspace which IBOS repurposes to track
 ; state during mode changes. This is probably done because it's quicker than
@@ -475,6 +476,7 @@ GUARD	&C000
 		ASSERT P% = CmdRef + CmdTblOffset
 		EQUW CmdTbl							;Start of * command table
 		EQUW CmdParTbl							;Start of * command parameter table
+		ASSERT P% = CmdRef + CmdTblPtrOffset
 		EQUW CmdExTbl							;Start of * command execute address table
 
 ;* commands
@@ -691,6 +693,7 @@ GUARD	&C000
 ;Test for valid command
 ;On entry, X & Y contain lookup table address. A=0 SFTODO: I don't think A is always 0 on entry, e.g. see code just above L946D (and if A was always 0 on entry, it would be redundant to add it to transientCmdPtr)
 ;&A8 / &A9 contain end of command parameter address in buffer
+; SFTODO: Among other things, returns with carry clear and X containing index if we found a match, otherwise with carry set
 .searchCmdTbl
 {
 transientTblCmdLength = L00AC
@@ -1057,7 +1060,7 @@ transientTblCmdLength = L00AC
 	  JSR setTransientCmdPtr
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
             JSR searchCmdTbl								;test for valid * command
-            BCC L8598
+            BCC L8598								;branch if found a valid * command
             TAY
             LDA (transientCmdPtr),Y
             AND #&DF								;capitalise
@@ -1067,7 +1070,7 @@ transientTblCmdLength = L00AC
             TYA									;so try again, with A=1 and Y=1
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
             JSR searchCmdTbl								;test for valid * command
-            BCC L8598
+            BCC L8598								;branch if found a valid * command
 
 .L8579      LDA #&04 ; SFTODO: redundant? exitSCa immediately does PLA
             JMP exitSCa								;restore service call parameters and exit
@@ -1090,26 +1093,26 @@ transientTblCmdLength = L00AC
 .L8598      STY L00AD
             STX L00AC
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
-            STX L00AA
-            STY L00AB
-            LDY #&0A
-            LDA (L00AA),Y
+            STX transientTblPtr
+            STY transientTblPtr + 1
+            LDY #CmdTblPtrOffset
+            LDA (transientTblPtr),Y
             TAX
             INY
-            LDA (L00AA),Y
-            STA L00AB
-            STX L00AA
-            LDA L00AC
-            ASL A
+            LDA (transientTblPtr),Y
+            STA transientTblPtr + 1
+            STX transientTblPtr
+            LDA L00AC								;get matching command index
+            ASL A									;double it as we have 16-bit entries
             TAY
             INY
-            LDA (L00AA),Y
+            LDA (transientTblPtr),Y
             PHA
             DEY
-            LDA (L00AA),Y
+            LDA (transientTblPtr),Y
             PHA
             LDX L00AC
-            STX L00AA
+            STX transientTblPtr
             LDY L00AD
             RTS
 }
