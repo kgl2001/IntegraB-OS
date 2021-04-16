@@ -6,7 +6,8 @@ REM - We must have sideways RAM in test_bank; it will be corrupted.
 REM - Ideally test_bank should be empty to avoid confusion.
 REM
 REM After:
-REM - ROMA should be loaded into test_bank, *not* ROMB.
+REM - ROMA should be loaded into test_bank, *not* ROMB. (Press CTRL-BREAK
+REM   and use *ROMS to check this; the test roms don't show in *HELP.)
 REM
 REM The above behaviour has been confirmed on an emulated Master 128.
 REM IBOS 1.20 fails this test; it loads ROMB.
