@@ -5718,7 +5718,7 @@ osfileBlock = L02EE
             BNE LA429
             BVS secRts ; branch if not at end of line SFTODO: isn't this redundant? We just successfully checked and found a '*' not a CR? So we'll never branch, right? Should we have checked this earlier (e.g. at .noBankNumber)? Have I just got confused?
             INY
-            JSR invertTransientRomBankMask								;Invert all bits in &AE and &AF
+            JSR invertTransientRomBankMask
 .LA429      LDA transientRomBankMask
             ORA transientRomBankMask + 1
             BEQ secRts
