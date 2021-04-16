@@ -722,7 +722,7 @@ transientTblCmdLength = L00AC
 .L8361      LDX #&00								;set pointer to first command
             LDY #&00								;set pointer to first byte of command
             LDA (transientTblPtr),Y							;get first byte from lookup table address. This is the length of the command string
-.L8367      STA transientTblCmdLength								;and save at &AC
+.L8367      STA transientTblCmdLength							;and save at &AC
             INY
 .L836A      LDA (transientCmdPtr),Y							;get character from input buffer
 	  ; SFTODO: Any chance of simultaneously optimising-and-improving by having a subroutine to convert A to upper case and JSRing to it everywhere we want to do that?
@@ -1060,7 +1060,7 @@ transientTblCmdLength = L00AC
 	  JSR setTransientCmdPtr
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
             JSR searchCmdTbl								;test for valid * command
-            BCC L8598								;branch if found a valid * command
+            BCC runCmd								;branch if found a valid * command
             TAY
             LDA (transientCmdPtr),Y
             AND #&DF								;capitalise
@@ -1070,7 +1070,7 @@ transientTblCmdLength = L00AC
             TYA									;so try again, with A=1 and Y=1
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
             JSR searchCmdTbl								;test for valid * command
-            BCC L8598								;branch if found a valid * command
+            BCC runCmd								;branch if found a valid * command
 
 .L8579      LDA #&04 ; SFTODO: redundant? exitSCa immediately does PLA
             JMP exitSCa								;restore service call parameters and exit
@@ -1090,7 +1090,9 @@ transientTblCmdLength = L00AC
             BNE L8579								;if not, then restore and exit
             JMP commandS								;execute '*S*' command
 			
-.L8598      STY L00AD
+.runCmd
+	  ; Transfer control to CmdRef[CmdTblPtrOffset][X], preserving Y (the index into the next byte of the command tail after the * command).
+	  STY L00AD
             STX L00AC
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
             STX transientTblPtr
@@ -1103,7 +1105,7 @@ transientTblCmdLength = L00AC
             STA transientTblPtr + 1
             STX transientTblPtr
             LDA L00AC								;get matching command index
-            ASL A									;double it as we have 16-bit entries
+            ASL A									;double it as we have 16-bit entries at CmdTblPtrOffset
             TAY
             INY
             LDA (transientTblPtr),Y
@@ -1112,7 +1114,7 @@ transientTblCmdLength = L00AC
             LDA (transientTblPtr),Y
             PHA
             LDX L00AC
-            STX transientTblPtr
+            STX L00AA ; SFTODO: why do we bother? does any command use this? (I think X=index of the command in the table)
             LDY L00AD
             RTS
 }
