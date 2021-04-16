@@ -5088,15 +5088,15 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 .L9FF8      STA prvOswordBlockCopy
             JSR getSrsaveLoadFilename
             JSR parseOsword4243BufferAddress
-            BIT prvOswordBlockCopy
-            BMI load
+            BIT prvOswordBlockCopy							;function
+            BMI notSave
             JSR parseOsword4243Length
 	  ; SFTODO: Once the code is all worked out for both OSWORD &42 and &43, it's probably best to define constants e.g. prvOswordBlockCopyBufferLength = prvOswordBlockCopy + 6 and use those everywhere, instead of relying on comments on each line.
             LDA prvOswordBlockCopy + 6							;low byte of buffer length
             STA prvOswordBlockCopy + 10							;low byte of data length
             LDA prvOswordBlockCopy + 7							;high byte of buffer length
             STA prvOswordBlockCopy + 11							;high byte of data length
-.load       JSR parseBankNumberIfPresent
+.notSave    JSR parseBankNumberIfPresent
             JSR parseSrsaveLoadFlags
             LDA prvOswordBlockCopy + 2							;byte 0 of "buffer address" we parsed earlier
             STA prvOswordBlockCopy + 8							;low byte of sideways start address
