@@ -1041,7 +1041,7 @@ GUARD	&C000
 ;Unrecognised Star command
 .service04
 {
-	  JSR L85FE								;store end of command parameter address at &A8 / &A9. Set A=0, Y=0
+	  JSR setTransientCmdPtr								;store end of command parameter address at &A8 / &A9. Set A=0, Y=0
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
             JSR L833C								;test for valid * command
             BCC L8598
@@ -1103,7 +1103,7 @@ GUARD	&C000
 
 ;*HELP Service Call
 .service09
-            JSR L85FE
+            JSR setTransientCmdPtr
             LDA (L00A8),Y
             CMP #&0D
             BNE L85F1
@@ -1131,17 +1131,20 @@ GUARD	&C000
             BCC L85CD
 .L85FB      JMP exitSCa								;restore service call parameters and exit
 
-;end of the * command parameter address = start address + length of command parameter
+; Set (transientCmdPtr),Y so Y=0 and it accesses the same byte as (osCmdPtr),Y on entry.
+.setTransientCmdPtr
+{
 .L85FE      CLC
-            TYA										;length of command
+            TYA									;offset used with osCmdPtr to access next character SFTODO: earlier comment called this "length", I don't think that's right (at least in case of service call 4) but it may be this does act as a kind of length in some other context, so keeping this note around until I've been through all the callers
             ADC osCmdPtr			
-.L8602      STA L00A8								;end of command parameter lo byte
+            STA transientCmdPtr							;end of command parameter lo byte
             LDA osCmdPtr + 1
             ADC #&00
-            STA L00A9								;end of command parameter hi byte
+            STA transientCmdPtr + 1							;end of command parameter hi byte
             LDA #&00								;A=0
-            TAY										;Y=0
+            TAY									;Y=0
             RTS
+}
 			
 .L860E      JSR PrvDis								;switch out private RAM
             LDA L00AA
@@ -3233,7 +3236,7 @@ firstDigitCmdPtrY = &BB
 ;Service call &28: *CONFIGURE Command
 .service28	SEC
 .L943A      PHP
-            JSR L85FE
+            JSR setTransientCmdPtr
             LDA (L00A8),Y
             CMP #&0D
             BNE L9452
