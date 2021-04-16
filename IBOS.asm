@@ -5588,7 +5588,7 @@ osfileBlock = L02EE
 
 ;*UNPLUG Command
 .unplug	  JSR LA2E4								;Error check input data
-            JSR LA4D6								;Invert all bits in &AE and &AF
+            JSR invertTransientRomBankMask								;Invert all bits in &AE and &AF
             LDX #&06								;INSERT status for ROMS &0F to &08
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND L00AE
@@ -5718,7 +5718,7 @@ osfileBlock = L02EE
             BNE LA429
             BVS secRts ; branch if not at end of line SFTODO: isn't this redundant? We just successfully checked and found a '*' not a CR? So we'll never branch, right? Should we have checked this earlier (e.g. at .noBankNumber)? Have I just got confused?
             INY
-            JSR LA4D6								;Invert all bits in &AE and &AF
+            JSR invertTransientRomBankMask								;Invert all bits in &AE and &AF
 .LA429      LDA transientRomBankMask
             ORA transientRomBankMask + 1
             BEQ secRts
@@ -5855,13 +5855,16 @@ osfileBlock = L02EE
             RTS
 			
 ;Invert all bits in &AE and &AF
-.LA4D6      LDA L00AE
+.invertTransientRomBankMask
+{
+.LA4D6      LDA transientRomBankMask
             EOR #&FF
-            STA L00AE
-            LDA L00AF
+            STA transientRomBankMask
+            LDA transientRomBankMask + 1
             EOR #&FF
-            STA L00AF
+            STA transientRomBankMask + 1
             RTS
+}
 			
 
 ;Assign default pseudo RAM banks to absolute RAM banks
