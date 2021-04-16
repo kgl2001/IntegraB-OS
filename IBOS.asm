@@ -4407,9 +4407,9 @@ firstDigitCmdPtrY = &BB
             RTS
 			
 .L9C52      JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (L00A8),Y
-            CMP #&40
-            BNE L9C82
+            LDA (transientCmdPtr),Y
+            CMP #'@'
+            BNE parseOsword4243BufferAddress
             INY
             TYA
             PHA
@@ -4431,6 +4431,9 @@ firstDigitCmdPtrY = &BB
             TAY
             RTS
 			
+; Parse a 32-bit hex-default value from the command line and store it in the "buffer address" part of prvOswordBlockCopy. (Some callers will move it from there to where they really want it afterwards.)
+.parseOsword4243BufferAddress
+{
 .L9C82      JSR convertIntegerDefaultBaseHex
             BCS syntaxErrorIndirect
             LDA L00B0
@@ -4442,6 +4445,7 @@ firstDigitCmdPtrY = &BB
             LDA L00B3
             STA prvOswordBlockCopy + 5
             RTS
+}
 			
 .L9C9C      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y
@@ -5074,7 +5078,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             LDA #&80
 .L9FF8      STA prvOswordBlockCopy
             JSR getSrsaveLoadFilename
-            JSR L9C82
+            JSR parseOsword4243BufferAddress
             BIT prvOswordBlockCopy
             BMI LA015
             JSR L9C9C
