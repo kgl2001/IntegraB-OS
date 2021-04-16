@@ -471,7 +471,7 @@ GUARD	&C000
 		LDY #CmdRef DIV &100
 		RTS
 		
-		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used
+		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used SFTODO: I'm not sure this is entirely true - the code at L833C seems to use the 0 byte at the end of CmdTbl to know when to stop, and if I type "*SRWE" on an emulated IBOS 1.20 machine I get a "Bad id" error, suggesting the command is recognised (if not necessarily useful). It is possible some *other* code does use this, I'm *guessing* the *HELP display code uses this in order to keep SRWE and SRWP "secret" (but I haven't looked yet).
 		ASSERT P% = CmdRef + CmdTblOffset
 		EQUW CmdTbl							;Start of * command table
 		EQUW CmdParTbl							;Start of * command parameter table
@@ -740,26 +740,26 @@ transientTblCmdLength = L00AC
 .cmdMatchesTbl
 	  ; SFTODO: Note that we don't check for a space or CR following the command, so IBOS will (arguably incorrectly) recognise things like "*STATUSFILE" as "*STATUS FILE" instead of not claiming them and allowing lower priority ROMs to match against them. To be fair this is probably OK, it looks like a Master 128 does the same at least with *SRLOAD, and I think "*SHADOW1" is relatively conventional.
 	  ; SFTODO: Possibly related and possibly not - doing "*CREATEME" on (emulated) IBOS 1.20 seems to sometimes do nothing and sometimes generate a pseudo-error, as if the parsing is going wrong. Changing "ME" for other strings can make a difference.
-	  JSR findNextCharAfterSpace								;Command recognised. find first command parameter after ' '. offset stored in Y.
-            CLC									;clear carry - ???
-            BCC L83A0								;and jump
+	  JSR findNextCharAfterSpace							;Command recognised. find first command parameter after ' '. offset stored in Y.
+            CLC									;clear carry - ??? ; SFTODO: SUCCEEDED IN MATCHING?
+            BCC foundCmd								;and jump
 .L838D      INX									;next command
             CLC
             LDA transientTblPtr
-            ADC transientTblCmdLength								;get length of command string for previous command
+            ADC transientTblCmdLength							;get length of command string for previous command
             STA transientTblPtr								
             BCC L8399
-            INC transientTblPtr + 1								;and update lookup table address to point at start of next command
+            INC transientTblPtr + 1							;and update lookup table address to point at start of next command
 .L8399      LDY #&00								;set pointer to first byte of command
-            LDA (transientTblPtr),Y								;check for end of table
+            LDA (transientTblPtr),Y							;check for end of table
             BNE L8367								;if not end of table, then loop
-            SEC									;set carry - ???
+            SEC									;set carry - ??? SFTODO: FAILED TO MATCH?
 
 			
-.L83A0      DEY									;get back to last character
-            INC transientCmdPtr								;
+.foundCmd   DEY									;get back to last character
+            INC transientCmdPtr							;
             BNE L83A7
-            INC transientCmdPtr + 1								;and increment lookup table address instead
+            INC transientCmdPtr + 1							;and increment lookup table address instead SFTODO: why do we bother doing this though?
 .L83A7      PLA									;restore A
             RTS									;and finish
 ;End of test for valid commands
