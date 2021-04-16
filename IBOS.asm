@@ -471,7 +471,7 @@ GUARD	&C000
 		LDY #CmdRef DIV &100
 		RTS
 		
-		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used SFTODO: I'm not sure this is entirely true - the code at L833C seems to use the 0 byte at the end of CmdTbl to know when to stop, and if I type "*SRWE" on an emulated IBOS 1.20 machine I get a "Bad id" error, suggesting the command is recognised (if not necessarily useful). It is possible some *other* code does use this, I'm *guessing* the *HELP display code uses this in order to keep SRWE and SRWP "secret" (but I haven't looked yet).
+		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used SFTODO: I'm not sure this is entirely true - the code at searchCmdTbl seems to use the 0 byte at the end of CmdTbl to know when to stop, and if I type "*SRWE" on an emulated IBOS 1.20 machine I get a "Bad id" error, suggesting the command is recognised (if not necessarily useful). It is possible some *other* code does use this, I'm *guessing* the *HELP display code uses this in order to keep SRWE and SRWP "secret" (but I haven't looked yet).
 		ASSERT P% = CmdRef + CmdTblOffset
 		EQUW CmdTbl							;Start of * command table
 		EQUW CmdParTbl							;Start of * command parameter table
@@ -691,9 +691,10 @@ GUARD	&C000
 ;Test for valid command
 ;On entry, X & Y contain lookup table address. A=0 SFTODO: I don't think A is always 0 on entry, e.g. see code just above L946D (and if A was always 0 on entry, it would be redundant to add it to transientCmdPtr)
 ;&A8 / &A9 contain end of command parameter address in buffer
-transientTblCmdLength = L00AC
+.searchCmdTbl
 {
-.^L833C	  PHA									;save A
+transientTblCmdLength = L00AC
+.L833C	  PHA									;save A
             CLC
 	  ADC transientCmdPtr
 	  STA transientCmdPtr	
@@ -1055,7 +1056,7 @@ transientTblCmdLength = L00AC
 {
 	  JSR setTransientCmdPtr
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
-            JSR L833C								;test for valid * command
+            JSR searchCmdTbl								;test for valid * command
             BCC L8598
             TAY
             LDA (transientCmdPtr),Y
@@ -1065,7 +1066,7 @@ transientTblCmdLength = L00AC
             INY										
             TYA									;so try again, with A=1 and Y=1
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
-            JSR L833C								;test for valid * command
+            JSR searchCmdTbl								;test for valid * command
             BCC L8598
 
 .L8579      LDA #&04 ; SFTODO: redundant? exitSCa immediately does PLA
@@ -1139,7 +1140,7 @@ transientTblCmdLength = L00AC
 			
 .L85F1      JSR ibosRef
             LDA #&00
-            JSR L833C
+            JSR searchCmdTbl
             BCC L85CD
 .L85FB      JMP exitSCa								;restore service call parameters and exit
 
@@ -3262,14 +3263,14 @@ firstDigitCmdPtrY = &BB
 .L9452      LDA #&00
             STA L00BD
             JSR ConfRef
-            JSR L833C
+            JSR searchCmdTbl
             BCC L9471
             TAY
             JSR L92F8
             BCS L946D
             TYA
             JSR ConfRef
-            JSR L833C
+            JSR searchCmdTbl
             BCC L9471
 .L946D      PLP
             JMP exitSCa								;restore service call parameters and exit
