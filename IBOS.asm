@@ -5888,18 +5888,19 @@ osfileBlock = L02EE
             PHP
             JMP LA513
 			
+{
 ;*SRWE Command
-.srwe       CLC
+.^srwe      CLC
             BCC LA50A
 
 ;*SRWP Command
-.srwp       SEC
+.^srwp      SEC
 .LA50A      PHP
             JSR parseRomBankList
             BCC LA513
             JMP badId
 			
-.LA513      LDX #&38
+.^LA513     LDX #&38
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA L00AE
             PLP
@@ -5916,8 +5917,9 @@ osfileBlock = L02EE
 .LA52E      JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             JSR PrvEn								;switch in private RAM
             JSR LA53D
-.LA537      JSR PrvDis								;switch out private RAM
+.^LA537     JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call
+}
 			
 .LA53D      LDX #&38
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
