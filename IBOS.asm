@@ -4383,17 +4383,18 @@ firstDigitCmdPtrY = &BB
             CMP #' '
             BEQ L9C3D
             CMP #vduCr
-            BEQ L9C3F
+            BEQ syntaxErrorIndirect
             INY
             BNE L9C30
 .L9C3D      INY
             RTS
 }
 			
-.L9C3F      JMP syntaxError
+.syntaxErrorIndirect
+	  JMP syntaxError
 
 .L9C42      JSR L8724
-            BCS L9C3F
+            BCS syntaxErrorIndirect
             LDA L00B0
             STA prvOswordBlockCopy + 8
             LDA L00B1
@@ -4426,7 +4427,7 @@ firstDigitCmdPtrY = &BB
             RTS
 			
 .L9C82      JSR L8724
-            BCS L9C3F
+            BCS syntaxErrorIndirect
             LDA L00B0
             STA prvOswordBlockCopy + 2
             LDA L00B1
@@ -4444,7 +4445,7 @@ firstDigitCmdPtrY = &BB
             BNE L9CA7
             INY
 .L9CA7      JSR L8724
-            BCS L9C3F
+            BCS syntaxErrorIndirect
             PLP
             BEQ L9CC7
             INC L00B0
