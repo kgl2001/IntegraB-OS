@@ -4341,15 +4341,16 @@ firstDigitCmdPtrY = &BB
 }
 
 ; SFTODO: This has only one caller
-.L9C22      CLC
+{
+.^L9C22     CLC
             TYA
             ADC transientCmdPtr
             STA prvOswordBlockCopy + 12							;low byte of filename in I/O processor
             LDA transientCmdPtr + 1
             ADC #&00
             STA prvOswordBlockCopy + 13							;high byte of filename in I/O processor
-.L9C30      LDA (L00A8),Y
-            CMP #&20
+.L9C30      LDA (transientCmdPtr),Y
+            CMP #' '
             BEQ L9C3D
             CMP #&0D
             BEQ L9C3F
@@ -4357,6 +4358,7 @@ firstDigitCmdPtrY = &BB
             BNE L9C30
 .L9C3D      INY
             RTS
+}
 			
 .L9C3F      JMP L860E
 
