@@ -1046,7 +1046,7 @@ GUARD	&C000
             TAY
             LDA (transientCmdPtr),Y
             AND #&DF								;capitalise
-            CMP #&49								;'I' - All Integra-B commands can be prefixed with 'I' to distinguish from other commands
+            CMP #'I'								;'I' - All Integra-B commands can be prefixed with 'I' to distinguish from other commands
             BNE L857E								; if not 'I', then test for '*X*' or '*S*' commands
             INY										
             TYA									;so try again, with A=1 and Y=1
@@ -1058,17 +1058,17 @@ GUARD	&C000
             JMP exitSCa								;restore service call parameters and exit
 			
 .L857E      INY									;
-            LDA (L00A8),Y								;read second character
-            CMP #&2A								;is it '*'?
+            LDA (transientCmdPtr),Y							;read second character
+            CMP #'*'
             BNE L8579								;if not, then restore and exit
             DEY
-            LDA (L00A8),Y
+            LDA (transientCmdPtr),Y
             AND #&DF								;capitalise
-            CMP #&58								;'X' - '*X*' command
+            CMP #'X'								;'X' - '*X*' command
             BNE L8591								;if not, then check for '*S*'
             JMP commandX								;execute '*X*' command
 			
-.L8591      CMP #&53								;'S' - Undocumented '*S*' command
+.L8591      CMP #'S'								;'S' - Undocumented '*S*' command
             BNE L8579								;if not, then restore and exit
             JMP commandS								;execute '*S*' command
 			
