@@ -4371,8 +4371,9 @@ firstDigitCmdPtrY = &BB
 }
 
 ; SFTODO: This has only one caller
+.getSrsaveLoadFilename
 {
-.^L9C22     CLC
+.L9C22      CLC
             TYA
             ADC transientCmdPtr
             STA prvOswordBlockCopy + 12							;low byte of filename in I/O processor
@@ -5068,7 +5069,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 .^srload	  JSR PrvEn								;switch in private RAM
             LDA #&80
 .L9FF8      STA prvOswordBlockCopy
-            JSR L9C22
+            JSR getSrsaveLoadFilename
             JSR L9C82
             BIT prvOswordBlockCopy
             BMI LA015
