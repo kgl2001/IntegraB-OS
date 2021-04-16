@@ -551,7 +551,7 @@ GUARD	&C000
 		EQUS &04, "(", &98, &A0						;Parameter &9B:			'(<id>(,<id>).../?)'
 		EQUS &05, &94, &AB, &A3, &A2						;Parameter &9C:			'<fsp> <sraddr> (<id>) (Q)(I)'
 		EQUS &05, &94, &AB, &A9, &A3						;Parameter &9D:			'<fsp> (<end>/+<len>) (<id>) (Q)'
-		EQUS &06, "<", &AA, &A9, &AB, &A4					;Parameter &9E:			'<addr> (<end>/+<len>) <sraddr> (<id>)' ; SFTODO: I'm no expert on this BNF-ish stuff, but in at least some cases (*SRLOAD, *SRSAVE) we seem to be indicating the <id> (i.e. the bank number) is optional by surrounding it with brackets, but it isn't. Is this right? I think Acorn's SRAM utils might do the same, though I haven't done a particularly careful comparison yet.
+		EQUS &06, "<", &AA, &A9, &AB, &A4					;Parameter &9E:			'<addr> (<end>/+<len>) <sraddr> (<id>)'
 		EQUS &02, &9E							;Parameter &9F:			'<addr> (<end>/+<len>) <sraddr> (<id>)'
 		EQUS &04, "/?)"							;Parameter &A0:			'/?)'
 		EQUS &08, "ON/OFF", &A0						;Parameter &A1:			'ON/OFF/?)'
@@ -4326,7 +4326,6 @@ firstDigitCmdPtrY = &BB
             RTS
 }
 
-; SFTODOWIP
 .parseBankNumberIfPresent ; SFTODO: probably imperfect name, will do until the mystery code in middle is cleared up
 {
 .L9BC3      JSR parseBankNumber
@@ -4349,33 +4348,35 @@ firstDigitCmdPtrY = &BB
             JMP badId
 }
 
+; SFTODO: This has only a single caller
+.parseSrsaveLoadFlags
 {
-.^L9BE9      LDA #&00
-            STA prvOswordBlockCopy + 6							;Clear &8226
-            STA prvOswordBlockCopy + 7							;Clear &8227
-.L9BF1      JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (L00A8),Y
-            CMP #&0D								;CR?
-            BEQ L9C21								;Yes? Then jump to end
+.L9BE9      LDA #&00
+            STA prvOswordBlockCopy + 6							;low byte of buffer length
+            STA prvOswordBlockCopy + 7							;high byte of buffer length
+.L9BF1      JSR findNextCharAfterSpace							;find next character. offset stored in Y
+            LDA (transientCmdPtr),Y
+            CMP #vduCr
+            BEQ rts  								;Yes? Then jump to end
             AND #&DF								;Capitalise
-            CMP #&51								;'Q'
+            CMP #'Q'								;'Q'
             BNE L9C07								;No? Goto next check
             LDA #&80								;set bit 7
-            STA prvOswordBlockCopy + 7							;write value to &8227
+            STA prvOswordBlockCopy + 7							;high byte of buffer length
             BNE L9C1E								;Increment and loop
-.L9C07      CMP #&49								;'I'
+.L9C07      CMP #'I'								;'I'
             BNE L9C12								;No? Goto next check
-            LDA prvOswordBlockCopy							;get value from &8220
-            ORA #&01								;set bit 0
-            BNE L9C1B								;write value to &8220, increment and loop
-.L9C12      CMP #&50								;'P'
+            LDA prvOswordBlockCopy							;function
+            ORA #&01								;set bit 0 SFTODO: aha, so this and code below is where the mysterious undocumented function bits are set - update other comments, perhaps used named constants for this
+            BNE L9C1B								;write function, increment and loop
+.L9C12      CMP #'P'								;'P' ; SFTODO: what does this do? it's not in *HELP output I think
             BNE L9C1E								;Increment and loop
-            LDA prvOswordBlockCopy							;get value from &8220
+            LDA prvOswordBlockCopy							;function
             ORA #&02								;set bit 1
-.L9C1B      STA prvOswordBlockCopy							;write value to &8220
-.L9C1E      INY										;Next Character
+.L9C1B      STA prvOswordBlockCopy							;function
+.L9C1E      INY									;Next Character
             BNE L9BF1								;Loop
-.L9C21      RTS										;End
+.rts        RTS									;End
 }
 
 ; SFTODO: This has only one caller
@@ -5096,7 +5097,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             LDA prvOswordBlockCopy + 7							;high byte of buffer length
             STA prvOswordBlockCopy + 11							;high byte of data length
 .load       JSR parseBankNumberIfPresent
-            JSR L9BE9
+            JSR parseSrsaveLoadFlags
             LDA prvOswordBlockCopy + 2							;byte 0 of "buffer address" we parsed earlier
             STA prvOswordBlockCopy + 8							;low byte of sideways start address
             LDA prvOswordBlockCopy + 3							;byte 1 of "buffer address" we parsed earlier
