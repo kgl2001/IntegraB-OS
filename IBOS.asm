@@ -1368,6 +1368,7 @@ transientTblCmdLength = L00AC
 ; integer. It may be prefixed with '-' for negative, '&' indicates hex, '%'
 ; indicates binary and '+' indicates decimal.
 ;
+; SFTODO: The next two lines seem wrong - we return with C *clear* if and only if a number has been parsed successfully, otherwise we return with C set - in this case I think V is clear if there is nothing to parse, or set if there is something but we can't parse it - not 100% sure about this, and need to check code again.
 ; Returns with V clear if there is no number to parse; C is not altered.
 ; Otherwise C is set if and only if a number is parsed successfully.
 ; If we parse successfully, the integer is at &B0 (SFTODO: do we use this?
@@ -1510,7 +1511,7 @@ firstDigitCmdPtrY = &BB
             LDA #&00
             LDY originalCmdPtrY
             SEC
-            BIT rts
+            BIT rts									;set V
 .rts        RTS
 
 .L8806      JMP L92E3
