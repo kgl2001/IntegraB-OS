@@ -687,7 +687,8 @@ GUARD	&C000
 ;Test for valid command
 ;On entry, X & Y contain lookup table address. A=0
 ;&A8 / &A9 contain end of command parameter address in buffer
-.L833C	  PHA									;save A
+{
+.^L833C	  PHA									;save A
             CLC
 	  ADC L00A8
 	  STA L00A8	
@@ -752,6 +753,7 @@ GUARD	&C000
 .L83A7      PLA									;restore A
             RTS									;and finish
 ;End of test for valid commands
+}
 			
 			
 .L83A9      PHA
@@ -1041,7 +1043,7 @@ GUARD	&C000
 ;Unrecognised Star command
 .service04
 {
-	  JSR setTransientCmdPtr								;store end of command parameter address at &A8 / &A9. Set A=0, Y=0
+	  JSR setTransientCmdPtr
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
             JSR L833C								;test for valid * command
             BCC L8598
@@ -1131,7 +1133,7 @@ GUARD	&C000
             BCC L85CD
 .L85FB      JMP exitSCa								;restore service call parameters and exit
 
-; Set (transientCmdPtr),Y so Y=0 and it accesses the same byte as (osCmdPtr),Y on entry.
+; Return with A=Y=0 and (transientCmdPtr),Y accessing the same byte as (osCmdPtr),Y on entry.
 .setTransientCmdPtr
 {
 .L85FE      CLC
