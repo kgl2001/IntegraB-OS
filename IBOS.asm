@@ -4082,7 +4082,7 @@ firstDigitCmdPtrY = &BB
 .^srset     LDA (L00A8),Y
             CMP #&3F
             BEQ L9A79
-            JSR LA40C
+            JSR parseRomBankList
             JSR PrvEn								;switch in private RAM
             LDX #&00
             LDY #&00
@@ -4214,7 +4214,7 @@ firstDigitCmdPtrY = &BB
 .L9B24      RTS
 }
 
-.L9B25      JSR LA40C
+.L9B25      JSR parseRomBankList
             BCS L9B2B
             RTS
 			
@@ -4326,6 +4326,7 @@ firstDigitCmdPtrY = &BB
             RTS
 }
 
+; SFTODO: Returns with C clear in "simple" case, C set in the "mystery" case
 .parseBankNumberIfPresent ; SFTODO: probably imperfect name, will do until the mystery code in middle is cleared up
 {
 .L9BC3      JSR parseBankNumber
@@ -5549,7 +5550,7 @@ osfileBlock = L02EE
 .LA2DE      JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call
 			
-.^LA2E4      JSR LA40C
+.^LA2E4      JSR parseRomBankList
             BCC LA2F9
             BVC LA2F6
 .^badId
@@ -5700,29 +5701,33 @@ osfileBlock = L02EE
             BCC LA3F5								;loop if not.
             JMP OSNEWL								;otherwise finished for this rom so write new line and return
 
+; SFTODO: Not entirely sure what this is for, but it seems to be parsing one or more bank numbers and populating transientRomBankMask accordingly. '*' seems to indicate the list is "everything except these". We return with C set iff at least one bit in the mask is set.
+.parseRomBankList
 {
-.^LA40C     LDA #&00
+.LA40C      LDA #&00
             STA transientRomBankMask
             STA transientRomBankMask + 1
 .LA412      JSR parseBankNumber
-            BCS LA41D
+            BCS noBankNumber
             JSR addToRomBankMask
             JMP LA412
 			
-.LA41D      LDA (L00A8),Y
-            CMP #&2A ; SFTODO: '*'?
+.noBankNumber
+            LDA (transientCmdPtr),Y
+            CMP #'*'
             BNE LA429
-            BVS LA431
+            BVS secRts ; branch if not at end of line SFTODO: isn't this redundant? We just successfully checked and found a '*' not a CR? So we'll never branch, right? Should we have checked this earlier (e.g. at .noBankNumber)? Have I just got confused?
             INY
             JSR LA4D6								;Invert all bits in &AE and &AF
 .LA429      LDA transientRomBankMask
             ORA transientRomBankMask + 1
-            BEQ LA431
+            BEQ secRts
             CLC
             RTS
 
 ; SFTODO: There's probably another copy of these two instructions we could re-use, though it might require shuffling code round and be more trouble than it's worth
-.LA431      SEC
+.secRts
+            SEC
             RTS
 }
 
@@ -5763,7 +5768,7 @@ osfileBlock = L02EE
 
 ; Parse a bank number from the command line, converting W-Z into the corresponding real bank numbers.
 ; Return with C clear if and only if we parsed a bank number, which will be in A.
-; If C is set, V will be set iff there was nothing left on the command line.
+; If C is set, V will be clear iff there was nothing left on the command line.
 .parseBankNumber
 {
 ; SFTODO: Would it be more compact to check for W-Z *first*, then use convertIntegerDefaultHex? This might only work if we do a "proper" upper case conversion, not sure.
@@ -5890,7 +5895,7 @@ osfileBlock = L02EE
 ;*SRWP Command
 .srwp       SEC
 .LA50A      PHP
-            JSR LA40C
+            JSR parseRomBankList
             BCC LA513
             JMP badId
 			
