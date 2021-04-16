@@ -4240,6 +4240,28 @@ firstDigitCmdPtrY = &BB
             ADC #&00
             ORA #&80
             RTS
+
+; SFTODO: This comment is a WIP
+; OSWORD &42 and &43 do similar jobs but have different parameter blocks. In order to share code between them more easily,
+; we copy user-supplied parameter blocks into private RAM at prvOswordBlockCopy and swizzle them into an internal format (adjustPrvOsword42Block/adjustPrvOsword43Block SFTODO: rename those to use the word 'swizzle' instead of adjust?)
+; which makes the similarities more exploitable.
+; XY?0      function
+; XY?1      absolute ROM number
+; XY+2..5   OSWORD &42: main memory address (may be in host or parasite)
+;           OSWORD &43: buffer address (in host, high word always &FFFF)
+; XY+6..7   OSWORD &42: data length
+;           OSWORD &43: buffer length, 0 => no buffer, >=&8000 => use PAGE-HIMEM as buffer (ignore user-supplied buffer address)
+; XY+8..9   sideways RAM start address
+; XY+10..11 OSWORD &43 only: data length (ignored on load, buggy on save; see comment below)
+; XY+12..13 OSWORD &43 only: filename in I/O processor
+;
+; SFTODO:
+; For OSWORD &43, XY+10..11 *should* be the data length, but a bug in adjustPrvOsword43Block means
+; that will actually be set to the user-supplied buffer length (before any adjustment is made
+; if PAGE-HIMEM is used as a buffer). This only affects direct OSWORD &43 calls; *SRSAVE sets up
+; the OSWORD block directly at prvOswordBlockCopy in the internal format and isn't affected by this bug.
+
+
 			
 ;this routine moves the contents of the osword43 parameter block up by one byte
 ;and inserts the absolute ROM number into offset 1, so block becomes:
