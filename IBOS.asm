@@ -1037,7 +1037,9 @@ GUARD	&C000
 }
 
 ;Unrecognised Star command
-.service04  JSR L85FE								;store end of command parameter address at &A8 / &A9. Set A=0, Y=0
+.service04
+{
+	  JSR L85FE								;store end of command parameter address at &A8 / &A9. Set A=0, Y=0
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
             JSR L833C								;test for valid * command
             BCC L8598
@@ -1095,6 +1097,7 @@ GUARD	&C000
             STX L00AA
             LDY L00AD
             RTS
+}
 
 ;*HELP Service Call
 .service09
@@ -4352,7 +4355,7 @@ firstDigitCmdPtrY = &BB
 .L9C30      LDA (transientCmdPtr),Y
             CMP #' '
             BEQ L9C3D
-            CMP #&0D
+            CMP #vduCr
             BEQ L9C3F
             INY
             BNE L9C30
