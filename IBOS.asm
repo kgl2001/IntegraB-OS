@@ -109,10 +109,10 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 
 ; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
 ; SFTODO: I am thinking these names - maybe now, and probably also in "final" vsn - should have the actual address as part of the name - because different bits of code use the same location for different things, this will help to make it a bit more obvious if two bits of code are trying to use the same location for two different purposes at once (mainly important when we come to modify the code, but just might be relevant if there are bugs in the existing code)
-transientOs42SwrAddr = &A8 ; 2 bytes
-transientOs42MainAddrLowWord = &AA ; 2 bytes
+transientOs4243SwrAddr = &A8 ; 2 bytes
+transientOs4243MainAddr = &AA ; 2 bytes
 ; SFTODO: &AC/&AD IS USED FOR ANOTHER 16-BIT WORD, SEE adjustTransferParameters
-transientOs42MainAddrHighWord = &AE ; 2 bytes
+transientOs4243BytesToTransfer = &AE ; 2 bytes
 transientRomBankMask = &AE ; 2 bytes
 
 transientCmdPtr = &A8 ; 2 bytes
@@ -4494,39 +4494,39 @@ firstDigitCmdPtrY = &BB
 ; help. Should probably start with "transfer" as I'm sure the same addresses are
 ; used for different things in other parts of the code.
 ; SFTODO: This has only one caller
-; SFTODO: I think this has something to do with stopping at the end of the current SWR bank even if we request more data transfer (probably so we can adjust the absolute bank when doing a pseudo-addressing transfer before continuning on next pass round the loop), and we return with "bytes to do in this chunk" (16-bit) at L00AC and the misnamed transientOs42MainAddrHighWord adjusted to indicate how much data remains to transfer this this chunk. *This code* makes me think the bug in the osword 43 adjustment is that prvOswordBlockCopy+6/7 should be the data length; see getBufferAddressAndLengthFromPrvOswordBlockCopy, which is used for both OSWORD &42 and &43 and where using these conventions would be a lot more consistent. (I *think* I/we had been thinking the bug was that ...blockCopy+10/11 "should" be the data length, but I am now thinking they are meant to be the buffer length. Needs a fresh look with this new perspective.)
+; SFTODO: I think this has something to do with stopping at the end of the current SWR bank even if we request more data transfer (probably so we can adjust the absolute bank when doing a pseudo-addressing transfer before continuning on next pass round the loop), and we return with "bytes to do in this chunk" (16-bit) at L00AC and transientOs4243BytesToTransfer adjusted to indicate how much data remains to transfer this this chunk. *This code* makes me think the bug in the osword 43 adjustment is that prvOswordBlockCopy+6/7 should be the data length; see getBufferAddressAndLengthFromPrvOswordBlockCopy, which is used for both OSWORD &42 and &43 and where using these conventions would be a lot more consistent. (I *think* I/we had been thinking the bug was that ...blockCopy+10/11 "should" be the data length, but I am now thinking they are meant to be the buffer length. Needs a fresh look with this new perspective.)
 .adjustTransferParameters ; SFTODO: temporary name, rename once I understand better
 {
 ; SFTODO: (AD AC) = &C000 - (A9 A8), then L9D42
 .L9D32      SEC
             LDA #&00
-            SBC transientOs42SwrAddr
+            SBC transientOs4243SwrAddr
             STA L00AC
             LDA #&C0
-            SBC transientOs42SwrAddr + 1
+            SBC transientOs4243SwrAddr + 1
             STA L00AD
             JMP L9D42 ; SFTODO: This is redundant and could be replaced by FALLTHROUGH_TO L9D42
 
 ; SFTODO: calculate n=(AF AE) - (AD AC), if n<0 go to L9D53 else (AE AF)=n:RTS
 .L9D42      SEC
-            LDA transientOs42MainAddrHighWord
+            LDA transientOs4243BytesToTransfer
             SBC L00AC
             TAY
-            LDA transientOs42MainAddrHighWord + 1
+            LDA transientOs4243BytesToTransfer + 1
             SBC L00AD
             BCC L9D53
-            STA transientOs42MainAddrHighWord + 1
-            STY transientOs42MainAddrHighWord
+            STA transientOs4243BytesToTransfer + 1
+            STY transientOs4243BytesToTransfer
             RTS
 
 ; SFTODO: (AD AC) = (AF AE), (AF AE) = 0, RTS
-.L9D53      LDA transientOs42MainAddrHighWord
+.L9D53      LDA transientOs4243BytesToTransfer
             STA L00AC
-            LDA transientOs42MainAddrHighWord + 1
+            LDA transientOs4243BytesToTransfer + 1
             STA L00AD
             LDA #&00
-            STA transientOs42MainAddrHighWord
-            STA transientOs42MainAddrHighWord + 1
+            STA transientOs4243BytesToTransfer
+            STA transientOs4243BytesToTransfer + 1
             RTS
 }
 
@@ -4588,8 +4588,8 @@ firstDigitCmdPtrY = &BB
             TAX
 .absoluteAddress
 .L9DA0      JSR transferBlock
-            LDA transientOs42MainAddrHighWord
-            ORA transientOs42MainAddrHighWord + 1
+            LDA transientOs4243BytesToTransfer
+            ORA transientOs4243BytesToTransfer + 1
             BEQ rts
             JSR SFTODOsetVandCBasedOnSomethingAndMaybeSwizzleStuff
             BCC doTransfer
@@ -4632,18 +4632,17 @@ firstDigitCmdPtrY = &BB
             JSR L9B2E ; SFTODO: presumably swizzles pseudo address to absolute address, not checked yet
             STX prvOswordBlockCopy + 1
 .absoluteAddress
-            STY transientOs42SwrAddr
-            STA transientOs42SwrAddr + 1
-	  ; SFTODO: In the context of the following the "MainAddr{High,Low}Word" names are deeply misleading; this needs fixing
+            STY transientOs4243SwrAddr
+            STA transientOs4243SwrAddr + 1
 .^getBufferAddressAndLengthFromPrvOswordBlockCopy
 .L9DF2      LDA prvOswordBlockCopy + 2 ; get low byte of main memory address (OSWORD &42) or buffer address (OSWORD &43)
-            STA transientOs42MainAddrLowWord
+            STA transientOs4243MainAddr
             LDA prvOswordBlockCopy + 3 ; get high byte of main memory address (OSWORD &42) or buffer address (OSWORD &43)
-            STA transientOs42MainAddrLowWord + 1
+            STA transientOs4243MainAddr + 1
             LDA prvOswordBlockCopy + 6 ; get low byte of data length (OSWORD &42) or buffer length (OSWORD &43)
-            STA transientOs42MainAddrHighWord
+            STA transientOs4243BytesToTransfer
             LDA prvOswordBlockCopy + 7 ; get high byte of data length (OSWORD &42) or buffer length (OSWORD &43)
-            STA transientOs42MainAddrHighWord + 1
+            STA transientOs4243BytesToTransfer + 1
             CLC ; SFTODO: callers seem to test carry, but it's not clear it can ever be set - if so, we can delete those checks and associated code...
             RTS
 
@@ -4784,7 +4783,7 @@ saveSwrTemplateSavedY = saveSwrTemplateBytesToRead + 1
             LDY L02EE
             JSR OSBGET
             LDY variableMainRamSubroutine + (loadSwrTemplateSavedY - loadSwrTemplate)
-            STA (transientOs42SwrAddr),Y ; SFTODO: I think this is used by OSWORD &43, if so rename transientOs42SwrAddr TO INDICATE APPLIES TO BOTH (tho that's only a temp name)
+            STA (transientOs4243SwrAddr),Y ; SFTODO: I think this is used by OSWORD &43, if so rename transientOs4243SwrAddr TO INDICATE APPLIES TO BOTH (tho that's only a temp name)
             INY
             CPY variableMainRamSubroutine + (loadSwrTemplateBytesToRead - loadSwrTemplate)
             BNE L9EBC
@@ -4811,14 +4810,14 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             CPY #&00								;&03AF
             BEQ L9EEC								;&03B1
 .^mainRamTransferTemplateLdaStaPair1
-.L9EE5      LDA (transientOs42SwrAddr),Y								;&03B3 - Note this is changed to &AA by code at &9FA4
-            STA (transientOs42MainAddrLowWord),Y								;&03B5 - Note this is changed to &A8 by code at &9FA4
+.L9EE5      LDA (transientOs4243SwrAddr),Y								;&03B3 - Note this is changed to &AA by code at &9FA4
+            STA (transientOs4243MainAddr),Y								;&03B5 - Note this is changed to &A8 by code at &9FA4
             DEY									;&03B7
             BNE L9EE5								;&03B8
 
 .^mainRamTransferTemplateLdaStaPair2
-.L9EEC      LDA (transientOs42SwrAddr),Y								;&03BA - Note this is changed to &AA by code at &9FA4
-            STA (transientOs42MainAddrLowWord),Y								;&03BC - Note this is changed to &A8 by code at &9FA4
+.L9EEC      LDA (transientOs4243SwrAddr),Y								;&03BA - Note this is changed to &AA by code at &9FA4
+            STA (transientOs4243MainAddr),Y								;&03BC - Note this is changed to &A8 by code at &9FA4
             LDA romselCopy									;&03BE
             STX romselCopy									;&03C0
             STX romsel								;&03C2
@@ -4844,7 +4843,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 .^tubeTransferTemplateReadSwr
 .L9F07      BIT SHEILA+&E4
             BVC L9F07
-            LDA (transientOs42SwrAddr),Y
+            LDA (transientOs4243SwrAddr),Y
             STA SHEILA+&E5
 .^tubeTransferTemplateReadSwrEnd
             JSR variableMainRamSubroutine + (tubeTransferTemplateRts - tubeTransferTemplate)
@@ -4872,7 +4871,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 .L9F29      BIT SHEILA+&E4
             BPL L9F29
             LDA SHEILA+&E5
-            STA (transientOs42SwrAddr),Y
+            STA (transientOs4243SwrAddr),Y
             ASSERT P% - tubeTransferTemplateWriteSwr == tubeTransferTemplateReadSwrEnd - tubeTransferTemplateReadSwr
 }
 
@@ -4973,10 +4972,10 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             BPL rts2                                                                                ;if this is read (from sideways RAM) we're done
             ; Patch the code at variableMainRamSubroutine to swap the operands
             ; of LDA and STA, thereby swapping the transfer direction.
-            LDA #transientOs42MainAddrLowWord
+            LDA #transientOs4243MainAddr
             STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair1 + 1 - mainRamTransferTemplate)
             STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair2 + 1 - mainRamTransferTemplate)
-            LDA #transientOs42SwrAddr
+            LDA #transientOs4243SwrAddr
             STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair1 + 3 - mainRamTransferTemplate)
             STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair2 + 3 - mainRamTransferTemplate)
 .rts2       RTS
