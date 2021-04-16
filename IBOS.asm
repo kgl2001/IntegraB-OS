@@ -4447,8 +4447,9 @@ firstDigitCmdPtrY = &BB
             RTS
 }
 			
+.parseOsword4243Length
 {
-.^L9C9C      JSR findNextCharAfterSpace								;find next character. offset stored in Y
+.L9C9C      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'+'
             PHP
@@ -4458,6 +4459,7 @@ firstDigitCmdPtrY = &BB
             BCS syntaxErrorIndirect
             PLP
             BEQ L9CC7
+	  ; SFTODO: I think the next three lines give the Integra-B style "exclusive" end address on *SRSAVE - do they have a similarly "incompatible-with-Master" effect on other commands calling this code, or is this adjustment required to be compatible on those other cases?
             INC L00B0
             BNE L9CB5
             INC L00B1
@@ -4489,7 +4491,7 @@ firstDigitCmdPtrY = &BB
             LDA #&00
             STA L02EE
             JSR L9C52
-            JSR L9C9C
+            JSR parseOsword4243Length
             JSR L9C42
             JSR L9BC3
             JMP LA0A6
@@ -5083,7 +5085,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             JSR parseOsword4243BufferAddress
             BIT prvOswordBlockCopy
             BMI load
-            JSR L9C9C
+            JSR parseOsword4243Length
 	  ; SFTODO: Once the code is all worked out for both OSWORD &42 and &43, it's probably best to define constants e.g. prvOswordBlockCopyBufferLength = prvOswordBlockCopy + 6 and use those everywhere, instead of relying on comments on each line.
             LDA prvOswordBlockCopy + 6							;low byte of buffer length
             STA prvOswordBlockCopy + 10							;low byte of data length
