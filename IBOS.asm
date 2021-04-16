@@ -4447,9 +4447,10 @@ firstDigitCmdPtrY = &BB
             RTS
 }
 			
-.L9C9C      JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (L00A8),Y
-            CMP #&2B
+{
+.^L9C9C      JSR findNextCharAfterSpace								;find next character. offset stored in Y
+            LDA (transientCmdPtr),Y
+            CMP #'+'
             PHP
             BNE L9CA7
             INY
@@ -4468,6 +4469,7 @@ firstDigitCmdPtrY = &BB
             SBC prvOswordBlockCopy + 3
             STA prvOswordBlockCopy + 7
             RTS
+}
 			
 .L9CC7      LDA L00B0
             STA prvOswordBlockCopy + 6
