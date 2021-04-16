@@ -690,10 +690,10 @@ GUARD	&C000
 {
 .^L833C	  PHA									;save A
             CLC
-	  ADC L00A8
-	  STA L00A8	
+	  ADC transientCmdPtr
+	  STA transientCmdPtr	
 	  BCC L8346
-            INC L00A9
+            INC transientCmdPtr + 1
 .L8346      STX L00AA								;look up table address at &AA / &AB
             STY L00AB
             LDY #&06								;lookup table initial offset to get first address 
@@ -704,17 +704,17 @@ GUARD	&C000
             STX L00AA
             STA L00AB								;store first address from lookup table in &AA / &AB
             SEC
-            LDA L00A8
+            LDA transientCmdPtr
             SBC #&01
-            STA L00A8
+            STA transientCmdPtr
             BCS L8361
-            DEC L00A9								;and reduce end of command parameter address by 1
+            DEC transientCmdPtr + 1								;and reduce end of command parameter address by 1
 .L8361      LDX #&00								;set pointer to first command
             LDY #&00								;set pointer to first byte of command
             LDA (L00AA),Y								;get first byte from lookup table address. This is the length of the command string
 .L8367      STA L00AC								;and save at &AC
             INY
-.L836A      LDA (L00A8),Y								;get character from input buffer
+.L836A      LDA (transientCmdPtr),Y								;get character from input buffer
             CMP #&60								;'£'
             BCC L8372
             AND #&DF								;capitalise
@@ -747,9 +747,9 @@ GUARD	&C000
 
 			
 .L83A0      DEY									;get back to last character
-            INC L00A8								;
+            INC transientCmdPtr								;
             BNE L83A7
-            INC L00A9								;and increment lookup table address instead
+            INC transientCmdPtr + 1								;and increment lookup table address instead
 .L83A7      PLA									;restore A
             RTS									;and finish
 ;End of test for valid commands
