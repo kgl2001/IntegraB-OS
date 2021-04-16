@@ -685,7 +685,7 @@ GUARD	&C000
 		EQUB &00,&10							;&11 x CONFIGURE Parameters - from offset &00
 	
 ;Test for valid command
-;On entry, X & Y contain lookup table address. A=0
+;On entry, X & Y contain lookup table address. A=0 SFTODO: I don't think A is always 0 on entry, e.g. see code just above L946D (and if A was always 0 on entry, it would be redundant to add it to transientCmdPtr)
 ;&A8 / &A9 contain end of command parameter address in buffer
 {
 .^L833C	  PHA									;save A
