@@ -471,7 +471,7 @@ GUARD	&C000
 		RTS
 		
 		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used
-		ASSERT P% == CmdRef + CmdTblOffset
+		ASSERT P% = CmdRef + CmdTblOffset
 		EQUW CmdTbl							;Start of * command table
 		EQUW CmdParTbl							;Start of * command parameter table
 		EQUW CmdExTbl							;Start of * command execute address table
