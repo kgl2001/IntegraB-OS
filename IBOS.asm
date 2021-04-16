@@ -691,6 +691,7 @@ GUARD	&C000
 ;Test for valid command
 ;On entry, X & Y contain lookup table address. A=0 SFTODO: I don't think A is always 0 on entry, e.g. see code just above L946D (and if A was always 0 on entry, it would be redundant to add it to transientCmdPtr)
 ;&A8 / &A9 contain end of command parameter address in buffer
+transientTblCmdLength = L00AC
 {
 .^L833C	  PHA									;save A
             CLC
@@ -698,7 +699,7 @@ GUARD	&C000
 	  STA transientCmdPtr	
 	  BCC L8346
             INC transientCmdPtr + 1
-.L8346      STX transientTblPtr								;look up table address at &AA / &AB
+.L8346      STX transientTblPtr							;look up table address at &AA / &AB
             STY transientTblPtr + 1
             LDY #CmdTblOffset								;lookup table initial offset to get first address 
             LDA (transientTblPtr),Y
@@ -706,7 +707,7 @@ GUARD	&C000
             INY									;Y=&07
             LDA (transientTblPtr),Y
             STX transientTblPtr
-            STA transientTblPtr + 1								;store first address from lookup table in &AA / &AB
+            STA transientTblPtr + 1							;store first address from lookup table in &AA / &AB
 	  ; SFTODO: Can we shorten the following decrement-by-one using http://www.obelisk.me.uk/6502/algorithms.html technique?
             SEC
             LDA transientCmdPtr
@@ -716,17 +717,18 @@ GUARD	&C000
             DEC transientCmdPtr + 1							;and reduce end of command parameter address by 1
 .L8361      LDX #&00								;set pointer to first command
             LDY #&00								;set pointer to first byte of command
-            LDA (transientTblPtr),Y								;get first byte from lookup table address. This is the length of the command string
-.L8367      STA L00AC								;and save at &AC
+            LDA (transientTblPtr),Y							;get first byte from lookup table address. This is the length of the command string
+.L8367      STA transientTblCmdLength								;and save at &AC
             INY
-.L836A      LDA (transientCmdPtr),Y								;get character from input buffer
+.L836A      LDA (transientCmdPtr),Y							;get character from input buffer
+	  ; SFTODO: Any chance of simultaneously optimising-and-improving by having a subroutine to convert A to upper case and JSRing to it everywhere we want to do that?
             CMP #&60								;'£'
             BCC L8372
             AND #&DF								;capitalise
-.L8372      CMP (transientTblPtr),Y								;compare with character from lookup table
+.L8372      CMP (transientTblPtr),Y							;compare with character from lookup table
             BNE L837E								;if not equal do further checks (check for short command '.') 
             INY									;next character
-            CPY L00AC								;until end of command string
+            CPY transientTblCmdLength								;until end of command string
             BEQ L8387								;reached the end of the check. All good, so process.
             JMP L836A								;loop
 			
@@ -741,7 +743,7 @@ GUARD	&C000
 .L838D      INX									;next command
             CLC
             LDA transientTblPtr
-            ADC L00AC								;get length of command string for previous command
+            ADC transientTblCmdLength								;get length of command string for previous command
             STA transientTblPtr								
             BCC L8399
             INC transientTblPtr + 1								;and update lookup table address to point at start of next command
