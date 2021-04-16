@@ -1358,7 +1358,7 @@ transientTblCmdLength = L00AC
             PLA
             RTS
 			
-.convertIntegerDefaultBaseHex
+.convertIntegerDefaultHex
 {
 .L8724      LDA #16
             JMP convertIntegerDefaultBaseA
@@ -2279,7 +2279,7 @@ firstDigitCmdPtrY = &BB
             INY
             LDX #&00
             STX L00AC
-.L8D12      JSR LA458
+.L8D12      JSR parseBankNumber
             STY L00AD
             BCS L8D31
             TAY
@@ -2813,7 +2813,7 @@ firstDigitCmdPtrY = &BB
             PHP
             BNE L9101
             INY
-.L9101      JSR convertIntegerDefaultBaseHex
+.L9101      JSR convertIntegerDefaultHex
             BCC L9109
             JMP syntaxError
 			
@@ -3029,7 +3029,7 @@ firstDigitCmdPtrY = &BB
             STA L02FB
             TXA
             TAY
-            JSR convertIntegerDefaultBaseHex
+            JSR convertIntegerDefaultHex
             BCS L9250
             LDA L00B0
             STA L02FC
@@ -4328,7 +4328,7 @@ firstDigitCmdPtrY = &BB
 
 ; SFTODOWIP
 {
-.^L9BC3      JSR LA458
+.^L9BC3      JSR parseBankNumber
             BCC L9BCA
             LDA #&FF
 .L9BCA      STA prvOswordBlockCopy + 1
@@ -4399,7 +4399,7 @@ firstDigitCmdPtrY = &BB
 .syntaxErrorIndirect
 	  JMP syntaxError
 
-.L9C42      JSR convertIntegerDefaultBaseHex
+.L9C42      JSR convertIntegerDefaultHex
             BCS syntaxErrorIndirect
             LDA L00B0
             STA prvOswordBlockCopy + 8
@@ -4435,7 +4435,7 @@ firstDigitCmdPtrY = &BB
 ; Parse a 32-bit hex-default value from the command line and store it in the "buffer address" part of prvOswordBlockCopy. (Some callers will move it from there to where they really want it afterwards.)
 .parseOsword4243BufferAddress
 {
-.L9C82      JSR convertIntegerDefaultBaseHex
+.L9C82      JSR convertIntegerDefaultHex
             BCS syntaxErrorIndirect
             LDA L00B0
             STA prvOswordBlockCopy + 2
@@ -4456,7 +4456,7 @@ firstDigitCmdPtrY = &BB
             PHP
             BNE L9CA7
             INY
-.L9CA7      JSR convertIntegerDefaultBaseHex
+.L9CA7      JSR convertIntegerDefaultHex
             BCS syntaxErrorIndirect
             PLP
             BEQ L9CC7
@@ -5699,7 +5699,7 @@ osfileBlock = L02EE
 .^LA40C     LDA #&00
             STA transientRomBankMask
             STA transientRomBankMask + 1
-.LA412      JSR LA458
+.LA412      JSR parseBankNumber
             BCS LA41D
             JSR addToRomBankMask
             JMP LA412
@@ -5756,15 +5756,20 @@ osfileBlock = L02EE
             RTS
 }
 
+; Parse a bank number from the command line, converting W-Z into the corresponding real bank numbers.
+; Return with C clear if and only if we parsed a bank number, which will be in A.
+; If C is set, V will be set iff there was nothing left on the command line.
+.parseBankNumber
 {
-.^LA458     JSR findNextCharAfterSpace								;find next character. offset stored in Y
+; SFTODO: Would it be more compact to check for W-Z *first*, then use convertIntegerDefaultHex? This might only work if we do a "proper" upper case conversion, not sure.
+.LA458      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             BCS endOfLine
             LDA (transientCmdPtr),Y
             CMP #','
             BNE LA464
             INY
 .LA464      JSR convertIntegerDefaultDecimal
-            BCC LA48C
+            BCC parsedDecimalOK
             LDA (transientCmdPtr),Y
             AND #&DF                                                                                ;convert to upper case (imperfect but presumably good enough)
             CMP #'F'+1
@@ -5784,7 +5789,8 @@ osfileBlock = L02EE
             TAX
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
 .LA48B      INY
-.LA48C      CMP #&10
+.parsedDecimalOK
+            CMP #&10
             BCS LA495
 .endOfLine  CLV
             RTS
