@@ -118,6 +118,7 @@ transientRomBankMask = &AE ; 2 bytes
 
 transientCmdPtr = &A8 ; 2 bytes
 transientTblPtr = &AA ; 2 bytes
+transientConfIdx = &AA ; 1 byte
 
 vduStatus = &D0
 vduStatusShadow = &10
@@ -3278,11 +3279,11 @@ firstDigitCmdPtrY = &BB
             STA transientConfigPrefix
             RTS
 			
-.L9427      LDA L00AA
+.L9427      LDA transientConfIdx
             PHA
             JSR L83F2
             PLA
-            STA L00AA
+            STA L00AA ; SFTODO: transientConfIdx??
             JSR L940A
             LDA transientConfigPrefix
             RTS
@@ -3334,7 +3335,7 @@ firstDigitCmdPtrY = &BB
 ; *STATUS (clear) or *CONFIGURE (set).
 .jmpConfTypTblX
             PHP
-            STX L00AA
+            STX transientConfIdx
             TXA
             ASL A
             TAX
@@ -3410,13 +3411,15 @@ firstDigitCmdPtrY = &BB
             JMP writeUserReg							;Write to RTC clock User area. X=Addr, A=Data
 }
 			
+;Read / Write *CONF. <option> <n> parameters
 .Conf1
 {
-	  BCS L94F2
+	  BCS Conf1Write
             JSR L9427
             JMP L94FC
 			
-.L94F2      JSR convertIntegerDefaultDecimalChecked
+.Conf1Write
+            JSR convertIntegerDefaultDecimalChecked
             JMP L93E1
 }
 			
