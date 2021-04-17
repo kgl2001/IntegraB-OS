@@ -1042,7 +1042,7 @@ tmp = &AC
             STA L0100,X
             JMP L0100
 			
-.L8519      INC L00AE
+.L8519      INC transientDynamicSyntaxFlag
             PLA
             TAX
             PLA
