@@ -1340,6 +1340,7 @@ transientTblCmdLength = L00AC
 			
 ;Convert binary number in A to numeric characters and write characters to screen
 ;C set on entry means left pad to three characters with spaces, clear means no padding.
+;A is preserved
 .printADecimal
 {
 pad = &B0 ; character output in place of leading zeros
