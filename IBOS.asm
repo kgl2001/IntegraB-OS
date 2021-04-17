@@ -916,7 +916,8 @@ transientTblCmdLength = L00AC
 }
 			
 ;write *command or *command parameters to screen
-.L8461      PHA									;save stack value
+{
+.^L8461     PHA									;save stack value
             TXA
             PHA									;save contents of X
             TYA
@@ -979,6 +980,7 @@ transientTblCmdLength = L00AC
             TAX
             PLA
             RTS
+}
 			
 ; If entered with C set this starts to dynamically construct a "Syntax: ..." error on the stack
 ; If entered with C clear this outputs a "  " prefix iff V is clear on entry and otherwise (SFTODO:being deliberately vague) prepares for generating the syntax message
