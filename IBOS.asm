@@ -3384,7 +3384,7 @@ firstDigitCmdPtrY = &BB
 
 ;Write *CONF. FILE parameters to RTC register
 .Conf0Write
-            JSR L9502
+            JSR convertIntegerDefaultDecimalChecked
             STA transientConfigPrefix
             TYA
             PHA
@@ -3414,7 +3414,7 @@ firstDigitCmdPtrY = &BB
             JSR L9427
             JMP L94FC
 			
-.L94F2      JSR L9502
+.L94F2      JSR convertIntegerDefaultDecimalChecked
             JMP L93E1
 			
 .L94F8      SEC
@@ -3423,11 +3423,15 @@ firstDigitCmdPtrY = &BB
 .L94FC      JSR L94F8
             JMP OSNEWL
 			
+.convertIntegerDefaultDecimalChecked
+{
 .L9502      JSR convertIntegerDefaultDecimal
-            BCS L9508
+            BCS badParameterIndirect
             RTS
 			
-.L9508      JMP badParameter
+.badParameterIndirect
+            JMP badParameter
+}
 
 
 .L950B		EQUB &04,&02,&01
@@ -3477,7 +3481,7 @@ firstDigitCmdPtrY = &BB
             ADC #&01
             JMP L94FC
 			
-.L9560      JSR L9502
+.L9560      JSR convertIntegerDefaultDecimalChecked
             SEC
             SBC #&01
             JMP L93E1
@@ -3492,7 +3496,7 @@ firstDigitCmdPtrY = &BB
             ADC #&77
 .L9579		JMP L94FC
 
-.L957C      JSR L9502
+.L957C      JSR convertIntegerDefaultDecimalChecked
             CMP #&80
             BCC L9585
             SBC #&78
@@ -3515,12 +3519,12 @@ firstDigitCmdPtrY = &BB
             AND #&01
             JMP L94FC
 			
-.L95A8      JSR L9502
+.L95A8      JSR convertIntegerDefaultDecimalChecked
             AND #&07
             ASL A
             PHA
             JSR L854D
-            JSR L9502
+            JSR convertIntegerDefaultDecimalChecked
             AND #&01
             STA L00AE
             PLA
@@ -3542,7 +3546,7 @@ firstDigitCmdPtrY = &BB
             ASL L00AE								;Missing address label?
             ASL L00AE
             JSR L854D
-            JSR L9502
+            JSR convertIntegerDefaultDecimalChecked
             AND #&03
             ORA L00AE
             STA L00AE
