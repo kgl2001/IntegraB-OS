@@ -862,7 +862,7 @@ transientTblCmdLength = L00AC
             LDA #&09
             JSR L84F8
 
-            BIT L00AE								;test for *command parameters???
+            BIT transientDynamicSyntaxFlag						;test for *command parameters???
             BVS L843B								;if none, then restore &AA / &AB and exit
 
             TSX									;get stack pointer
