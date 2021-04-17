@@ -974,6 +974,8 @@ transientTblCmdLength = L00AC
             PLA
             RTS
 			
+; SFTODO: If entered with V set this generates a dynamically constructed "Syntax: ..." error
+; SFTODO: What if V is clear?
 {
 .^L84C1      LDA #&00
             ROR A
@@ -985,15 +987,15 @@ transientTblCmdLength = L00AC
 .L84CE      LDA L84EE,Y
             STA L0100,Y
             INY
-            CMP #&20
+            CMP #' '
             BNE L84CE
             TYA
             JMP L84E9
 			
 .L84DD      BIT L00AE
             BVS L84E7
-            JSR L91B9								;write ' ' to screen
-            JSR L91B9								;write ' ' to screen
+            JSR printSpace								;write ' ' to screen
+            JSR printSpace								;write ' ' to screen
 .L84E7      LDA #&02
 .L84E9      ORA L00AE
             STA L00AE
@@ -2922,14 +2924,17 @@ firstDigitCmdPtrY = &BB
 	  EQUB &20								;minimum acceptable ASCII value
 	  EQUB &7E								;maximum acceptable ASCII value
 	
-.L91AC      INC L00AA
+{
+.^L91AC      INC L00AA
             LDA L00AA
             CLC
             JSR L86DE								;Convert binary number to numeric characters and write characters to screen
             LDA #':'
             JSR OSWRCH								;write to screen
+.^printSpace
 .L91B9      LDA #' '
             JMP OSWRCH								;write to screen
+}
 			
 ;*PRINT Command
 .print      LDA #&40								;open file for input
@@ -3376,7 +3381,7 @@ firstDigitCmdPtrY = &BB
 ;Read *CONF. FILE parameters from RTC register and write to screen
             JSR L9427
             JSR L94F8
-            JSR L91B9								;write ' ' to screen
+            JSR printSpace								;write ' ' to screen
             LDX #userRegDiscNetBootData							;Register &10 (0: File system disc/net flag / 4: Boot / 5-7: Data )
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LDX #'N'								;'N' - NFS
@@ -4200,7 +4205,7 @@ firstDigitCmdPtrY = &BB
             BEQ L9AAB								;Yes? Then end
             LDA #','
             JSR OSWRCH								;Write to screen
-            JSR L91B9								;write ' ' to screen
+            JSR printSpace								;write ' ' to screen
             INY										;Next
             BNE L9A7F								;Loop for 'X', 'Y' & 'Z'
 .L9AAB      JSR OSNEWL								;New Line
@@ -5706,7 +5711,7 @@ osfileBlock = L02EE
 .LA360      LDA L00AA								;Get ROM Number
             CLC
             JSR L86DE								;Convert binary number to numeric characters and write characters to screen
-            JSR L91B9								;write ' ' to screen
+            JSR printSpace								;write ' ' to screen
             LDA #'('								;'('
             JSR OSWRCH								;write to screen
             LDA L00AA								;Get ROM Number
@@ -5737,9 +5742,9 @@ osfileBlock = L02EE
             LDA prv83+&2C,X;								;get backup copy of ROM Type
             JSR PrvDis								;switch out private RAM
             BNE LA3BC								;if any bits set, then unplugged ROM exists so get and write ROM details
-            JSR L91B9								;write ' ' to screen in place of 'U'
-            JSR L91B9								;write ' ' to screen in place of 'S'
-            JSR L91B9								;write ' ' to screen in place of 'L'
+            JSR printSpace								;write ' ' to screen in place of 'U'
+            JSR printSpace								;write ' ' to screen in place of 'S'
+            JSR printSpace								;write ' ' to screen in place of 'L'
             LDA #')'								;')'
             JSR OSWRCH								;write to screen
             JMP OSNEWL								;new line and return
@@ -5763,7 +5768,7 @@ osfileBlock = L02EE
             JSR OSWRCH								;write either 'L' or ' ' to screen
             LDA #')'
             JSR OSWRCH								;write to screen
-            JSR L91B9								;write ' ' to screen
+            JSR printSpace								;write ' ' to screen
             LDA #&07
             STA L00F6
             LDA #&80
@@ -8180,7 +8185,7 @@ osfileBlock = L02EE
             JSR LA5DE
             LDA #&2F								;'/'
             JSR OSWRCH								;write to screen
-            JSR L91B9								;write ' ' to screen
+            JSR printSpace								;write ' ' to screen
             LDX #&0B								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&20
@@ -8189,7 +8194,7 @@ osfileBlock = L02EE
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&80
             BEQ LB6E0
-            JSR L91B9								;write ' ' to screen
+            JSR printSpace								;write ' ' to screen
             LDA #&52								;'R'
             JSR OSWRCH								;write to screen
 .LB6E0      JSR OSNEWL								;new line
