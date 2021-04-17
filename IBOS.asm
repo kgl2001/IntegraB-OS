@@ -3401,21 +3401,24 @@ firstDigitCmdPtrY = &BB
             RTS
 			
 .L94DD      CLC
-.L94DE      PHP										;Save File system status bit in Carry flag
-            LDX #&10								;Register &10 (0: File system / 4: Boot / 5-7: Data )
+.L94DE      PHP									;Save File system status bit in Carry flag
+            LDX #userRegDiscNetBootData							;Register &10 (0: File system / 4: Boot / 5-7: Data )
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LSR A									;Rotate old File system status bit out of register
-            PLP										;Restore new File system status bit from Carry flag
+            PLP									;Restore new File system status bit from Carry flag
             ROL A									;Rotate new File system status bit in to register
             JMP writeUserReg							;Write to RTC clock User area. X=Addr, A=Data
 }
 			
-.Conf1		BCS L94F2
+.Conf1
+{
+	  BCS L94F2
             JSR L9427
             JMP L94FC
 			
 .L94F2      JSR convertIntegerDefaultDecimalChecked
             JMP L93E1
+}
 			
 .L94F8      SEC
             JMP L86DE								;Convert binary number to numeric characters and write characters to screen
