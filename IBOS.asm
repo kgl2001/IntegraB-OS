@@ -3093,20 +3093,23 @@ firstDigitCmdPtrY = &BB
             JMP exitSC								;Exit Service Call
 }
 
+; SFTODO: This has only one caller
+.parseNo
+{
 .L92F8      TYA
             PHA
-            LDA (L00A8),Y
+            LDA (transientCmdPtr),Y
             AND #&DF
-            CMP #&4E
+            CMP #'N'
             BNE L9313
             INY
-            LDA (L00A8),Y
+            LDA (transientCmdPtr),Y
             AND #&DF
-            CMP #&4F
+            CMP #'O'
             BNE L9326
             INY
             LDA #&01
-.L930E      STA L00BD
+.^L930E     STA L00BD
             PLA
             CLC
             RTS
@@ -3129,6 +3132,7 @@ firstDigitCmdPtrY = &BB
             TAY
             SEC
             RTS
+}
 
 .L932E      JSR L9337
             JSR L83F2
@@ -3293,18 +3297,19 @@ firstDigitCmdPtrY = &BB
             STA L00BD
             JSR ConfRef
             JSR searchCmdTbl
-            BCC L9471
+            BCC optionRecognised
             TAY
-            JSR L92F8
+            JSR parseNo
             BCS L946D
             TYA
             JSR ConfRef
             JSR searchCmdTbl
-            BCC L9471
+            BCC optionRecognised
 .L946D      PLP
             JMP exitSCa								;restore service call parameters and exit
 			
-.L9471      JSR findNextCharAfterSpace								;find next character. offset stored in Y
+.optionRecognised
+	  JSR findNextCharAfterSpace								;find next character. offset stored in Y
             PLP
             JSR L947B
             JMP exitSC								;Exit Service Call
