@@ -3252,11 +3252,14 @@ firstDigitCmdPtrY = &BB
             BNE L93BE
 .L93C2      RTS
 
-.L93C3      LDA L00AA
+.setYToTransientConfIdxTimes3
+{
+.L93C3      LDA transientConfIdx
             ASL A
-            ADC L00AA
+            ADC transientConfIdx
             TAY
             RTS
+}
 
 .L93CA      LDA ConfParBit+2,Y
             AND #&7F
@@ -3271,7 +3274,7 @@ firstDigitCmdPtrY = &BB
             RTS
 
 .L93E1      STA transientConfigPrefix
-.L93E3      JSR L93C3
+.L93E3      JSR setYToTransientConfIdxTimes3
             JSR L93CA
             LDA ConfParBit+1,Y
             TAX
@@ -3289,7 +3292,7 @@ firstDigitCmdPtrY = &BB
             ORA transientConfigPrefix
             JMP writeUserReg							;Write to RTC clock User area. X=Addr, A=Data
 			
-.L940A      JSR L93C3
+.L940A      JSR setYToTransientConfIdxTimes3
             JSR L93CA
             LDA ConfParBit,Y
             TAX
@@ -3303,11 +3306,12 @@ firstDigitCmdPtrY = &BB
             STA transientConfigPrefix
             RTS
 			
+; SFTODO: This code saves transientConfIdx (&AA) across call to L83F2, but it superficially looks as though L83F2 preserves it itself, so the code to preserve here may be redundant.
 .L9427      LDA transientConfIdx
             PHA
             JSR L83F2
             PLA
-            STA L00AA ; SFTODO: transientConfIdx??
+            STA transientConfIdx
             JSR L940A
             LDA transientConfigPrefix
             RTS
@@ -3498,7 +3502,7 @@ firstDigitCmdPtrY = &BB
             EOR transientConfigPrefix
             JMP L932E
 			
-.L9541      JSR L93C3
+.L9541      JSR setYToTransientConfIdxTimes3
             LDA ConfParBit+2,Y
             ASL A
             LDA #&00
