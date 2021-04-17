@@ -1344,32 +1344,33 @@ transientTblCmdLength = L00AC
             LDA #&00
             STA L00B1
             BCS L86E7
-            LDA #&20
+            LDA #' '
 .L86E7      STA L00B0
             PLA
             PHA
             LDX #&00
             SEC
-.L86EE      SBC #&64
+.L86EE      SBC #100
             INX
             BCS L86EE
-            ADC #&64
-            JSR L870E
+            ADC #100
+            JSR printDigit
             LDX #&00
             SEC
-.L86FB      SBC #&0A
+.L86FB      SBC #10
             INX
             BCS L86FB
-            ADC #&0A
-            JSR L870E
+            ADC #10
+            JSR printDigit
             TAX
             INX
             DEC L00B1
-            JSR L870E
+            JSR printDigit
             PLA
             RTS
 			
-.L870E      PHA
+.printDigit
+            PHA
             DEX
             LDA L00B0
             CPX #&00
@@ -1378,7 +1379,7 @@ transientTblCmdLength = L00AC
             BPL L871F
 .L871A      DEC L00B1
             TXA
-            ORA #&30								;Convert binary number to ASCII number
+            ORA #'0'								;Convert binary number to ASCII number
 .L871F      JSR OSWRCH								;Write number to screen
             PLA
             RTS
