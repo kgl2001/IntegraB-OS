@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import collections
 import os
 import sys
 
@@ -88,6 +89,11 @@ def macro(filename, line_number, line, statement):
 def add_tag(filename, line_number, tag, address, tag_field = None):
     if tag is None:
         return
+    tags.append((filename, line_number, tag, address, tag_field))
+
+
+def vim_tag(tag):
+    filename, line_number, tag, address, tag_field = tag
 
     if address is None:
         address = str(line_number)
@@ -101,7 +107,20 @@ def add_tag(filename, line_number, tag, address, tag_field = None):
 
     if tag_field is not None:
         address += ';"\t' + tag_field
-    tags.append(tag + '\t' + filename + '\t' + address)
+    return tag + '\t' + filename + '\t' + address
+
+
+def emacs_tag(line_number, tag, address, tag_field):
+    if tag_field == 'F':
+        return ''
+    assert address is not None
+    assert address[0] == '^'
+    assert address[-1] == '$'
+    tag_definition = address[1:-1]
+    i = tag_definition.find(tag)
+    assert i != -1
+    tag_definition = tag_definition[0:i+len(tag)]
+    return '%s\x7f%s\x01%d,%d\n' % (tag_definition, tag, line_number, i)
 
 
 def process_file(filename):
@@ -126,9 +145,12 @@ def process_file(filename):
 
 
 parser = argparse.ArgumentParser(description='Generate tags file from BeebAsm source files')
-parser.add_argument('-f', metavar='tags_file', default='tags', help='Write tags to specified file (default "tags")')
+parser.add_argument('-f', metavar='tags_file', default=None, help='Write tags to specified file (default "tags", or "TAGS" if -e is used)')
+parser.add_argument('-e', action='store_true', help='Output tag file for use with Emacs')
 parser.add_argument('input_files', metavar='source_file', nargs='+', help='BeebAsm source file to scan')
 args = parser.parse_args()
+if args.f is None:
+    args.f = "tags" if not args.e else "TAGS"
 
 tags = []
 tags_generated = set()
@@ -139,24 +161,31 @@ for input_file in args.input_files:
 if args.f == '-':
     tag_file = sys.stdout
 else:
+    ok = '!_TAG_FILE_FORMAT\t' if not args.e else '\x0c'
     # Following the lead of exuberant ctags, we refuse to proceed if the the output
     # file exists and is not a valid tags file; this avoids catastrophe if invoked
     # as 'beebasm-tags -f *.beebasm', which would otherwise overwrite the first
     # source file.
     try:
-        with open(args.f, 'r') as f:
+        with open(args.f, 'r' if not args.e else 'rb') as f:
             line = f.readline()
-            ok = '!_TAG_FILE_FORMAT\t'
             if line[0:len(ok)] != ok:
                 die('Refusing to overwrite non-tag file "' + args.f + '"')
     except IOError:
         pass
-    tag_file = open(args.f, 'w')
+    tag_file = open(args.f, 'w' if not args.e else 'wb')
 
-tag_file.write('!_TAG_FILE_FORMAT\t2\n')
-tag_file.write('!_TAG_FILE_SORTED\t1\n')
-tag_file.write('!_TAG_PROGRAM_NAME\tbeebasm-tags\n')
-for line in sorted(tags):
-    tag_file.write(line + '\n')
+if not args.e:
+    tag_file.write('!_TAG_FILE_FORMAT\t2\n')
+    tag_file.write('!_TAG_FILE_SORTED\t1\n')
+    tag_file.write('!_TAG_PROGRAM_NAME\tbeebasm-tags\n')
+    for line in sorted(vim_tag(tag) for tag in tags):
+        tag_file.write(line + '\n')
+else:
+    file_tags = collections.defaultdict(str)
+    for filename, line_number, tag, address, tag_field in tags:
+        file_tags[filename] += emacs_tag(line_number, tag, address, tag_field)
+    for filename, tags in file_tags.items():
+        tag_file.write('\x0c\n%s,%d\n%s' % (filename, len(tags), tags))
 
 tag_file.close()
