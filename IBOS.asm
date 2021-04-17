@@ -120,6 +120,7 @@ transientCmdPtr = &A8 ; 2 bytes
 transientTblPtr = &AA ; 2 bytes
 transientConfIdx = &AA ; 1 byte
 transientDynamicSyntaxFlag = &AE ; 1 byte
+transientDynamicSyntaxFlagCountMask = %00111111
 
 vduStatus = &D0
 vduStatusShadow = &10
@@ -1021,7 +1022,8 @@ tmp = &AC
 	  EQUS "Syntax: "
 }
 
-.L84F8      BIT L00AE
+{
+.^L84F8     BIT transientDynamicSyntaxFlag
             BPL L8524
             PHA
             TXA
@@ -1029,12 +1031,12 @@ tmp = &AC
             TSX
             LDA L0102,X
             PHA
-            LDA L00AE
-            AND #&3F
+            LDA transientDynamicSyntaxFlag
+            AND #transientDynamicSyntaxFlagCountMask
             TAX
             PLA
             STA L0100,X
-            CMP #&0D
+            CMP #&0D ; SFTODO: vduCr?
             BNE L8519
             LDA #&00
             STA L0100,X
@@ -1065,6 +1067,7 @@ tmp = &AC
 .L853B      PLA
             TAX
             RTS
+}
 			
 ;Find next character after space.
 ;On exit A=character Y=offset for character. Carry set if end of line
