@@ -3394,7 +3394,7 @@ firstDigitCmdPtrY = &BB
 
 ;Read *CONF. FILE parameters from RTC register and write to screen
             JSR L9427
-            JSR L94F8
+            JSR printADecimalPad
             JSR printSpace								;write ' ' to screen
             LDX #userRegDiscNetBootData							;Register &10 (0: File system disc/net flag / 4: Boot / 5-7: Data )
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
@@ -3447,10 +3447,14 @@ firstDigitCmdPtrY = &BB
             JMP L93E1
 }
 			
+; SFTODO: If we moved this to just before printADecimal we could fall through into it
+.printADecimalPad
+{
 .L94F8      SEC
             JMP printADecimal								;Convert binary number to numeric characters and write characters to screen
+}
 			
-.L94FC      JSR L94F8
+.L94FC      JSR printADecimalPad
             JMP OSNEWL
 			
 .convertIntegerDefaultDecimalChecked
@@ -3542,7 +3546,7 @@ firstDigitCmdPtrY = &BB
             CMP #&04
             BCC L959A
             ORA #&F8
-.L959A      JSR L94F8
+.L959A      JSR printADecimalPad
             LDA #&2C
             JSR OSWRCH
             PLA
@@ -3569,7 +3573,7 @@ firstDigitCmdPtrY = &BB
             RTS
 
             JSR L95BF								;Missing address label?
-            JSR L94F8
+            JSR printADecimalPad
             LDA #&2C
             JMP OSWRCH
 			
