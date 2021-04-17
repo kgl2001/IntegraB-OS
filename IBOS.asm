@@ -3076,17 +3076,18 @@ firstDigitCmdPtrY = &BB
             LDA #osbyteIssueServiceRequest
             JSR OSBYTE
             PLA
-            BEQ L92F5
-	  ; SFTODO: Can X be modified by the service call? beebwiki suggests not, but maybe we're extending the protocol or I'm missing something?
+            BEQ exitSCIndirect
+	  ; SFTODO: Can X be modified by the service call? beebwiki suggests not, but maybe we're extending the protocol or I'm missing something? Documentation on these service calls seems a bit thin on the ground.
             CPX #&00
-            BEQ L92F5
+            BEQ exitSCIndirect
 .^badParameter
 .L92E3      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
 	  EQUB &FE
 	  EQUS "Bad parameter", &00
 
-.L92F5      JMP exitSC								;Exit Service Call
+.exitSCIndirect
+            JMP exitSC								;Exit Service Call
 }
 
 .L92F8      TYA
