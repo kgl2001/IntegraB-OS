@@ -833,6 +833,7 @@ transientTblCmdLength = L00AC
             JMP L83F5
 			
 {
+; SFTODO: Use a different local label instead of transientTblPtr in here? I am not sure what would be clearest as still working through code...
 .^L83F2     JSR ConfRef
 .^L83F5     CLC
             BIT rts									;set V
@@ -973,7 +974,8 @@ transientTblCmdLength = L00AC
             PLA
             RTS
 			
-.L84C1      LDA #&00
+{
+.^L84C1      LDA #&00
             ROR A
             BVC L84C8
             ORA #&40
@@ -997,8 +999,9 @@ transientTblCmdLength = L00AC
             STA L00AE
             RTS
 
-.L84EE		EQUB &00,&DC
-		EQUS "Syntax: "
+.L84EE  	  EQUB &00,&DC
+	  EQUS "Syntax: "
+}
 
 .L84F8      BIT L00AE
             BPL L8524
