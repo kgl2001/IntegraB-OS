@@ -169,6 +169,7 @@ variableMainRamSubroutineMaxSize = &32 ; SFTODO: ASSERT ALL THE SUBROUTINES ARE 
 ; is workspace for the current filing system whatever that is.)
 ; SFTODO: Not sure about "transient" prefix, that's sort of for the &A8 block,
 ; but want to convey the transient-use-ness.
+; SFTODO: Named constants for the 0/1/2 values?
 transientConfigPrefix = &BD ; 0=none, 1="NO", 2="SH" - see parseNoSh
 
 vduBell = 7
