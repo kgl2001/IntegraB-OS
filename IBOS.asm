@@ -1339,7 +1339,8 @@ transientTblCmdLength = L00AC
             JMP OSWRCH					;write 'OFF' to screen
 			
 ;Convert binary number to numeric characters and write characters to screen
-.L86DE      PHA
+{
+.^L86DE      PHA
             LDA #&00
             STA L00B1
             BCS L86E7
@@ -1381,6 +1382,7 @@ transientTblCmdLength = L00AC
 .L871F      JSR OSWRCH								;Write number to screen
             PLA
             RTS
+}
 			
 .convertIntegerDefaultHex
 {
