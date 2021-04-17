@@ -832,11 +832,12 @@ transientTblCmdLength = L00AC
 .L83EC      JSR CmdRef								;get start of *command pointer look up table address X=&26, Y=&80
             JMP L83F5
 			
-.L83F2      JSR ConfRef
-.L83F5      CLC
+{
+.^L83F2      JSR ConfRef
+.^L83F5      CLC
             BIT L8442
             LDA L00AA
-.L83FB      PHA									;save current contents of &AA
+.^L83FB      PHA									;save current contents of &AA
             LDA L00AB
             PHA									;save current contents of &AB
             LDA L00AA
@@ -882,6 +883,7 @@ transientTblCmdLength = L00AC
             STA L00AB
             PLA
 .L8442      RTS
+}
 
 ;move the correct reference address into &AA / &AB
 ;on entry X & Y contain address of either *command or *command parameter lookup table
