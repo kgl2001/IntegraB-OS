@@ -169,6 +169,9 @@ vduSetMode = 22
 
 lastBreakType = &028D
 
+serviceConfigure = &28
+serviceStatus = &29
+
 INSVH       = &022B
 INSVL       = &022A
 KEYVH       = &0229
@@ -1227,8 +1230,8 @@ transientTblCmdLength = L00AC
 
 ;Service call lookup table
 .srvCallLU	EQUB &09								;*HELP instruction expansion
-		EQUB &28								;*CONFIGURE command
-		EQUB &29								;*STATUS command
+		EQUB serviceConfigure						;*CONFIGURE command
+		EQUB serviceStatus							;*STATUS command
 		EQUB &04								;Unrecognised Star command
 		EQUB &FF								;Tube system initialisation
 		EQUB &10								;SPOOL/EXEC file closure warning
@@ -3051,12 +3054,12 @@ firstDigitCmdPtrY = &BB
 ; bulk of their implementation is in the service call handlers.
 {
 ;*CONFIGURE Command
-.^config    LDX #&28								;unrecognised *CONFIGURE status call number
+.^config    LDX #serviceConfigure
             BNE L92BB
 
 ;*STATUS Command
-.^status	  LDX #&29								;unrecognised *STATUS service call number
-.L92BB      JSR findNextCharAfterSpace								;find next character. offset stored in Y
+.^status	  LDX #serviceStatus
+.L92BB      JSR findNextCharAfterSpace							;find next character. offset stored in Y
             LDA #&FF								;load &FF
             PHA									;and store
             LDA (transientCmdPtr),Y							;read character
