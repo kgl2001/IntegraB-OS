@@ -103,6 +103,7 @@ rtcUserBase = &0E
 ; implementation detail (and an offset of rtcUserBase needs to be applied when
 ; accessing them, which will be handled automatically by
 ; readUserReg/writeUserReg if necessary).
+userRegFileBootData = &10 ; 0: File system / 4: Boot / 5-7: Data
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
@@ -3361,38 +3362,41 @@ firstDigitCmdPtrY = &BB
             JMP exitSCa								;restore service call parameters and exit
 }
 
-{
 ;Read / Write *CONF. FILE parameters
-.^Conf0		BCS L94C1								;Write File system parameter to RTC register
+.Conf0	
+{
+ 	  BCS Conf0Write
 
 ;Read *CONF. FILE parameters from RTC register and write to screen
             JSR L9427
             JSR L94F8
             JSR L91B9								;write ' ' to screen
-            LDX #&10								;Register &10 (0: File system / 4: Boot / 5-7: Data )
+            LDX #userRegFileBootData							;Register &10 (0: File system / 4: Boot / 5-7: Data )
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            LDX #&4E								;'N' - NFS
+	  ; SFTODO: This seems very odd, I *infer* we're special casing DNFS so we can *CONFIGURE either the disc part or the net part as the default filing system, but don't we need all of b0-3 to specify a 4-bit bank number for our filing system? how can bit 1 of the ROM number correlate with DNFS-as-DFS or DNFS-as-NFS? Are we sure the bitwise breakdown of register &10 quoted above is correct?
+            LDX #'N'								;'N' - NFS
             AND #&01								;Isolate file system bit
             BEQ L94BA								;NFS?
-            LDX #&44								;'D' - DFS
+            LDX #'D'								;'D' - DFS
 .L94BA      TXA
             JSR OSWRCH								;Write to screen
             JMP OSNEWL								;New line
 
 ;Write *CONF. FILE parameters to RTC register
-.L94C1      JSR L9502
+.Conf0Write
+            JSR L9502
             STA transientConfigPrefix
             TYA
             PHA
             JSR L93E3
             PLA
             TAY
-            JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (L00A8),Y							;Read File system type
+            JSR findNextCharAfterSpace							;find next character. offset stored in Y
+            LDA (transientCmdPtr),Y							;Read File system type
             AND #&DF								;Capitalise
-            CMP #&4E								;Is 'N' - NFS
+            CMP #'N'								;Is 'N' - NFS
             BEQ L94DD								;CLC then write to register
-            CMP #&44								;Is 'D' - NFS
+            CMP #'D'								;Is 'D' - NFS
             BEQ L94DE								;SEC then write to register
             RTS
 			
