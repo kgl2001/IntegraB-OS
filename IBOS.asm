@@ -891,7 +891,7 @@ transientTblCmdLength = L00AC
 ;move the correct reference address into &AA / &AB
 ;on entry X & Y contain address of either *command or *command parameter lookup table
 ; SFTODO: An example of something YX might point to is ConfTbl
-.L8461PreservingAAAB ; SFTODO: rename
+.L8461PreservingAAAB ; SFTODO: rename - it's *is* preserving them, but it's also calling L8461 with those set up with our YX, so maybe L8461UsingYX would be a better name
 {
 .L8443      PHA									;save stack value
             TXA									;get start of *command or *command parameters lookup table low address
