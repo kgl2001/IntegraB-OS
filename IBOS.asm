@@ -3278,15 +3278,17 @@ firstDigitCmdPtrY = &BB
             JSR setTransientCmdPtr
             LDA (transientCmdPtr),Y
             CMP #vduCr
-            BNE L9452
+            BNE optionSpecified
+	  ; There's no option specified.
             PLP
-            BCC L948B
+            BCC statusAll
             LDA #&05
             JSR ibosRef
             JSR L83A9
             JMP exitSCa								;restore service call parameters and exit
 			
-.L9452      LDA #&00
+.optionSpecified
+            LDA #&00
             STA L00BD
             JSR ConfRef
             JSR searchCmdTbl
@@ -3318,7 +3320,7 @@ firstDigitCmdPtrY = &BB
             PHA
             RTS
 			
-.L948B      LDX #&00
+.statusAll  LDX #&00
 .L948D      TXA
             PHA
             TYA
