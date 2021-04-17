@@ -1341,10 +1341,11 @@ transientTblCmdLength = L00AC
 ;Convert binary number to numeric characters and write characters to screen
 {
 pad = &B0
+padFlag = &B1
 
 .^L86DE      PHA
             LDA #&00
-            STA L00B1
+            STA padFlag
             BCS L86E7
             LDA #' '
 .L86E7      STA pad
@@ -1371,7 +1372,7 @@ pad = &B0
 
             TAX
             INX ; SFTODO: optimisable?
-            DEC L00B1
+            DEC padFlag
             JSR printDigit
             PLA
             RTS
@@ -1382,9 +1383,9 @@ pad = &B0
             LDA pad
             CPX #&00 ; SFTODO: Could get rid of this if LDA moved before DEX
             BNE notZero
-            BIT L00B1
+            BIT padFlag
             BPL printPad
-.notZero    DEC L00B1
+.notZero    DEC padFlag
             TXA
             ORA #'0'								;Convert binary number to ASCII number
 .printPad   JSR OSWRCH								;Write number to screen
