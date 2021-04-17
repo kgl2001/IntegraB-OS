@@ -696,7 +696,7 @@ GUARD	&C000
 		EQUB &00,&10							;&11 x CONFIGURE Parameters - from offset &00
 	
 ;Test for valid command
-;On entry, X & Y contain lookup table address. A=0 SFTODO: I don't think A is always 0 on entry, e.g. see code just above L946D (and if A was always 0 on entry, it would be redundant to add it to transientCmdPtr)
+;On entry, X & Y contain lookup table address. A=0 SFTODO: I don't think A is always 0 on entry, e.g. see code just above notNoSh (and if A was always 0 on entry, it would be redundant to add it to transientCmdPtr)
 ;&A8 / &A9 contain end of command parameter address in buffer
 ; SFTODO: Among other things, returns with carry clear and X containing index if we found a match, otherwise with carry set
 .searchCmdTbl
@@ -3094,6 +3094,10 @@ firstDigitCmdPtrY = &BB
 }
 
 ; SFTODO: This has only one caller
+; Check next two characters of command line:
+; "NO" => C clear, L00BD=1, Y advanced past "NO"
+; "SH" => C clear, L00BD=2, Y advanced past "SH"
+; otherwise C set, L00BD=0, Y preserved
 .parseNoSh
 {
 .L92F8      TYA
@@ -3299,12 +3303,12 @@ firstDigitCmdPtrY = &BB
             BCC optionRecognised
             TAY
             JSR parseNoSh
-            BCS L946D
+            BCS notNoSh
             TYA
             JSR ConfRef
             JSR searchCmdTbl
             BCC optionRecognised
-.L946D      PLP
+.notNoSh    PLP
             JMP exitSCa								;restore service call parameters and exit
 			
 .optionRecognised
