@@ -851,14 +851,14 @@ transientTblCmdLength = L00AC
             TSX									;get stack pointer
             LDA L0103,X								;get A saved at L83FB from stack
             PHA									;and save
-            LDY #&06								;offset for address *command lookup table
+            LDY #CmdTblOffset								;offset for address *command lookup table
             LDA (transientTblPtr),Y
             TAX
             INY
             LDA (transientTblPtr),Y
             TAY									;save start of *command lookup table address to X & Y
             PLA									;recover stack value
-            JSR L8443								;write *command to screen???
+            JSR L8461PreservingAAAB								;write *command to screen???
             LDA #&09
             JSR L84F8
 
@@ -875,7 +875,7 @@ transientTblCmdLength = L00AC
             LDA (transientTblPtr),Y
             TAY									;save start of *command parameters lookup table to X & Y
             PLA									;recover stack value
-            JSR L8443								;write *command parameters to screen???
+            JSR L8461PreservingAAAB								;write *command parameters to screen???
             LDA #&0D
             JSR L84F8
 
@@ -890,6 +890,9 @@ transientTblCmdLength = L00AC
 
 ;move the correct reference address into &AA / &AB
 ;on entry X & Y contain address of either *command or *command parameter lookup table
+; SFTODO: An example of something YX might point to is ConfTbl
+.L8461PreservingAAAB ; SFTODO: rename
+{
 .L8443      PHA									;save stack value
             TXA									;get start of *command or *command parameters lookup table low address
             PHA									;and save
@@ -900,7 +903,7 @@ transientTblCmdLength = L00AC
             STX L00AA
             STY L00AB								;save start of *command or *command parameter look up table address to &AA / &AB
             TSX									;get stack pointer
-            LDA L0104,X								;read value from stack
+            LDA L0104,X								;get A on entry from stack
             JSR L8461								;write parameters to screen?
             PLA										
             STA L00AB
@@ -910,6 +913,7 @@ transientTblCmdLength = L00AC
             TAX									;restore X register
             PLA									;restore A register
             RTS									;and return
+}
 			
 ;write *command or *command parameters to screen
 .L8461      PHA									;save stack value
