@@ -917,14 +917,16 @@ transientTblCmdLength = L00AC
 			
 ;write *command or *command parameters to screen
 {
+; SFTODO: Instead of preserving A8/A9 and copying AA/AB onto them, could this just work directly with AA/AB? I think the main reason it couldn't is if our caller assumes they are preserved, I don't know if that is true yet.
+ptr = &A8
 .^L8461     PHA									;save stack value
             TXA
             PHA									;save contents of X
             TYA
             PHA									;save contents of Y
-            LDA L00A9
+            LDA ptr + 1
             PHA									;save contents of &A9
-            LDA L00A8
+            LDA ptr
             PHA									;save contents of &A8
             LDA L00AC
             PHA									;save contents of &AC
@@ -933,9 +935,9 @@ transientTblCmdLength = L00AC
             AND #&7F								;mask out bit 7
             STA L00AC								;and store at &AC
             LDA L00AA
-            STA L00A8								;copy &AA to &A8
+            STA ptr								;copy &AA to &A8
             LDA L00AB
-            STA L00A9								;copy &AB to &A9
+            STA ptr + 1								;copy &AB to &A9
 
             LDX #&00								;start at &00
             LDY #&00								;y is fixed at &00
@@ -944,22 +946,22 @@ transientTblCmdLength = L00AC
 
 ;update lookup address based on contents of lookup address
             CLC
-	  LDA (L00A8),Y								;get offset
-            ADC L00A8
-            STA L00A8								;update lookup address low byte with offset
-            LDA L00A9
+	  LDA (ptr),Y								;get offset
+            ADC ptr
+            STA ptr								;update lookup address low byte with offset
+            LDA ptr + 1
             ADC #&00
-            STA L00A9								;update lookup address high byte with carry
+            STA ptr + 1								;update lookup address high byte with carry
 			
             INX
             BNE L8483								;and loop
 			
-.L8497      LDA (L00A8),Y
+.L8497      LDA (ptr),Y
             STA L00AC
             CMP #&01
             BEQ L84B2
             INY
-.L84A0      LDA (L00A8),Y
+.L84A0      LDA (ptr),Y
             BPL L84AA
             JSR L8461
             JMP L84AD
@@ -971,9 +973,9 @@ transientTblCmdLength = L00AC
 .L84B2      PLA
             STA L00AC
             PLA
-            STA L00A8
+            STA ptr
             PLA
-            STA L00A9
+            STA ptr + 1
             PLA
             TAY
             PLA
