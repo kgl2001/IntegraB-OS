@@ -1,4 +1,4 @@
-all: IBOS-01.rom tags
+all: IBOS-01.rom tags TAGS
 
 IBOS-01.rom: IBOS.asm Makefile
 	beebasm -v -i IBOS.asm > IBOS-01.lst
@@ -8,6 +8,9 @@ IBOS-01.rom: IBOS.asm Makefile
 
 tags: IBOS.asm
 	python beebasm-tags.py IBOS.asm
+
+TAGS: IBOS.asm
+	python beebasm-tags.py -e IBOS.asm
 
 clean:
 	/bin/rm -f IBOS.lst IBOS-01.rom IBOS-01-variant.rom
