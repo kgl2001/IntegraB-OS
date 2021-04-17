@@ -655,6 +655,7 @@ GUARD	&C000
 		EQUB &00
 
 ;*CONFIGURE parameters table
+; SFTODO: Any chance we can steal some macro ideas from Mark Moxon's Elite disassembly to make the recursive tokens more self-documenting?
 .ConfParTbl	EQUB &07, &81, "(D/N)"						;Parameter &80 for *FILE:		'<0-15>(D/N)'
 		EQUB &05, &93, "15>"						;Parameter &81 for *LANG:		'<0-15>'
 		EQUB &06, "<1-8>"							;Parameter &82 for *BAUD:		'<1-8>'
@@ -862,7 +863,7 @@ transientTblCmdLength = L00AC
             LDA (transientTblPtr),Y
             TAY									;save start of *command lookup table address to X & Y
             PLA									;recover stack value
-            JSR L8461PreservingAAAB								;write *command to screen???
+            JSR emitEntryAFromTableYX								;write *command to screen???
             LDA #&09
             JSR emitDynamicSyntaxCharacter
 
@@ -879,7 +880,7 @@ transientTblCmdLength = L00AC
             LDA (transientTblPtr),Y
             TAY									;save start of *command parameters lookup table to X & Y
             PLA									;recover stack value
-            JSR L8461PreservingAAAB								;write *command parameters to screen???
+            JSR emitEntryAFromTableYX								;write *command parameters to screen???
             LDA #&0D
             JSR emitDynamicSyntaxCharacter
 
@@ -895,7 +896,8 @@ transientTblCmdLength = L00AC
 ;move the correct reference address into &AA / &AB
 ;on entry X & Y contain address of either *command or *command parameter lookup table
 ; SFTODO: An example of something YX might point to is ConfTbl
-.L8461PreservingAAAB ; SFTODO: rename - it's *is* preserving them, but it's also calling L8461 with those set up with our YX, so maybe L8461UsingYX would be a better name
+; SFTODO: Note that this will recursively expand top-bit-set characters as tokens
+.emitEntryAFromTableYX
 {
 .L8443      PHA									;save stack value
             TXA									;get start of *command or *command parameters lookup table low address
