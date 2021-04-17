@@ -696,7 +696,7 @@ GUARD	&C000
 		EQUB &00,&10							;&11 x CONFIGURE Parameters - from offset &00
 	
 ;Test for valid command
-;On entry, X & Y contain lookup table address. A=0 SFTODO: I don't think A is always 0 on entry, e.g. see code just above notNoSh (and if A was always 0 on entry, it would be redundant to add it to transientCmdPtr)
+;On entry, X & Y contain lookup table address. A=0 SFTODO: I don't think A is always 0 on entry, e.g. see code just above notNoSh (and if A was always 0 on entry, it would be redundant to add it to transientCmdPtr) - SFTODO: I think A is the offset from transientCmdPtr, ie the value we would normally have in Y - sometimes we presumably know Y is 0 (thanks to the normalising done in setTransientCmdPtr) and it's just more convenient to call with A=0
 ;&A8 / &A9 contain end of command parameter address in buffer
 ; SFTODO: Among other things, returns with carry clear and X containing index if we found a match, otherwise with carry set
 .searchCmdTbl
@@ -1034,6 +1034,7 @@ transientTblCmdLength = L00AC
 			
 ;Find next character after space.
 ;On exit A=character Y=offset for character. Carry set if end of line
+;X is preserved.
 {
 .L853E      INY
 .^findNextCharAfterSpace
@@ -3051,7 +3052,9 @@ firstDigitCmdPtrY = &BB
             JMP exitSC								;Exit Service Call
 
 ; *CONFIGURE and *STATUS simply issue the corresponding service calls, so the
-; bulk of their implementation is in the service call handlers.
+; bulk of their implementation is in the service call handlers. This means that
+; third-party ROMs which support these service calls will get a chance to add
+; their own *CONFIGURE and *STATUS options, just as they could on a Master.
 {
 ;*CONFIGURE Command
 .^config    LDX #serviceConfigure
@@ -3297,7 +3300,7 @@ firstDigitCmdPtrY = &BB
 			
 .optionSpecified
             LDA #&00
-            STA L00BD
+            STA L00BD ; SFTODO: name this - it's a flag updated by parseNoSh (in this code path; possibly not in others, so don't do global search and replace)
             JSR ConfRef
             JSR searchCmdTbl
             BCC optionRecognised
@@ -3312,12 +3315,15 @@ firstDigitCmdPtrY = &BB
             JMP exitSCa								;restore service call parameters and exit
 			
 .optionRecognised
-	  JSR findNextCharAfterSpace								;find next character. offset stored in Y
+	  JSR findNextCharAfterSpace							;find next character. offset stored in Y
             PLP
-            JSR L947B
+            JSR jmpConfTypTblX
             JMP exitSC								;Exit Service Call
 			
-.L947B      PHP
+; Jump to the code at ConfTypTbl[X]; C is preserved, as it is used to indicate
+; *STATUS (clear) or *CONFIGURE (set).
+.jmpConfTypTblX
+            PHP
             STX L00AA
             TXA
             ASL A
@@ -3334,14 +3340,14 @@ firstDigitCmdPtrY = &BB
             PHA
             TYA
             PHA
-            CLC
-            JSR L947B
+            CLC ; *STATUS
+            JSR jmpConfTypTblX
             PLA
             TAY
             PLA
             TAX
             INX
-            CPX ConfTbla
+            CPX ConfTbla								;number of *CONFIGURE options
             BNE L948D
             JMP exitSCa								;restore service call parameters and exit
 }
