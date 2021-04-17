@@ -3267,12 +3267,13 @@ firstDigitCmdPtrY = &BB
             LDA L00BD
             RTS
 
+{
 ;Service call &29: *STATUS Command
-.service29	CLC
+.^service29 CLC
             BCC L943A
 
 ;Service call &28: *CONFIGURE Command
-.service28	SEC
+.^service28 SEC
 .L943A      PHP
             JSR setTransientCmdPtr
             LDA (L00A8),Y
@@ -3332,6 +3333,7 @@ firstDigitCmdPtrY = &BB
             CPX ConfTbla
             BNE L948D
             JMP exitSCa								;restore service call parameters and exit
+}
 
 ;Read / Write *CONF. FILE parameters
 .Conf0		BCS L94C1								;Write File system parameter to RTC register
