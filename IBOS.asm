@@ -917,14 +917,12 @@ transientTblCmdLength = L00AC
             TAX									;restore X register
             PLA									;restore A register
             RTS									;and return
-}
 			
 ;write *command or *command parameters to screen
-{
-; SFTODO: Instead of preserving A8/A9 and copying AA/AB onto them, could this just work directly with AA/AB? I think the main reason it couldn't is if our caller assumes they are preserved, I don't know if that is true yet.
+; SFTODO: Instead of preserving A8/A9 and copying AA/AB onto them, could this just work directly with AA/AB? I think the main reason it couldn't is if our caller assumes they are preserved, I don't know if that is true yet. - I think the answer is no, because this calls itself recursively
 ptr = &A8
 tmp = &AC
-.^L8461     PHA									;save stack value
+.L8461      PHA									;save stack value
             TXA
             PHA									;save contents of X
             TYA
@@ -969,7 +967,7 @@ tmp = &AC
             INY
 .charLoop   LDA (ptr),Y
             BPL L84AA ; SFTODO: b7 of table entries must mean something - we do L8461 or emitDynamicSyntaxCharacter according to it
-            JSR L8461
+            JSR L8461 ; recurse to handle top-bit-set tokens
             JMP L84AD
 .L84AA      JSR emitDynamicSyntaxCharacter
 .L84AD      INY
