@@ -3276,8 +3276,8 @@ firstDigitCmdPtrY = &BB
 .^service28 SEC
 .L943A      PHP
             JSR setTransientCmdPtr
-            LDA (L00A8),Y
-            CMP #&0D
+            LDA (transientCmdPtr),Y
+            CMP #vduCr
             BNE L9452
             PLP
             BCC L948B
