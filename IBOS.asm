@@ -85,7 +85,7 @@ rtcUserBase = &0E
 ;Register &0D - &05:	0-7: Keyboard Repeat
 ;Register &0E - &0A:	0-7: Printer Ignore
 ;Register &0F - &2D:	0: Tube / 2-4: BAUD / 5-7: Printer
-;Register &10 - &A0:	0: File system / 4: Boot / 5-7: Data
+;Register &10 - &A0:	0: File system disc/net flag / 4: Boot / 5-7: Data
 
 
 ; These registers are held in private RAM at &83B2-&83FF; this is battery-backed
@@ -103,7 +103,7 @@ rtcUserBase = &0E
 ; implementation detail (and an offset of rtcUserBase needs to be applied when
 ; accessing them, which will be handled automatically by
 ; readUserReg/writeUserReg if necessary).
-userRegFileBootData = &10 ; 0: File system / 4: Boot / 5-7: Data
+userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
@@ -3371,11 +3371,10 @@ firstDigitCmdPtrY = &BB
             JSR L9427
             JSR L94F8
             JSR L91B9								;write ' ' to screen
-            LDX #userRegFileBootData							;Register &10 (0: File system / 4: Boot / 5-7: Data )
+            LDX #userRegDiscNetBootData							;Register &10 (0: File system disc/net flag / 4: Boot / 5-7: Data )
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-	  ; SFTODO: This seems very odd, I *infer* we're special casing DNFS so we can *CONFIGURE either the disc part or the net part as the default filing system, but don't we need all of b0-3 to specify a 4-bit bank number for our filing system? how can bit 1 of the ROM number correlate with DNFS-as-DFS or DNFS-as-NFS? Are we sure the bitwise breakdown of register &10 quoted above is correct?
             LDX #'N'								;'N' - NFS
-            AND #&01								;Isolate file system bit
+            AND #&01								;Isolate file system bit SFTODO: replace with constant if used elsewhere too (prob is?!)
             BEQ L94BA								;NFS?
             LDX #'D'								;'D' - DFS
 .L94BA      TXA
