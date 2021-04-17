@@ -1348,18 +1348,20 @@ transientTblCmdLength = L00AC
 .L86E7      STA L00B0
             PLA
             PHA
-            LDX #&00
+            LDX #0
             SEC
-.L86EE      SBC #100
+.hundredsLoop
+            SBC #100
             INX
-            BCS L86EE
+            BCS hundredsLoop
             ADC #100
             JSR printDigit
-            LDX #&00
+            LDX #0
             SEC
-.L86FB      SBC #10
+.tensLoop
+            SBC #10
             INX
-            BCS L86FB
+            BCS tensLoop
             ADC #10
             JSR printDigit
             TAX
