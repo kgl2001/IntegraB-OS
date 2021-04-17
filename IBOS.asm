@@ -163,6 +163,14 @@ modeChangeStateEnteringNonShadowMode = 3 ; we're changing into a non-shadow mode
 variableMainRamSubroutine = &03A7 ; SFTODO: POOR NAME
 variableMainRamSubroutineMaxSize = &32 ; SFTODO: ASSERT ALL THE SUBROUTINES ARE SMALLER THAN THIS
 
+; This is filing system workspace which IBOS borrows. SFTODO: I'm slightly
+; surprised we get away with this. (Note that AllMem.txt shows how it's used for
+; CFS/RFS, which are *probably* not the current filing system, but I believe this
+; is workspace for the current filing system whatever that is.)
+; SFTODO: Not sure about "transient" prefix, that's sort of for the &A8 block,
+; but want to convey the transient-use-ness.
+transientConfigPrefix = &BD ; 0=none, 1="NO", 2="SH" - see parseNoSh
+
 vduBell = 7
 vduCr = 13
 vduSetMode = 22
@@ -3098,9 +3106,9 @@ firstDigitCmdPtrY = &BB
 
 ; SFTODO: This has only one caller
 ; Check next two characters of command line:
-; "NO" => C clear, L00BD=1, Y advanced past "NO"
-; "SH" => C clear, L00BD=2, Y advanced past "SH"
-; otherwise C set, L00BD=0, Y preserved
+; "NO" => C clear, transientConfigPrefix=1, Y advanced past "NO"
+; "SH" => C clear, transientConfigPrefix=2, Y advanced past "SH"
+; otherwise C set, transientConfigPrefix=0, Y preserved
 .parseNoSh
 {
 .L92F8      TYA
@@ -3116,7 +3124,7 @@ firstDigitCmdPtrY = &BB
             BNE L9326
             INY
             LDA #&01
-.^L930E     STA L00BD
+.^L930E     STA transientConfigPrefix
             PLA
             CLC
             RTS
@@ -3133,7 +3141,7 @@ firstDigitCmdPtrY = &BB
             JMP L930E
 			
 .L9326      LDA #&00
-            STA L00BD
+            STA transientConfigPrefix
             PLA
             TAY
             SEC
@@ -3235,15 +3243,15 @@ firstDigitCmdPtrY = &BB
             STA L00BC
             RTS
 
-.L93E1      STA L00BD
+.L93E1      STA transientConfigPrefix
 .L93E3      JSR L93C3
             JSR L93CA
             LDA ConfParBit+1,Y
             TAX
-            LDA L00BD
+            LDA transientConfigPrefix
             JSR L93B1
             AND L00BC
-            STA L00BD
+            STA transientConfigPrefix
             LDA L00BC
             EOR #&FF
             STA L00BC
@@ -3251,7 +3259,7 @@ firstDigitCmdPtrY = &BB
             TAX
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND L00BC
-            ORA L00BD
+            ORA transientConfigPrefix
             JMP writeUserReg							;Write to RTC clock User area. X=Addr, A=Data
 			
 .L940A      JSR L93C3
@@ -3260,12 +3268,12 @@ firstDigitCmdPtrY = &BB
             TAX
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND L00BC
-            STA L00BD
+            STA transientConfigPrefix
             LDA ConfParBit+1,Y
             TAX
-            LDA L00BD
+            LDA transientConfigPrefix
             JSR L93BA
-            STA L00BD
+            STA transientConfigPrefix
             RTS
 			
 .L9427      LDA L00AA
@@ -3274,7 +3282,7 @@ firstDigitCmdPtrY = &BB
             PLA
             STA L00AA
             JSR L940A
-            LDA L00BD
+            LDA transientConfigPrefix
             RTS
 
 {
@@ -3300,7 +3308,7 @@ firstDigitCmdPtrY = &BB
 			
 .optionSpecified
             LDA #&00
-            STA L00BD ; SFTODO: name this - it's a flag updated by parseNoSh (in this code path; possibly not in others, so don't do global search and replace)
+            STA transientConfigPrefix
             JSR ConfRef
             JSR searchCmdTbl
             BCC optionRecognised
@@ -3371,7 +3379,7 @@ firstDigitCmdPtrY = &BB
 
 ;Write *CONF. FILE parameters to RTC register
 .L94C1      JSR L9502
-            STA L00BD
+            STA transientConfigPrefix
             TYA
             PHA
             JSR L93E3
@@ -3432,7 +3440,7 @@ firstDigitCmdPtrY = &BB
 .L9523      LDA #&02
             JMP L932E
 			
-.L9528      LDX L00BD
+.L9528      LDX transientConfigPrefix
 			LDA L950B,X
             JMP L93E1
 			
@@ -3442,7 +3450,7 @@ firstDigitCmdPtrY = &BB
             ASL A
             LDA #&00
             ROL A
-            EOR L00BD
+            EOR transientConfigPrefix
             JMP L932E
 			
 .L9541      JSR L93C3
@@ -3450,7 +3458,7 @@ firstDigitCmdPtrY = &BB
             ASL A
             LDA #&00
             ROL A
-            EOR L00BD
+            EOR transientConfigPrefix
             JMP L93E1
 			
 .Conf2      BCS L9560
