@@ -3374,6 +3374,7 @@ firstDigitCmdPtrY = &BB
             LDX #userRegDiscNetBootData							;Register &10 (0: File system disc/net flag / 4: Boot / 5-7: Data )
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LDX #'N'								;'N' - NFS
+	  ; SFTODO: If we're desperate for space using LSR A:BCC would save a byte.
             AND #&01								;Isolate file system bit SFTODO: replace with constant if used elsewhere too (prob is?!)
             BEQ L94BA								;NFS?
             LDX #'D'								;'D' - DFS
