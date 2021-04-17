@@ -1048,17 +1048,17 @@ tmp = &AC
             PLA
             RTS
 			
-.L851F      INC L00AE
+.L851F      INC transientDynamicSyntaxFlag
             JMP OSASCI
 			
 .L8524      CMP #&09
             BNE L851F
             TXA
             PHA
-            LDA L00AE
-            AND #&3F
+            LDA transientDynamicSyntaxFlag
+            AND #transientDynamicSyntaxFlagCountMask
             TAX
-            LDA #&20
+            LDA #' '
 .L8531      CPX #&0C
             BCS L853B
             JSR OSWRCH
