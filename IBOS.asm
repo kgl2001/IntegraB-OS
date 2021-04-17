@@ -1338,17 +1338,19 @@ transientTblCmdLength = L00AC
             JSR OSWRCH
             JMP OSWRCH					;write 'OFF' to screen
 			
-;Convert binary number to numeric characters and write characters to screen
+;Convert binary number in A to numeric characters and write characters to screen
+;C set on entry means left pad to three characters with spaces, clear means no padding.
+.printADecimal
 {
-pad = &B0
-padFlag = &B1
+pad = &B0 ; character output in place of leading zeros
+padFlag = &B1 ; b7 clear iff "0" should be converted into "pad" 
 
-.^L86DE      PHA
+.L86DE      PHA
             LDA #&00
             STA padFlag
-            BCS L86E7
+            BCS noPadding ; we use NUL for padding, which has the same effect
             LDA #' '
-.L86E7      STA pad
+.noPadding  STA pad
             PLA
             PHA
 
@@ -2405,7 +2407,7 @@ firstDigitCmdPtrY = &BB
             ROR A
             ROR A
             SEC									;left justify (ignore leading 0s)
-            JSR L86DE								;Convert binary number to numeric characters and write characters to screen
+            JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
             LDA prvPrintBufferBankList
             AND #&F0
             CMP #&40
@@ -2420,7 +2422,7 @@ firstDigitCmdPtrY = &BB
 .L8DEF      LDA prvPrintBufferBankList,Y								;get RAM bank number from Private memory
             BMI L8E02								;if nothing in private memory then finish, otherwise
             SEC									;left justify (ignore leading 0s)
-            JSR L86DE								;Convert binary number to numeric characters and write characters to screen
+            JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
             LDA #&2C								;','
             JSR OSWRCH								;write to screen
             INY									;repeat
@@ -2533,7 +2535,7 @@ firstDigitCmdPtrY = &BB
             LDX #prvOsMode - prv83								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
 .L8EDE      SEC
-            JSR L86DE								;Convert binary number to numeric characters and write characters to screen
+            JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
             JMP L8E07								;new line, exit out of private RAM and exit service call
 			
 .L8EE5      CMP #&00
@@ -2939,7 +2941,7 @@ firstDigitCmdPtrY = &BB
 .^L91AC      INC L00AA
             LDA L00AA
             CLC
-            JSR L86DE								;Convert binary number to numeric characters and write characters to screen
+            JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
             LDA #':'
             JSR OSWRCH								;write to screen
 .^printSpace
@@ -3445,7 +3447,7 @@ firstDigitCmdPtrY = &BB
 }
 			
 .L94F8      SEC
-            JMP L86DE								;Convert binary number to numeric characters and write characters to screen
+            JMP printADecimal								;Convert binary number to numeric characters and write characters to screen
 			
 .L94FC      JSR L94F8
             JMP OSNEWL
@@ -3985,7 +3987,7 @@ firstDigitCmdPtrY = &BB
             CMP #&00								;If RAM total = 0k (will occur with either 0 RAM banks or 8 x 32k RAM banks), then
             BEQ L98FE								;Write '256K' to screen
             SEC
-            JSR L86DE								;Convert binary number to numeric characters and write characters to screen
+            JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
             JMP L990D								;Write 'K' to screen
 			
 .L98FE      LDA #'2'
@@ -4211,7 +4213,7 @@ firstDigitCmdPtrY = &BB
             JMP L9A9C								;Next
 			
 .L9A98      SEC
-            JSR L86DE								;Convert binary number to numeric characters and write characters to screen
+            JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
 .L9A9C      CPY #&03								;Check for 4th bank
             BEQ L9AAB								;Yes? Then end
             LDA #','
@@ -5721,7 +5723,7 @@ osfileBlock = L02EE
 ;Get and print details of ROM at location &AA
 .LA360      LDA L00AA								;Get ROM Number
             CLC
-            JSR L86DE								;Convert binary number to numeric characters and write characters to screen
+            JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
             JSR printSpace								;write ' ' to screen
             LDA #'('								;'('
             JSR OSWRCH								;write to screen
