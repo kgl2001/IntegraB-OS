@@ -833,27 +833,27 @@ transientTblCmdLength = L00AC
             JMP L83F5
 			
 {
-.^L83F2      JSR ConfRef
-.^L83F5      CLC
-            BIT L8442
+.^L83F2     JSR ConfRef
+.^L83F5     CLC
+            BIT rts									;set V
             LDA L00AA
-.^L83FB      PHA									;save current contents of &AA
+.^L83FB     PHA									;save current contents of &AA
             LDA L00AB
             PHA									;save current contents of &AB
             LDA L00AA
             PHA									;save current contents of &AA again
-            STX L00AA
-            STY L00AB								;save start of *command pointer lookup table address to &AA / &AB
+            STX transientTblPtr
+            STY transientTblPtr + 1								;save start of *command pointer lookup table address to &AA / &AB
             JSR L84C1
 
             TSX									;get stack pointer
             LDA L0103,X								;read value from stack
             PHA									;and save
             LDY #&06								;offset for address *command lookup table
-            LDA (L00AA),Y
+            LDA (transientTblPtr),Y
             TAX
             INY
-            LDA (L00AA),Y
+            LDA (transientTblPtr),Y
             TAY									;save start of *command lookup table address to X & Y
             PLA									;recover stack value
             JSR L8443								;write *command to screen???
@@ -867,10 +867,10 @@ transientTblCmdLength = L00AC
             LDA L0103,X								;read value from stack
             PHA									;and save
             LDY #&08								;offset for address *command parameters lookup table
-            LDA (L00AA),Y
+            LDA (transientTblPtr),Y
             TAX
             INY
-            LDA (L00AA),Y
+            LDA (transientTblPtr),Y
             TAY									;save start of *command parameters lookup table to X & Y
             PLA									;recover stack value
             JSR L8443								;write *command parameters to screen???
@@ -882,7 +882,7 @@ transientTblCmdLength = L00AC
             PLA
             STA L00AB
             PLA
-.L8442      RTS
+.rts        RTS
 }
 
 ;move the correct reference address into &AA / &AB
