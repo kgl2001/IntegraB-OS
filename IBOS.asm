@@ -919,6 +919,7 @@ transientTblCmdLength = L00AC
 {
 ; SFTODO: Instead of preserving A8/A9 and copying AA/AB onto them, could this just work directly with AA/AB? I think the main reason it couldn't is if our caller assumes they are preserved, I don't know if that is true yet.
 ptr = &A8
+tmp = &AC
 .^L8461     PHA									;save stack value
             TXA
             PHA									;save contents of X
@@ -928,50 +929,51 @@ ptr = &A8
             PHA									;save contents of &A9
             LDA ptr
             PHA									;save contents of &A8
-            LDA L00AC
+            LDA tmp
             PHA									;save contents of &AC
             TSX									;get stack pointer
-            LDA L0106,X								;read value from stack
+            LDA L0106,X								;get A on entry from stack
             AND #&7F								;mask out bit 7
-            STA L00AC								;and store at &AC
+            STA tmp									;and store at &AC
             LDA L00AA
-            STA ptr								;copy &AA to &A8
+            STA ptr									;copy &AA to &A8
             LDA L00AB
             STA ptr + 1								;copy &AB to &A9
 
-            LDX #&00								;start at &00
+	  ; Advance ptr so it points to the (A on entry with bit 7 masked off)th entry in the table.
+            LDX #&00
             LDY #&00								;y is fixed at &00
-.L8483      CPX L00AC								;
-            BEQ L8497
-
-;update lookup address based on contents of lookup address
+.advanceLoop
+	  CPX tmp									;A on entry with bit 7 masked off
+            BEQ advanceLoopDone
             CLC
-	  LDA (ptr),Y								;get offset
+	  LDA (ptr),Y
             ADC ptr
-            STA ptr								;update lookup address low byte with offset
+            STA ptr
+	  ; SFTODO: We could use the BCC label:INC:.label trick here to shorten this
             LDA ptr + 1
             ADC #&00
-            STA ptr + 1								;update lookup address high byte with carry
-			
+            STA ptr + 1
             INX
-            BNE L8483								;and loop
+            BNE advanceLoop
+.advanceLoopDone
 			
-.L8497      LDA (ptr),Y
-            STA L00AC
+            LDA (ptr),Y								;get length of string plus 1
+            STA tmp
             CMP #&01
-            BEQ L84B2
+            BEQ charLoopDone ; SFTODO: can this happen? do we have "zero length strings"?
             INY
-.L84A0      LDA (ptr),Y
-            BPL L84AA
+.charLoop   LDA (ptr),Y
+            BPL L84AA ; SFTODO: b7 of table entries must mean something - we do L8461 or L84F8 according to it
             JSR L8461
             JMP L84AD
-			
 .L84AA      JSR L84F8
 .L84AD      INY
-            CPY L00AC
-            BNE L84A0
-.L84B2      PLA
-            STA L00AC
+            CPY tmp
+            BNE charLoop
+.charLoopDone
+	  PLA
+            STA tmp
             PLA
             STA ptr
             PLA
