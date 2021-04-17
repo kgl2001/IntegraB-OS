@@ -3282,9 +3282,10 @@ firstDigitCmdPtrY = &BB
 	  ; There's no option specified.
             PLP
             BCC statusAll
-            LDA #&05
+	  ; This is *CONFIGURE with no option, so show the supported options.
+            LDA #&05 ; SFTODO: magic constant
             JSR ibosRef
-            JSR L83A9
+            JSR L83A9 ; SFTODO: I suspect this is a kind of help-display-using-table routine but not looked at it yet
             JMP exitSCa								;restore service call parameters and exit
 			
 .optionSpecified
