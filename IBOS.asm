@@ -1327,14 +1327,14 @@ transientTblCmdLength = L00AC
             RTS
 
 .L86C8      PHA
-            LDA #&4F					;'O'
+            LDA #'O'
             JSR OSWRCH
             PLA
             BEQ L86D6					;'OFF' if 0, otherwise 'ON'
-            LDA #&4E					;'N'
+            LDA #'N'
             JMP OSWRCH					;write 'ON' to screen
 			
-.L86D6      LDA #&46					;'F'
+.L86D6      LDA #'F'
             JSR OSWRCH
             JMP OSWRCH					;write 'OFF' to screen
 			
