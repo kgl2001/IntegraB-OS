@@ -119,8 +119,9 @@ transientRomBankMask = &AE ; 2 bytes
 transientCmdPtr = &A8 ; 2 bytes
 transientTblPtr = &AA ; 2 bytes
 transientConfIdx = &AA ; 1 byte
-transientDynamicSyntaxFlag = &AE ; 1 byte
-transientDynamicSyntaxFlagCountMask = %00111111
+transientDynamicSyntaxState = &AE ; 1 byte
+; SFTODO: Named constants for b7 and b6
+transientDynamicSyntaxStateCountMask = %00111111
 
 vduStatus = &D0
 vduStatusShadow = &10
@@ -863,7 +864,7 @@ transientTblCmdLength = L00AC
             LDA #&09
             JSR emitDynamicSyntaxCharacter
 
-            BIT transientDynamicSyntaxFlag						
+            BIT transientDynamicSyntaxState						
             BVS dontSFTODO
 
             TSX									;get stack pointer
@@ -992,13 +993,11 @@ tmp = &AC
 ; SFTODO: This has only one caller
 .startDynamicSyntaxGeneration ; SFTODO: rename?
 {
-; SFTODO: I am thinking the low six bits of transientDynamicSyntaxFlag are used to store an index into the string being generated, not sure yet - if so, maybe don't call the variable "flag"
-; SFTODO: Could we maybe use PHP:PLA:STA flag (which would alter the bit of flag used to store C) to shorten this code?
 .L84C1      LDA #&00
             ROR A ; move C on entry into b7 of A
             BVC L84C8
             ORA #&40
-.L84C8      STA transientDynamicSyntaxFlag ; stash original V (&40, b6) and C (&80, b7) in transientDynamicSyntaxFlag
+.L84C8      STA transientDynamicSyntaxState ; stash original V (&40, b6) and C (&80, b7) in transientDynamicSyntaxState
             BPL L84DD ; don't generate an error if C is clear
             LDY #&00
 .L84CE      LDA L84EE,Y
@@ -1009,13 +1008,13 @@ tmp = &AC
             TYA
             JMP L84E9
 			
-.L84DD      BIT transientDynamicSyntaxFlag
+.L84DD      BIT transientDynamicSyntaxState
             BVS L84E7
             JSR printSpace								;write ' ' to screen
             JSR printSpace								;write ' ' to screen
 .L84E7      LDA #&02
-.L84E9      ORA transientDynamicSyntaxFlag
-            STA transientDynamicSyntaxFlag
+.L84E9      ORA transientDynamicSyntaxState
+            STA transientDynamicSyntaxState
             RTS
 
 .L84EE  	  EQUB &00,&DC
@@ -1025,7 +1024,7 @@ tmp = &AC
 ; SFTODO: I haven't got this completely worked out, but roughly speaking it "emits" A into the current dynamic syntax message depending on the flags, allowing TAB characters to be expanded where appropriate so things line up nicely on screen
 .emitDynamicSyntaxCharacter
 {
-.L84F8      BIT transientDynamicSyntaxFlag
+.L84F8      BIT transientDynamicSyntaxState
             BPL SFTODOCASEB
             PHA
             TXA
@@ -1033,8 +1032,8 @@ tmp = &AC
             TSX
             LDA L0102,X								;get A on entry
             PHA
-            LDA transientDynamicSyntaxFlag
-            AND #transientDynamicSyntaxFlagCountMask
+            LDA transientDynamicSyntaxState
+            AND #transientDynamicSyntaxStateCountMask
             TAX
             PLA
             STA L0100,X
@@ -1044,13 +1043,13 @@ tmp = &AC
             STA L0100,X
             JMP L0100
 			
-.L8519      INC transientDynamicSyntaxFlag
+.L8519      INC transientDynamicSyntaxState
             PLA
             TAX
             PLA
             RTS
 			
-.L851F      INC transientDynamicSyntaxFlag
+.L851F      INC transientDynamicSyntaxState
             JMP OSASCI
 			
 .SFTODOCASEB
@@ -1058,8 +1057,8 @@ tmp = &AC
             BNE L851F
             TXA
             PHA
-            LDA transientDynamicSyntaxFlag
-            AND #transientDynamicSyntaxFlagCountMask
+            LDA transientDynamicSyntaxState
+            AND #transientDynamicSyntaxStateCountMask
             TAX
             LDA #' '
 .L8531      CPX #&0C
