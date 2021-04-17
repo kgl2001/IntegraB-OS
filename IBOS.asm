@@ -137,6 +137,7 @@ osfileLoad = &FF
 
 osbyteReadHimem = &84
 osbyteReadWriteOshwm = &B4
+osbyteIssueServiceRequest = &8F
 
 romBinaryVersion = &8008
 
@@ -612,6 +613,7 @@ GUARD	&C000
 	RTS
 
 .ConfTbla		EQUB &11								;Number of *CONFIGURE commands
+		ASSERT P% = ConfRef + CmdTblOffset ; SFTODO: Or is this not as common-with-CmdRef parsing as I imagine?
 		EQUW ConfTbl							;Start of *CONFIGURE commands lookup table
 		EQUW ConfParTbl							;Start of *CONFIGURE commands parameter lookup table
 	
@@ -1514,7 +1516,7 @@ firstDigitCmdPtrY = &BB
             BIT rts									;set V
 .rts        RTS
 
-.L8806      JMP L92E3
+.L8806      JMP badParameter
 }
 
 .errorNotFound
@@ -2242,7 +2244,7 @@ firstDigitCmdPtrY = &BB
 			
 .L8CC6      CMP #&05
             BCC L8CCD
-            JMP L92E3
+            JMP badParameter
 			
 .L8CCD      PHA
             JSR L8E6C								;check if print buffer is empty, and error if something is already in the buffer.
@@ -2515,7 +2517,7 @@ firstDigitCmdPtrY = &BB
             RTS
 			
 			
-.L8EFE      JMP L92E3
+.L8EFE      JMP badParameter
 
 .L8F01      JSR PrvEn								;switch in private RAM
             LDA prvOsMode								;read OSMODE
@@ -3045,41 +3047,47 @@ firstDigitCmdPtrY = &BB
             JSR OSFILE
             JMP exitSC								;Exit Service Call
 
+; *CONFIGURE and *STATUS simply issue the corresponding service calls, so the
+; bulk of their implementation is in the service call handlers.
+{
 ;*CONFIGURE Command
-.config		LDX #&28
+.^config    LDX #&28								;unrecognised *CONFIGURE status call number
             BNE L92BB
 
 ;*STATUS Command
-.status		LDX #&29
+.^status	  LDX #&29								;unrecognised *STATUS service call number
 .L92BB      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA #&FF								;load &FF
             PHA									;and store
-            LDA (L00A8),Y								;read character
-            CMP #&0D								;check for end of line
+            LDA (transientCmdPtr),Y							;read character
+            CMP #vduCr								;check for end of line
             BNE L92CB								;branch if not end of line
             PLA									;pull &FF
             LDA #&00								;load &00 instead
             PHA									;and store
 .L92CB      TXA									;move *CONF (*&28) / *STAT (*&29) to A
             PHA									;and store
-            LDA L00A8								;copy command location LSB
+            LDA transientCmdPtr							;copy command location LSB
             STA osCmdPtr								;to &F2
-            LDA L00A9								;copy command location MSB
+            LDA transientCmdPtr + 1							;copy command location MSB
             STA osCmdPtr + 1								;to &F3
             PLA									;pull *CONF (*&28) / *STAT (*&29)
             TAX									;and transfer to X
-            LDA #&8F								;select paged ROM service request
-            JSR OSBYTE								;issue paged ROM service request
+            LDA #osbyteIssueServiceRequest
+            JSR OSBYTE
             PLA
             BEQ L92F5
+	  ; SFTODO: Can X be modified by the service call? beebwiki suggests not, but maybe we're extending the protocol or I'm missing something?
             CPX #&00
             BEQ L92F5
+.^badParameter
 .L92E3      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
-			EQUB &FE
-			EQUS "Bad parameter", &00
+	  EQUB &FE
+	  EQUS "Bad parameter", &00
 
 .L92F5      JMP exitSC								;Exit Service Call
+}
 
 .L92F8      TYA
             PHA
@@ -3381,7 +3389,7 @@ firstDigitCmdPtrY = &BB
             BCS L9508
             RTS
 			
-.L9508      JMP L92E3
+.L9508      JMP badParameter
 
 
 .L950B		EQUB &04,&02,&01
