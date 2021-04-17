@@ -789,7 +789,8 @@ transientTblCmdLength = L00AC
 }
 			
 			
-.L83A9      PHA
+{
+.^L83A9     PHA
             JSR ibosRef
             STX L00AA
             STY L00AB
@@ -831,6 +832,7 @@ transientTblCmdLength = L00AC
             BCC L83D9
             PLA
             RTS
+}
 			
 {
 .^L83EC     JSR CmdRef								;get start of *command pointer look up table address X=&26, Y=&80
