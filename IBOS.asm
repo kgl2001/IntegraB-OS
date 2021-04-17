@@ -1340,15 +1340,18 @@ transientTblCmdLength = L00AC
 			
 ;Convert binary number to numeric characters and write characters to screen
 {
+pad = &B0
+
 .^L86DE      PHA
             LDA #&00
             STA L00B1
             BCS L86E7
             LDA #' '
-.L86E7      STA L00B0
+.L86E7      STA pad
             PLA
             PHA
-            LDX #0
+
+            LDX #0 ; SFTODO: change to LDX #&FF and get rid of DEX/INX stuff?
             SEC
 .hundredsLoop
             SBC #100
@@ -1356,7 +1359,8 @@ transientTblCmdLength = L00AC
             BCS hundredsLoop
             ADC #100
             JSR printDigit
-            LDX #0
+
+            LDX #0 ; SFTODO: change to LDX #&FF and get rid of DEX/INX stuff?
             SEC
 .tensLoop
             SBC #10
@@ -1364,8 +1368,9 @@ transientTblCmdLength = L00AC
             BCS tensLoop
             ADC #10
             JSR printDigit
+
             TAX
-            INX
+            INX ; SFTODO: optimisable?
             DEC L00B1
             JSR printDigit
             PLA
@@ -1373,16 +1378,16 @@ transientTblCmdLength = L00AC
 			
 .printDigit
             PHA
-            DEX
-            LDA L00B0
-            CPX #&00
-            BNE L871A
+            DEX ; SFTODO: optimisable?
+            LDA pad
+            CPX #&00 ; SFTODO: Could get rid of this if LDA moved before DEX
+            BNE notZero
             BIT L00B1
-            BPL L871F
-.L871A      DEC L00B1
+            BPL printPad
+.notZero    DEC L00B1
             TXA
             ORA #'0'								;Convert binary number to ASCII number
-.L871F      JSR OSWRCH								;Write number to screen
+.printPad   JSR OSWRCH								;Write number to screen
             PLA
             RTS
 }
