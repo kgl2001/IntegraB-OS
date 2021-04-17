@@ -845,7 +845,7 @@ transientTblCmdLength = L00AC
             PHA									;save current contents of &AA again
             STX transientTblPtr
             STY transientTblPtr + 1								;save start of *command pointer lookup table address to &AA / &AB
-            JSR L84C1
+            JSR startDynamicSyntaxGeneration
 
             TSX									;get stack pointer
             LDA L0103,X								;read value from stack
@@ -974,15 +974,19 @@ transientTblCmdLength = L00AC
             PLA
             RTS
 			
-; SFTODO: If entered with V set this generates a dynamically constructed "Syntax: ..." error
-; SFTODO: What if V is clear?
+; If entered with C set this starts to dynamically construct a "Syntax: ..." error on the stack
+; If entered with C clear this outputs a "  " prefix iff V is clear on entry and otherwise (SFTODO:being deliberately vague) prepares for generating the syntax message
+; SFTODO: This has only one caller
+.startDynamicSyntaxGeneration ; SFTODO: rename?
 {
-.^L84C1      LDA #&00
-            ROR A
+flag = &AE ; SFTODO: rename once clearer? this may be used outside this routine in which case it needs a global label
+; SFTODO: Could we maybe use PHP:PLA:STA flag (which would alter the bit of flag used to store C) to shorten this code?
+.L84C1      LDA #&00
+            ROR A ; move C on entry into b7 of A
             BVC L84C8
             ORA #&40
-.L84C8      STA L00AE
-            BPL L84DD
+.L84C8      STA flag ; stash original V (&40, b6) and C (&80, b7) in flag
+            BPL L84DD ; don't generate an error if C is clear
             LDY #&00
 .L84CE      LDA L84EE,Y
             STA L0100,Y
@@ -992,13 +996,13 @@ transientTblCmdLength = L00AC
             TYA
             JMP L84E9
 			
-.L84DD      BIT L00AE
+.L84DD      BIT flag
             BVS L84E7
             JSR printSpace								;write ' ' to screen
             JSR printSpace								;write ' ' to screen
 .L84E7      LDA #&02
-.L84E9      ORA L00AE
-            STA L00AE
+.L84E9      ORA flag
+            STA flag
             RTS
 
 .L84EE  	  EQUB &00,&DC
@@ -3448,7 +3452,7 @@ firstDigitCmdPtrY = &BB
 			
 .Conf1Write
             JSR convertIntegerDefaultDecimalChecked
-            JMP L93E1
+            JMP L93E1 ; SFTODO: move Conf1 block so we can fall through?
 }
 			
 ; SFTODO: If we moved this to just before printADecimal we could fall through into it
