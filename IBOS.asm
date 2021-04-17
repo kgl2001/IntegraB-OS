@@ -849,7 +849,7 @@ transientTblCmdLength = L00AC
             JSR startDynamicSyntaxGeneration
 
             TSX									;get stack pointer
-            LDA L0103,X								;read value from stack
+            LDA L0103,X								;get A saved at L83FB from stack
             PHA									;and save
             LDY #&06								;offset for address *command lookup table
             LDA (transientTblPtr),Y
@@ -862,8 +862,8 @@ transientTblCmdLength = L00AC
             LDA #&09
             JSR L84F8
 
-            BIT transientDynamicSyntaxFlag						;test for *command parameters???
-            BVS L843B								;if none, then restore &AA / &AB and exit
+            BIT transientDynamicSyntaxFlag						
+            BVS dontSFTODO
 
             TSX									;get stack pointer
             LDA L0103,X								;read value from stack
@@ -879,7 +879,8 @@ transientTblCmdLength = L00AC
             LDA #&0D
             JSR L84F8
 
-.L843B      PLA
+.dontSFTODO
+            PLA
             STA L00AA
             PLA
             STA L00AB
@@ -980,6 +981,7 @@ transientTblCmdLength = L00AC
 ; SFTODO: This has only one caller
 .startDynamicSyntaxGeneration ; SFTODO: rename?
 {
+; SFTODO: I am thinking the low six bits of transientDynamicSyntaxFlag are used to store an index into the string being generated, not sure yet - if so, maybe don't call the variable "flag"
 ; SFTODO: Could we maybe use PHP:PLA:STA flag (which would alter the bit of flag used to store C) to shorten this code?
 .L84C1      LDA #&00
             ROR A ; move C on entry into b7 of A
