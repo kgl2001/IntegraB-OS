@@ -3361,8 +3361,9 @@ firstDigitCmdPtrY = &BB
             JMP exitSCa								;restore service call parameters and exit
 }
 
+{
 ;Read / Write *CONF. FILE parameters
-.Conf0		BCS L94C1								;Write File system parameter to RTC register
+.^Conf0		BCS L94C1								;Write File system parameter to RTC register
 
 ;Read *CONF. FILE parameters from RTC register and write to screen
             JSR L9427
@@ -3403,6 +3404,7 @@ firstDigitCmdPtrY = &BB
             PLP										;Restore new File system status bit from Carry flag
             ROL A									;Rotate new File system status bit in to register
             JMP writeUserReg							;Write to RTC clock User area. X=Addr, A=Data
+}
 			
 .Conf1		BCS L94F2
             JSR L9427
