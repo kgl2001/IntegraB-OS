@@ -119,6 +119,7 @@ transientRomBankMask = &AE ; 2 bytes
 transientCmdPtr = &A8 ; 2 bytes
 transientTblPtr = &AA ; 2 bytes
 transientConfIdx = &AA ; 1 byte
+transientDynamicSyntaxFlag = &AE ; 1 byte
 
 vduStatus = &D0
 vduStatusShadow = &10
@@ -979,13 +980,12 @@ transientTblCmdLength = L00AC
 ; SFTODO: This has only one caller
 .startDynamicSyntaxGeneration ; SFTODO: rename?
 {
-flag = &AE ; SFTODO: rename once clearer? this may be used outside this routine in which case it needs a global label
 ; SFTODO: Could we maybe use PHP:PLA:STA flag (which would alter the bit of flag used to store C) to shorten this code?
 .L84C1      LDA #&00
             ROR A ; move C on entry into b7 of A
             BVC L84C8
             ORA #&40
-.L84C8      STA flag ; stash original V (&40, b6) and C (&80, b7) in flag
+.L84C8      STA transientDynamicSyntaxFlag ; stash original V (&40, b6) and C (&80, b7) in transientDynamicSyntaxFlag
             BPL L84DD ; don't generate an error if C is clear
             LDY #&00
 .L84CE      LDA L84EE,Y
@@ -996,13 +996,13 @@ flag = &AE ; SFTODO: rename once clearer? this may be used outside this routine 
             TYA
             JMP L84E9
 			
-.L84DD      BIT flag
+.L84DD      BIT transientDynamicSyntaxFlag
             BVS L84E7
             JSR printSpace								;write ' ' to screen
             JSR printSpace								;write ' ' to screen
 .L84E7      LDA #&02
-.L84E9      ORA flag
-            STA flag
+.L84E9      ORA transientDynamicSyntaxFlag
+            STA transientDynamicSyntaxFlag
             RTS
 
 .L84EE  	  EQUB &00,&DC
