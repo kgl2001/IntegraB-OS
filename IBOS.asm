@@ -3094,7 +3094,7 @@ firstDigitCmdPtrY = &BB
 }
 
 ; SFTODO: This has only one caller
-.parseNo
+.parseNoSh
 {
 .L92F8      TYA
             PHA
@@ -3114,13 +3114,12 @@ firstDigitCmdPtrY = &BB
             CLC
             RTS
 			
-			
-.L9313      CMP #&53
+.L9313      CMP #'S'
             BNE L9326
             INY
-            LDA (L00A8),Y
+            LDA (transientCmdPtr),Y
             AND #&DF
-            CMP #&48
+            CMP #'H'
             BNE L9326
             INY
             LDA #&02
@@ -3299,7 +3298,7 @@ firstDigitCmdPtrY = &BB
             JSR searchCmdTbl
             BCC optionRecognised
             TAY
-            JSR parseNo
+            JSR parseNoSh
             BCS L946D
             TYA
             JSR ConfRef
