@@ -832,13 +832,13 @@ transientTblCmdLength = L00AC
             PLA
             RTS
 			
-.L83EC      JSR CmdRef								;get start of *command pointer look up table address X=&26, Y=&80
+{
+.^L83EC     JSR CmdRef								;get start of *command pointer look up table address X=&26, Y=&80
             JMP L83F5
 			
-{
 ; SFTODO: Use a different local label instead of transientTblPtr in here? I am not sure what would be clearest as still working through code...
 .^L83F2     JSR ConfRef
-.^L83F5     CLC
+.L83F5      CLC
             BIT rts									;set V
             LDA L00AA
 .^L83FB     PHA									;save current contents of &AA
