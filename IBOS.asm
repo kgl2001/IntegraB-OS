@@ -861,7 +861,7 @@ transientTblCmdLength = L00AC
             PLA									;recover stack value
             JSR L8461PreservingAAAB								;write *command to screen???
             LDA #&09
-            JSR L84F8
+            JSR emitDynamicSyntaxCharacter
 
             BIT transientDynamicSyntaxFlag						
             BVS dontSFTODO
@@ -878,7 +878,7 @@ transientTblCmdLength = L00AC
             PLA									;recover stack value
             JSR L8461PreservingAAAB								;write *command parameters to screen???
             LDA #&0D
-            JSR L84F8
+            JSR emitDynamicSyntaxCharacter
 
 .dontSFTODO
             PLA
@@ -965,10 +965,10 @@ tmp = &AC
             BEQ charLoopDone ; SFTODO: can this happen? do we have "zero length strings"?
             INY
 .charLoop   LDA (ptr),Y
-            BPL L84AA ; SFTODO: b7 of table entries must mean something - we do L8461 or L84F8 according to it
+            BPL L84AA ; SFTODO: b7 of table entries must mean something - we do L8461 or emitDynamicSyntaxCharacter according to it
             JSR L8461
             JMP L84AD
-.L84AA      JSR L84F8
+.L84AA      JSR emitDynamicSyntaxCharacter
 .L84AD      INY
             CPY tmp
             BNE charLoop
@@ -1022,14 +1022,16 @@ tmp = &AC
 	  EQUS "Syntax: "
 }
 
+; SFTODO: I haven't got this completely worked out, but roughly speaking it "emits" A into the current dynamic syntax message depending on the flags, allowing TAB characters to be expanded where appropriate so things line up nicely on screen
+.emitDynamicSyntaxCharacter
 {
-.^L84F8     BIT transientDynamicSyntaxFlag
-            BPL L8524
+.L84F8      BIT transientDynamicSyntaxFlag
+            BPL SFTODOCASEB
             PHA
             TXA
             PHA
             TSX
-            LDA L0102,X
+            LDA L0102,X								;get A on entry
             PHA
             LDA transientDynamicSyntaxFlag
             AND #transientDynamicSyntaxFlagCountMask
@@ -1051,7 +1053,8 @@ tmp = &AC
 .L851F      INC transientDynamicSyntaxFlag
             JMP OSASCI
 			
-.L8524      CMP #&09
+.SFTODOCASEB
+            CMP #&09
             BNE L851F
             TXA
             PHA
