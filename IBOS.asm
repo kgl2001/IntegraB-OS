@@ -910,7 +910,7 @@ transientTblCmdLength = L00AC
             STY L00AB								;save start of *command or *command parameter look up table address to &AA / &AB
             TSX									;get stack pointer
             LDA L0104,X								;get A on entry from stack
-            JSR L8461								;write parameters to screen?
+            JSR emitEntryAFromTableL00AA						;write parameters to screen?
             PLA										
             STA L00AB
             PLA
@@ -924,6 +924,7 @@ transientTblCmdLength = L00AC
 ; SFTODO: Instead of preserving A8/A9 and copying AA/AB onto them, could this just work directly with AA/AB? I think the main reason it couldn't is if our caller assumes they are preserved, I don't know if that is true yet. - I think the answer is no, because this calls itself recursively
 ptr = &A8
 tmp = &AC
+.emitEntryAFromTableL00AA
 .L8461      PHA									;save stack value
             TXA
             PHA									;save contents of X
@@ -969,7 +970,7 @@ tmp = &AC
             INY
 .charLoop   LDA (ptr),Y
             BPL L84AA ; SFTODO: b7 of table entries must mean something - we do L8461 or emitDynamicSyntaxCharacter according to it
-            JSR L8461 ; recurse to handle top-bit-set tokens
+            JSR emitEntryAFromTableL00AA ; recurse to handle top-bit-set tokens
             JMP L84AD
 .L84AA      JSR emitDynamicSyntaxCharacter
 .L84AD      INY
