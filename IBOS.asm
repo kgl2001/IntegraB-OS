@@ -9058,20 +9058,18 @@ ibosCNPVIndex = 6
 .LBACB      JSR updateOrigVectorRegs
             JMP returnFromVectorHandler
 
-; Read top of user memory (http://beebwiki.mdfs.net/OSBYTE_%2684)
-.osbyte84Handler
 {
+; Read top of user memory (http://beebwiki.mdfs.net/OSBYTE_%2684)
+.^osbyte84Handler
 .LBAD1      PHA
             LDA vduStatus
             AND #&10
             BNE LBAE9
             PLA
             JMP LBB1C
-}
 
 ; Read base of display RAM for a given mode (http://beebwiki.mdfs.net/OSBYTE_%2685)
-.osbyte85Handler
-{
+.^osbyte85Handler
 .LBADC      PHA
             TXA
             BMI LBAE9
@@ -9079,12 +9077,12 @@ ibosCNPVIndex = 6
             BEQ LBAE9
             PLA
             JMP LBB1C
-}
-			
+
 .LBAE9      PLA
             LDX #&00
             LDY #&80
             JMP LBACB
+}
 
 ; Enter language ROM (http://beebwiki.mdfs.net/OSBYTE_%268E)
 .osbyte8EHandler
