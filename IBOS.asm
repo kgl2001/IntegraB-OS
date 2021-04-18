@@ -1785,7 +1785,7 @@ firstDigitCmdPtrY = &BB
             JSR L88D7								;Set BRK Vector to &8969
             LDA lastBreakType								;Read current language ROM number
             BNE L88F2
-            JMP L898E
+            JMP cmdLoop
 }
 
 {
@@ -1793,7 +1793,7 @@ firstDigitCmdPtrY = &BB
             JSR OSBYTE								;Perform key scan
             CPX #&47								;Is the @ key being pressed?
             BEQ L88FE
-            JMP L898E
+            JMP cmdLoop
 			
 .L88FE      LDA #&C8								;Start of RESET routine
             LDX #&02					
@@ -1861,12 +1861,12 @@ inputBuf = &700
             INY
             BNE L8981
 .L898B      JSR OSNEWL
-.^L898E     JSR printStar
+.^cmdLoop   JSR printStar
             JSR L89A8
             LDX #lo(inputBuf)
             LDY #hi(inputBuf)
             JSR OSCLI
-            JMP L898E
+            JMP cmdLoop
 			
 .L899E
 ;OSWORD A=&0, Read line from input - Parameter block
