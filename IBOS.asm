@@ -1901,7 +1901,9 @@ inputBuf = &700
 }
 
 ;Start of full reset
-.L89C2      LDX #&32								;Start with register &32
+; SFTODO: This has only one caller
+{
+.^L89C2     LDX #&32								;Start with register &32
 .L89C4      LDA #&00								;Set to 0
             CPX #&05								;Check if register &5 (LANG/FILE parameters)
             BNE L89D2								;No? Then branch
@@ -1922,6 +1924,7 @@ inputBuf = &700
             INX
             BNE L89DD
             JMP L2800								;Then jump to main memory
+}
 			
 ;This code is relocated from IBOS ROM to RAM starting at &2800
 {
