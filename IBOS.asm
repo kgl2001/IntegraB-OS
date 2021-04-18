@@ -9122,10 +9122,10 @@ ibosCNPVIndex = 6
             JMP returnFromBYTEV
 
 .LBB22      LDX #&00								;start at offset 0
-.LBB24      LDA osString,X								;relocate error code from &BB3C
+.LBB24      LDA osError,X								;relocate error code from &BB3C
             STA L0100,X								;to &100
             INX
-            CPX #osStringEnd - osString							;until &15
+            CPX #osErrorEnd - osError							;until &15
             BNE LBB24								;loop
             LDX #prvOsMode - prv83							;select OSMODE
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
@@ -9133,9 +9133,9 @@ ibosCNPVIndex = 6
             STA L0113								;write OSMODE character to error text
             JMP L0100								;Generate BRK and error
 
-.osString	  EQUB &00,&F7
+.osError	  EQUB &00,&F7
 	  EQUS "OS 1.20 / OSMODE 0", &00
-.osStringEnd
+.osErrorEnd
 }
 
 {
