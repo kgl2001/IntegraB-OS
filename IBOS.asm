@@ -3222,6 +3222,7 @@ firstDigitCmdPtrY = &BB
 
 ;*Configure paramters are stored using the following format
 ;EQUB Register,Start Bit,Number of Bits
+ConfParBitBitCountOffset = 2
 .ConfParBit	EQUB &05,&00,&04							;FILE ->	  &05 Bits 0..3
 		EQUB &05,&04,&04							;LANG ->	  &05 Bits 4..7
 		EQUB &0F,&02,&03							;BAUD ->	  &0F Bits 2..4
@@ -3258,8 +3259,9 @@ firstDigitCmdPtrY = &BB
 		EQUW Conf6-1							;SHX /NOSHX		Type 6: Optional NO Prefix
 		EQUW Conf1-1							;OSMODE	<0-4>		Type 1: Number starting 0
 		EQUW Conf1-1							;ALARM <0-63>		Type 1: Number starting 0
-	
-.L93A9		EQUB &FF,&01,&03,&07
+
+; bitMaskTable[X] contains bit mask for an n-bit value; X=0 is used to represent the mask for an 8-bit value.
+.bitMaskTable       EQUB &FF,&01,&03,&07
 		EQUB &0F,&1F,&3F,&7F
 
 
@@ -3286,10 +3288,10 @@ firstDigitCmdPtrY = &BB
             RTS
 }
 
-.L93CA      LDA ConfParBit+2,Y
-            AND #&7F
+.L93CA      LDA ConfParBit+ConfParBitBitCountOffset,Y
+            AND #&7F ; SFTODO: so what does b7 signify?
             TAX
-            LDA L93A9,X
+            LDA bitMaskTable,X
             STA L00BC
             LDA ConfParBit+1,Y
             TAX
@@ -3298,8 +3300,9 @@ firstDigitCmdPtrY = &BB
             STA L00BC
             RTS
 
-.L93E1      STA transientConfigPrefix
-.L93E3      JSR setYToTransientConfIdxTimes3
+{
+.^L93E1     STA transientConfigPrefix
+.^L93E3     JSR setYToTransientConfIdxTimes3
             JSR L93CA
             LDA ConfParBit+1,Y
             TAX
@@ -3316,6 +3319,7 @@ firstDigitCmdPtrY = &BB
             AND L00BC
             ORA transientConfigPrefix
             JMP writeUserReg							;Write to RTC clock User area. X=Addr, A=Data
+}
 			
 .L940A      JSR setYToTransientConfIdxTimes3
             JSR L93CA
