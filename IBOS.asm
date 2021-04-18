@@ -3302,6 +3302,8 @@ ENDIF
             RTS
 }
 
+.getShiftedBitMask
+{
 .L93CA      LDA ConfParBit+ConfParBitBitCountOffset,Y
             AND #&7F ; SFTODO: so what does b7 signify?
             TAX
@@ -3313,11 +3315,12 @@ ENDIF
             JSR shiftALeftByX
             STA L00BC
             RTS
+}
 
 {
 .^L93E1     STA transientConfigPrefix
 .^L93E3     JSR setYToTransientConfIdxTimes3
-            JSR L93CA
+            JSR getShiftedBitMask
             LDA ConfParBit+1,Y
             TAX
             LDA transientConfigPrefix
@@ -3336,7 +3339,7 @@ ENDIF
 }
 			
 .L940A      JSR setYToTransientConfIdxTimes3
-            JSR L93CA
+            JSR getShiftedBitMask
             LDA ConfParBit,Y
             TAX
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
