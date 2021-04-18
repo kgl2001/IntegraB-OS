@@ -969,11 +969,12 @@ tmp = &AC
             BEQ charLoopDone ; SFTODO: can this happen? do we have "zero length strings"?
             INY
 .charLoop   LDA (ptr),Y
-            BPL L84AA ; SFTODO: b7 of table entries must mean something - we do L8461 or emitDynamicSyntaxCharacter according to it
+            BPL simpleCharacter
             JSR emitEntryAFromTableL00AA ; recurse to handle top-bit-set tokens
-            JMP L84AD
-.L84AA      JSR emitDynamicSyntaxCharacter
-.L84AD      INY
+            JMP doneChar
+.simpleCharacter
+	  JSR emitDynamicSyntaxCharacter
+.doneChar   INY
             CPY tmp
             BNE charLoop
 .charLoopDone
