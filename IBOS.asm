@@ -176,6 +176,7 @@ variableMainRamSubroutineMaxSize = &32 ; SFTODO: ASSERT ALL THE SUBROUTINES ARE 
 ; but want to convey the transient-use-ness.
 ; SFTODO: Named constants for the 0/1/2 values?
 transientConfigPrefix = &BD ; 0=none, 1="NO", 2="SH" - see parseNoSh
+transientConfigBitMask = &BC
 
 vduBell = 7
 vduCr = 13
@@ -3308,12 +3309,12 @@ ENDIF
             AND #&7F ; SFTODO: so what does b7 signify?
             TAX
             LDA bitMaskTable,X
-            STA L00BC ; SFTODO: use PHA?
+            STA transientConfigBitMask ; SFTODO: use PHA?
             LDA ConfParBit+ConfParBitStartBitOffset,Y
             TAX ; SFTODO: we could just do LDX ...,Y in previous instruction, couldn't we?
-            LDA L00BC ; SFTODO: use PLA?
+            LDA transientConfigBitMask ; SFTODO: use PLA?
             JSR shiftALeftByX
-            STA L00BC
+            STA transientConfigBitMask
             RTS
 }
 
@@ -3325,15 +3326,15 @@ ENDIF
             TAX
             LDA transientConfigPrefix
             JSR shiftALeftByX
-            AND L00BC
+            AND transientConfigBitMask
             STA transientConfigPrefix
-            LDA L00BC
+            LDA transientConfigBitMask
             EOR #&FF
-            STA L00BC
+            STA transientConfigBitMask
             LDA ConfParBit,Y
             TAX
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            AND L00BC
+            AND transientConfigBitMask
             ORA transientConfigPrefix
             JMP writeUserReg							;Write to RTC clock User area. X=Addr, A=Data
 }
@@ -3343,7 +3344,7 @@ ENDIF
             LDA ConfParBit,Y
             TAX
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            AND L00BC
+            AND transientConfigBitMask
             STA transientConfigPrefix
             LDA ConfParBit+1,Y
             TAX
