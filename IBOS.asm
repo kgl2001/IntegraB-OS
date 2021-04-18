@@ -9054,9 +9054,7 @@ ibosCNPVIndex = 6
             LDA (L00FA),Y
             TAY
             LDA #&98
-}
-.returnFromBYTEV
-{
+.^returnFromBYTEV
 .LBACB      JSR updateOrigVectorRegs
             JMP returnFromVectorHandler
 }
