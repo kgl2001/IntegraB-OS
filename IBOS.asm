@@ -9135,13 +9135,11 @@ ibosCNPVIndex = 6
 .LBB3C	  EQUB &00,&F7
 	  EQUS "OS 1.20 / OSMODE 0", &00
 
+{
 .jmpParentWORDV
-{
 .LBB51      JMP (parentWORDV)
-}
 
-.wordvHandler
-{
+.^wordvHandler
 .LBB54	  JSR restoreOrigVectorRegs
             CMP #&09
             BNE LBB67
