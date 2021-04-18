@@ -176,7 +176,7 @@ variableMainRamSubroutineMaxSize = &32 ; SFTODO: ASSERT ALL THE SUBROUTINES ARE 
 ; but want to convey the transient-use-ness.
 ; SFTODO: Named constants for the 0/1/2 values?
 transientConfigPrefix = &BD ; 0=none, 1="NO", 2="SH" - see parseNoSh
-transientConfigPrefixSFTODO = &BD; SFTODO: I suspect these uses aren't the same as previous one and should be renamed
+transientConfigPrefixSFTODO = &BD; SFTODO: I suspect these uses aren't the same as previous one and should be renamed - I haven't necessarily found all cases where this versino is being used - I think this version is used to hold a config value read from a user register
 transientConfigBitMask = &BC
 
 vduBell = 7
@@ -3530,9 +3530,10 @@ ENDIF
 }
 
 
+{
 .L950B		EQUB &04,&02,&01
 
-.Conf3		BCS L9528
+.^Conf3	  BCS L9528
             JSR getConfigValue
             LSR A
             BCS L9523
@@ -3547,17 +3548,18 @@ ENDIF
 .L9523      LDA #&02
             JMP L932E
 			
-.L9528      LDX transientConfigPrefix
-			LDA L950B,X
+.L9528      LDX transientConfigPrefixSFTODO
+	  LDA L950B,X
             JMP L93E1
+}
 			
-.Conf6		BCS L9541
+.Conf6	  BCS L9541
             JSR getConfigValue
             LDA ConfParBit+2,Y
             ASL A
             LDA #&00
             ROL A
-            EOR transientConfigPrefix
+            EOR transientConfigPrefixSFTODO
             JMP L932E
 			
 .L9541      JSR setYToTransientConfIdxTimes3
@@ -3565,7 +3567,7 @@ ENDIF
             ASL A
             LDA #&00
             ROL A
-            EOR transientConfigPrefix
+            EOR transientConfigPrefixSFTODO
             JMP L93E1
 			
 .Conf2      BCS L9560
