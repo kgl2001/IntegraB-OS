@@ -1774,10 +1774,11 @@ firstDigitCmdPtrY = &BB
             STA BRKVH
             RTS
 
-			
+
+{
 ;Confirmed language entry point
 ; SFTODO: Start of this code is same as L8969 - could we save a few bytes by (e.g.) setting osErrorPtr to &8000 here and testing for that in BRKV handler and skipping the error printing code in that case?
-.L88E2      CLI							
+.^L88E2     CLI
             CLD
             LDX #&FF
             TXS
@@ -1785,6 +1786,7 @@ firstDigitCmdPtrY = &BB
             LDA lastBreakType								;Read current language ROM number
             BNE L88F2
             JMP L898E
+}
 			
 .L88F2      LDA #&7A
             JSR OSBYTE								;Perform key scan
