@@ -844,14 +844,14 @@ transientTblCmdLength = L00AC
 .^L83F2     JSR ConfRef
 .L83F5      CLC
             BIT rts									;set V
-            LDA L00AA
+            LDA transientConfIdx
 .^L83FB     PHA									;save current contents of &AA
             LDA L00AB
             PHA									;save current contents of &AB
-            LDA L00AA
-            PHA									;save current contents of &AA again
+            LDA transientConfIdx
+            PHA									;save current contents of &AA again SFTODO: why? is this something to do with being entered at L83FB?? it seems to make little sense otherwise, as we are going to peek the value pushed at L83FB using LDA L0103,X below anyway.
             STX transientTblPtr
-            STY transientTblPtr + 1								;save start of *command pointer lookup table address to &AA / &AB
+            STY transientTblPtr + 1							;save start of *command pointer lookup table address to &AA / &AB
             JSR startDynamicSyntaxGeneration
 
             TSX									;get stack pointer
@@ -3324,7 +3324,7 @@ ENDIF
 .^L93E3     JSR setYToTransientConfIdxTimes3
             JSR getShiftedBitMask
             LDA ConfParBit+1,Y
-            TAX
+            TAX ; SFTODO: LDX blah,Y?
             LDA transientConfigPrefix
             JSR shiftALeftByX
             AND transientConfigBitMask
@@ -3348,7 +3348,7 @@ ENDIF
             AND transientConfigBitMask
             STA transientConfigPrefix
             LDA ConfParBit+1,Y
-            TAX
+            TAX ; SFTODO: LDX blah,Y
             LDA transientConfigPrefix
             JSR L93BA
             STA transientConfigPrefix
