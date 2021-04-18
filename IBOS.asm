@@ -187,6 +187,7 @@ lastBreakType = &028D
 
 serviceConfigure = &28
 serviceStatus = &29
+serviceAboutToEnterLanguage = &2A
 
 INSVH       = &022B
 INSVL       = &022A
@@ -9088,10 +9089,10 @@ ibosCNPVIndex = 6
 ; Enter language ROM (http://beebwiki.mdfs.net/OSBYTE_%268E)
 .osbyte8EHandler
 {
-.LBAF1      LDA #&8F								;Select Issue paged ROM service request
-            LDX #&2A								;Service type &2A
+.LBAF1      LDA #osbyteIssueServiceRequest
+            LDX #serviceAboutToEnterLanguage
             LDY #&00
-            JSR OSBYTE								;Execute Issue paged ROM service request
+            JSR OSBYTE
             JSR restoreOrigVectorRegs
             JMP LBB1C
 }
