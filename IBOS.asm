@@ -3651,12 +3651,12 @@ ENDIF
             ROL A
             RTS
 
-            JSR L95BF								;Missing address label?
+            JSR L95BF								;Missing address label? SFTODO: Yes, looks like dead code to me, which could be removed in an enhanced version
             JSR printADecimalPad
             LDA #','
             JMP OSWRCH
 			
-            ASL L00AE								;Missing address label?
+            ASL L00AE								;Missing address label? SFTODO: ditto
             ASL L00AE
             JSR L854D
             JSR convertIntegerDefaultDecimalChecked
@@ -3667,7 +3667,7 @@ ENDIF
 
 			
 ;Autoboot - Service call &03
-.service03	LDA KEYVH
+.service03  LDA KEYVH
             CMP #&FF
             BNE L9605
             LDA #&0D
@@ -8754,6 +8754,7 @@ parentVectorTbl1 = parentVectorTbl
 ; The original OS (parent) values of BYTEV, WORDV, WRCHV and RDCHV are copied to
 ; parentVectorTbl1 in that order before installing our own handlers.
 parentBYTEV = parentVectorTbl1
+parentWORDV = parentVectorTbl1 + 2
 parentVectorTbl2 = parentVectorTbl1 + 4 * 2 ; 4 vectors, 2 bytes each
 ; The original OS (parent) values of INSV, REMV and CNPV are copied to
 ; parentVectorTbl2 in that order before installing our own handlers.
@@ -9131,14 +9132,14 @@ ibosCNPVIndex = 6
             STA L0113								;write OSMODE character to error text
             JMP L0100								;Generate BRK and error
 
-.LBB3C		EQUB &00,&F7
-			EQUS "OS 1.20 / OSMODE 0", &00
+.LBB3C	  EQUB &00,&F7
+	  EQUS "OS 1.20 / OSMODE 0", &00
 
-.LBB51      JMP (L08AF)
+.LBB51      JMP (parentWORDV)
 
 .wordvHandler
 {
-.LBB54		JSR restoreOrigVectorRegs
+.LBB54	  JSR restoreOrigVectorRegs
             CMP #&09
             BNE LBB67
             JSR setMemsel
@@ -9307,7 +9308,7 @@ ibosCNPVIndex = 6
             RTS
 
 ; If SHX is enabled, swap the contents of main and shadow RAM between
-; &3000-&7FFF. SFTODO: *personal opinion alert* AIUI, Acorn sideways RAM on the
+; &3000-&7FFF. SFTODO: *personal opinion alert* AIUI, Acorn shadow RAM on the
 ; B+ and M128 behaves as if SHX is always enabled. I think the only reason to
 ; not always have SHX enabled is that it slows down mode changes. If that's
 ; right, could we (perhaps keeping SHX off as an option just for the sake of it)
