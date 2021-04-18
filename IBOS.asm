@@ -3605,11 +3605,13 @@ ENDIF
 .L9579	  JMP printADecimalPadNewline
 }
 
-.L957C      JSR convertIntegerDefaultDecimalChecked
+{
+.^L957C     JSR convertIntegerDefaultDecimalChecked
             CMP #&80
             BCC L9585
             SBC #&78
 .L9585      JMP setConfigValue
+}
 
 {
 .^Conf4	  BCS L95A8
