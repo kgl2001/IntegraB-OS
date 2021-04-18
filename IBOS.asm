@@ -1982,7 +1982,8 @@ firstDigitCmdPtrY = &BB
 		EQUB userRegPrvPrintBufferStart,&90
 		EQUB &7F,&0F								;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks).
 
-.L8A7B	  PHP
+{
+.^L8A7B	  PHP
 	  SEI
 	  JSR PrvEn								;switch in private RAM
             TXA
@@ -2020,6 +2021,7 @@ firstDigitCmdPtrY = &BB
             JSR PrvDis								;switch out private RAM
             PLP
             RTS
+}
 			
 ;Unrecognised OSBYTE call - Service call &07
 ;A, X & Y stored in &EF, &F0 & F1 respecively
@@ -8980,14 +8982,14 @@ ibosCNPVIndex = 6
 }
 			
 ;OSMODE lookup table
-.LBA5D		EQUB &01								;OSMODE 0 - Not Used
-		EQUB &01								;OSMODE 1 - Not Used
-		EQUB &FB								;OSMODE 2
-		EQUB &FD								;OSMODE 3
-		EQUB &FB								;OSMODE 4
-		EQUB &F5								;OSMODE 5
-		EQUB &01								;OSMODE 6 - No such mode
-		EQUB &01								;OSMODE 7 - No such mode
+.LBA5D	  EQUB &01								;OSMODE 0 - Not Used
+	  EQUB &01								;OSMODE 1 - Not Used
+	  EQUB &FB								;OSMODE 2
+	  EQUB &FD								;OSMODE 3
+	  EQUB &FB								;OSMODE 4
+	  EQUB &F5								;OSMODE 5
+	  EQUB &01								;OSMODE 6 - No such mode
+	  EQUB &01								;OSMODE 7 - No such mode
 
 .jmpParentBYTEV
 {
