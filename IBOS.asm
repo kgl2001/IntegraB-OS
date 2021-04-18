@@ -9120,8 +9120,7 @@ ibosCNPVIndex = 6
 .^returnViaParentBYTEV
 .LBB1C      JSR jmpParentBYTEV
             JMP returnFromBYTEV
-}
-			
+
 .LBB22      LDX #&00								;start at offset 0
 .LBB24      LDA LBB3C,X								;relocate error code from &BB3C
             STA L0100,X								;to &100
@@ -9136,6 +9135,7 @@ ibosCNPVIndex = 6
 
 .LBB3C	  EQUB &00,&F7
 	  EQUS "OS 1.20 / OSMODE 0", &00
+}
 
 {
 .jmpParentWORDV
