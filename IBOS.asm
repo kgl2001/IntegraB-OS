@@ -9115,13 +9115,11 @@ ibosCNPVIndex = 6
             BEQ LBB22								;Output OSMODE to screen.
             LDA #&00
             JMP returnFromBYTEV
-}
-			
+
 .LBB18      PLA
             TAX
             LDA #&00
-.returnViaParentBYTEV
-{
+.^returnViaParentBYTEV
 .LBB1C      JSR jmpParentBYTEV
             JMP returnFromBYTEV
 }
