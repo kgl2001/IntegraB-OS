@@ -1787,8 +1787,9 @@ firstDigitCmdPtrY = &BB
             BNE L88F2
             JMP L898E
 }
-			
-.L88F2      LDA #&7A
+
+{
+.^L88F2     LDA #&7A
             JSR OSBYTE								;Perform key scan
             CPX #&47								;Is the @ key being pressed?
             BEQ L88FE
@@ -1833,6 +1834,7 @@ firstDigitCmdPtrY = &BB
 
 .L894B      EQUS &0D, "seY"
 .L894F      EQUS "System Reset", &0D, &0D, "Go (Y/N) ? ", &00
+}
 
 ;BRK vector entry point
 .brkvHandler
