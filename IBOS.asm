@@ -8954,7 +8954,7 @@ ibosCNPVIndex = 6
 .osbyte6FHandler
 {
 .LBA34      JSR L8A7B
-            JMP LBACB
+            JMP returnFromBYTEV
 }
 
 ; Read key with time limit/read machine type (http://beebwiki.mdfs.net/OSBYTE_%2681)
@@ -8973,7 +8973,7 @@ ibosCNPVIndex = 6
             LDA LBA5D,X								;Get value from lookup table
             TAX									;and transfer to X
             LDY #&00
-            BEQ LBACB								;jump to code for OSMODE 2-5
+            BEQ returnFromBYTEV								;jump to code for OSMODE 2-5
 .LBA56      LDX #&00
             LDA #&81
             JMP returnViaParentBYTEV								;jump to code for OSMODE 0-1
@@ -9030,7 +9030,7 @@ ibosCNPVIndex = 6
 .osbyte98Handler
 {
 .LBA96      JSR jmpParentBYTEV
-            BCS LBACB
+            BCS returnFromBYTEV
             LDA ramselCopy
             PHA
             ORA #&40
@@ -9049,14 +9049,17 @@ ibosCNPVIndex = 6
             PLA
             STA ramselCopy
             STA ramsel
-            BCC LBACB
+            BCC returnFromBYTEV
             CLC
             LDA (L00FA),Y
             TAY
             LDA #&98
 }
+.returnFromBYTEV
+{
 .LBACB      JSR updateOrigVectorRegs
             JMP returnFromVectorHandler
+}
 
 {
 ; Read top of user memory (http://beebwiki.mdfs.net/OSBYTE_%2684)
@@ -9082,7 +9085,7 @@ ibosCNPVIndex = 6
             PLA
             LDX #&00
             LDY #&80
-            JMP LBACB
+            JMP returnFromBYTEV
 }
 
 ; Enter language ROM (http://beebwiki.mdfs.net/OSBYTE_%268E)
@@ -9111,7 +9114,7 @@ ibosCNPVIndex = 6
             PLA
             BEQ LBB22								;Output OSMODE to screen.
             LDA #&00
-            JMP LBACB
+            JMP returnFromBYTEV
 }
 			
 .LBB18      PLA
@@ -9120,7 +9123,7 @@ ibosCNPVIndex = 6
 .returnViaParentBYTEV
 {
 .LBB1C      JSR jmpParentBYTEV
-            JMP LBACB
+            JMP returnFromBYTEV
 }
 			
 .LBB22      LDX #&00								;start at offset 0
