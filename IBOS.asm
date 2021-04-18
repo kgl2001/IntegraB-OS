@@ -9121,6 +9121,7 @@ ibosCNPVIndex = 6
 .LBB1C      JSR jmpParentBYTEV
             JMP returnFromBYTEV
 
+	  ; SFTODO: I think we could do this loop backwards to save two bytes on CPX #
 .LBB22      LDX #&00								;start at offset 0
 .LBB24      LDA osError,X								;relocate error code from &BB3C
             STA L0100,X								;to &100
