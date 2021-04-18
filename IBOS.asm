@@ -146,6 +146,7 @@ osbyteAcknowledgeEscape = &7E
 osbyteReadHimem = &84
 osbyteReadWriteOshwm = &B4
 osbyteIssueServiceRequest = &8F
+osbyteWriteSheila = &97
 osbyteReadWriteVduQueueLength = &DA
 
 oswordInputLine = &00
@@ -1966,7 +1967,7 @@ inputBuf = &700
             DEY
             DEY
             BPL L8A2D								;Repeat for all 16 values
-            LDA #&97								;Write to SHEILA (&FExx)
+            LDA #osbyteWriteSheila							;Write to SHEILA (&FExx)
             LDX #&4E								;Write to SHEILA+&4E (&FE4E)
             LDY #&7F								;Data to be written
             JSR OSBYTE								;Write &7F to SHEILA+&4E (System VIA)
