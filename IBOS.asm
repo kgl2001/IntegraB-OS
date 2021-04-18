@@ -176,6 +176,7 @@ variableMainRamSubroutineMaxSize = &32 ; SFTODO: ASSERT ALL THE SUBROUTINES ARE 
 ; but want to convey the transient-use-ness.
 ; SFTODO: Named constants for the 0/1/2 values?
 transientConfigPrefix = &BD ; 0=none, 1="NO", 2="SH" - see parseNoSh
+transientConfigPrefixSFTODO = &BD; SFTODO: I suspect these uses aren't the same as previous one and should be renamed
 transientConfigBitMask = &BC
 
 vduBell = 7
@@ -3290,12 +3291,16 @@ IF FALSE
 }
 ENDIF
 
+; SFTODO: This only has a single caller
+.shiftARightByX
+{
 .L93BA      CPX #&00
             BEQ L93C2
 .L93BE      LSR A
             DEX
             BNE L93BE
 .L93C2      RTS
+}
 
 .setYToTransientConfIdxTimes3
 {
@@ -3341,20 +3346,23 @@ ENDIF
             ORA transientConfigPrefix
             JMP writeUserReg							;Write to RTC clock User area. X=Addr, A=Data
 }
-			
+
+.getConfigValue
+{
 .L940A      JSR setYToTransientConfIdxTimes3
             JSR getShiftedBitMask
             LDA ConfParBit+ConfParBitUserRegOffset,Y
             TAX ; SFTODO: can we just use LDX blah,Y to avoid this?
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND transientConfigBitMask
-            STA transientConfigPrefix
+            STA transientConfigPrefixSFTODO ; SFTODO: Just PHA?
             LDA ConfParBit+1,Y
             TAX ; SFTODO: LDX blah,Y
-            LDA transientConfigPrefix
-            JSR L93BA
-            STA transientConfigPrefix
+            LDA transientConfigPrefixSFTODO ; SFTODO: Just PLA?
+            JSR shiftARightByX
+            STA transientConfigPrefixSFTODO
             RTS
+}
 			
 ; SFTODO: This code saves transientConfIdx (&AA) across call to ConfRefDynamicSyntaxGenerationForTransientConfIdx, but it superficially looks as though ConfRefDynamicSyntaxGenerationForTransientConfIdx preserves it itself, so the code to preserve here may be redundant.
 .L9427      LDA transientConfIdx
@@ -3362,7 +3370,7 @@ ENDIF
             JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
             PLA
             STA transientConfIdx
-            JSR L940A
+            JSR getConfigValue
             LDA transientConfigPrefix
             RTS
 
@@ -3525,7 +3533,7 @@ ENDIF
 .L950B		EQUB &04,&02,&01
 
 .Conf3		BCS L9528
-            JSR L940A
+            JSR getConfigValue
             LSR A
             BCS L9523
             LSR A
@@ -3544,7 +3552,7 @@ ENDIF
             JMP L93E1
 			
 .Conf6		BCS L9541
-            JSR L940A
+            JSR getConfigValue
             LDA ConfParBit+2,Y
             ASL A
             LDA #&00
@@ -3561,7 +3569,7 @@ ENDIF
             JMP L93E1
 			
 .Conf2      BCS L9560
-            JSR L940A
+            JSR getConfigValue
             PHA
             JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
             PLA
@@ -3575,7 +3583,7 @@ ENDIF
             JMP L93E1
 			
 .Conf5		BCS L957C
-            JSR L940A
+            JSR getConfigValue
             PHA
             JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
             PLA
@@ -3590,8 +3598,8 @@ ENDIF
             SBC #&78
 .L9585      JMP L93E1
 
-.Conf4		BCS L95A8
-            JSR L940A
+.Conf4	  BCS L95A8
+            JSR getConfigValue
             PHA
             JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
             PLA
