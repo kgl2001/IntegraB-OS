@@ -1868,20 +1868,22 @@ inputBuf = &700
             JSR OSCLI
             JMP cmdLoop
 			
-.L899E
+.osword0Block
 ;OSWORD A=&0, Read line from input - Parameter block
 	  EQUW inputBuf								;buffer address
 	  EQUB &FF								;maximum line length
 	  EQUB &20								;minimum acceptable ASCII value
 	  EQUB &7E								;maximum acceptable ASCII value
+.osword0BlockEnd
 
 ; SFTODO: This only has one caller
 .printStar
        	  LDA #'*'
             JMP OSWRCH
 
-.L89A8      LDY #&04
-.L89AA      LDA L899E,Y
+	  ; SFTODO: Is this necessary? Isn't it legit to call OSWORD 0 with a parameter block in SWR anyway, without copying to main RAM first? I think BASIC does that (check), and if it's good enough for BASIC surely it's good enough for us?
+.L89A8      LDY #(osword0BlockEnd - osword0Block) - 1
+.L89AA      LDA osword0Block,Y
             STA L0100,Y
             DEY
             BPL L89AA
