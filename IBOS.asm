@@ -1893,10 +1893,11 @@ inputBuf = &700
             LDX #lo(L0100)
             LDY #hi(L0100)
             JSR OSWORD
-            BCS L89BF
+            BCS acknowledgeEscapeAndGenerateErrorIndirect ; SFTODO: could we BCC a nearby RTS and just fall through to acknowledge...?
             RTS
-			
-.L89BF      JMP L91F1
+
+.acknowledgeEscapeAndGenerateErrorIndirect
+.L89BF      JMP acknowledgeEscapeAndGenerateError
 }
 
 ;Start of full reset
@@ -3028,12 +3029,13 @@ inputBuf = &700
             JMP exitSC								;Exit Service Call
 			
 .L91EE      JSR L9201
-.L91F1      LDA #&7E
+.acknowledgeEscapeAndGenerateError
+.L91F1      LDA #osbyteAcknowledgeEscape
             JSR OSBYTE
             JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
-			EQUB &11
-			EQUS "Escape", &00
+	  EQUB &11
+	  EQUS "Escape", &00
 
 .L9201      LDA #&03
             LDX L00A9
