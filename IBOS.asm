@@ -1903,7 +1903,8 @@ firstDigitCmdPtrY = &BB
             JMP L2800								;Then jump to main memory
 			
 ;This code is relocated from IBOS ROM to RAM starting at &2800
-.L89E9      LDA romselCopy									;Get current SWR bank number.
+{
+.^L89E9      LDA romselCopy									;Get current SWR bank number.
             PHA									;Save it
             LDX #&0F								;Start at SWR bank 15
 .L89EE      STX romselCopy									;Select memory bank
@@ -1957,6 +1958,7 @@ firstDigitCmdPtrY = &BB
             CMP #&C0
             BNE L8A4D								;Until address is &C000
             RTS
+}
 
 ;lookup table for IntegraB defaults - Address (X) / Data (A)
 ;Read by code at &8834
