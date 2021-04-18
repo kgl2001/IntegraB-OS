@@ -9135,7 +9135,10 @@ ibosCNPVIndex = 6
 .LBB3C	  EQUB &00,&F7
 	  EQUS "OS 1.20 / OSMODE 0", &00
 
+.jmpParentWORDV
+{
 .LBB51      JMP (parentWORDV)
+}
 
 .wordvHandler
 {
@@ -9143,7 +9146,7 @@ ibosCNPVIndex = 6
             CMP #&09
             BNE LBB67
             JSR setMemsel
-            JSR LBB51
+            JSR jmpParentWORDV
             JSR updateOrigVectorRegs
             JMP returnFromVectorHandler
 
