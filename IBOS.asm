@@ -103,6 +103,7 @@ rtcUserBase = &0E
 ; implementation detail (and an offset of rtcUserBase needs to be applied when
 ; accessing them, which will be handled automatically by
 ; readUserReg/writeUserReg if necessary).
+userRegLangFile = &05 ; b0-3: FILE, b4-7: LANG
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
 userRegHorzTV = &36 ; "horizontal *TV" settings
@@ -1904,19 +1905,21 @@ inputBuf = &700
 ; SFTODO: This has only one caller
 {
 .^L89C2     LDX #&32								;Start with register &32
-.L89C4      LDA #&00								;Set to 0
-            CPX #&05								;Check if register &5 (LANG/FILE parameters)
-            BNE L89D2								;No? Then branch
-            LDA romselCopy									;Read current ROM number
+.userRegLoop
+	  LDA #&00								;Set to 0
+            CPX #userRegLangFile							;Check if register &5 (LANG/FILE parameters)
+            BNE notLangFile								;No? Then branch
+            LDA romselCopy								;Read current ROM number
             ASL A
             ASL A
             ASL A
             ASL A									;move to upper 4 bits (LANG parameter)
-            ORA romselCopy									;Read current ROM number & save to lower 4 bits (FILE parameter)
+            ORA romselCopy								;Read current ROM number & save to lower 4 bits (FILE parameter)
 ;	  LDA #&EC								;Force LANG: 14, FILE: 12 in IBOS 1.21 (in place of ORA &F4 in line above)
-.L89D2      JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
+.notLangFile
+	  JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             DEX
-            BPL L89C4
+            BPL userRegLoop
             JSR LA790								;Stop Clock and Initialise RTC registers &00 to &0B
             LDX #&00								;Relocate 256 bytes of code to main memory
 .L89DD      LDA L89E9,X
@@ -1982,6 +1985,8 @@ inputBuf = &700
             CMP #&C0
             BNE L8A4D								;Until address is &C000
             RTS
+
+	  ASSERT P% - L89E9 <= 256
 }
 
 ;lookup table for IntegraB defaults - Address (X) / Data (A)
