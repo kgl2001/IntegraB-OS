@@ -3604,7 +3604,8 @@ ENDIF
             SBC #&78
 .L9585      JMP L93E1
 
-.Conf4	  BCS L95A8
+{
+.^Conf4	  BCS L95A8
             JSR getConfigValue
             PHA
             JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
@@ -3615,11 +3616,12 @@ ENDIF
             BCC L959A
             ORA #&F8
 .L959A      JSR printADecimalPad
-            LDA #&2C
+            LDA #','
             JSR OSWRCH
             PLA
             AND #&01
             JMP L94FC
+}
 			
 .L95A8      JSR convertIntegerDefaultDecimalChecked
             AND #&07
