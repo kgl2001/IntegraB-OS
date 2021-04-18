@@ -145,6 +145,7 @@ osbyteAcknowledgeEscape = &7E
 osbyteReadHimem = &84
 osbyteReadWriteOshwm = &B4
 osbyteIssueServiceRequest = &8F
+osbyteReadWriteVduQueueLength = &DA
 
 romBinaryVersion = &8008
 
@@ -1775,6 +1776,7 @@ firstDigitCmdPtrY = &BB
 
 			
 ;Confirmed language entry point
+; SFTODO: Start of this code is same as L8969 - could we save a few bytes by (e.g.) setting osErrorPtr to &8000 here and testing for that in BRKV handler and skipping the error printing code in that case?
 .L88E2      CLI							
             CLD
             LDX #&FF
@@ -1839,7 +1841,9 @@ inputBuf = &700
 	  TXS
             CLI
             CLD
-            LDA #&DA
+	  ; Clear the VDU queue, so (e.g.) the first few characters of output
+	  ; aren't swallowed if an error occurred half-way through a VDU 23.
+            LDA #osbyteReadWriteVduQueueLength
             LDX #&00
             LDY #&00
             JSR OSBYTE
@@ -8662,7 +8666,7 @@ osfileBlock = L02EE
             RTS
 			
 .LB936      LDA romselCopy
-            ORA #&80
+            ORA #romselMemsel
             STA romselCopy
             STA romsel
             TSX
