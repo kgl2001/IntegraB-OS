@@ -3505,7 +3505,7 @@ ENDIF
 {
 	  BCS Conf1Write
             JSR getConfigValueWrapper
-            JMP L94FC
+            JMP printADecimalPadNewline
 			
 .Conf1Write
             JSR convertIntegerDefaultDecimalChecked
@@ -3518,9 +3518,12 @@ ENDIF
 .L94F8      SEC
             JMP printADecimal								;Convert binary number to numeric characters and write characters to screen
 }
-			
+
+.printADecimalPadNewline
+{
 .L94FC      JSR printADecimalPad
             JMP OSNEWL
+}
 			
 .convertIntegerDefaultDecimalChecked
 {
@@ -3581,7 +3584,7 @@ ENDIF
             PLA
             CLC
             ADC #&01
-            JMP L94FC
+            JMP printADecimalPadNewline
 }
 			
 .L9560      JSR convertIntegerDefaultDecimalChecked
@@ -3598,7 +3601,7 @@ ENDIF
             CMP #&08
             BCC L9579
             ADC #&77
-.L9579	  JMP L94FC
+.L9579	  JMP printADecimalPadNewline
 }
 
 .L957C      JSR convertIntegerDefaultDecimalChecked
@@ -3623,7 +3626,7 @@ ENDIF
             JSR OSWRCH
             PLA
             AND #&01
-            JMP L94FC
+            JMP printADecimalPadNewline
 }
 			
 .L95A8      JSR convertIntegerDefaultDecimalChecked
