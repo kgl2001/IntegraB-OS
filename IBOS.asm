@@ -3326,8 +3326,9 @@ ENDIF
             RTS
 }
 
+.setConfigValue
 {
-.^L93E1     STA transientConfigPrefix
+.L93E1      STA transientConfigPrefix
 .^L93E3     JSR setYToTransientConfIdxTimes3
             JSR getShiftedBitMask
             LDA ConfParBit+1,Y
@@ -3509,7 +3510,7 @@ ENDIF
 			
 .Conf1Write
             JSR convertIntegerDefaultDecimalChecked
-            JMP L93E1 ; SFTODO: move Conf1 block so we can fall through?
+            JMP setConfigValue ; SFTODO: move Conf1 block so we can fall through?
 }
 			
 ; SFTODO: If we moved this to just before printADecimal we could fall through into it
@@ -3556,7 +3557,7 @@ ENDIF
 			
 .L9528      LDX transientConfigPrefixSFTODO
 	  LDA L950B,X
-            JMP L93E1
+            JMP setConfigValue
 }
 			
 .Conf6	  BCS L9541
@@ -3574,7 +3575,7 @@ ENDIF
             LDA #&00
             ROL A
             EOR transientConfigPrefixSFTODO
-            JMP L93E1
+            JMP setConfigValue
 
 {
 .^Conf2     BCS L9560
@@ -3590,7 +3591,7 @@ ENDIF
 .L9560      JSR convertIntegerDefaultDecimalChecked
             SEC
             SBC #&01
-            JMP L93E1
+            JMP setConfigValue
 
 {
 .^Conf5	  BCS L957C
@@ -3608,7 +3609,7 @@ ENDIF
             CMP #&80
             BCC L9585
             SBC #&78
-.L9585      JMP L93E1
+.L9585      JMP setConfigValue
 
 {
 .^Conf4	  BCS L95A8
@@ -3639,7 +3640,7 @@ ENDIF
             STA L00AE
             PLA
             ORA L00AE
-            JMP L93E1
+            JMP setConfigValue
 			
 .L95BF      LDA #&00
             ASL L00AE
