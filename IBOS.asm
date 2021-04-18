@@ -9125,7 +9125,7 @@ ibosCNPVIndex = 6
 .LBB24      LDA LBB3C,X								;relocate error code from &BB3C
             STA L0100,X								;to &100
             INX
-            CPX #&15								;until &15
+            CPX #osStringEnd - LBB3C								;until &15
             BNE LBB24								;loop
             LDX #prvOsMode - prv83								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
@@ -9135,6 +9135,7 @@ ibosCNPVIndex = 6
 
 .LBB3C	  EQUB &00,&F7
 	  EQUS "OS 1.20 / OSMODE 0", &00
+.osStringEnd
 }
 
 {
