@@ -131,6 +131,7 @@ osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force sh
 currentMode = &0355
 
 osCmdPtr = &F2
+osErrorPtr = &FD
 
 osfindClose = &00
 osfindOpenInput = &40
@@ -140,6 +141,7 @@ osfileReadInformation = &05
 osfileReadInformationLengthOffset = &0A
 osfileLoad = &FF
 
+osbyteAcknowledgeEscape = &7E
 osbyteReadHimem = &84
 osbyteReadWriteOshwm = &B4
 osbyteIssueServiceRequest = &8F
@@ -1831,6 +1833,8 @@ firstDigitCmdPtrY = &BB
 ;BRK vector entry point
 .brkvHandler
 {
+; SFTODO: Use of L0700 in next line is potentially iffy, but I suspect this is used only when we're in NLE when IBOS *is* current language, so that would be fine
+inputBuf = &700
 .L8969	  LDX #&FF								;Break Vector routine
 	  TXS
             CLI
@@ -1839,11 +1843,11 @@ firstDigitCmdPtrY = &BB
             LDX #&00
             LDY #&00
             JSR OSBYTE
-            LDA #&7E
+            LDA #osbyteAcknowledgeEscape
             JSR OSBYTE
             JSR OSNEWL
             LDY #&01
-.L8981      LDA (L00FD),Y
+.L8981      LDA (osErrorPtr),Y
             BEQ L898B
             JSR OSWRCH
             INY
@@ -1851,26 +1855,24 @@ firstDigitCmdPtrY = &BB
 .L898B      JSR OSNEWL
 .^L898E     JSR printStar
             JSR L89A8
-            LDX #&00
-            LDY #&07
+            LDX #lo(inputBuf)
+            LDY #hi(inputBuf)
             JSR OSCLI
             JMP L898E
 			
 .L899E
 ;OSWORD A=&0, Read line from input - Parameter block
-; SFTODO: Use of L0700 in next line is potentially iffy, but I suspect this is used only when we're in NLE when IBOS *is* current language, so that would be fine
-		EQUW L0700							;buffer address
-		EQUB &FF								;maximum line length
-		EQUB &20								;minimum acceptable ASCII value
-		EQUB &7E								;maximum acceptable ASCII value
+	  EQUW inputBuf								;buffer address
+	  EQUB &FF								;maximum line length
+	  EQUB &20								;minimum acceptable ASCII value
+	  EQUB &7E								;maximum acceptable ASCII value
 
 ; SFTODO: This only has one caller
 .printStar
        	  LDA #'*'
             JMP OSWRCH
 
-{
-.^L89A8     LDY #&04
+.L89A8      LDY #&04
 .L89AA      LDA L899E,Y
             STA L0100,Y
             DEY
@@ -1883,7 +1885,6 @@ firstDigitCmdPtrY = &BB
             RTS
 			
 .L89BF      JMP L91F1
-}
 }
 
 ;Start of full reset
@@ -8632,9 +8633,10 @@ osfileBlock = L02EE
 
 .LB906      JMP exitSCa								;restore service call parameters and exit
 
-;Break - Service call &06
-.service06	LDA L00FE
-            CMP #&FF
+;Error (BRK) occurred - Service call &06
+{
+.^service06 LDA osErrorPtr + 1
+            CMP #&FF ; SFTODO: magic number?
             BNE LB906
             LDX oswdbtX ; SFTODO: seems a bit odd using this address in this service call
             TXS
@@ -8650,8 +8652,8 @@ osfileBlock = L02EE
             STA L0101,X
             LDA L024A
             STA L0102,X
-            LDA L00FD
-            CMP #&B4
+            LDA osErrorPtr
+            CMP #&B4 ; SFTODO: MAGIC NUMBER!?
             BEQ LB936
 .LB931      PLA
             TAX
@@ -8667,6 +8669,7 @@ osfileBlock = L02EE
             LDA L0102,X
             STA (L00D6),Y
             JMP LB931
+}
 
 ; Set MEMSEL. This means that main/video memory will be paged in at &3000-&7FFF
 ; regardless of SHEN.
