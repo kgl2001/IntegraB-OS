@@ -147,6 +147,8 @@ osbyteReadWriteOshwm = &B4
 osbyteIssueServiceRequest = &8F
 osbyteReadWriteVduQueueLength = &DA
 
+oswordInputLine = &00
+
 romBinaryVersion = &8008
 
 oswdbtA = &EF
@@ -1862,7 +1864,7 @@ inputBuf = &700
             BNE L8981
 .L898B      JSR OSNEWL
 .^cmdLoop   JSR printStar
-            JSR L89A8
+            JSR readLine
             LDX #lo(inputBuf)
             LDY #hi(inputBuf)
             JSR OSCLI
@@ -1882,14 +1884,14 @@ inputBuf = &700
             JMP OSWRCH
 
 	  ; SFTODO: Is this necessary? Isn't it legit to call OSWORD 0 with a parameter block in SWR anyway, without copying to main RAM first? I think BASIC does that (check), and if it's good enough for BASIC surely it's good enough for us?
-.L89A8      LDY #(osword0BlockEnd - osword0Block) - 1
-.L89AA      LDA osword0Block,Y
+.readLine   LDY #(osword0BlockEnd - osword0Block) - 1
+.copyLoop   LDA osword0Block,Y
             STA L0100,Y
             DEY
-            BPL L89AA
-            LDA #&00
-            LDX #&00
-            LDY #&01
+            BPL copyLoop
+            LDA #oswordInputLine
+            LDX #lo(L0100)
+            LDY #hi(L0100)
             JSR OSWORD
             BCS L89BF
             RTS
