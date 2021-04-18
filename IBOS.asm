@@ -8976,7 +8976,7 @@ ibosCNPVIndex = 6
             BEQ LBACB								;jump to code for OSMODE 2-5
 .LBA56      LDX #&00
             LDA #&81
-            JMP LBB1C								;jump to code for OSMODE 0-1
+            JMP returnViaParentBYTEV								;jump to code for OSMODE 0-1
 }
 			
 ;OSMODE lookup table
@@ -9023,7 +9023,7 @@ ibosCNPVIndex = 6
 .osbyte87Handler
 {
 .LBA90      JSR setMemsel
-            JMP LBB1C
+            JMP returnViaParentBYTEV
 }
 
 ; Examine buffer status (http://beebwiki.mdfs.net/OSBYTE_%2698)
@@ -9066,7 +9066,7 @@ ibosCNPVIndex = 6
             AND #vduStatusShadow
             BNE shadowMode
             PLA
-            JMP LBB1C
+            JMP returnViaParentBYTEV
 
 ; Read base of display RAM for a given mode (http://beebwiki.mdfs.net/OSBYTE_%2685)
 .^osbyte85Handler
@@ -9076,7 +9076,7 @@ ibosCNPVIndex = 6
             LDA osShadowRamFlag
             BEQ shadowMode
             PLA
-            JMP LBB1C
+            JMP returnViaParentBYTEV
 
 .shadowMode
             PLA
@@ -9093,7 +9093,7 @@ ibosCNPVIndex = 6
             LDY #&00
             JSR OSBYTE
             JSR restoreOrigVectorRegs
-            JMP LBB1C
+            JMP returnViaParentBYTEV
 }
 
 ; Identify host/operating system (http://beebwiki.mdfs.net/OSBYTE_%2600)
@@ -9117,8 +9117,11 @@ ibosCNPVIndex = 6
 .LBB18      PLA
             TAX
             LDA #&00
+.returnViaParentBYTEV
+{
 .LBB1C      JSR jmpParentBYTEV
             JMP LBACB
+}
 			
 .LBB22      LDX #&00								;start at offset 0
 .LBB24      LDA LBB3C,X								;relocate error code from &BB3C
