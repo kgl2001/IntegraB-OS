@@ -3222,6 +3222,7 @@ firstDigitCmdPtrY = &BB
 
 ;*Configure paramters are stored using the following format
 ;EQUB Register,Start Bit,Number of Bits
+ConfParBitStartBitOffset = 1
 ConfParBitBitCountOffset = 2
 .ConfParBit	EQUB &05,&00,&04							;FILE ->	  &05 Bits 0..3
 		EQUB &05,&04,&04							;LANG ->	  &05 Bits 4..7
@@ -3265,12 +3266,25 @@ ConfParBitBitCountOffset = 2
 		EQUB &0F,&1F,&3F,&7F
 
 
+.shiftALeftByX
+{
 .L93B1      CPX #&00
-            BEQ L93B9
+            BEQ rts
 .L93B5      ASL A
             DEX
             BNE L93B5
-.L93B9      RTS
+.rts        RTS
+}
+IF FALSE
+; SFTODO: Saves two bytes, but doesn't guarantee X=0 on return - that may well not matter
+.shiftALeftByXAlternate
+{
+.loop	  DEX
+	  BMI rts ; e.g. there's one at L93C2
+	  ASL A
+	  JMP loop
+}
+ENDIF
 
 .L93BA      CPX #&00
             BEQ L93C2
@@ -3292,11 +3306,11 @@ ConfParBitBitCountOffset = 2
             AND #&7F ; SFTODO: so what does b7 signify?
             TAX
             LDA bitMaskTable,X
-            STA L00BC
-            LDA ConfParBit+1,Y
-            TAX
-            LDA L00BC
-            JSR L93B1
+            STA L00BC ; SFTODO: use PHA?
+            LDA ConfParBit+ConfParBitStartBitOffset,Y
+            TAX ; SFTODO: we could just do LDX ...,Y in previous instruction, couldn't we?
+            LDA L00BC ; SFTODO: use PLA?
+            JSR shiftALeftByX
             STA L00BC
             RTS
 
@@ -3307,7 +3321,7 @@ ConfParBitBitCountOffset = 2
             LDA ConfParBit+1,Y
             TAX
             LDA transientConfigPrefix
-            JSR L93B1
+            JSR shiftALeftByX
             AND L00BC
             STA transientConfigPrefix
             LDA L00BC
