@@ -9129,7 +9129,7 @@ ibosCNPVIndex = 6
             BNE LBB24								;loop
             LDX #prvOsMode - prv83								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            ORA #&30								;convert OSMODE to character printable OSMODE (OSMODE = OSMODE + &30)
+            ORA #'0'								;convert OSMODE to character printable OSMODE (OSMODE = OSMODE + &30)
             STA L0113								;write OSMODE character to error text
             JMP L0100								;Generate BRK and error
 
