@@ -3365,6 +3365,8 @@ ENDIF
 }
 			
 ; SFTODO: This code saves transientConfIdx (&AA) across call to ConfRefDynamicSyntaxGenerationForTransientConfIdx, but it superficially looks as though ConfRefDynamicSyntaxGenerationForTransientConfIdx preserves it itself, so the code to preserve here may be redundant.
+.getConfigValueWrapper
+{
 .L9427      LDA transientConfIdx
             PHA
             JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
@@ -3373,6 +3375,7 @@ ENDIF
             JSR getConfigValue
             LDA transientConfigPrefix
             RTS
+}
 
 {
 ;Service call &29: *STATUS Command
@@ -3455,7 +3458,7 @@ ENDIF
  	  BCS Conf0Write
 
 ;Read *CONF. FILE parameters from RTC register and write to screen
-            JSR L9427
+            JSR getConfigValueWrapper
             JSR printADecimalPad
             JSR printSpace								;write ' ' to screen
             LDX #userRegDiscNetBootData							;Register &10 (0: File system disc/net flag / 4: Boot / 5-7: Data )
@@ -3501,7 +3504,7 @@ ENDIF
 .Conf1
 {
 	  BCS Conf1Write
-            JSR L9427
+            JSR getConfigValueWrapper
             JMP L94FC
 			
 .Conf1Write
@@ -3644,7 +3647,7 @@ ENDIF
 
             JSR L95BF								;Missing address label?
             JSR printADecimalPad
-            LDA #&2C
+            LDA #','
             JMP OSWRCH
 			
             ASL L00AE								;Missing address label?
