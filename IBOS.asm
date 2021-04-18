@@ -837,11 +837,13 @@ transientTblCmdLength = L00AC
 }
 			
 {
-.^L83EC     JSR CmdRef								;get start of *command pointer look up table address X=&26, Y=&80
+.^CmdRefDynamicSyntaxGenerationForTransientConfIdx
+.L83EC      JSR CmdRef								;get start of *command pointer look up table address X=&26, Y=&80
             JMP L83F5
 			
 ; SFTODO: Use a different local label instead of transientTblPtr in here? I am not sure what would be clearest as still working through code...
-.^L83F2     JSR ConfRef
+.^ConfRefDynamicSyntaxGenerationForTransientConfIdx
+.L83F2     JSR ConfRef
 .L83F5      CLC
             BIT rts									;set V
             LDA transientConfIdx
@@ -2266,7 +2268,7 @@ firstDigitCmdPtrY = &BB
             LDA (L00A8),Y
             CMP #&3F
             BNE L8C86
-            JSR L83EC
+            JSR CmdRefDynamicSyntaxGenerationForTransientConfIdx
             LDX #&47
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             JMP L8FA3
@@ -2558,7 +2560,7 @@ firstDigitCmdPtrY = &BB
 .L8ED0      JSR L8EE5
             JMP exitSC								;Exit Service Call
 			
-.L8ED6      JSR L83EC
+.L8ED6      JSR CmdRefDynamicSyntaxGenerationForTransientConfIdx
             LDX #prvOsMode - prv83								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
 .L8EDE      SEC
@@ -2609,7 +2611,7 @@ firstDigitCmdPtrY = &BB
             LDA #&00								;if no parameters then
             JMP L8F41								;set &27F to 0
 			
-.L8F38      JSR L83EC
+.L8F38      JSR CmdRefDynamicSyntaxGenerationForTransientConfIdx
             LDA osShadowRamFlag
             JMP L8EDE								;print shadow number and exit service call
 			
@@ -2627,7 +2629,7 @@ firstDigitCmdPtrY = &BB
             LDA (L00A8),Y
             CMP #'?'
             BNE L8F47
-            JSR L83EC
+            JSR CmdRefDynamicSyntaxGenerationForTransientConfIdx
             LDX #&3D								;select SHX register (&08: On, &FF: Off)
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             JMP L8FA3
@@ -2670,7 +2672,7 @@ firstDigitCmdPtrY = &BB
             LDA (L00A8),Y
             CMP #&3F
             BNE L8FAC
-            JSR L83EC
+            JSR CmdRefDynamicSyntaxGenerationForTransientConfIdx
             LDA tubePresenceFlag
 .L8FA3      JSR L86C8
             JSR OSNEWL
@@ -3202,7 +3204,7 @@ firstDigitCmdPtrY = &BB
 }
 
 .L932E      JSR L9337
-            JSR L83F2
+            JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
             JMP OSNEWL
 			
 .L9337      CMP #&00
@@ -3354,10 +3356,10 @@ ENDIF
             STA transientConfigPrefix
             RTS
 			
-; SFTODO: This code saves transientConfIdx (&AA) across call to L83F2, but it superficially looks as though L83F2 preserves it itself, so the code to preserve here may be redundant.
+; SFTODO: This code saves transientConfIdx (&AA) across call to ConfRefDynamicSyntaxGenerationForTransientConfIdx, but it superficially looks as though ConfRefDynamicSyntaxGenerationForTransientConfIdx preserves it itself, so the code to preserve here may be redundant.
 .L9427      LDA transientConfIdx
             PHA
-            JSR L83F2
+            JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
             PLA
             STA transientConfIdx
             JSR L940A
@@ -3561,7 +3563,7 @@ ENDIF
 .Conf2      BCS L9560
             JSR L940A
             PHA
-            JSR L83F2
+            JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
             PLA
             CLC
             ADC #&01
@@ -3575,7 +3577,7 @@ ENDIF
 .Conf5		BCS L957C
             JSR L940A
             PHA
-            JSR L83F2
+            JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
             PLA
             CMP #&08
             BCC L9579
@@ -3591,7 +3593,7 @@ ENDIF
 .Conf4		BCS L95A8
             JSR L940A
             PHA
-            JSR L83F2
+            JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
             PLA
             PHA
             LSR A
