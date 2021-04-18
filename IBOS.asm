@@ -3583,8 +3583,9 @@ ENDIF
             SEC
             SBC #&01
             JMP L93E1
-			
-.Conf5		BCS L957C
+
+{
+.^Conf5	  BCS L957C
             JSR getConfigValue
             PHA
             JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
@@ -3592,7 +3593,8 @@ ENDIF
             CMP #&08
             BCC L9579
             ADC #&77
-.L9579		JMP L94FC
+.L9579	  JMP L94FC
+}
 
 .L957C      JSR convertIntegerDefaultDecimalChecked
             CMP #&80
