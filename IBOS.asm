@@ -3569,8 +3569,9 @@ ENDIF
             ROL A
             EOR transientConfigPrefixSFTODO
             JMP L93E1
-			
-.Conf2      BCS L9560
+
+{
+.^Conf2     BCS L9560
             JSR getConfigValue
             PHA
             JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
@@ -3578,6 +3579,7 @@ ENDIF
             CLC
             ADC #&01
             JMP L94FC
+}
 			
 .L9560      JSR convertIntegerDefaultDecimalChecked
             SEC
