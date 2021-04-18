@@ -1847,7 +1847,7 @@ firstDigitCmdPtrY = &BB
             INY
             BNE L8981
 .L898B      JSR OSNEWL
-.L898E      JSR L89A3
+.L898E      JSR printStar
             JSR L89A8
             LDX #&00
             LDY #&07
@@ -1862,10 +1862,15 @@ firstDigitCmdPtrY = &BB
 		EQUB &20								;minimum acceptable ASCII value
 		EQUB &7E								;maximum acceptable ASCII value
 
-.L89A3	  LDA #&2A								;'*'
-            JMP OSWRCH								;write to screen
-			
-.L89A8      LDY #&04
+; SFTODO: This only has one caller
+.printStar
+{
+.L89A3	  LDA #'*'
+            JMP OSWRCH
+}
+
+{
+.^L89A8     LDY #&04
 .L89AA      LDA L899E,Y
             STA L0100,Y
             DEY
@@ -1878,6 +1883,7 @@ firstDigitCmdPtrY = &BB
             RTS
 			
 .L89BF      JMP L91F1
+}
 
 ;Start of full reset
 .L89C2      LDX #&32								;Start with register &32
