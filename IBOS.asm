@@ -3365,7 +3365,7 @@ ENDIF
 }
 			
 ; SFTODO: This code saves transientConfIdx (&AA) across call to ConfRefDynamicSyntaxGenerationForTransientConfIdx, but it superficially looks as though ConfRefDynamicSyntaxGenerationForTransientConfIdx preserves it itself, so the code to preserve here may be redundant.
-.getConfigValueWrapper
+.printConfigNameAndGetValue ; SFTODO: name is a bit of a guess as I still haven't been through the "dynamic syntax generation" (which is presumably slightly misnamed at least, as at least some of our callers would just want the option name with no other fluff) code properly
 {
 .L9427      LDA transientConfIdx
             PHA
@@ -3458,7 +3458,7 @@ ENDIF
  	  BCS Conf0Write
 
 ;Read *CONF. FILE parameters from RTC register and write to screen
-            JSR getConfigValueWrapper
+            JSR printConfigNameAndGetValue
             JSR printADecimalPad
             JSR printSpace								;write ' ' to screen
             LDX #userRegDiscNetBootData							;Register &10 (0: File system disc/net flag / 4: Boot / 5-7: Data )
@@ -3504,7 +3504,7 @@ ENDIF
 .Conf1
 {
 	  BCS Conf1Write
-            JSR getConfigValueWrapper
+            JSR printConfigNameAndGetValue
             JMP printADecimalPadNewline
 			
 .Conf1Write
