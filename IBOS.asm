@@ -9063,8 +9063,8 @@ ibosCNPVIndex = 6
 .^osbyte84Handler
 .LBAD1      PHA
             LDA vduStatus
-            AND #&10
-            BNE LBAE9
+            AND #vduStatusShadow
+            BNE shadowMode
             PLA
             JMP LBB1C
 
@@ -9072,13 +9072,14 @@ ibosCNPVIndex = 6
 .^osbyte85Handler
 .LBADC      PHA
             TXA
-            BMI LBAE9
+            BMI shadowMode
             LDA osShadowRamFlag
-            BEQ LBAE9
+            BEQ shadowMode
             PLA
             JMP LBB1C
 
-.LBAE9      PLA
+.shadowMode
+            PLA
             LDX #&00
             LDY #&80
             JMP LBACB
