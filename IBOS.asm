@@ -1960,7 +1960,7 @@ inputBuf = &700
             PLA									;Restore SWR bank
             STA romselCopy
             STA romsel
-	  ; SFTODO: I may be misreading this code, but won't it access one double-byte entry *past* intDefaultEnd? Effectively treating PHP:SEI as a pair of bytes &08,&78? (Assuming they fit in the 256 bytes copied to main RAM.) I would have expected to write -2 on the next line not -0.
+	  ; SFTODO: I may be misreading this code, but won't it access one double-byte entry *past* intDefaultEnd? Effectively treating PHP:SEI as a pair of bytes &08,&78? (Assuming they fit in the 256 bytes copied to main RAM.) I would have expected to write -2 on the next line not -0. Does user reg &08 get used at all? If it never gets overwritten, we could test this by seeing if it holds &78 after a reset. If I'm right, this will overwrite the 0 we wrote in userRegLoop above.
             LDY #(intDefaultEnd - intDefault) - 0						;Number of entries in lookup table for IntegraB defaults
 .L8A2D	  LDX intDefault-L89E9+L2800+&00,Y						;address of relocated intDefault table:		(address for data)
 	  LDA intDefault-L89E9+L2800+&01,Y						;address of relocated intDefault table+1:	(data)
@@ -4557,7 +4557,7 @@ ENDIF
             LDA #&FF ; SFTODO: What happens if we have the ROM number set to &FF later on?
 .parsedOk   STA prvOswordBlockCopy + 1						;absolute ROM number
             BCC parsedOk2
-	  ; SFTODO: What do these addresses hold?
+	  ; SFTODO: What do these addresses hold? I *speculate* they hold the real banks assigned to pseudo-banks W-Z, &FF meaning "not assigned".
             LDA prv83+&0C
             AND prv83+&0D
             AND prv83+&0E
