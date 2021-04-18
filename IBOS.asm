@@ -1960,7 +1960,7 @@ inputBuf = &700
             PLA									;Restore SWR bank
             STA romselCopy
             STA romsel
-            LDY #&1E								;Number of entries in lookup table for IntegraB defaults
+            LDY #(intDefaultEnd - intDefault) - 0						;Number of entries in lookup table for IntegraB defaults
 .L8A2D	  LDX intDefault-L89E9+L2800+&00,Y						;address of relocated intDefault table:		(address for data)
 	  LDA intDefault-L89E9+L2800+&01,Y						;address of relocated intDefault table+1:	(data)
             JSR writeUserReg								;Write IntegraB default value to RTC User RAM
@@ -1987,9 +1987,6 @@ inputBuf = &700
             BNE L8A4D								;Until address is &C000
             RTS
 
-	  ASSERT P% - L89E9 <= 256
-}
-
 ;lookup table for IntegraB defaults - Address (X) / Data (A)
 ;Read by code at &8834
 ;For data at addresses &00-&31, data is stored in RTC RAM at location Addr + &0E (RTC RAM &0E-&3F)
@@ -2013,6 +2010,10 @@ inputBuf = &700
 		EQUB &39,&FF
 		EQUB userRegPrvPrintBufferStart,&90
 		EQUB &7F,&0F								;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks).
+.intDefaultEnd
+	  ASSERT P% - L89E9 <= 256
+}
+
 
 {
 .^L8A7B	  PHP
