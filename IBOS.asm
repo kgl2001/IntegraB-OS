@@ -3223,6 +3223,7 @@ firstDigitCmdPtrY = &BB
 
 ;*Configure paramters are stored using the following format
 ;EQUB Register,Start Bit,Number of Bits
+ConfParBitUserRegOffset = 0
 ConfParBitStartBitOffset = 1
 ConfParBitBitCountOffset = 2
 .ConfParBit	EQUB &05,&00,&04							;FILE ->	  &05 Bits 0..3
@@ -3331,8 +3332,8 @@ ENDIF
             LDA transientConfigBitMask
             EOR #&FF
             STA transientConfigBitMask
-            LDA ConfParBit,Y
-            TAX
+            LDA ConfParBit+ConfParBitUserRegOffset,Y
+            TAX ; SFTODO: avoid this with LDX blah,Y?
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND transientConfigBitMask
             ORA transientConfigPrefix
@@ -3341,8 +3342,8 @@ ENDIF
 			
 .L940A      JSR setYToTransientConfIdxTimes3
             JSR getShiftedBitMask
-            LDA ConfParBit,Y
-            TAX
+            LDA ConfParBit+ConfParBitUserRegOffset,Y
+            TAX ; SFTODO: can we just use LDX blah,Y to avoid this?
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND transientConfigBitMask
             STA transientConfigPrefix
