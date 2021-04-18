@@ -1765,9 +1765,9 @@ firstDigitCmdPtrY = &BB
 
 			
 ;Set BRK Vector
-.L88D7      LDA #L8969 MOD &100			
+.L88D7      LDA #brkvHandler MOD &100
             STA BRKVL
-            LDA #L8969 DIV &100
+            LDA #brkvHandler DIV &100
             STA BRKVH
             RTS
 
@@ -1829,6 +1829,8 @@ firstDigitCmdPtrY = &BB
 .L894F      EQUS "System Reset", &0D, &0D, "Go (Y/N) ? ", &00
 
 ;BRK vector entry point
+.brkvHandler
+{
 .L8969	  LDX #&FF								;Break Vector routine
 	  TXS
             CLI
@@ -1847,7 +1849,7 @@ firstDigitCmdPtrY = &BB
             INY
             BNE L8981
 .L898B      JSR OSNEWL
-.L898E      JSR printStar
+.^L898E     JSR printStar
             JSR L89A8
             LDX #&00
             LDY #&07
@@ -1864,10 +1866,8 @@ firstDigitCmdPtrY = &BB
 
 ; SFTODO: This only has one caller
 .printStar
-{
-.L89A3	  LDA #'*'
+       	  LDA #'*'
             JMP OSWRCH
-}
 
 {
 .^L89A8     LDY #&04
@@ -1883,6 +1883,7 @@ firstDigitCmdPtrY = &BB
             RTS
 			
 .L89BF      JMP L91F1
+}
 }
 
 ;Start of full reset
