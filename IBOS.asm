@@ -6973,8 +6973,9 @@ osfileBlock = L02EE
 ;&824F=Capitalisation mask (&DF or &FF)			
 ;&8250=calOffset pointer
 ;On Month Entry:		Carry Set,   A=01-12 (Jan-Dec)
-;On Day of Week Entry:	Carry Clear, A=01-07 (Sun-Sat)		
-.LAAF5	  BCC LAAFA								;If Carry clear then jump to Day of Week
+;On Day of Week Entry:	Carry Clear, A=01-07 (Sun-Sat)
+{
+.^LAAF5	  BCC LAAFA								;If Carry clear then jump to Day of Week
 	  CLC
             ADC #&07								;move calOffset pointer to first month
 .LAAFA      STX prv82+&50								;save calOffset pointer to &8250
@@ -7009,10 +7010,12 @@ osfileBlock = L02EE
             BNE LAB25								;no? loop.
 .LAB39      STY L00AA								;save buffer pointer
             RTS
+}
 			
 ;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
 ;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
-.LAB3C      JSR LABAB								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
+{
+.^LAB3C      JSR LABAB								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
             LDY L00AA								;get buffer pointer
 .LAB41      CPX #&00
             BEQ LAB65
@@ -7035,11 +7038,13 @@ osfileBlock = L02EE
             INY									;increase buffer pointer
 .LAB6B      LDA prv82+&4F								;get 1s
             JMP LABE4								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return.
+}
 			
 ;postfix for dates. eg 25th, 1st, 2nd, 3rd
+{
 .LAB71		EQUS "th", "st", "nd", "rd"
 	
-.LAB79      PHP									;save carry flag. Used to select capitalisation
+.^LAB79      PHP									;save carry flag. Used to select capitalisation
             JSR LABAB								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
             LDA prv82+&4E								;get 10s
             CMP #&31								;check for '1'
@@ -7064,6 +7069,7 @@ osfileBlock = L02EE
             BCC LABA8								;don't capitalise
             AND #&DF								;capitalise
 .LABA8      JMP LABE4								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
+}
 
 ;Split number in register A into 10s and 1s, characterise and store 1s in &824F and 10s in &824E 
 .LABAB      LDY #&FF							
