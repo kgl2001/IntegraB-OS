@@ -2086,10 +2086,10 @@ ptr = &00 ; 2 bytes
 		EQUB &0C,&19								;0-7: Keyboard Delay
 		EQUB &0D,&05								;0-7: Keyboard Repeat
 		EQUB &0E,&0A								;0-7: Printer Ignore
-		EQUB &0F,&2D								;0: Tube / 2-4: BAUD / 5-7: Printer
+		EQUB userRegTubeBaudPrinter,&2D						;0: Tube / 2-4: BAUD / 5-7: Printer
 ;		EQUB &10,&A1								;0: File system / 4: Boot / 5-7: Data. Default was &A0. Changed to &A1 in IBOS 1.21
-		EQUB &10,&A0								;0: File system / 4: Boot / 5-7: Data.
-		EQUB &32,&04								;0-2: OSMODE / 3: SHX
+		EQUB userRegDiscNetBootData,&A0						;0: File system / 4: Boot / 5-7: Data.
+		EQUB userRegOsModeShx,&04							;0-2: OSMODE / 3: SHX
 ;		EQUB &35,&14								;Century - Default was &13 (1900). Changed to &14 (2000) in IBOS 1.21
 		EQUB &35,&13								;Century - Default is &13 (1900)
 		EQUB &38,&FF
