@@ -2337,12 +2337,12 @@ inputBuf = &700
             BNE L8CAE								;error if OSMODE 0, otherwise continue
             JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
-		EQUB &80
-		EQUS "No Buffer!", &00
+	  EQUB &80
+	  EQUS "No Buffer!", &00
 
 .L8CAE      JSR convertIntegerDefaultDecimal
             BCC L8CC6
-            LDA (L00A8),Y								;get byte from keyboard buffer SFTODO: command argument, not keyboard buffer?
+            LDA (transientCmdPtr),Y							;get byte from keyboard buffer SFTODO: command argument, not keyboard buffer?
             CMP #'#'								;check for '#'
             BEQ L8D07								;set buffer based on manually entered bank numbers
             CMP #'?'								;check for '?'
@@ -2420,7 +2420,7 @@ inputBuf = &700
 			
 .L8D46      LDA romselCopy
             AND #&0F
-            ORA #&40
+            ORA #romselPrvEn
             STA prvPrintBufferBankList
             LDA #&FF
             STA prvPrintBufferBankList + 1
@@ -2430,7 +2430,7 @@ inputBuf = &700
             CMP #&FF
             BEQ L8D46
             AND #&F0
-            CMP #&40
+            CMP #romselPrvEn
             BNE bufferInSidewaysRam
             ; Buffer is in private RAM, not sideways RAM.
             JSR sanitisePrvPrintBufferStart
