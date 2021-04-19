@@ -2236,8 +2236,9 @@ inputBuf = &700
 ;They are copied to *KEY10 (BREAK) and executed on a power on reset
 ;Checks for ? parameter and prints out details;
 ;Checks for blank and clears table
-.boot       JSR PrvEn								;switch in private RAM
-            LDA (L00A8),Y
+{
+.^boot      JSR PrvEn								;switch in private RAM
+            LDA (transientCmdPtr),Y
             CMP #'?'
             BEQ L8C26								;Print *BOOT parameters
             LDA L00A8
@@ -2303,6 +2304,7 @@ inputBuf = &700
             CMP #&7C
             BEQ L8C54
 .L8C6D      JMP OSWRCH
+}
 
 ;*PURGE Command
 .purge
