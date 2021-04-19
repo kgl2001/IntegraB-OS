@@ -7474,8 +7474,9 @@ osfileBlock = L02EE
             STX prvOswordBlockCopy + 11
             JMP LA905
 }
-			
-.LAEBA      CLC
+
+{
+.^LAEBA      CLC
             LDA prvOswordBlockCopy + 11
             ADC #&07
             STA prvOswordBlockCopy + 11
@@ -7490,7 +7491,7 @@ osfileBlock = L02EE
             STA prvOswordBlockCopy + 11
             JMP LAEF8
 			
-.LAEDE      LDA #&02
+.^LAEDE      LDA #&02
             BIT prv82+&42
             BEQ LAEF8
             INC prvOswordBlockCopy + 11
@@ -7530,13 +7531,14 @@ osfileBlock = L02EE
             SEC
             RTS
 			
-.LAF3C      CLV
+.^LAF3C      CLV
             CLC
             RTS
 			
-.LAF3F      BIT LAF43
+.^LAF3F      BIT rts
             CLC
-.LAF43      RTS
+.rts        RTS
+}
 
 .LAF44      DEC prvOswordBlockCopy + 11
             BNE LAF3C
