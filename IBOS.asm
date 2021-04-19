@@ -143,11 +143,13 @@ osfileReadInformation = &05
 osfileReadInformationLengthOffset = &0A
 osfileLoad = &FF
 
+osbyteKeyboardScanFrom10 = &7A
 osbyteAcknowledgeEscape = &7E
 osbyteReadHimem = &84
 osbyteReadWriteOshwm = &B4
 osbyteIssueServiceRequest = &8F
 osbyteWriteSheila = &97
+osbyteReadWriteBreakEscapeEffect = &C8
 osbyteReadWriteVduQueueLength = &DA
 
 oswordInputLine = &00
@@ -1859,19 +1861,19 @@ firstDigitCmdPtrY = &BB
             BEQ L88FE
             JMP cmdLoop
 			
-.L88FE      LDA #&C8								;Start of RESET routine
-            LDX #&02					
+.L88FE      LDA #osbyteReadWriteBreakEscapeEffect								;Start of RESET routine
+            LDX #&02								;Memory cleared on next reset, ESCAPE disabled
             LDY #&00
-            JSR OSBYTE								;Memory cleared on next reset
+            JSR OSBYTE
             LDX #&00								;Write 'System Reset' text to screen
-.L8909      LDA L894F,X
+.L8909      LDA resetPrompt,X
             BEQ L8914
             JSR OSASCI
             INX
             BNE L8909
-.L8914      LDA #&7A
+.L8914      LDA #osbyteKeyboardScanFrom10
             JSR OSBYTE								;Perform key scan
-            CPX #&47								;Is the @ key being pressed?
+            CPX #'G'								;Is the @ key being pressed?
             BEQ L8914								;Repeat until no longer being pressed
             LDA #&15
             LDX #&00
@@ -1897,7 +1899,8 @@ firstDigitCmdPtrY = &BB
             JMP nle									;Enter NLE
 
 .L894B      EQUS &0D, "seY"
-.L894F      EQUS "System Reset", &0D, &0D, "Go (Y/N) ? ", &00
+.resetPrompt
+	  EQUS "System Reset", &0D, &0D, "Go (Y/N) ? ", &00
 }
 
 ;BRK vector entry point
