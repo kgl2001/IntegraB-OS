@@ -197,7 +197,7 @@ vduSetMode = 22
 maxMode = 7 ; SFTODO!?
 shadowModeOffset = &80 ; SFTODO!?
 
-lastBreakType = &028D
+lastBreakType = &028D ; 0=soft reset, 1=power on reset, 2=hard reset
 
 serviceConfigure = &28
 serviceStatus = &29
@@ -4073,7 +4073,7 @@ ENDIF
             BIT prv83+&41
             BMI L9836
             LDA lastBreakType
-            BEQ L9831
+            BEQ softReset
             BIT L03A4
             BMI L983D
             LDX #userRegTubeBaudPrinter
@@ -4082,7 +4082,7 @@ ENDIF
             BNE L982E
             LDA #&FF
 .L982E      STA prv83+&40
-.L9831      BIT prv83+&40
+.softReset  BIT prv83+&40
 			BPL L983D
 .L9836      PLA
             JSR L985D
