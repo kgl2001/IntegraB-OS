@@ -8429,7 +8429,8 @@ osfileBlock = L02EE
             JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call
 }
-			
+
+{
 .LB61A      INY
 .LB61B      PHP
             JSR LB2B5
@@ -8460,7 +8461,7 @@ osfileBlock = L02EE
             JMP LB67C
 			
 ;*ALARM Command
-.alarm      JSR PrvEn								;switch in private RAM
+.^alarm      JSR PrvEn								;switch in private RAM
             LDA (L00A8),Y
             CMP #'='
             CLC
@@ -8527,6 +8528,7 @@ osfileBlock = L02EE
 .LB6E0      JSR OSNEWL								;new line
 .LB6E3      JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call
+}
 			
 ;OSWORD &0E (14) Read real time clock
 .osword0e	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
