@@ -143,6 +143,7 @@ osfileReadInformation = &05
 osfileReadInformationLengthOffset = &0A
 osfileLoad = &FF
 
+osbyteFlushSelectedBuffer = &15
 osbyteKeyboardScanFrom10 = &7A
 osbyteAcknowledgeEscape = &7E
 osbyteReadHimem = &84
@@ -451,6 +452,7 @@ LDC16       = &DC16
 LF168       = &F168
 LF16E       = &F16E
 
+bufNumKeyboard = 0
 bufNumPrinter = 3 ; OS buffer number for the printer buffer
 
 opcodeCmpAbs = &CD
@@ -1873,15 +1875,15 @@ firstDigitCmdPtrY = &BB
             BNE L8909
 .L8914      LDA #osbyteKeyboardScanFrom10
             JSR OSBYTE								;Perform key scan
-            CPX #'G'								;Is the @ key being pressed?
+            CPX #&47								;Is the @ key being pressed?
             BEQ L8914								;Repeat until no longer being pressed
-            LDA #&15
-            LDX #&00
+            LDA #osbyteFlushSelectedBuffer
+            LDX #bufNumKeyboard
             JSR OSBYTE								;Flush keyboard buffer
             CLI
             JSR OSRDCH								;Read keyboard
             PHA
-            LDA #&7E
+            LDA #osbyteAcknowledgeEscape
             JSR OSBYTE								;Was ESC pressed?
             PLA
             AND #&DF								;Capitalise
