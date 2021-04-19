@@ -8282,7 +8282,8 @@ osfileBlock = L02EE
 			EQUS "Bad time", &00
 
 ;*TIME Command
-.time       JSR PrvEn								;switch in private RAM
+{
+.^time       JSR PrvEn								;switch in private RAM
             LDA (L00A8),Y							;read first character of command parameter
             CMP #&3D								;check for '='
             BEQ LB50C								;if '=' then set time, else read time
@@ -8307,9 +8308,11 @@ osfileBlock = L02EE
 			
 .LB515      JSR LA676								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
             JMP LB506								;switch out private RAM and exit
+}
 
-;*DATE Command			
-.date		JSR PrvEn								;switch in private RAM
+;*DATE Command
+{
+.^date		JSR PrvEn								;switch in private RAM
             LDA (L00A8),Y							;read first character of command parameter
             CMP #&3D								;check for '='
             BEQ LB552								;if '=' then set date, else read date
@@ -8340,6 +8343,7 @@ osfileBlock = L02EE
 			
 .LB55B      JSR LA6CB								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
             JMP LB54C								;switch out private RAM and exit
+}
 			
 ;Start of CALENDAR * Command
 .calend      JSR PrvEn								;switch in private RAM
