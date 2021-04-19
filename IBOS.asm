@@ -2241,9 +2241,9 @@ inputBuf = &700
             LDA (transientCmdPtr),Y
             CMP #'?'
             BEQ L8C26								;Print *BOOT parameters
-            LDA L00A8
+            LDA transientCmdPtr
             STA osCmdPtr
-            LDA L00A9
+            LDA transientCmdPtr + 1
             STA osCmdPtr + 1
             SEC
             JSR GSINIT
@@ -2265,8 +2265,8 @@ inputBuf = &700
 			
 .L8C19      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
-		EQUB &FD
-		EQUS "Too long", &00
+	  EQUB &FD
+	  EQUS "Too long", &00
 
 .L8C26      LDX prv81
             BEQ L8C39
@@ -2281,7 +2281,7 @@ inputBuf = &700
 .L8C3C      CMP #&80
             BCC L8C4C
             PHA
-            LDA #&7C								;CHR$&7C
+            LDA #'|'
             JSR OSWRCH								;write to screen
             LDA #'!'								;'!'
             JSR OSWRCH								;write to screen
@@ -2291,7 +2291,7 @@ inputBuf = &700
             BCS L8C61
 .L8C52      AND #&3F
 .L8C54      PHA
-            LDA #&7C								;CHR$&7C
+            LDA #'|'
             JSR OSWRCH								;write to screen
             PLA
             CMP #&20
