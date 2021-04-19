@@ -8346,7 +8346,8 @@ osfileBlock = L02EE
 }
 			
 ;Start of CALENDAR * Command
-.calend      JSR PrvEn								;switch in private RAM
+{
+.^calend      JSR PrvEn								;switch in private RAM
             JSR LB133
             BCC LB571
             BVS LB56E
@@ -8372,7 +8373,7 @@ osfileBlock = L02EE
             SBC L00AA
             LSR A
             TAX
-            LDA #&20								;' '
+            LDA #' '
 .LB59B      JSR OSWRCH
             DEX
             BNE LB59B
@@ -8417,7 +8418,7 @@ osfileBlock = L02EE
             LDX #&00
 .LB5FD      LDA prv80+&00,X
             JSR OSASCI
-            CMP #&0D
+            CMP #vduCr
             BEQ LB60A
             INX
             BNE LB5FD
@@ -8427,6 +8428,7 @@ osfileBlock = L02EE
             BCC LB5BD
             JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call
+}
 			
 .LB61A      INY
 .LB61B      PHP
