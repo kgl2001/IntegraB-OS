@@ -2013,7 +2013,7 @@ ptr = &00 ; 2 bytes
 .L89EE      STX romselCopy									;Select memory bank
             STX romsel
             LDA #&80								;Start at address &8000
-	  JSR L8A46-fullResetPrvTemplate+fullResetPrv							;Fill bank with &00 (will try both RAM & ROM)
+	  JSR zeroPageAUpToC0-fullResetPrvTemplate+fullResetPrv							;Fill bank with &00 (will try both RAM & ROM)
             DEX
             BPL L89EE								;Until all RAM banks are wiped.
             LDA #&F0								;Set Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
@@ -2023,7 +2023,7 @@ ptr = &00 ; 2 bytes
             STA romselCopy
             STA romsel
             LDA #&30								;Start at shadow address &3000
-	  JSR L8A46-fullResetPrvTemplate+fullResetPrv							;Fill shadow and private memory with &00
+	  JSR zeroPageAUpToC0-fullResetPrvTemplate+fullResetPrv							;Fill shadow and private memory with &00
             LDA #&FF								;Write &FF to PRVS1 &830C..&830F
             STA prv83+&0C
             STA prv83+&0D
@@ -2048,19 +2048,20 @@ ptr = &00 ; 2 bytes
             LDY #&7F								;Data to be written
             JSR OSBYTE								;Write &7F to SHEILA+&4E (System VIA)
             JMP (RESET)								;Carry out Reset
-			
-.L8A46	  STA ptr + 1								;This is relocated address &285D
+
+.zeroPageAUpToC0
+       	  STA ptr + 1								;This is relocated address &285D
             LDA #&00								;Start at address &8000 or &3000
             STA ptr	  
             TAY
-.L8A4D      LDA #&00								;Store &00
+.zeroLoop   LDA #&00								;Store &00
             STA (ptr),Y
             INY
-            BNE L8A4D
+            BNE zeroLoop
             INC L0000+&01
             LDA L0000+&01
             CMP #&C0
-            BNE L8A4D								;Until address is &C000
+            BNE zeroLoop								;Until address is &C000
             RTS
 
 ;lookup table for IntegraB defaults - Address (X) / Data (A)
