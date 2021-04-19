@@ -2137,7 +2137,8 @@ inputBuf = &700
             JMP osbyte45Internal
 			
 ;Test for OSBYTE &49 (73) - Integra-B calls
-.osbyte49	  CMP #&49								;OSBYTE &49 (73) - Integra-B calls
+{
+.^osbyte49  CMP #&49								;OSBYTE &49 (73) - Integra-B calls
             BEQ L8B50
             JMP exitSCa								;restore service call parameters and exit
 			
@@ -2181,8 +2182,9 @@ inputBuf = &700
             PLA
             STA oswdbtX
             JMP exitSC								;Exit Service Call
+}
 
-            LDA vduStatus								;get VDU status   ***missing reference address***
+            LDA vduStatus								;get VDU status   ***missing reference address*** SFTODO: more dead code which can be removed
             AND #&EF								;clear bit 4
             STA vduStatus								;store VDU status
             LDA ramselCopy								;get RAMID
@@ -2192,7 +2194,7 @@ inputBuf = &700
             LSR A									;move to bit 4
             ORA vduStatus								;combine with &00D0
             STA vduStatus								;and store VDU status
-.L8BB0      RTS
+            RTS
 
 ;Unrecognised OSWORD call - Service call &08
 .service08  LDA oswdbtA								;read OSWORD call number
