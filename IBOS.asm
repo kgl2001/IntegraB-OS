@@ -6453,7 +6453,8 @@ osfileBlock = L02EE
 }
 			
 ;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
-.LA6CB      JSR LA775								;Check if RTC Update in Progress, and wait if necessary
+{
+.^LA6CB      JSR LA775								;Check if RTC Update in Progress, and wait if necessary
             LDX #&06								;Select 'Day of Week' register on RTC: Register &06
             LDA prvOswordBlockCopy + 12								;Get 'Day of Week' from &822C
             JSR wrRTCRAM								;Write data from A to RTC memory location X
@@ -6469,9 +6470,11 @@ osfileBlock = L02EE
             LDX #&35
             LDA prvOswordBlockCopy + 8
             JMP writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
+}
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
-.LA6F3      JSR LA775								;Check if RTC Update in Progress, and wait if necessary
+{
+.^LA6F3      JSR LA775								;Check if RTC Update in Progress, and wait if necessary
             LDX #&00								;Select 'Seconds' register on RTC: Register &00
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             STA prvOswordBlockCopy + 15								;Store 'Seconds' at &822F
@@ -6482,9 +6485,11 @@ osfileBlock = L02EE
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             STA prvOswordBlockCopy + 13								;Store 'Hours' at &822D
             RTS
+}
 
 ;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from RTC and Store in Private RAM (&82xx)
-.LA70F      JSR LA775								;Check if RTC Update in Progress, and wait if necessary
+{
+.^LA70F      JSR LA775								;Check if RTC Update in Progress, and wait if necessary
             LDX #&06								;Select 'Day of Week' register on RTC: Register &06
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             STA prvOswordBlockCopy + 12								;Store 'Day of Week' at &822C
@@ -6498,6 +6503,7 @@ osfileBlock = L02EE
 .LA729      JSR rdRTCRAM								;Read data from RTC memory location X into A
             STA prvOswordBlockCopy + 9								;Store 'Year' at &8229
             JMP LB1E4
+}
 
 ;Read 'Sec Alarm', 'Min Alarm' & 'Hr Alarm' from RTC and Store in Private RAM (&82xx)
 .copyRtcAlarmToPrv
