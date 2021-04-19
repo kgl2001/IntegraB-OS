@@ -6331,7 +6331,8 @@ osfileBlock = L02EE
 }
 
 ;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223, but why???
-.LA5EF      LDA #&05
+{
+.^LA5EF      LDA #&05
             STA prvOswordBlockCopy
             LDA #&84
             STA prvOswordBlockCopy + 1
@@ -6340,8 +6341,10 @@ osfileBlock = L02EE
             LDA #&EB
             STA prvOswordBlockCopy + 3
             RTS
-			
-.LA604      LDA #&00
+}
+
+{
+.^LA604      LDA #&00
             STA prv82+&4D
             LDX #&08
 .LA60B      ASL A
@@ -6356,8 +6359,10 @@ osfileBlock = L02EE
             BNE LA60B
             STA prv82+&4C
             RTS
-			
-.LA624      LDX #&08
+}
+
+{
+.^LA624      LDX #&08
             LDA prv82+&4A
             STA prv82+&4D
             LDA prv82+&4B
@@ -6372,6 +6377,7 @@ osfileBlock = L02EE
             BNE LA634
             ROL prv82+&4D
 .LA646      RTS
+}
 
 ;read from RTC RAM (Addr = X, Data = A)
 .rdRTCRAM   PHP
