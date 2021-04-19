@@ -7995,8 +7995,9 @@ osfileBlock = L02EE
             CLC
             RTS
 }
-			
-.LB2B5      JSR convertIntegerDefaultDecimal
+
+{
+.^LB2B5      JSR convertIntegerDefaultDecimal
             BCS LB2F3
             STA prvOswordBlockCopy + 13
             LDA (L00A8),Y
@@ -8030,6 +8031,7 @@ osfileBlock = L02EE
 			
 .LB2F3      SEC
             RTS
+}
 			
 .LB2F5      LDA #&00
             STA prvOswordBlockCopy + 12
