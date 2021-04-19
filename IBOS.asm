@@ -6379,8 +6379,9 @@ osfileBlock = L02EE
 .LA646      RTS
 }
 
+{
 ;read from RTC RAM (Addr = X, Data = A)
-.rdRTCRAM   PHP
+.^rdRTCRAM   PHP
             SEI
             JSR LA66C								;Set RTC address according to X
             LDA SHEILA+&3C								;Strobe out data
@@ -6389,19 +6390,19 @@ osfileBlock = L02EE
             RTS
 			
 ;write to RTC RAM (Addr = X, Data = A)
-.wrRTCRAM   PHP
+.^wrRTCRAM   PHP
             JSR LA66C								;Set RTC address according to X
             STA SHEILA+&3C								;Strobe in data
             JSR LA664
             PLP
             RTS
 
-.LA660      NOP
+.^LA660      NOP
 .LA661      NOP
             NOP
             RTS
 
-.LA664      PHA
+.^LA664      PHA
             LDA #&0D								;Select 'Register D' register on RTC: Register &0D
             JSR LA66C
             PLA
@@ -6411,9 +6412,11 @@ osfileBlock = L02EE
             JSR LA661								;2 x NOP delay
             STX SHEILA+&38								;Strobe in address
             JMP LA660								;3 x NOP delay
+}
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
-.LA676      LDX #&0A								;Select 'Register A' register on RTC: Register &0A
+{
+.^LA676      LDX #&0A								;Select 'Register A' register on RTC: Register &0A
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             ORA #&70
             JSR wrRTCRAM								;Write data from A to RTC memory location X
@@ -6447,6 +6450,7 @@ osfileBlock = L02EE
             AND #&7E
             ORA prv82+&4E
             JMP wrRTCRAM								;Write data from A to RTC memory location X
+}
 			
 ;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
 .LA6CB      JSR LA775								;Check if RTC Update in Progress, and wait if necessary
