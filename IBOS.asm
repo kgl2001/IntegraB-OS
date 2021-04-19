@@ -8000,17 +8000,17 @@ osfileBlock = L02EE
 .^LB2B5      JSR convertIntegerDefaultDecimal
             BCS LB2F3
             STA prvOswordBlockCopy + 13
-            LDA (L00A8),Y
+            LDA (transientCmdPtr),Y
             INY
-            CMP #&3A
+            CMP #':'
             BNE LB2F3
             JSR convertIntegerDefaultDecimal
             BCS LB2F3
             STA prvOswordBlockCopy + 14
-            LDA (L00A8),Y
-            CMP #&3A
+            LDA (transientCmdPtr),Y
+            CMP #':'
             BEQ LB2DA
-            CMP #&2F
+            CMP #'/'
             BEQ LB2DA
             LDA #&00
             BEQ LB2E0
