@@ -648,6 +648,7 @@ GUARD	&C000
 .ConfTbla		EQUB &11								;Number of *CONFIGURE commands
 		ASSERT P% = ConfRef + CmdTblOffset ; SFTODO: Or is this not as common-with-CmdRef parsing as I imagine?
 		EQUW ConfTbl							;Start of *CONFIGURE commands lookup table
+		ASSERT P% = ConfRef + CmdTblParOffset
 		EQUW ConfParTbl							;Start of *CONFIGURE commands parameter lookup table
 	
 ;*CONFIGURE commands lookup table
@@ -878,9 +879,12 @@ transientTblCmdLength = L00AC
             LDA transientConfIdx							;set A=transientConfIdx ready to fall through into DynamicSyntaxGenerationForAUsingYX
 	  FALLTHROUGH_TO DynamicSyntaxGenerationForAUsingYX
 
-	  ; SFTODO: C AND V ARE BOTH CLEAR WHEN THIS IS BEING USED TO GENERATE *HELP OUTPUT
-	  ; SFTODO: C IS CLEAR, V IS SET WHEN ENTERED VIA THE TWO FOOREFDYN...TRANSIENTCONFIDX LABELS ABOVE
-	  ; SFTODO: C IS SET, NOT SURE ABOUT V WHEN ENTERED VIA syntaxError
+	  ; SFTODO: DESCRIBE BEHAVIOUR
+	  ; On entry:
+	  ;     C set => build a syntax error on the stack and generate it when a carriage return is output
+	  ;     C clear => write output to screen (vduTab jumps to a fixed column for alignment)
+	  ;                    V clear => prefix with two spaces and emit parameters
+	  ;                    V set => no space prefix, don't emit parameters
 .^DynamicSyntaxGenerationForAUsingYX
 .L83FB      PHA									;save A-on-entry
             LDA transientTblPtr + 1
@@ -1064,9 +1068,10 @@ tmp = &AC
 	  EQUS "Syntax: "
 }
 
-; SFTODO: I haven't got this completely worked out, but roughly speaking it "emits" A into the current dynamic syntax message depending on the flags, allowing TAB characters to be expanded where appropriate so things line up nicely on screen
 .emitDynamicSyntaxCharacter
 {
+tabColumn = 12
+
 .L84F8      BIT transientDynamicSyntaxState
             BPL SFTODOCASEB
             PHA
@@ -1104,7 +1109,7 @@ tmp = &AC
             AND #transientDynamicSyntaxStateCountMask
             TAX
             LDA #' '
-.L8531      CPX #&0C
+.L8531      CPX #tabColumn
             BCS L853B
             JSR OSWRCH
             INX
