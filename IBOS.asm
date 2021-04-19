@@ -3713,10 +3713,11 @@ ENDIF
 
 {
 .^L957C     JSR convertIntegerDefaultDecimalChecked
-            CMP #&80
-            BCC L9585
-            SBC #&78
-.L9585      JMP setConfigValue
+	  ; Map a mode 0-7 or 128-135 to a "compressed mode" in the range 0-15.
+            CMP #shadowModeOffset
+            BCC modeInA
+            SBC #shadowModeOffset - (maxMode + 1)
+.modeInA    JMP setConfigValue
 }
 
 {
