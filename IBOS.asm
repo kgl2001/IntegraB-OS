@@ -2063,11 +2063,11 @@ inputBuf = &700
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&00								;OSMODE 0?
             BNE osbyte6C								;Branch if OSMODE 1-5
-            LDA L00EF								;get OSBYTE command
+            LDA oswdbtA								;get OSBYTE command
             JMP osbyteA1								;Branch if OSMODE 0 - skip OSBYTE &6C / &72
 			
 ;Test for OSBYTE &6C - Select Shadow/Screen memory for direct access
-.osbyte6C	  LDA L00EF								;get OSBYTE command
+.osbyte6C	  LDA oswdbtA								;get OSBYTE command
             CMP #&6C								;OSBYTE &6C - Select Shadow/Screen memory for direct access
             BNE osbyte72
             LDA oswdbtX
@@ -2092,7 +2092,8 @@ inputBuf = &700
             JMP exitSC								;Exit Service Call
 			
 ;Test for OSBYTE &72 - Specify video memory to use on next MODE change (http://beebwiki.mdfs.net/OSBYTE_%2672)
-.osbyte72	  CMP #&72								;OSBYTE &72 - Specify video memory to use on next MODE change
+{
+.^osbyte72  CMP #&72								;OSBYTE &72 - Specify video memory to use on next MODE change
             BNE osbyteA1
             LDA #&EF								;OSBYTE call - write to &27F
             LDX oswdbtX
@@ -2102,6 +2103,7 @@ inputBuf = &700
             JSR OSBYTE								;write to &27F
             STX oswdbtX
             JMP exitSC								;Exit Service Call
+}
 			
 ;Test for OSBYTE &A1 - Read configuration RAM/EEPROM
 .osbyteA1	  CMP #&A1								;OSBYTE &A1 - Read configuration RAM/EEPROM
@@ -6434,8 +6436,8 @@ osfileBlock = L02EE
 			
 .LA769      JSR LA70F								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from RTC and Store in Private RAM (&82xx)
             JMP LA6F3								;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
-			
-            JSR LA676								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC						***not used. nothing jumps into this code***
+
+            JSR LA676								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC						***not used. nothing jumps into this code*** ; SFTODO: So can be removed to make room in an updated version
             JMP LA6CB								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
 
 ;Wait until RTC Update in Progress	is complete		
@@ -8506,7 +8508,7 @@ osfileBlock = L02EE
 ;XY&0=0: Read time and date in string format
 .^oswd0eReadString
 .LB81E      JSR LA769								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
-.LB821     JSR LA5EF								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
+.LB821      JSR LA5EF								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
             LDA prvOswordBlockOrigAddr							;get OSWORD X register (lookup table LSB)
             STA prvOswordBlockCopy + 4							;save OSWORD X register (lookup table LSB)
             LDA prvOswordBlockOrigAddr + 1						;get OSWORD Y register (lookup table MSB)
