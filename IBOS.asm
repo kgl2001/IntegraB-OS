@@ -6679,9 +6679,10 @@ osfileBlock = L02EE
             RTS
 }
 
-.LA838      CLC
+{
+.^LA838      CLC
             BCC LA83C
-.LA83B      SEC
+.^LA83B      SEC
 .LA83C      PHP
             LDA prvOswordBlockCopy + 8
             LDX #&00
@@ -6762,7 +6763,10 @@ osfileBlock = L02EE
 			
 .LA8ED      SEC
             RTS
+}
 
+; SFTODO: The following block is dead code
+{
             LDA prvOswordBlockCopy + 13
             BPL LA904
             CMP #&8C
@@ -6774,6 +6778,7 @@ osfileBlock = L02EE
             ADC #&0C
 .LA901      STA prvOswordBlockCopy + 13
 .LA904      RTS
+}
 
 .LA905      CLC
             BCC LA909
