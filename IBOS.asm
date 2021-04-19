@@ -6780,9 +6780,10 @@ osfileBlock = L02EE
 .LA904      RTS
 }
 
-.LA905      CLC
+{
+.^LA905      CLC
             BCC LA909
-.LA908      SEC
+.^LA908      SEC
 .LA909      PHP
             LDA prvOswordBlockCopy + 9
             STA prv82+&4F
@@ -6880,6 +6881,7 @@ osfileBlock = L02EE
 .LA9DF      LDA prv82+&4A
             STA prvOswordBlockCopy + 12
 .LA9E5      RTS
+}
 
 .LA9E6      LDA #&01
             STA prvOswordBlockCopy + 11
