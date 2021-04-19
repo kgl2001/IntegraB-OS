@@ -7654,12 +7654,15 @@ osfileBlock = L02EE
             CLC
             RTS
 }
-			
-.LB02E      BIT LB032
-            SEC
-.LB032      RTS
 
-.LB033      CMP #&07
+{
+.^LB02E      BIT rts
+            SEC
+.rts        RTS
+}
+
+{
+.^LB033      CMP #&07
             BCC LB03E
             CMP #&5B
             BCC LB086
@@ -7690,13 +7693,13 @@ osfileBlock = L02EE
             LDA prvOswordBlockCopy
             AND #&F0
             BNE LB05A
-.LB07B      CLV
+.^LB07B      CLV
             CLC
             RTS
 			
-.LB07E      SEC
-            BIT LB082
-.LB082      RTS
+.^LB07E      SEC
+            BIT rts
+.rts        RTS
 
 .LB083      CLV
             SEC
@@ -7737,6 +7740,7 @@ osfileBlock = L02EE
             BCC LB0C3
             CLV
             RTS
+}
 			
 .LB0CD      JSR LAEDE
             JSR LA908
