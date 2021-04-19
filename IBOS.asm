@@ -875,6 +875,9 @@ transientTblCmdLength = L00AC
             LDA transientConfIdx							;set A=transientConfIdx ready to fall through into DynamicSyntaxGenerationForAUsingYX
 	  FALLTHROUGH_TO DynamicSyntaxGenerationForAUsingYX
 
+	  ; SFTODO: C AND V ARE BOTH CLEAR WHEN THIS IS BEING USED TO GENERATE *HELP OUTPUT
+	  ; SFTODO: C IS CLEAR, V IS SET WHEN ENTERED VIA THE TWO FOOREFDYN...TRANSIENTCONFIDX LABELS ABOVE
+	  ; SFTODO: C IS SET, NOT SURE ABOUT V WHEN ENTERED VIA syntaxError
 .^DynamicSyntaxGenerationForAUsingYX
 .L83FB      PHA									;save A-on-entry
             LDA transientTblPtr + 1
