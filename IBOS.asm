@@ -143,6 +143,8 @@ osfileReadInformation = &05
 osfileReadInformationLengthOffset = &0A
 osfileLoad = &FF
 
+keycodeAt = &47 ; internal key code for "@"
+
 osbyteFlushSelectedBuffer = &15
 osbyteKeyboardScanFrom10 = &7A
 osbyteAcknowledgeEscape = &7E
@@ -1858,13 +1860,13 @@ firstDigitCmdPtrY = &BB
 }
 
 {
-.^L88F2     LDA #&7A
+.^L88F2     LDA #osbyteKeyboardScanFrom10
             JSR OSBYTE								;Perform key scan
-            CPX #&47								;Is the @ key being pressed?
-            BEQ L88FE
+            CPX #keycodeAt								;Is the @ key being pressed?
+            BEQ atPressed
             JMP cmdLoop
 			
-.L88FE      LDA #osbyteReadWriteBreakEscapeEffect								;Start of RESET routine
+.atPressed  LDA #osbyteReadWriteBreakEscapeEffect								;Start of RESET routine
             LDX #&02								;Memory cleared on next reset, ESCAPE disabled
             LDY #&00
             JSR OSBYTE
@@ -1878,7 +1880,7 @@ firstDigitCmdPtrY = &BB
 .releaseAtLoop
 	  LDA #osbyteKeyboardScanFrom10
             JSR OSBYTE								;Perform key scan
-            CPX #&47								;Is the @ key being pressed?
+            CPX #keycodeAt								;Is the @ key being pressed?
             BEQ releaseAtLoop								;Repeat until no longer being pressed
             LDA #osbyteFlushSelectedBuffer
             LDX #bufNumKeyboard
