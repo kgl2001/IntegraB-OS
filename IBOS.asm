@@ -5844,17 +5844,18 @@ osfileBlock = L02EE
             JMP exitSC								;Exit Service Call
 			
 .^LA2E4      JSR parseRomBankList
-            BCC LA2F9
-            BVC LA2F6
+            BCC rts
+            BVC syntaxErrorIndirect
 .^badId
 .LA2EB      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
 			EQUB &80
 			EQUS "Bad id", &00
 
-.LA2F6      JMP syntaxError
+.syntaxErrorIndirect
+            JMP syntaxError
 
-.LA2F9      RTS
+.rts        RTS
 }
 
 ;*INSERT Command
