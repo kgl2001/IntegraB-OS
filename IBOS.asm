@@ -2012,7 +2012,7 @@ fullResetPrv = &2800
 .L89EE      STX romselCopy									;Select memory bank
             STX romsel
             LDA #&80								;Start at address &8000
-	  JSR L8A46-L89E9+L2800							;Fill bank with &00 (will try both RAM & ROM) 
+	  JSR L8A46-fullResetPrvTemplate+fullResetPrv							;Fill bank with &00 (will try both RAM & ROM)
             DEX
             BPL L89EE								;Until all RAM banks are wiped.
             LDA #&F0								;Set Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
@@ -2022,7 +2022,7 @@ fullResetPrv = &2800
             STA romselCopy
             STA romsel
             LDA #&30								;Start at shadow address &3000
-	  JSR L8A46-L89E9+L2800							;Fill shadow and private memory with &00
+	  JSR L8A46-fullResetPrvTemplate+fullResetPrv							;Fill shadow and private memory with &00
             LDA #&FF								;Write &FF to PRVS1 &830C..&830F
             STA prv83+&0C
             STA prv83+&0D
@@ -2036,8 +2036,8 @@ fullResetPrv = &2800
             STA romsel
 	  ; SFTODO: I may be misreading this code, but won't it access one double-byte entry *past* intDefaultEnd? Effectively treating PHP:SEI as a pair of bytes &08,&78? (Assuming they fit in the 256 bytes copied to main RAM.) I would have expected to write -2 on the next line not -0. Does user reg &08 get used at all? If it never gets overwritten, we could test this by seeing if it holds &78 after a reset. If I'm right, this will overwrite the 0 we wrote in userRegLoop above.
             LDY #(intDefaultEnd - intDefault) - 0						;Number of entries in lookup table for IntegraB defaults
-.L8A2D	  LDX intDefault-L89E9+L2800+&00,Y						;address of relocated intDefault table:		(address for data)
-	  LDA intDefault-L89E9+L2800+&01,Y						;address of relocated intDefault table+1:	(data)
+.L8A2D	  LDX intDefault-fullResetPrvTemplate+fullResetPrv+&00,Y						;address of relocated intDefault table:		(address for data)
+	  LDA intDefault-fullResetPrvTemplate+fullResetPrv+&01,Y						;address of relocated intDefault table+1:	(data)
             JSR writeUserReg								;Write IntegraB default value to RTC User RAM
             DEY
             DEY
@@ -2086,7 +2086,7 @@ fullResetPrv = &2800
 		EQUB userRegPrvPrintBufferStart,&90
 		EQUB &7F,&0F								;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks).
 .intDefaultEnd
-	  ASSERT P% - L89E9 <= 256
+	  ASSERT (P% + 2) - fullResetPrvTemplate <= 256 ; SFTODO: +2 because as per above SFTODO I think we actually use an extra entry off the end of this table
 }
 
 
