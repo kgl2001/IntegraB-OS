@@ -842,6 +842,7 @@ transientTblCmdLength = L00AC
             STA transientTblPtr + 1
             PLA
             STA transientTblPtr
+	  ; Call DynamicSyntaxGenerationForAUsingYX on the table and for the range of entries in that table identified by ibosSubTbl+A*4.
 .L83D9      LDX transientTblPtr
             LDY transientTblPtr + 1
             LDA L00A8
