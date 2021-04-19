@@ -2077,8 +2077,8 @@ ptr = &00 ; 2 bytes
 ;Read by code at &8834
 ;For data at addresses &00-&31, data is stored in RTC RAM at location Addr + &0E (RTC RAM &0E-&3F)
 ;For data at addresses &32 and above, data is stored in private RAM at location &8300 + Addr OR &80.
-.intDefault	EQUB &06,&FF								;*INSERT status for ROMS &0F to &08. Default: &FF (All 8 ROMS enabled)
-		EQUB &07,&FF								;*INSERT status for ROMS &07 to &00. Default: &FF (All 8 ROMS enabled)
+.intDefault	EQUB userRegInsertStatusHigh,&FF						;*INSERT status for ROMS &0F to &08. Default: &FF (All 8 ROMS enabled)
+		EQUB userRegInsertStatusLow,&FF						;*INSERT status for ROMS &07 to &00. Default: &FF (All 8 ROMS enabled)
 ;		EQUB &0A,&E7								;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift. Default was &17. Changed to &E7 in IBOS 1.21
 ;		EQUB &0B,&20								;0-2: FDRIVE / 3-5: CAPS. Default was &23. Changed to &20 in IBOS 1.21
 		EQUB &0A,&17								;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift.
