@@ -119,7 +119,7 @@ transientRomBankMask = &AE ; 2 bytes
 
 transientCmdPtr = &A8 ; 2 bytes
 transientTblPtr = &AA ; 2 bytes
-transientConfIdx = &AA ; 1 byte
+transientCmdIdx = &AA ; 1 byte SFTODO: as in other places, this is "cmd" in the sense that one of our * commands or one of our *CONFIGUURE X "things" is a "command", not *just* * commands
 transientDynamicSyntaxState = &AE ; 1 byte
 ; SFTODO: Named constants for b7 and b6
 transientDynamicSyntaxStateCountMask = %00111111
@@ -875,16 +875,16 @@ transientTblCmdLength = L00AC
 }
 			
 {
-.^CmdRefDynamicSyntaxGenerationForTransientConfIdx
+.^CmdRefDynamicSyntaxGenerationForTransientCmdIdx
 .L83EC      JSR CmdRef								;get start of *command pointer look up table address X=&26, Y=&80
             JMP common
 			
 ; SFTODO: Use a different local label instead of transientTblPtr in here? I am not sure what would be clearest as still working through code...
-.^ConfRefDynamicSyntaxGenerationForTransientConfIdx
+.^ConfRefDynamicSyntaxGenerationForTransientCmdIdx
 .L83F2      JSR ConfRef
 .common     CLC
             BIT rts									;set V
-            LDA transientConfIdx							;set A=transientConfIdx ready to fall through into DynamicSyntaxGenerationForAUsingYX
+            LDA transientCmdIdx							;set A=transientCmdIdx ready to fall through into DynamicSyntaxGenerationForAUsingYX
 	  FALLTHROUGH_TO DynamicSyntaxGenerationForAUsingYX
 }
 
@@ -1223,7 +1223,7 @@ tabColumn = 12
             LDA (transientTblPtr),Y
             PHA
             LDX L00AC
-            STX L00AA ; SFTODO: why do we bother? does any command use this? (I think X=index of the command in the table)
+            STX transientCmdIdx
             LDY L00AD
             RTS
 }
@@ -2369,7 +2369,7 @@ inputBuf = &700
             LDA (L00A8),Y
             CMP #&3F
             BNE L8C86
-            JSR CmdRefDynamicSyntaxGenerationForTransientConfIdx
+            JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDX #&47
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             JMP L8FA3
@@ -2661,7 +2661,7 @@ inputBuf = &700
 .L8ED0      JSR L8EE5
             JMP exitSC								;Exit Service Call
 			
-.L8ED6      JSR CmdRefDynamicSyntaxGenerationForTransientConfIdx
+.L8ED6      JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDX #prvOsMode - prv83								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
 .L8EDE      SEC
@@ -2712,7 +2712,7 @@ inputBuf = &700
             LDA #&00								;if no parameters then
             JMP L8F41								;set &27F to 0
 			
-.L8F38      JSR CmdRefDynamicSyntaxGenerationForTransientConfIdx
+.L8F38      JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDA osShadowRamFlag
             JMP L8EDE								;print shadow number and exit service call
 			
@@ -2730,7 +2730,7 @@ inputBuf = &700
             LDA (L00A8),Y
             CMP #'?'
             BNE L8F47
-            JSR CmdRefDynamicSyntaxGenerationForTransientConfIdx
+            JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDX #&3D								;select SHX register (&08: On, &FF: Off)
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             JMP L8FA3
@@ -2773,7 +2773,7 @@ inputBuf = &700
             LDA (L00A8),Y
             CMP #&3F
             BNE L8FAC
-            JSR CmdRefDynamicSyntaxGenerationForTransientConfIdx
+            JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDA tubePresenceFlag
 .L8FA3      JSR L86C8
             JSR OSNEWL
@@ -3306,7 +3306,7 @@ inputBuf = &700
 }
 
 .L932E      JSR L9337
-            JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
+            JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
             JMP OSNEWL
 			
 .L9337      CMP #&00
@@ -3403,11 +3403,11 @@ ENDIF
 .L93C2      RTS
 }
 
-.setYToTransientConfIdxTimes3
+.setYToTransientCmdIdxTimes3
 {
-.L93C3      LDA transientConfIdx
+.L93C3      LDA transientCmdIdx
             ASL A
-            ADC transientConfIdx
+            ADC transientCmdIdx
             TAY
             RTS
 }
@@ -3430,7 +3430,7 @@ ENDIF
 .setConfigValue
 {
 .L93E1      STA transientConfigPrefix
-.^L93E3     JSR setYToTransientConfIdxTimes3
+.^L93E3     JSR setYToTransientCmdIdxTimes3
             JSR getShiftedBitMask
             LDA ConfParBit+1,Y
             TAX ; SFTODO: LDX blah,Y?
@@ -3451,7 +3451,7 @@ ENDIF
 
 .getConfigValue
 {
-.L940A      JSR setYToTransientConfIdxTimes3
+.L940A      JSR setYToTransientCmdIdxTimes3
             JSR getShiftedBitMask
             LDA ConfParBit+ConfParBitUserRegOffset,Y
             TAX ; SFTODO: can we just use LDX blah,Y to avoid this?
@@ -3466,14 +3466,14 @@ ENDIF
             RTS
 }
 			
-; SFTODO: This code saves transientConfIdx (&AA) across call to ConfRefDynamicSyntaxGenerationForTransientConfIdx, but it superficially looks as though ConfRefDynamicSyntaxGenerationForTransientConfIdx preserves it itself, so the code to preserve here may be redundant.
+; SFTODO: This code saves transientCmdIdx (&AA) across call to ConfRefDynamicSyntaxGenerationForTransientCmdIdx, but it superficially looks as though ConfRefDynamicSyntaxGenerationForTransientCmdIdx preserves it itself, so the code to preserve here may be redundant.
 .printConfigNameAndGetValue ; SFTODO: name is a bit of a guess as I still haven't been through the "dynamic syntax generation" (which is presumably slightly misnamed at least, as at least some of our callers would just want the option name with no other fluff) code properly
 {
-.L9427      LDA transientConfIdx
+.L9427      LDA transientCmdIdx
             PHA
-            JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
+            JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
             PLA
-            STA transientConfIdx
+            STA transientCmdIdx
             JSR getConfigValue
             LDA transientConfigPrefix
             RTS
@@ -3526,7 +3526,7 @@ ENDIF
 ; *STATUS (clear) or *CONFIGURE (set).
 .jmpConfTypTblX
             PHP
-            STX transientConfIdx
+            STX transientCmdIdx
             TXA
             ASL A
             TAX
@@ -3670,7 +3670,7 @@ ENDIF
             EOR transientConfigPrefixSFTODO
             JMP L932E
 			
-.L9541      JSR setYToTransientConfIdxTimes3
+.L9541      JSR setYToTransientCmdIdxTimes3
             LDA ConfParBit+2,Y
             ASL A
             LDA #&00
@@ -3682,7 +3682,7 @@ ENDIF
 .^Conf2     BCS L9560
             JSR getConfigValue
             PHA
-            JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
+            JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
             PLA
             CLC
             ADC #&01
@@ -3698,7 +3698,7 @@ ENDIF
 .^Conf5	  BCS L957C
             JSR getConfigValue
             PHA
-            JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
+            JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
             PLA
             CMP #&08
             BCC L9579
@@ -3718,7 +3718,7 @@ ENDIF
 .^Conf4	  BCS L95A8
             JSR getConfigValue
             PHA
-            JSR ConfRefDynamicSyntaxGenerationForTransientConfIdx
+            JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
             PLA
             PHA
             LSR A
