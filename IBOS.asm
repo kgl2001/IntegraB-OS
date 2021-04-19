@@ -8032,22 +8032,23 @@ osfileBlock = L02EE
 .LB2F3      SEC
             RTS
 }
-			
-.LB2F5      LDA #&00
+
+{
+.^LB2F5      LDA #&00
             STA prvOswordBlockCopy + 12
             JSR convertIntegerDefaultDecimal
             BCS LB32F
             STA prvOswordBlockCopy + 11
-            LDA (L00A8),Y
+            LDA (transientCmdPtr),Y
             INY
-            CMP #&2F
+            CMP #'/'
             BNE LB32F
             JSR convertIntegerDefaultDecimal
             BCS LB32F
             STA prvOswordBlockCopy + 10
-            LDA (L00A8),Y
+            LDA (transientCmdPtr),Y
             INY
-            CMP #&2F
+            CMP #'/'
             BNE LB32F
             JSR convertIntegerDefaultDecimal
             BCS LB32F
@@ -8062,6 +8063,7 @@ osfileBlock = L02EE
 			
 .LB32F      SEC
             RTS
+}
 			
 .LB331      CLV
             CLC
