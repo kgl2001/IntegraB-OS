@@ -8660,8 +8660,9 @@ osfileBlock = L02EE
 		EQUW LB8FC-1							;XY?0=&6A: Function TBC
 		EQUW LB901-1							;XY?0=&6B: Function TBC
 }
-			
-.LB7BC	  BIT prvOswordBlockCopy + 7
+
+{
+.^LB7BC	  BIT prvOswordBlockCopy + 7
             BMI LB7F9
             BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BPL LB7F9
@@ -8709,6 +8710,7 @@ osfileBlock = L02EE
             BNE LB811
             CLC
             RTS
+}
 
 {
 ;OSWORD &0E (14) Read real time clock
