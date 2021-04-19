@@ -8607,15 +8607,18 @@ osfileBlock = L02EE
 }
 			
 ;Clear RTC buffer
-.LB774      LDY #&0F
+{
+.^LB774      LDY #&0F
             LDA #&00
 .LB778      STA prvOswordBlockCopy,Y
             DEY
             BPL LB778
             RTS
+}
 			
 ;OSWORD &0E (14) Read real time clock XY?0 parameter lookup code
-.oswd0e_1   LDA prvOswordBlockCopy							;get XY?0 value
+{
+.^oswd0e_1   LDA prvOswordBlockCopy							;get XY?0 value
             ASL A									;x2 (each entry in lookup table is 2 bytes)
             TAY
             LDA oswd0elu+1,Y						;get low byte
@@ -8628,6 +8631,7 @@ osfileBlock = L02EE
 .oswd0elu	  EQUW oswd0eReadString-1							;XY?0=0: Read time and date in string format
 	  EQUW oswd0eReadBCD-1							;XY?0=1: Read time and date in binary coded decimal (BCD) format
 	  EQUW oswd0eConvertBCD-1							;XY?0=2: Convert BCD values into string format
+}
 
 ;OSWORD &49 (73) - Integra-B calls XY?0 parameter lookup code
 .oswd49_1	SEC
