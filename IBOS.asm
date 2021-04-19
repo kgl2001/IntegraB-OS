@@ -193,6 +193,9 @@ vduTab = 9
 vduCr = 13
 vduSetMode = 22
 
+maxMode = 7 ; SFTODO!?
+shadowModeOffset = &80 ; SFTODO!?
+
 lastBreakType = &028D
 
 serviceConfigure = &28
@@ -1222,6 +1225,7 @@ tabColumn = 12
             DEY
             LDA (transientTblPtr),Y
             PHA
+	  ; Record the relevant index at transientCmdIdx for use in generating a syntax error later if necessary.
             LDX L00AC
             STX transientCmdIdx
             LDY L00AD
@@ -3700,10 +3704,11 @@ ENDIF
             PHA
             JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
             PLA
-            CMP #&08
-            BCC L9579
-            ADC #&77
-.L9579	  JMP printADecimalPadNewline
+	  ; Map a "compressed mode" in the range 0-15 to 0-7 or 128-135.
+            CMP #maxMode + 1
+            BCC modeInA
+            ADC #(shadowModeOffset - (maxMode + 1)) - 1 ; -1 because C is set
+.modeInA	  JMP printADecimalPadNewline
 }
 
 {
