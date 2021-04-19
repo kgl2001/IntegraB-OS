@@ -491,6 +491,7 @@ GUARD	&C000
 		EQUB &C2								;06: ROM type - Bits 1, 6 & 7 set - Language & Service
 		EQUB copyright MOD &100						;07: Copyright offset pointer
 		EQUB &FF								;08: Binary version number
+.title
 		EQUS "IBOS", 0							;09: Title string
 		EQUS "1.20"							;xx: Version string
 .copyright	EQUS 0, "(C)"							;xx: Copyright symbol
@@ -837,6 +838,7 @@ transientTblCmdLength = L00AC
             STA transientTblPtr + 1
             PLA
             STA transientTblPtr
+	  ; SFTODO: I am *guessing* the table we're looking at here has entries of the form 2-byte-string-table, 1-byte-start-index-to-show-from-that-table, 1-byte-end-index-to-show
 .L83D9      LDX transientTblPtr
             LDY transientTblPtr + 1
             LDA L00A8
@@ -862,6 +864,7 @@ transientTblCmdLength = L00AC
             BIT rts									;set V
             LDA transientConfIdx							;set A=transientConfIdx ready to fall through into DynamicSyntaxGenerationForAUsingYX
 	  FALLTHROUGH_TO DynamicSyntaxGenerationForAUsingYX
+
 .^DynamicSyntaxGenerationForAUsingYX
 .L83FB      PHA									;save A-on-entry
             LDA transientTblPtr + 1
@@ -1190,24 +1193,24 @@ tmp = &AC
 ;*HELP Service Call
 .service09
             JSR setTransientCmdPtr
-            LDA (L00A8),Y
-            CMP #&0D
+            LDA (transientCmdPtr),Y
+            CMP #vduCr
             BNE L85F1
             LDX #&04
 .L85CD      TXA
             PHA
             JSR OSNEWL
-            LDX #&09								;Print Title String
+            LDX #title - romHeader
 .L85D4      LDA romHeader,X
             BNE L85DB
-            LDA #&20
+            LDA #' '
 .L85DB      JSR OSWRCH
             INX
             CPX romHeader+7
             BNE L85D4
             JSR OSNEWL
             PLA
-            JSR ibosRef
+            JSR ibosRef ; SFTODO: redudant? L83A9 does this itself
             JSR L83A9
             JMP L85FB
 			
@@ -3448,7 +3451,7 @@ ENDIF
             BCC statusAll
 	  ; This is *CONFIGURE with no option, so show the supported options.
             LDA #&05 ; SFTODO: magic constant
-            JSR ibosRef
+            JSR ibosRef ; SFTODO: Redundant? L83A9 does JSR ibosRef itself...
             JSR L83A9 ; SFTODO: I suspect this is a kind of help-display-using-table routine but not looked at it yet SFTODOWIP
             JMP exitSCa								;restore service call parameters and exit
 			
