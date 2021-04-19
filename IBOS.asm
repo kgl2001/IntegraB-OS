@@ -3699,7 +3699,7 @@ ENDIF
             JMP setConfigValue
 
 {
-.^Conf5	  BCS L957C
+.^Conf5	  BCS Conf5Write
             JSR getConfigValue
             PHA
             JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
@@ -3709,19 +3709,17 @@ ENDIF
             BCC modeInA
             ADC #(shadowModeOffset - (maxMode + 1)) - 1 ; -1 because C is set
 .modeInA	  JMP printADecimalPadNewline
-}
 
-{
-.^L957C     JSR convertIntegerDefaultDecimalChecked
+.Conf5Write JSR convertIntegerDefaultDecimalChecked
 	  ; Map a mode 0-7 or 128-135 to a "compressed mode" in the range 0-15.
             CMP #shadowModeOffset
-            BCC modeInA
+            BCC valueInA
             SBC #shadowModeOffset - (maxMode + 1)
-.modeInA    JMP setConfigValue
+.valueInA   JMP setConfigValue
 }
 
 {
-.^Conf4	  BCS L95A8
+.^Conf4	  BCS Conf4Write
             JSR getConfigValue
             PHA
             JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
@@ -3737,9 +3735,8 @@ ENDIF
             PLA
             AND #&01
             JMP printADecimalPadNewline
-}
-			
-.L95A8      JSR convertIntegerDefaultDecimalChecked
+
+.Conf4Write JSR convertIntegerDefaultDecimalChecked
             AND #&07
             ASL A
             PHA
@@ -3750,6 +3747,7 @@ ENDIF
             PLA
             ORA L00AE
             JMP setConfigValue
+}
 			
 .L95BF      LDA #&00
             ASL L00AE
