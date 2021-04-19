@@ -7796,14 +7796,15 @@ osfileBlock = L02EE
 .LB132      RTS
 }
 
-.LB133      LDX #&04
+{
+.^LB133      LDX #&04
             LDA #&FF
 .LB137      STA prvOswordBlockCopy + 8,X
             DEX
             BPL LB137
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (L00A8),Y
-            CMP #&0D
+            LDA (transientCmdPtr),Y
+            CMP #vduCr
             BEQ LB197
             JSR LB1ED
             BCS LB12E
@@ -7811,8 +7812,8 @@ osfileBlock = L02EE
             CMP #&FF
             BEQ LB15C
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (L00A8),Y
-            CMP #&2C
+            LDA (transientCmdPtr),Y
+            CMP #','
             BNE LB197
             INY
 .LB15C      JSR convertIntegerDefaultDecimal
@@ -7820,8 +7821,8 @@ osfileBlock = L02EE
             LDA #&FF
 .LB163      STA prvOswordBlockCopy + 11
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (L00A8),Y
-            CMP #&2F
+            LDA (transientCmdPtr),Y
+            CMP #'/'
             BNE LB197
             INY
             JSR convertIntegerDefaultDecimal
@@ -7829,8 +7830,8 @@ osfileBlock = L02EE
             LDA #&FF
 .LB177      STA prvOswordBlockCopy + 10
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (L00A8),Y
-            CMP #&2F
+            LDA (transientCmdPtr),Y
+            CMP #'/'
             BNE LB197
             INY
             JSR convertIntegerDefaultDecimal
@@ -7866,6 +7867,7 @@ osfileBlock = L02EE
             JMP LAFF9
 			
 .LB1C7      JMP LB12E
+}
 
 .LB1CA      LDA L00B0
             STA prv82+&4A
