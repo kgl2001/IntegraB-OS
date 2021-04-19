@@ -7590,8 +7590,9 @@ osfileBlock = L02EE
             BNE LAF96
             JMP LAFEC
 }
-			
-.LAFAA      JSR LA70F
+
+{
+.^LAFAA      JSR LA70F
             LDA prv82+&42
             AND #&1E
             CMP #&1E
@@ -7619,12 +7620,13 @@ osfileBlock = L02EE
 			
 .LAFE6      LDA prv82+&48
             STA prv82+&42
-.LAFEC      JSR LA908
+.^LAFEC      JSR LA908
             STA prvOswordBlockCopy + 12
             LDA #&00
             STA prvOswordBlockCopy
             CLC
             RTS
+}
 
 {
 .^LAFF9      LDX #&04
