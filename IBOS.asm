@@ -939,9 +939,9 @@ transientTblCmdLength = L00AC
 
 .dontEmitParameters
             PLA
-            STA L00AA
+            STA transientTblPtr
             PLA
-            STA L00AB
+            STA transientTblPtr + 1
             PLA
 .^rts       RTS
 }
