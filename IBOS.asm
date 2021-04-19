@@ -6633,7 +6633,6 @@ osfileBlock = L02EE
             BCC LA7F1
             LDA #&1D
 .LA7F1      RTS
-}
 
 ;Lookup table for Number of Days in each month
 .LA7F2		EQUB &1F								;January:		31 days
@@ -6648,6 +6647,7 @@ osfileBlock = L02EE
 		EQUB &1F								;October:		31 days
 		EQUB &1E								;November:	30 days
 		EQUB &1F								;December:	31 days
+}
 
 .LA7FE      LDA #&00
             STA prvOswordBlockCopy + 4
