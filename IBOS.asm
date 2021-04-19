@@ -6319,7 +6319,8 @@ osfileBlock = L02EE
 }
 			
 ;Write contents from Private memory address &8000 to screen
-.LA5DE      LDX #&00
+{
+.^LA5DE      LDX #&00
 .LA5E0      LDA prv80+&00,X
             BEQ LA5EE
             JSR OSASCI
@@ -6327,6 +6328,7 @@ osfileBlock = L02EE
             CPX prvOswordBlockCopy + 1
             BCC LA5E0
 .LA5EE      RTS
+}
 
 ;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223, but why???
 .LA5EF      LDA #&05
