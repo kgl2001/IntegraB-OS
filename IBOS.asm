@@ -7415,8 +7415,9 @@ osfileBlock = L02EE
             STA prvOswordBlockCopy
             RTS
 }
-			
-.LAE2C      LDA #&13
+
+{
+.^LAE2C      LDA #&13
             STA prvOswordBlockCopy + 8
             SEC
             LDA prvOswordBlockCopy + 4
@@ -7472,6 +7473,7 @@ osfileBlock = L02EE
             INX
             STX prvOswordBlockCopy + 11
             JMP LA905
+}
 			
 .LAEBA      CLC
             LDA prvOswordBlockCopy + 11
