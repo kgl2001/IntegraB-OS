@@ -6535,21 +6535,28 @@ osfileBlock = L02EE
             LDA prvOswordBlockCopy + 13								;Get 'Hr Alarm' from &822D
             JMP wrRTCRAM								;Write data from A to RTC memory location X
 }
-			
-.LA769      JSR LA70F								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from RTC and Store in Private RAM (&82xx)
+
+{
+.^LA769      JSR LA70F								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from RTC and Store in Private RAM (&82xx)
             JMP LA6F3								;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
+}
 
-            JSR LA676								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC						***not used. nothing jumps into this code*** ; SFTODO: So can be removed to make room in an updated version
+; SFTODO: Following block is dead code
+{
+            JSR LA676								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC						***not used. nothing jumps into this code***
             JMP LA6CB								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
+}
 
-;Wait until RTC Update in Progress	is complete		
-.LA775      LDX #&0A								;Select 'Register A' register on RTC: Register &0A
+;Wait until RTC Update in Progress	is complete
+{
+.^LA775      LDX #&0A								;Select 'Register A' register on RTC: Register &0A
 .LA777      JSR LA660								;3 x NOP delay
             STX SHEILA+&38								;Strobe in address
             JSR LA660								;3 x NOP delay
             LDA SHEILA+&3C								;Strobe out data
             BMI LA777								;Loop if Update in Progress (if MSB set)
             RTS
+}
 
 ;Initialisation lookup table for RTC registers &00 to &09
 .LA786		EQUB &00								;Register &00 - Seconds:	 	00
