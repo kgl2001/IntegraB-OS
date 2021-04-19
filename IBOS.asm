@@ -2006,6 +2006,7 @@ fullResetPrv = &2800
 
 ;This code is relocated from IBOS ROM to RAM starting at &2800
 .fullResetPrvTemplate
+ptr = &00 ; 2 bytes
 .L89E9      LDA romselCopy									;Get current SWR bank number.
             PHA									;Save it
             LDX #&0F								;Start at SWR bank 15
@@ -2048,12 +2049,12 @@ fullResetPrv = &2800
             JSR OSBYTE								;Write &7F to SHEILA+&4E (System VIA)
             JMP (RESET)								;Carry out Reset
 			
-.L8A46	  STA L0000+&01								;This is relocated address &285D
+.L8A46	  STA ptr + 1								;This is relocated address &285D
             LDA #&00								;Start at address &8000 or &3000
-            STA L0000
+            STA ptr	  
             TAY
 .L8A4D      LDA #&00								;Store &00
-            STA ($00),Y
+            STA (ptr),Y
             INY
             BNE L8A4D
             INC L0000+&01
