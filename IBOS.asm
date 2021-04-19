@@ -1899,7 +1899,7 @@ firstDigitCmdPtrY = &BB
             JSR OSWRCH
             DEX
             BPL yesLoop
-            JMP L89C2								;Initiate Full Reset
+            JMP fullReset								;Initiate Full Reset
 			
 .L8943      LDA #vduCls
             JSR OSWRCH								;Clear Screen
@@ -1975,8 +1975,9 @@ inputBuf = &700
 
 ;Start of full reset
 ; SFTODO: This has only one caller
+.fullReset
 {
-.^L89C2     LDX #&32								;Start with register &32
+.L89C2     LDX #&32								;Start with register &32
 .userRegLoop
 	  LDA #&00								;Set to 0
             CPX #userRegLangFile							;Check if register &5 (LANG/FILE parameters)
