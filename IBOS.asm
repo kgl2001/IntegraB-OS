@@ -7110,13 +7110,16 @@ osfileBlock = L02EE
 ;&AA stores the buffer address offset
 ;&00A8 stores the address of buffer address
 ;this code saves the contents of A to buffer address + buffer address offset
-.LABE2      LDY L00AA								;read buffer pointer
-.LABE4      STA (L00A8),Y								;save contents of A to Buffer Address+Y
+{
+.^LABE2      LDY L00AA								;read buffer pointer
+.^LABE4      STA (L00A8),Y								;save contents of A to Buffer Address+Y
             INY									;increase buffer pointer
             STY L00AA								;save buffer pointer
             RTS
-			
-.LABEA      LDA prvOswordBlockCopy + 2								;&44 for OSWORD 0E
+}
+
+{
+.^LABEA      LDA prvOswordBlockCopy + 2								;&44 for OSWORD 0E
             AND #&0F								;&04 for OSWORD 0E
             STA L00AB
             BNE LABF5
@@ -7181,6 +7184,7 @@ osfileBlock = L02EE
             JSR LABC5								;write am / pm to 
 .LAC6C      CLC
             RTS
+}
 			
 ;Separators for Time Display? 
 .LAC6E		EQUS " ", "/", ".", "-"
