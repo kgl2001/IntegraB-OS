@@ -104,6 +104,7 @@ rtcUserBase = &0E
 ; accessing them, which will be handled automatically by
 ; readUserReg/writeUserReg if necessary).
 userRegLangFile = &05 ; b0-3: FILE, b4-7: LANG
+userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7L Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
 userRegHorzTV = &36 ; "horizontal *TV" settings
@@ -3346,7 +3347,7 @@ ConfParBitBitCountOffset = 2
 		EQUB &0B,&03,&03							;CAPS ->	  &0B Bits 3..5
 		EQUB &0A,&04,&04							;TV ->	  &0A Bits 4..7
 		EQUB &0A,&00,&04							;MODE ->	  &0A Bits 0..3
-		EQUB &0F,&00,&01							;TUBE ->	  &0F Bit  0
+		EQUB userRegTubeBaudPrinter,&00,&01							;TUBE ->	  &0F Bit  0
 		EQUB &10,&04,&81							;BOOT ->	  &10 Bit  4
 		EQUB userRegOsModeShx,&03,&81							;SHX ->	  &32 Bit  3
 		EQUB userRegOsModeShx,&00,&03							;OSMODE ->  &32 Bits 0..2
@@ -4075,9 +4076,9 @@ ENDIF
             BEQ L9831
             BIT L03A4
             BMI L983D
-            LDX #&0F
+            LDX #userRegTubeBaudPrinter
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            AND #&01
+            AND #&01 ; mask off tube bit (SFTODO: named constant? or more trouble than it's worth?)
             BNE L982E
             LDA #&FF
 .L982E      STA prv83+&40
