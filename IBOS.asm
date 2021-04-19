@@ -1197,30 +1197,35 @@ tmp = &AC
             JSR setTransientCmdPtr
             LDA (transientCmdPtr),Y
             CMP #vduCr
-            BNE L85F1
+            BNE checkArgument
+	  ; This is *HELP with no argument
             LDX #&04
-.L85CD      TXA
+.showHelpX  TXA
             PHA
             JSR OSNEWL
             LDX #title - romHeader
-.L85D4      LDA romHeader,X
-            BNE L85DB
+.titleVersionLoop
+            LDA romHeader,X
+            BNE printChar
             LDA #' '
-.L85DB      JSR OSWRCH
+.printChar  JSR OSWRCH
             INX
             CPX copyrightOffset
-            BNE L85D4
+            BNE titleVersionLoop
             JSR OSNEWL
             PLA
             JSR ibosRef ; SFTODO: redundant? L83A9 does this itself
             JSR L83A9
-            JMP L85FB
-			
-.L85F1      JSR ibosRef
+            JMP exitSCaIndirect
+
+.checkArgument
+	  ; See if the *HELP argument is one of the ones we recognise and show it if it is.
+            JSR ibosRef
             LDA #&00
-            JSR searchCmdTbl
-            BCC L85CD
-.L85FB      JMP exitSCa								;restore service call parameters and exit
+            JSR searchCmdTbl ; SFTODO: maybe rename this to indicate we're not always searching "commands"?
+            BCC showHelpX
+.exitSCaIndirect
+            JMP exitSCa								;restore service call parameters and exit
 }
 
 ; Return with A=Y=0 and (transientCmdPtr),Y accessing the same byte as (osCmdPtr),Y on entry.
