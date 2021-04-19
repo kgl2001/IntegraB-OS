@@ -1977,7 +1977,8 @@ inputBuf = &700
 ; SFTODO: This has only one caller
 .fullReset
 {
-.L89C2     LDX #&32								;Start with register &32
+	  ; Zero user registers &00-&32 inclusive, except userRegLangFile which is treated as a special case.
+.L89C2      LDX #&32								;Start with register &32
 .userRegLoop
 	  LDA #&00								;Set to 0
             CPX #userRegLangFile							;Check if register &5 (LANG/FILE parameters)
@@ -1993,18 +1994,19 @@ inputBuf = &700
 	  JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             DEX
             BPL userRegLoop
+
+fullResetPrv = &2800
             JSR LA790								;Stop Clock and Initialise RTC registers &00 to &0B
             LDX #&00								;Relocate 256 bytes of code to main memory
-.L89DD      LDA L89E9,X
-            STA L2800,X
+.copyLoop   LDA fullResetPrvTemplate,X
+            STA fullResetPrv,X
             INX
-            BNE L89DD
-            JMP L2800								;Then jump to main memory
-}
-			
+            BNE copyLoop
+            JMP fullResetPrv
+
 ;This code is relocated from IBOS ROM to RAM starting at &2800
-{
-.^L89E9      LDA romselCopy									;Get current SWR bank number.
+.fullResetPrvTemplate
+.L89E9      LDA romselCopy									;Get current SWR bank number.
             PHA									;Save it
             LDX #&0F								;Start at SWR bank 15
 .L89EE      STX romselCopy									;Select memory bank
