@@ -8226,8 +8226,9 @@ osfileBlock = L02EE
             STA romsel
             RTS
 }
-			
-.LB46E      DEX									;Select 'Register B' register on RTC: Register &0B
+
+{
+.^LB46E      DEX									;Select 'Register B' register on RTC: Register &0B
             JSR LA660								;3 x NOP delay
             STX SHEILA+&38						          	;Strobe in address
             JSR LA660								;3 x NOP delay
@@ -8260,6 +8261,7 @@ osfileBlock = L02EE
             LDX #&49
             JSR LF168								;OSBYTE 143 - Pass service commands to sideways ROM (http://mdfs.net/Docs/Comp/BBC/OS1-20/F135)
 .LB4AC      JMP exitSC								;Exit Service Call
+}
 
 .LB4AF      JSR PrvDis								;switch out private RAM
             JSR raiseError								;Goto error handling, where calling address is pulled from stack
