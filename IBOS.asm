@@ -697,6 +697,7 @@ GUARD	&C000
             RTS
 
 		EQUB &04								;Number of IBOS options
+		ASSERT P% - ibosRef = CmdTblOffset
 		EQUW ibosTbl							;Start of IBOS options lookup table
 		EQUW ibosParTbl							;Start of IBOS options parameters lookup table (there are no parameters!)
 		ASSERT P% - ibosRef = CmdTblPtrOffset
@@ -712,6 +713,7 @@ GUARD	&C000
 		EQUB &00
 
 .ibosSubTbl
+; Elements 0-3 of ibosSubTbl table correspond to the four entries at ibosTbl.
 ibosSubTblHelpNoArgument = 4
 ibosSubTblConfigureList = 5
  	          EQUW CmdRef
