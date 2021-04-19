@@ -197,7 +197,7 @@ vduSetMode = 22
 maxMode = 7 ; SFTODO!?
 shadowModeOffset = &80 ; SFTODO!?
 
-lastBreakType = &028D ; 0=soft reset, 1=power on reset, 2=hard reset
+lastBreakType = &028D ; 0=soft reset, 1=power on reset, 2=hard reset SFTODO: named constants?
 
 serviceConfigure = &28
 serviceStatus = &29
@@ -329,7 +329,7 @@ L0380       = &0380
 L0387       = &0387
 L0388       = &0388
 L0389       = &0389
-L03A4       = &03A4
+L03A4       = &03A4 ; SFTODO: This is "GXR flag byte" according to allmem, we seem to be reusing it
 L03A5       = &03A5 ; SFTODO: This is an unused part of CFS/RFS workspace, IBOS seems to be using it  hold something across WRCHV calls but not sure - possibly it's to allow a quick check for shadow/non-shadow mode?
 L03A7       = &03A7
 L03B1       = &03B1
@@ -6254,7 +6254,8 @@ osfileBlock = L02EE
             RTS
 
 ;SPOOL/EXEC file closure warning - Service call 10
-.service10	SEC
+{
+.^service10 SEC
             JSR LA7A8
             BCS LA570
             JMP LA5B8
@@ -6315,6 +6316,7 @@ osfileBlock = L02EE
             TSX
             STA L0103,X
             JMP exitSCa								;restore service call parameters and exit
+}
 			
 ;Write contents from Private memory address &8000 to screen
 .LA5DE      LDX #&00
