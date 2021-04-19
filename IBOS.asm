@@ -4066,7 +4066,8 @@ ENDIF
             RTS
 
 ;Tube system initialisation - Service call &FF
-.serviceFF	JSR L984C
+{
+.^serviceFF JSR L984C
             PHA
             BIT prv83+&41
             BMI L9836
@@ -4111,6 +4112,7 @@ ENDIF
             STA ramselCopy
             STA ramsel
             RTS
+}
 
 ;Vectors claimed - Service call &0F
 .service0F  LDX #&43
