@@ -880,11 +880,12 @@ transientTblCmdLength = L00AC
 	  FALLTHROUGH_TO DynamicSyntaxGenerationForAUsingYX
 
 	  ; SFTODO: DESCRIBE BEHAVIOUR
-	  ; On entry:
-	  ;     C set => build a syntax error on the stack and generate it when a carriage return is output
-	  ;     C clear => write output to screen (vduTab jumps to a fixed column for alignment)
-	  ;                    V clear => prefix with two spaces and emit parameters
-	  ;                    V set => no space prefix, don't emit parameters
+;
+; On entry:
+;     C set => build a syntax error on the stack and generate it when a carriage return is output
+;     C clear => write output to screen (vduTab jumps to a fixed column for alignment)
+;                    V clear => prefix with two spaces and emit parameters
+;                    V set => no space prefix, don't emit parameters
 .^DynamicSyntaxGenerationForAUsingYX
 .L83FB      PHA									;save A-on-entry
             LDA transientTblPtr + 1
@@ -1044,7 +1045,7 @@ tmp = &AC
             BVC L84C8
             ORA #&40
 .L84C8      STA transientDynamicSyntaxState ; stash original V (&40, b6) and C (&80, b7) in transientDynamicSyntaxState
-            BPL L84DD ; don't generate an error if C is clear
+            BPL generateToScreen
             LDY #&00
 .copyLoop   LDA errorPrefix,Y
             STA L0100,Y
@@ -1053,8 +1054,9 @@ tmp = &AC
             BNE copyLoop
             TYA
             JMP saveA
-			
-.L84DD      BIT transientDynamicSyntaxState
+
+.generateToScreen
+            BIT transientDynamicSyntaxState
             BVS L84E7
             JSR printSpace								;write ' ' to screen
             JSR printSpace								;write ' ' to screen
