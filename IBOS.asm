@@ -6635,18 +6635,18 @@ osfileBlock = L02EE
 .LA7F1      RTS
 
 ;Lookup table for Number of Days in each month
-.LA7F2		EQUB &1F								;January:		31 days
-		EQUB &1C								;February:	28 days
-		EQUB &1F								;March:		31 days
-		EQUB &1E								;April:		30 days
-		EQUB &1F								;May:		31 days
-		EQUB &1E								;June:		30 days
-		EQUB &1F								;July:		31 days
-		EQUB &1F								;August:		31 days
-		EQUB &1E								;September:	30 days
-		EQUB &1F								;October:		31 days
-		EQUB &1E								;November:	30 days
-		EQUB &1F								;December:	31 days
+.LA7F2	  EQUB 31 ; January
+	  EQUB 28 ; February
+	  EQUB 31 ; March
+	  EQUB 30 ; April
+	  EQUB 31 ; May
+	  EQUB 30 ; June
+	  EQUB 31 ; July
+	  EQUB 31 ; August
+	  EQUB 30 ; September
+	  EQUB 31 ; October
+	  EQUB 30 ; November
+	  EQUB 31 ; December
 }
 
 .LA7FE      LDA #&00
