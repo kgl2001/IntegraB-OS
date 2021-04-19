@@ -906,8 +906,9 @@ transientTblCmdLength = L00AC
             BIT transientDynamicSyntaxState						
             BVS dontSFTODO
 
+	  ; SFTODO: Why not move the next two instructions just before emitEntryAFromTableYX and then we don't need to PHA/PLA?
             TSX									;get stack pointer
-            LDA L0103,X								;read value from stack
+            LDA L0103,X								;read A-on-entry from stack
             PHA									;and save
             LDY #&08								;offset for address *command parameters lookup table
             LDA (transientTblPtr),Y
@@ -917,7 +918,7 @@ transientTblCmdLength = L00AC
             TAY									;save start of *command parameters lookup table to X & Y
             PLA									;recover stack value
             JSR emitEntryAFromTableYX								;write *command parameters to screen???
-            LDA #&0D
+            LDA #vduCr
             JSR emitDynamicSyntaxCharacter
 
 .dontSFTODO
