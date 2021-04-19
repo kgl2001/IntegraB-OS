@@ -3664,8 +3664,9 @@ ENDIF
 	  LDA L950B,X
             JMP setConfigValue
 }
-			
-.Conf6	  BCS L9541
+
+{
+.^Conf6	  BCS Conf6Write
             JSR getConfigValue
             LDA ConfParBit+2,Y
             ASL A
@@ -3674,16 +3675,17 @@ ENDIF
             EOR transientConfigPrefixSFTODO
             JMP L932E
 			
-.L9541      JSR setYToTransientCmdIdxTimes3
+.Conf6Write JSR setYToTransientCmdIdxTimes3
             LDA ConfParBit+2,Y
             ASL A
             LDA #&00
             ROL A
             EOR transientConfigPrefixSFTODO
             JMP setConfigValue
+}
 
 {
-.^Conf2     BCS L9560
+.^Conf2     BCS Conf2Write
             JSR getConfigValue
             PHA
             JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
@@ -3691,12 +3693,12 @@ ENDIF
             CLC
             ADC #&01
             JMP printADecimalPadNewline
-}
-			
-.L9560      JSR convertIntegerDefaultDecimalChecked
+
+.Conf2Write JSR convertIntegerDefaultDecimalChecked
             SEC
             SBC #&01
             JMP setConfigValue
+}
 
 {
 .^Conf5	  BCS Conf5Write
@@ -3748,7 +3750,9 @@ ENDIF
             ORA L00AE
             JMP setConfigValue
 }
-			
+
+; SFTODO: This entire block is dead code
+{
 .L95BF      LDA #&00
             ASL L00AE
             ROL A
@@ -3756,12 +3760,12 @@ ENDIF
             ROL A
             RTS
 
-            JSR L95BF								;Missing address label? SFTODO: Yes, looks like dead code to me, which could be removed in an enhanced version
+            JSR L95BF								;Missing address label?
             JSR printADecimalPad
             LDA #','
             JMP OSWRCH
 			
-            ASL L00AE								;Missing address label? SFTODO: ditto
+            ASL L00AE								;Missing address label?
             ASL L00AE
             JSR L854D
             JSR convertIntegerDefaultDecimalChecked
@@ -3769,10 +3773,11 @@ ENDIF
             ORA L00AE
             STA L00AE
             RTS
-
+}
 			
 ;Autoboot - Service call &03
-.service03  LDA KEYVH
+{
+.^service03 LDA KEYVH
             CMP #&FF
             BNE L9605
             LDA #&0D
@@ -3888,6 +3893,7 @@ ENDIF
             PHA
             LDA #&03
             JMP LF16E								;OSBYTE 143 - Pass service commands to sideways ROMs (http://mdfs.net/Docs/Comp/BBC/OS1-20/F135)
+}
 
 ;Absolute workspace claim - Service call &01
 .service01
