@@ -157,6 +157,7 @@ oswdbtA = &EF
 oswdbtX = &F0
 oswdbtY = &F1
 
+; SFTODO: These may need renaming, or they may not be as general as I am assuming
 CmdTblOffset = 6
 CmdTblPtrOffset = 10
 
@@ -696,6 +697,7 @@ GUARD	&C000
 		EQUB &04								;Number of IBOS options
 		EQUW ibosTbl							;Start of IBOS options lookup table
 		EQUW ibosParTbl							;Start of IBOS options parameters lookup table (there are no parameters!)
+		ASSERT P% - ibosRef = CmdTblPtrOffset
 		EQUW ibosSubTbl							;Start of IBOS sub option reference lookup table
 
 .ibosTbl		EQUS &04, "RTC"
@@ -803,37 +805,37 @@ transientTblCmdLength = L00AC
 {
 .^L83A9     PHA
             JSR ibosRef
-            STX L00AA
-            STY L00AB
-            LDY #&0A
-            LDA (L00AA),Y
+            STX transientTblPtr
+            STY transientTblPtr + 1
+            LDY #CmdTblPtrOffset
+            LDA (transientTblPtr),Y
             TAX
             INY
-            LDA (L00AA),Y
-            STA L00AB
-            STX L00AA
+            LDA (transientTblPtr),Y
+            STA transientTblPtr + 1
+            STX transientTblPtr
             PLA
             PHA
             ASL A
             ASL A
             TAY
-            LDA (L00AA),Y
+            LDA (transientTblPtr),Y
             PHA
             INY
-            LDA (L00AA),Y
+            LDA (transientTblPtr),Y
             PHA
             INY
-            LDA (L00AA),Y
+            LDA (transientTblPtr),Y
             STA L00A8
             INY
-            LDA (L00AA),Y
+            LDA (transientTblPtr),Y
             STA L00A9
             PLA
-            STA L00AB
+            STA transientTblPtr + 1
             PLA
-            STA L00AA
-.L83D9      LDX L00AA
-            LDY L00AB
+            STA transientTblPtr
+.L83D9      LDX transientTblPtr
+            LDY transientTblPtr + 1
             LDA L00A8
             CLC
             CLV
