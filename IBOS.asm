@@ -7565,8 +7565,9 @@ osfileBlock = L02EE
             SEC
             RTS
 }
-			
-.LAF79      LDA prv82+&42
+
+{
+.^LAF79      LDA prv82+&42
             AND #&08
             BNE LAFAA
             LDA prv82+&42
@@ -7588,6 +7589,7 @@ osfileBlock = L02EE
             CPX #&04
             BNE LAF96
             JMP LAFEC
+}
 			
 .LAFAA      JSR LA70F
             LDA prv82+&42
