@@ -7540,7 +7540,8 @@ osfileBlock = L02EE
 .rts        RTS
 }
 
-.LAF44      DEC prvOswordBlockCopy + 11
+{
+.^LAF44      DEC prvOswordBlockCopy + 11
             BNE LAF3C
             LDY prvOswordBlockCopy + 10
             DEY
@@ -7563,6 +7564,7 @@ osfileBlock = L02EE
             BNE LAF3F
             SEC
             RTS
+}
 			
 .LAF79      LDA prv82+&42
             AND #&08
