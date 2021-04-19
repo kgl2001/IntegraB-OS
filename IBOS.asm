@@ -1193,6 +1193,7 @@ tmp = &AC
 
 ;*HELP Service Call
 .service09
+{
             JSR setTransientCmdPtr
             LDA (transientCmdPtr),Y
             CMP #vduCr
@@ -1220,6 +1221,7 @@ tmp = &AC
             JSR searchCmdTbl
             BCC L85CD
 .L85FB      JMP exitSCa								;restore service call parameters and exit
+}
 
 ; Return with A=Y=0 and (transientCmdPtr),Y accessing the same byte as (osCmdPtr),Y on entry.
 .setTransientCmdPtr
