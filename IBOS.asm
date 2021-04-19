@@ -711,7 +711,10 @@ GUARD	&C000
 .ibosParTbl	EQUB &01,&01,&01,&01
 		EQUB &00
 
-.ibosSubTbl	EQUW CmdRef
+.ibosSubTbl
+ibosSubTblHelpNoArgument = 4
+ibosSubTblConfigureList = 5
+ 	          EQUW CmdRef
 		EQUB &00,&03							;&04 x IBOS/RTC Sub options - from offset &00
 		EQUW CmdRef
 		EQUB &04,&13							;&10 x IBOS/SYS Sub options - from offset &04
@@ -1203,7 +1206,7 @@ tmp = &AC
             CMP #vduCr
             BNE checkArgument
 	  ; This is *HELP with no argument
-            LDX #&04
+            LDX #ibosSubTblHelpNoArgument
 .showHelpX  TXA
             PHA
             JSR OSNEWL
@@ -3462,9 +3465,9 @@ ENDIF
             PLP
             BCC statusAll
 	  ; This is *CONFIGURE with no option, so show the supported options.
-            LDA #&05 ; SFTODO: magic constant
+            LDA #ibosSubTblConfigureList
             JSR ibosRef ; SFTODO: Redundant? DynamicSyntaxGenerationForIbosSubTblA does JSR ibosRef itself...
-            JSR DynamicSyntaxGenerationForIbosSubTblA ; SFTODO: I suspect this is a kind of help-display-using-table routine but not looked at it yet SFTODOWIP
+            JSR DynamicSyntaxGenerationForIbosSubTblA
             JMP exitSCa								;restore service call parameters and exit
 			
 .optionSpecified
