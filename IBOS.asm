@@ -8069,6 +8069,7 @@ osfileBlock = L02EE
             CLC
             JMP (KEYVL)
 
+{
 ;OSBYTE &07 buffer data
 ;Equivalent to SOUND 3,-15,210,5
 .LB336		EQUW &0003							;Channel:	 3
@@ -8084,7 +8085,7 @@ osfileBlock = L02EE
 .LB34A		EQUB &06,&0E
 .LB34C		EQUB &0F,&07
 
-.LB34E      LDX #&33
+.^LB34E      LDX #&33
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ASL A
             PHP
@@ -8096,8 +8097,8 @@ osfileBlock = L02EE
             ROR A
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
 
-.LB35E      SEC
-.LB35F      LDA romselCopy
+.^LB35E      SEC
+.^LB35F      LDA romselCopy
             PHA
             LDA ramselCopy
             PHA
@@ -8162,6 +8163,7 @@ osfileBlock = L02EE
             PHA
             DEY
             BPL LB3DB
+	  ; SFTODO: I am not sure this is necessary, can't we do OSWORD 7 with a parameter block in SWR?
             LDY #&07
 .LB3E4      LDA LB336,Y								;Relocate sound data from &B336-&B33D
             STA L00A8,Y								;to &00A8-&00AF
@@ -8223,6 +8225,7 @@ osfileBlock = L02EE
             STA romselCopy
             STA romsel
             RTS
+}
 			
 .LB46E      DEX									;Select 'Register B' register on RTC: Register &0B
             JSR LA660								;3 x NOP delay
