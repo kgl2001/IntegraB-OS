@@ -6587,7 +6587,8 @@ osfileBlock = L02EE
             RTS									;Exit
 }
 
-.LA7A8      BCS LA7C2
+{
+.^LA7A8      BCS LA7C2
             LDX #&33
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&40
@@ -6608,7 +6609,7 @@ osfileBlock = L02EE
             SEC
             RTS
 
-.LA7CD      LDA prvOswordBlockCopy + 9
+.^LA7CD      LDA prvOswordBlockCopy + 9
             CMP #&00
             BNE LA7D7
             LDA prvOswordBlockCopy + 8
@@ -6618,8 +6619,10 @@ osfileBlock = L02EE
             BCS LA7C0
             SEC
             RTS
+}
 
-.LA7DF      DEY
+{
+.^LA7DF      DEY
             LDA LA7F2,Y
             INY
             CPY #&02
@@ -6630,6 +6633,7 @@ osfileBlock = L02EE
             BCC LA7F1
             LDA #&1D
 .LA7F1      RTS
+}
 
 ;Lookup table for Number of Days in each month
 .LA7F2		EQUB &1F								;January:		31 days
