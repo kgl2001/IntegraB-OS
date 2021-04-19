@@ -1039,24 +1039,25 @@ tmp = &AC
 .L84C8      STA transientDynamicSyntaxState ; stash original V (&40, b6) and C (&80, b7) in transientDynamicSyntaxState
             BPL L84DD ; don't generate an error if C is clear
             LDY #&00
-.L84CE      LDA L84EE,Y
+.copyLoop   LDA errorPrefix,Y
             STA L0100,Y
             INY
             CMP #' '
-            BNE L84CE
+            BNE copyLoop
             TYA
-            JMP L84E9
+            JMP saveA
 			
 .L84DD      BIT transientDynamicSyntaxState
             BVS L84E7
             JSR printSpace								;write ' ' to screen
             JSR printSpace								;write ' ' to screen
 .L84E7      LDA #&02
-.L84E9      ORA transientDynamicSyntaxState
+.saveA      ORA transientDynamicSyntaxState
             STA transientDynamicSyntaxState
             RTS
 
-.L84EE  	  EQUB &00,&DC
+.errorPrefix
+        	  EQUB &00,&DC
 	  EQUS "Syntax: "
 }
 
