@@ -7185,11 +7185,12 @@ osfileBlock = L02EE
 .LAC6C      CLC
             RTS
 }
-			
+
 ;Separators for Time Display? 
 .LAC6E		EQUS " ", "/", ".", "-"
-	
-.LAC72		LDA prvOswordBlockCopy + 2
+
+{
+.^LAC72		LDA prvOswordBlockCopy + 2
             LSR A
             LSR A
             LSR A
@@ -7213,8 +7214,10 @@ osfileBlock = L02EE
             LDA prvOswordBlockCopy + 3
             BNE LACA0
             JMP LAD5A
-			
-.LACA0      LDA prvOswordBlockCopy + 1
+}
+
+{
+.^LACA0      LDA prvOswordBlockCopy + 1
             AND #&0F
             STA L00AB
             CMP #&04
@@ -7226,7 +7229,7 @@ osfileBlock = L02EE
             BCC LACBB
 .LACB6      LDA #&20								;' '
             JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-.LACBB      LDA prvOswordBlockCopy + 3
+.^LACBB      LDA prvOswordBlockCopy + 3
             AND #&07
             STA L00AB
             BEQ LACF8
@@ -7270,6 +7273,7 @@ osfileBlock = L02EE
 .LAD0F      LDA prvOswordBlockCopy + 10								;read month
             JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             JMP LAD2A
+}
 			
 .LAD18      LDX #&03
             CMP #&06
