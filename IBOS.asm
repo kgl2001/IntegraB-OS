@@ -7869,7 +7869,8 @@ osfileBlock = L02EE
 .LB1C7      JMP LB12E
 }
 
-.LB1CA      LDA L00B0
+{
+.^LB1CA      LDA L00B0
             STA prv82+&4A
             LDA L00B1
             STA prv82+&4B
@@ -7879,19 +7880,21 @@ osfileBlock = L02EE
             STA prvOswordBlockCopy + 9
             LDA prv82+&4D
             BNE LB1E9
-.LB1E4      LDX #&35
+.^LB1E4      LDX #&35
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
 .LB1E9      STA prvOswordBlockCopy + 8
             RTS
-			
-.LB1ED      STY prv82+&4E
+}
+
+{
+.^LB1ED      STY prv82+&4E
             LDA #&00
             STA L00AB
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (L00A8),Y
-            CMP #&2B
+            LDA (transientCmdPtr),Y
+            CMP #'+'
             BEQ LB215
-            CMP #&2D
+            CMP #'-'
             BNE LB22D
             INY
             JSR convertIntegerDefaultDecimal
@@ -7991,6 +7994,7 @@ osfileBlock = L02EE
             ADC prv82+&50
             CLC
             RTS
+}
 			
 .LB2B5      JSR convertIntegerDefaultDecimal
             BCS LB2F3
