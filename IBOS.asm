@@ -194,6 +194,7 @@ transientConfigBitMask = &BC
 
 vduBell = 7
 vduTab = 9
+vduCls = 12
 vduCr = 13
 vduSetMode = 22
 
@@ -1898,7 +1899,7 @@ firstDigitCmdPtrY = &BB
             BPL yesLoop
             JMP L89C2								;Initiate Full Reset
 			
-.L8943      LDA #&0C
+.L8943      LDA #vduCls
             JSR OSWRCH								;Clear Screen
             JMP nle									;Enter NLE
 
