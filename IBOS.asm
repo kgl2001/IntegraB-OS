@@ -489,6 +489,7 @@ GUARD	&C000
 .romHeader	JMP language							;00: Language entry point
 		JMP service							;03: Service entry point
 		EQUB &C2								;06: ROM type - Bits 1, 6 & 7 set - Language & Service
+.copyrightOffset
 		EQUB copyright MOD &100						;07: Copyright offset pointer
 		EQUB &FF								;08: Binary version number
 .title
@@ -1206,11 +1207,11 @@ tmp = &AC
             LDA #' '
 .L85DB      JSR OSWRCH
             INX
-            CPX romHeader+7
+            CPX copyrightOffset
             BNE L85D4
             JSR OSNEWL
             PLA
-            JSR ibosRef ; SFTODO: redudant? L83A9 does this itself
+            JSR ibosRef ; SFTODO: redundant? L83A9 does this itself
             JSR L83A9
             JMP L85FB
 			
