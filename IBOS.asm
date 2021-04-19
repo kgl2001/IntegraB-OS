@@ -9549,6 +9549,8 @@ ibosCNPVIndex = 6
 }
 
 {
+ptr = &A8
+
 ; SFTODO: The next two subroutines are probably effectively saying "do nothing
 ; if the shadow state hasn't changed, otherwise do swapShadowIfShxEnabled". I
 ; have given them poor names for now and should revisit this once exatly when
@@ -9602,40 +9604,40 @@ ibosCNPVIndex = 6
             AND #&0F
             STA romselCopy
             STA romsel
-            ; We're going to L00A8 as temporary zp workspace, so stack the existing values.
-            LDA L00A8
+            ; We're going to use ptr as temporary zp workspace, so stack the existing values.
+            LDA ptr
             PHA
-            LDA L00A9
+            LDA ptr + 1
             PHA
             LDA #&00 ; SFTODO: LO(shadowStart)?
-            STA L00A8
+            STA ptr
             LDA #&30 ; SFTODO: HI(shadowStart)?
-            STA L00A9
+            STA ptr + 1
             LDY #&00
-.LBC66      LDA (L00A8),Y
+.LBC66      LDA (ptr),Y
             TAX
             LDA romselCopy
             EOR #romselMemsel ; SFTODO: Why not just AND #romselMemsel? We cleared PRVEN/MEMSEL above and I can't see any other entries to this code (e.g. via LBC66) To be fair this code is fine and maybe it is clearer to think of repeatedly flipping than setting or clearing.
             STA romselCopy
             STA romsel
-            LDA (L00A8),Y
+            LDA (ptr),Y
             PHA
             TXA
-            STA (L00A8),Y
+            STA (ptr),Y
             LDA romselCopy
             EOR #&80 ; SFTODO: Why not just NOT_AND romselMemsel?
             STA romselCopy
             STA romsel
             PLA
-            STA (L00A8),Y
+            STA (ptr),Y
             INY
             BNE LBC66
-            INC L00A9
+            INC ptr + 1
             BPL LBC66
             PLA
-            STA L00A9
+            STA ptr + 1
             PLA
-            STA L00A8
+            STA ptr
             ; Restore the original value of ROMSEL which we stacked above.
             PLA
             STA romselCopy
