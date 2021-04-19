@@ -9487,7 +9487,7 @@ ibosCNPVIndex = 6
             JSR maybeSwapShadow1
             PLA
             PHA
-            ORA #&80								;set Shadow RAM enable bit
+            ORA #shadowModeOffset							;set Shadow RAM enable bit
             LDX #prvSFTODOMODE - prv83
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #modeChangeStateEnteringShadowMode
