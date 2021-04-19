@@ -860,8 +860,9 @@ transientTblCmdLength = L00AC
 .L83F2      JSR ConfRef
 .L83F5      CLC
             BIT rts									;set V
-            LDA transientConfIdx
-.^L83FB     PHA									;save current contents of &AA
+            LDA transientConfIdx							;set A=transientConfIdx ready to fall through into L83FB
+	  FALLTHROUGH_TO L83FB
+.^L83FB     PHA									;save A-on-entry
             LDA transientTblPtr + 1
             PHA									;save current contents of &AB
             LDA transientTblPtr
