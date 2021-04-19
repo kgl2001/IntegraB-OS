@@ -8550,7 +8550,7 @@ osfileBlock = L02EE
             STA oswdbtA								;and restore to &EF
             JSR PrvDis								;switch out private RAM
 
-            JMP osword49b							;restore 8 bytes of data to &A8 from the stack and exit
+            JMP unstackTransientCmdSpaceAndExitSC							;restore 8 bytes of data to &A8 from the stack and exit
 }
 			
 ;OSWORD &49 (73) - Integra-B calls
@@ -8573,7 +8573,8 @@ osfileBlock = L02EE
             STA oswdbtA								;and restore to &EF
             JSR PrvDis								;switch out private RAM
 
-.^osword49b	JSR unstackTransientCmdSpace						;restore 8 bytes of data to &A8 from the stack
+.^unstackTransientCmdSpaceAndExitSC
+	  JSR unstackTransientCmdSpace						;restore 8 bytes of data to &A8 from the stack
             JMP exitSC								;Exit Service Call
 }
 			
