@@ -8579,7 +8579,8 @@ osfileBlock = L02EE
 }
 			
 ;Save OSWORD XY entry table
-.oswordsv	LDA prvOswordBlockOrigAddr
+{
+.^oswordsv	LDA prvOswordBlockOrigAddr
             STA L00AE
             LDA prvOswordBlockOrigAddr + 1
             STA L00AF
@@ -8589,9 +8590,11 @@ osfileBlock = L02EE
             DEY
             BPL oswordsva
             RTS
+}
 			
 ;Restore OSWORD XY entry table
-.oswordrs	LDA prvOswordBlockOrigAddr
+{
+.^oswordrs	LDA prvOswordBlockOrigAddr
             STA L00AE
             LDA prvOswordBlockOrigAddr + 1
             STA L00AF
@@ -8601,6 +8604,7 @@ osfileBlock = L02EE
 			DEY
             BPL oswordrsa
             RTS
+}
 			
 ;Clear RTC buffer
 .LB774      LDY #&0F
