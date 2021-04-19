@@ -8422,9 +8422,9 @@ osfileBlock = L02EE
             RTS										;jump to parameter lookup address
 
 ;OSWORD &0E (14) Read real time clock XY?0 parameter lookup table
-.oswd0elu	EQUW LB81E-1							;XY?0=0: Read time and date in string format
-			EQUW LB835-1							;XY?0=1: Read time and date in binary coded decimal (BCD) format
-			EQUW LB844-1							;XY?0=2: Convert BCD values into string format
+.oswd0elu	  EQUW oswd0eReadString-1							;XY?0=0: Read time and date in string format
+	  EQUW oswd0eReadBCD-1							;XY?0=1: Read time and date in binary coded decimal (BCD) format
+	  EQUW oswd0eConvertBCD-1							;XY?0=2: Convert BCD values into string format
 
 ;OSWORD &49 (73) - Integra-B calls XY?0 parameter lookup code
 .oswd49_1	SEC
@@ -8503,18 +8503,23 @@ osfileBlock = L02EE
 			
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=0: Read time and date in string format
+.oswd0eReadString
+{
 .LB81E      JSR LA769								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
-.LB821      JSR LA5EF								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
+.^LB821     JSR LA5EF								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
             LDA prvOswordBlockOrigAddr							;get OSWORD X register (lookup table LSB)
             STA prvOswordBlockCopy + 4							;save OSWORD X register (lookup table LSB)
-            LDA prvOswordBlockOrigAddr + 1							;get OSWORD Y register (lookup table MSB)
+            LDA prvOswordBlockOrigAddr + 1						;get OSWORD Y register (lookup table MSB)
             STA prvOswordBlockCopy + 5							;save OSWORD Y register (lookup table MSB)
             JSR LAD63
             SEC
             RTS
+}
 			
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=1: Read time and date in binary coded decimal (BCD) format
+.oswd0eReadBCD
+{
 .LB835      JSR LA769								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
             LDY #&06
 .LB83A      JSR LB85A
@@ -8523,9 +8528,12 @@ osfileBlock = L02EE
             BPL LB83A
             SEC
             RTS
+}
 			
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=2: Convert BCD values into string format
+.oswd0eConvertBCD
+{
 .LB844      LDX #&06
 .LB846      LDA prvOswordBlockCopy + 1,X
             JSR LB87A
@@ -8535,6 +8543,7 @@ osfileBlock = L02EE
             LDA #&13
             STA prvOswordBlockCopy + 8
             JMP LB821
+}
 			
 .LB85A      LDA prvOswordBlockCopy + 9,Y
             SEC
