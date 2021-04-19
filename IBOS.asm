@@ -104,6 +104,8 @@ rtcUserBase = &0E
 ; accessing them, which will be handled automatically by
 ; readUserReg/writeUserReg if necessary).
 userRegLangFile = &05 ; b0-3: FILE, b4-7: LANG
+userRegInsertStatusHigh = &06 ; b7=ROM 15 SFTODO? enabled, b0=ROM 8 SFTODO? enabled
+userRegInsertStatusLow = &07 ; b7=ROM 15 SFTODO? enabled, b0=ROM 8 SFTODO? enabled
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7L Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
@@ -2042,8 +2044,8 @@ ptr = &00 ; 2 bytes
             STA romsel
 	  ; SFTODO: I may be misreading this code, but won't it access one double-byte entry *past* intDefaultEnd? Effectively treating PHP:SEI as a pair of bytes &08,&78? (Assuming they fit in the 256 bytes copied to main RAM.) I would have expected to write -2 on the next line not -0. Does user reg &08 get used at all? If it never gets overwritten, we could test this by seeing if it holds &78 after a reset. If I'm right, this will overwrite the 0 we wrote in userRegLoop above.
             LDY #(intDefaultEnd - intDefault) - 0						;Number of entries in lookup table for IntegraB defaults
-.L8A2D	  LDX intDefault-fullResetPrvTemplate+fullResetPrv+&00,Y						;address of relocated intDefault table:		(address for data)
-	  LDA intDefault-fullResetPrvTemplate+fullResetPrv+&01,Y						;address of relocated intDefault table+1:	(data)
+.L8A2D	  LDX intDefault-fullResetPrvTemplate+fullResetPrv+&00,Y				;address of relocated intDefault table:		(address for data)
+	  LDA intDefault-fullResetPrvTemplate+fullResetPrv+&01,Y				;address of relocated intDefault table+1:	(data)
             JSR writeUserReg								;Write IntegraB default value to RTC User RAM
             DEY
             DEY
@@ -5896,11 +5898,11 @@ osfileBlock = L02EE
 
 ;*INSERT Command
 .insert     JSR LA2E4								;Error check input data
-            LDX #&06								;get *INSERT status
+            LDX #userRegInsertStatusHigh						;get *INSERT status
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA L00AE								;update *INSERT status
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
-            LDX #&07
+            LDX #userRegInsertStatusLow
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA L00AF
             JSR LA31A								;Check for Immediate 'I' flag
@@ -6325,10 +6327,10 @@ osfileBlock = L02EE
 			
 .LA5B8      LDA #&00
             STA L03A4
-            LDX #&06
+            LDX #userRegInsertStatusHigh
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA L00AE
-            LDX #&07
+            LDX #userRegInsertStatusLow
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA L00AF
             JSR LA4C5
