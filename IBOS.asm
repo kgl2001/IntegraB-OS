@@ -7101,13 +7101,13 @@ osfileBlock = L02EE
 .^LABAB      LDY #&FF
             SEC
 .LABAE      INY									;starting at 0
-            SBC #&0A
+            SBC #10
             BCS LABAE								;count 10s till negative. Total 10s stored in Y
-            ADC #&0A								;restore last subtract to get positive again. This gets the units
-            ORA #&30								;convert units to character
+            ADC #10									;restore last subtract to get positive again. This gets the units
+            ORA #'0'								;convert units to character
             STA prv82+&4F								;save units to &824F
             TYA									;get 10s
-            ORA #&30								;convert 10s to character
+            ORA #'0'								;convert 10s to character
             STA prv82+&4E								;save 10s to &824F
             RTS
 }
