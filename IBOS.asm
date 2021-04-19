@@ -6883,7 +6883,8 @@ osfileBlock = L02EE
 .LA9E5      RTS
 }
 
-.LA9E6      LDA #&01
+{
+.^LA9E6      LDA #&01
             STA prvOswordBlockCopy + 11
             JSR LA905
             LDY prvOswordBlockCopy + 10
@@ -6899,7 +6900,7 @@ osfileBlock = L02EE
             ADC #&07
             STA prvOswordBlockCopy + 12
             JMP LA9F6
-			
+
 .LAA0C      LDA prvOswordBlockCopy + 4
             STA L00AB
             LDA prvOswordBlockCopy + 5
@@ -6938,6 +6939,7 @@ osfileBlock = L02EE
             STA (L00AB),Y
             INC prvOswordBlockCopy + 11
             JMP LAA21
+}
 
 ;Calendar text (LAA5F)
 .calText		EQUS "today"
