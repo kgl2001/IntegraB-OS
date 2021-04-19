@@ -842,7 +842,7 @@ transientTblCmdLength = L00AC
             LDA L00A8
             CLC
             CLV
-            JSR L83FB
+            JSR ConfRefDynamicSyntaxGenerationForA
             INC L00A8
             CMP L00A9
             BCC L83D9
@@ -860,19 +860,20 @@ transientTblCmdLength = L00AC
 .L83F2      JSR ConfRef
 .L83F5      CLC
             BIT rts									;set V
-            LDA transientConfIdx							;set A=transientConfIdx ready to fall through into L83FB
-	  FALLTHROUGH_TO L83FB
-.^L83FB     PHA									;save A-on-entry
+            LDA transientConfIdx							;set A=transientConfIdx ready to fall through into ConfRefDynamicSyntaxGenerationForA
+	  FALLTHROUGH_TO ConfRefDynamicSyntaxGenerationForA
+.^ConfRefDynamicSyntaxGenerationForA
+.L83FB      PHA									;save A-on-entry
             LDA transientTblPtr + 1
             PHA									;save current contents of &AB
             LDA transientTblPtr
-            PHA									;save current contents of &AA again SFTODO: why? is this something to do with being entered at L83FB?? it seems to make little sense otherwise, as we are going to peek the value pushed at L83FB using LDA L0103,X below anyway.
+            PHA									;save current contents of &AA again SFTODO: why? is this something to do with being entered at ConfRefDynamicSyntaxGenerationForA?? it seems to make little sense otherwise, as we are going to peek the value pushed at ConfRefDynamicSyntaxGenerationForA using LDA L0103,X below anyway.
             STX transientTblPtr
             STY transientTblPtr + 1							;save start of *command pointer lookup table address to &AA / &AB
             JSR startDynamicSyntaxGeneration
 
             TSX									;get stack pointer
-            LDA L0103,X								;get A saved at L83FB from stack
+            LDA L0103,X								;get A saved at ConfRefDynamicSyntaxGenerationForA from stack
             PHA									;and save
             LDY #CmdTblOffset								;offset for address *command lookup table
             LDA (transientTblPtr),Y
@@ -1238,7 +1239,7 @@ tmp = &AC
             LDA L00AA
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
             SEC
-            JMP L83FB
+            JMP ConfRefDynamicSyntaxGenerationForA
 }
 
 ;service entry point
