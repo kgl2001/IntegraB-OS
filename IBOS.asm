@@ -7071,8 +7071,9 @@ osfileBlock = L02EE
 .LABA8      JMP LABE4								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
 }
 
-;Split number in register A into 10s and 1s, characterise and store 1s in &824F and 10s in &824E 
-.LABAB      LDY #&FF							
+;Split number in register A into 10s and 1s, characterise and store 1s in &824F and 10s in &824E
+{
+.^LABAB      LDY #&FF
             SEC
 .LABAE      INY									;starting at 0
             SBC #&0A
@@ -7084,10 +7085,12 @@ osfileBlock = L02EE
             ORA #&30								;convert 10s to character
             STA prv82+&4E								;save 10s to &824F
             RTS
-			
+}
+
+{
 .LABC1		EQUS "am", "pm"
 
-.LABC5      TAX
+.^LABC5      TAX
             CPX #&00								;is it 00 hrs?
             BNE LABCC								;branch if not 00 hrs
             LDX #&18								;else set X=24 (hrs)
@@ -7102,6 +7105,7 @@ osfileBlock = L02EE
             INY									;increase buffer pointer
             LDA LABC1+1,X								;get 'm'
             JMP LABE4								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
+}
 			
 ;&AA stores the buffer address offset
 ;&00A8 stores the address of buffer address
