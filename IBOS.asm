@@ -8500,13 +8500,13 @@ osfileBlock = L02EE
             BNE LB811
             CLC
             RTS
-			
+
+{
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=0: Read time and date in string format
-.oswd0eReadString
-{
+.^oswd0eReadString
 .LB81E      JSR LA769								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
-.^LB821     JSR LA5EF								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
+.LB821     JSR LA5EF								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
             LDA prvOswordBlockOrigAddr							;get OSWORD X register (lookup table LSB)
             STA prvOswordBlockCopy + 4							;save OSWORD X register (lookup table LSB)
             LDA prvOswordBlockOrigAddr + 1						;get OSWORD Y register (lookup table MSB)
@@ -8514,12 +8514,10 @@ osfileBlock = L02EE
             JSR LAD63
             SEC
             RTS
-}
-			
+
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=1: Read time and date in binary coded decimal (BCD) format
-.oswd0eReadBCD
-{
+.^oswd0eReadBCD
 .LB835      JSR LA769								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
             LDY #&06
 .LB83A      JSR LB85A
@@ -8528,12 +8526,10 @@ osfileBlock = L02EE
             BPL LB83A
             SEC
             RTS
-}
-			
+
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=2: Convert BCD values into string format
-.oswd0eConvertBCD
-{
+.^oswd0eConvertBCD
 .LB844      LDX #&06
 .LB846      LDA prvOswordBlockCopy + 1,X
             JSR LB87A
@@ -8543,8 +8539,7 @@ osfileBlock = L02EE
             LDA #&13
             STA prvOswordBlockCopy + 8
             JMP LB821
-}
-			
+
 .LB85A      LDA prvOswordBlockCopy + 9,Y
             SEC
             SBC #&64
@@ -8564,7 +8559,9 @@ osfileBlock = L02EE
             ASL A
             ORA prvOswordBlockCopy + 9,Y
             RTS
-			
+}
+
+; SFTODO: This has only one caller
 .LB87A      PHA
             AND #&0F
             STA prv82+&4E
