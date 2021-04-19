@@ -7366,8 +7366,9 @@ osfileBlock = L02EE
             JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             JMP LADB9
 }
-			
-.LADCB      LDA #&00
+
+{
+.^LADCB      LDA #&00
             STA prvOswordBlockCopy
             SEC
             LDA prvOswordBlockCopy + 8
@@ -7413,6 +7414,7 @@ osfileBlock = L02EE
 .LAE26      LDA #&FF
             STA prvOswordBlockCopy
             RTS
+}
 			
 .LAE2C      LDA #&13
             STA prvOswordBlockCopy + 8
