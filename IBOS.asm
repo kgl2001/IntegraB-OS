@@ -9471,7 +9471,7 @@ ibosCNPVIndex = 6
             STA ramsel							          ;save RAMSEL
             PLA                                                                                     ;get original OSWRCH A=new mode
             PHA                                                                                     ;save it again
-            AND #&7F								;clear Shadow RAM enable bit SFTODO: isn't this redundant? We'd have done "BCS enteringShadowMode" above if top bit was set, wouldn't we?
+            NOT_AND shadowModeOffset							;clear Shadow RAM enable bit SFTODO: isn't this redundant? We'd have done "BCS enteringShadowMode" above if top bit was set, wouldn't we?
             LDX #prvSFTODOMODE - prv83
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #modeChangeStateEnteringNonShadowMode
