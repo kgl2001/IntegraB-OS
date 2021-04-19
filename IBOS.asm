@@ -9233,8 +9233,7 @@ ibosCNPVIndex = 6
 .LBA56      LDX #&00
             LDA #&81
             JMP returnViaParentBYTEV								;jump to code for OSMODE 0-1
-}
-			
+
 ;OSMODE lookup table
 .LBA5D	  EQUB &01								;OSMODE 0 - Not Used
 	  EQUB &01								;OSMODE 1 - Not Used
@@ -9244,6 +9243,7 @@ ibosCNPVIndex = 6
 	  EQUB &F5								;OSMODE 5
 	  EQUB &01								;OSMODE 6 - No such mode
 	  EQUB &01								;OSMODE 7 - No such mode
+}
 
 .jmpParentBYTEV
 {
