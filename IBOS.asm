@@ -6649,7 +6649,8 @@ osfileBlock = L02EE
 	  EQUB 31 ; December
 }
 
-.LA7FE      LDA #&00
+{
+.^LA7FE      LDA #&00
             STA prvOswordBlockCopy + 4
             STA prvOswordBlockCopy + 5
             LDY #&00
@@ -6676,6 +6677,7 @@ osfileBlock = L02EE
             ADC #&00
             STA prvOswordBlockCopy + 5
             RTS
+}
 
 .LA838      CLC
             BCC LA83C
