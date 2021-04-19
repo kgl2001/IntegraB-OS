@@ -1868,15 +1868,17 @@ firstDigitCmdPtrY = &BB
             LDY #&00
             JSR OSBYTE
             LDX #&00								;Write 'System Reset' text to screen
-.L8909      LDA resetPrompt,X
-            BEQ L8914
+.promptLoop LDA resetPrompt,X
+            BEQ promptDone
             JSR OSASCI
             INX
-            BNE L8909
-.L8914      LDA #osbyteKeyboardScanFrom10
+            BNE promptLoop
+.promptDone
+.releaseAtLoop
+	  LDA #osbyteKeyboardScanFrom10
             JSR OSBYTE								;Perform key scan
             CPX #&47								;Is the @ key being pressed?
-            BEQ L8914								;Repeat until no longer being pressed
+            BEQ releaseAtLoop								;Repeat until no longer being pressed
             LDA #osbyteFlushSelectedBuffer
             LDX #bufNumKeyboard
             JSR OSBYTE								;Flush keyboard buffer
@@ -1887,20 +1889,21 @@ firstDigitCmdPtrY = &BB
             JSR OSBYTE								;Was ESC pressed?
             PLA
             AND #&DF								;Capitalise
-            CMP #&59								;Was Y pressed?
+            CMP #'Y'								;Was Y pressed?
             BNE L8943								;No? Clear screen, then NLE
-            LDX #&03
-.L8937      LDA L894B,X								;Yes? Write 'Yes' to screen
+            LDX #(yesStringEnd - yesString) - 1
+.yesLoop    LDA yesString,X								;Yes? Write 'Yes' to screen
             JSR OSWRCH
             DEX
-            BPL L8937								;Loop
+            BPL yesLoop
             JMP L89C2								;Initiate Full Reset
 			
 .L8943      LDA #&0C
             JSR OSWRCH								;Clear Screen
             JMP nle									;Enter NLE
 
-.L894B      EQUS &0D, "seY"
+.yesString  EQUS &0D, "seY"
+.yesStringEnd
 .resetPrompt
 	  EQUS "System Reset", &0D, &0D, "Go (Y/N) ? ", &00
 }
