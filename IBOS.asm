@@ -7316,7 +7316,8 @@ osfileBlock = L02EE
 
 ;read buffer address from &8224 and store at &A8
 ;set buffer pointer to 0
-.LAD63      LDA prvOswordBlockCopy + 4								;get OSWORD X register (lookup table LSB)
+{
+.^LAD63      LDA prvOswordBlockCopy + 4								;get OSWORD X register (lookup table LSB)
             STA L00A8								;and save
             LDA prvOswordBlockCopy + 5								;get OSWORD Y register (lookup table MSB)
             STA L00A9								;and save
@@ -7364,6 +7365,7 @@ osfileBlock = L02EE
             LDA #&40								;'@'
             JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             JMP LADB9
+}
 			
 .LADCB      LDA #&00
             STA prvOswordBlockCopy
