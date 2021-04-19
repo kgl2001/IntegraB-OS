@@ -803,9 +803,10 @@ transientTblCmdLength = L00AC
 ;End of test for valid commands
 }
 			
-			
+
+.DynamicSyntaxGenerationForIbosSubTblA
 {
-.^L83A9     PHA
+.L83A9      PHA
 	  ; SFTODO: The following seems needlessly long-winded; I wonder if this is a legacy of an earlier version of the code where the caller did JSR ibosRef (note that we have some
 	  ; redundant calls to it in IBOS 1.20 before calling this subroutine). As it is, I think we could replace the following with something like:
 	  ; PHA:ASL A:ASL A:TAY:LDA ibosSubTbl,Y:STA transientTblPtr:LDA ibosSubTbl+1,Y:STA transientTblPtr+1:LDA ibosSubTbl+2,Y:STA L00A8:LDA ibosSubTbl+3,Y:STA L00A9
@@ -1217,8 +1218,8 @@ tmp = &AC
             BNE titleVersionLoop
             JSR OSNEWL
             PLA
-            JSR ibosRef ; SFTODO: redundant? L83A9 does this itself
-            JSR L83A9
+            JSR ibosRef ; SFTODO: redundant? DynamicSyntaxGenerationForIbosSubTblA does this itself
+            JSR DynamicSyntaxGenerationForIbosSubTblA
             JMP exitSCaIndirect
 
 .checkArgument
@@ -3462,8 +3463,8 @@ ENDIF
             BCC statusAll
 	  ; This is *CONFIGURE with no option, so show the supported options.
             LDA #&05 ; SFTODO: magic constant
-            JSR ibosRef ; SFTODO: Redundant? L83A9 does JSR ibosRef itself...
-            JSR L83A9 ; SFTODO: I suspect this is a kind of help-display-using-table routine but not looked at it yet SFTODOWIP
+            JSR ibosRef ; SFTODO: Redundant? DynamicSyntaxGenerationForIbosSubTblA does JSR ibosRef itself...
+            JSR DynamicSyntaxGenerationForIbosSubTblA ; SFTODO: I suspect this is a kind of help-display-using-table routine but not looked at it yet SFTODOWIP
             JMP exitSCa								;restore service call parameters and exit
 			
 .optionSpecified
