@@ -9457,7 +9457,7 @@ ibosCNPVIndex = 6
 .selectNewMode
 .LBB90      PLA                                                                                     ;get original OSWRCH A=new mode
             PHA                                                                                     ;save it again
-            CMP #&80
+            CMP #shadowModeOffset
             BCS enteringShadowMode
             LDA osShadowRamFlag
             BEQ enteringShadowMode
