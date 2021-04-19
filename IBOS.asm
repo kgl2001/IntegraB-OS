@@ -8531,7 +8531,8 @@ osfileBlock = L02EE
 }
 			
 ;OSWORD &0E (14) Read real time clock
-.osword0e	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
+{
+.^osword0e	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
             JSR PrvEn								;switch in private RAM
             LDA oswdbtX								;get X register value of most recent OSWORD call
             STA prvOswordBlockOrigAddr							;and save to &8230
@@ -8550,6 +8551,7 @@ osfileBlock = L02EE
             JSR PrvDis								;switch out private RAM
 
             JMP osword49b							;restore 8 bytes of data to &A8 from the stack and exit
+}
 			
 ;OSWORD &49 (73) - Integra-B calls
 .osword49	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
