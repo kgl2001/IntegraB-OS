@@ -816,11 +816,18 @@ transientTblCmdLength = L00AC
 .DynamicSyntaxGenerationForIbosSubTblA
 {
 .L83A9      PHA
-	  ; SFTODO: The following seems needlessly long-winded; I wonder if this is a legacy of an earlier version of the code where the caller did JSR ibosRef (note that we have some
-	  ; redundant calls to it in IBOS 1.20 before calling this subroutine). As it is, I think we could replace the following with something like:
-	  ; PHA:ASL A:ASL A:TAY:LDA ibosSubTbl,Y:STA transientTblPtr:LDA ibosSubTbl+1,Y:STA transientTblPtr+1:LDA ibosSubTbl+2,Y:STA L00A8:LDA ibosSubTbl+3,Y:STA L00A9
-	  ; If we rejigged the order of the data at ibosSubTbl we might be able to use a loop to do those copies. Actually we don't really even need to populate
-	  ; transientTblPtr, do we? We want the values in X and Y really. Anyway, you get the idea.
+	  ; SFTODO: The following seems needlessly long-winded; I wonder if
+	  ; this is a legacy of an earlier version of the code where the
+	  ; caller did JSR ibosRef *or something else* (note that we have some
+	  ; redundant calls to JSR ibosRef in IBOS 1.20 before calling this
+	  ; subroutine). As it is, I think we could replace the following with
+	  ; something like: PHA:ASL A:ASL A:TAY:LDA ibosSubTbl,Y:STA
+	  ; transientTblPtr:LDA ibosSubTbl+1,Y:STA transientTblPtr+1:LDA
+	  ; ibosSubTbl+2,Y:STA L00A8:LDA ibosSubTbl+3,Y:STA L00A9 If we
+	  ; rejigged the order of the data at ibosSubTbl we might be able to
+	  ; use a loop to do those copies. Actually we don't really even need
+	  ; to populate transientTblPtr, do we? We want the values in X and Y
+	  ; really. Anyway, you get the idea.
             JSR ibosRef
             STX transientTblPtr
             STY transientTblPtr + 1
@@ -831,7 +838,8 @@ transientTblCmdLength = L00AC
             LDA (transientTblPtr),Y
             STA transientTblPtr + 1
             STX transientTblPtr
-	  ; SFTODO: Multiply A-on-entry by 4 and copy the the four bytes starting at ibosSubTbl+4*A-on-entry into transientTblPtr and L00A8/A9
+	  ; Multiply A-on-entry by 4 and copy the the four bytes starting at
+	  ; ibosSubTbl+4*A-on-entry into transientTblPtr and L00A8/A9
             PLA
             PHA
             ASL A
@@ -879,7 +887,7 @@ transientTblCmdLength = L00AC
             LDA transientConfIdx							;set A=transientConfIdx ready to fall through into DynamicSyntaxGenerationForAUsingYX
 	  FALLTHROUGH_TO DynamicSyntaxGenerationForAUsingYX
 
-	  ; SFTODO: DESCRIBE BEHAVIOUR
+; Generate a syntax message using entry A of the table (e.g. ConfTbl) pointed to by YX.
 ;
 ; On entry:
 ;     C set => build a syntax error on the stack and generate it when a carriage return is output
@@ -1035,8 +1043,6 @@ tmp = &AC
             RTS
 }
 			
-; If entered with C set this starts to dynamically construct a "Syntax: ..." error on the stack
-; If entered with C clear this outputs a "  " prefix iff V is clear on entry and otherwise (SFTODO:being deliberately vague) prepares for generating the syntax message
 ; SFTODO: This has only one caller
 .startDynamicSyntaxGeneration ; SFTODO: rename?
 {
