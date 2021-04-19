@@ -7274,8 +7274,9 @@ osfileBlock = L02EE
             JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             JMP LAD2A
 }
-			
-.LAD18      LDX #&03
+
+{
+.^LAD18      LDX #&03
             CMP #&06
             BCC LAD20
             LDX #&00
@@ -7284,7 +7285,7 @@ osfileBlock = L02EE
             LDA prvOswordBlockCopy + 10								;Get Month
             SEC									;Carry Set=Month, Clear=Day of Week
             JSR LAAF5								;Save Month text to buffer XY?xxx
-.LAD2A      LDA prvOswordBlockCopy + 3
+.^LAD2A      LDA prvOswordBlockCopy + 3
             AND #&C0
             BEQ LAD5A
             LDA prvOswordBlockCopy + 1
@@ -7292,7 +7293,7 @@ osfileBlock = L02EE
             TAX
             LDA LAC6E,X								;get character from look up table
             JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-.LAD3D      LDA prvOswordBlockCopy + 3
+.^LAD3D      LDA prvOswordBlockCopy + 3
             AND #&C0
             BEQ LAD5A
             CMP #&80
@@ -7305,11 +7306,12 @@ osfileBlock = L02EE
             LDA prvOswordBlockCopy + 9								;read year
             JMP LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 			
-.LAD5A      RTS
+.^LAD5A      RTS
 
 .LAD5B      LDA #&27								;'''
             JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             JMP LAD52
+}
 			
 
 ;read buffer address from &8224 and store at &A8
