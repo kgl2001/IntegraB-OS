@@ -8554,7 +8554,8 @@ osfileBlock = L02EE
 }
 			
 ;OSWORD &49 (73) - Integra-B calls
-.osword49	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
+{
+.^osword49	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
             JSR PrvEn								;switch in private RAM
             LDA oswdbtX								;get X register value of most recent OSWORD call
             STA prvOswordBlockOrigAddr							;and save to &8230
@@ -8572,8 +8573,9 @@ osfileBlock = L02EE
             STA oswdbtA								;and restore to &EF
             JSR PrvDis								;switch out private RAM
 
-.osword49b	JSR unstackTransientCmdSpace						;restore 8 bytes of data to &A8 from the stack
+.^osword49b	JSR unstackTransientCmdSpace						;restore 8 bytes of data to &A8 from the stack
             JMP exitSC								;Exit Service Call
+}
 			
 ;Save OSWORD XY entry table
 .oswordsv	LDA prvOswordBlockOrigAddr
