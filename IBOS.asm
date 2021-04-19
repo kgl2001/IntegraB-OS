@@ -2129,7 +2129,7 @@ inputBuf = &700
 ;Test for OSBYTE &44 - Test sideways RAM presence
 .osbyte44	  CMP #&44								;OSBYTE &44 (68) - Test sideways RAM presence
             BNE osbyte45
-            JMP L9928
+            JMP osbyte44Internal
 			
 ;Test for OSBYTE &45 (69) - Test PSEUDO/Absolute usage
 .osbyte45	  CMP #&45								;OSBYTE &45 (69) - Test PSEUDO/Absolute usage
@@ -4133,6 +4133,9 @@ ENDIF
 
 .L991E		EQUS " B-ARGETNI"							;INTEGRA-B Reversed
 
+; SFTODO: There are a few cases where we JMP to osbyteXXInternal, if we rearranged the code a little (could always use macros to maintain readability, if that's a factor) we could probably save some JMPs
+.osbyte44Internal
+{
 .L9928	  JSR PrvEn								;switch in private RAM
             PHP
             SEI
@@ -4158,6 +4161,7 @@ ENDIF
             STY prv82+&52
             BPL L9933
             JMP L9983
+}
 
 .osbyte45Internal
 {
