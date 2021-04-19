@@ -2134,7 +2134,7 @@ inputBuf = &700
 ;Test for OSBYTE &45 (69) - Test PSEUDO/Absolute usage
 .osbyte45	  CMP #&45								;OSBYTE &45 (69) - Test PSEUDO/Absolute usage
             BNE osbyte49
-            JMP L995C
+            JMP osbyte45Internal
 			
 ;Test for OSBYTE &49 (73) - Integra-B calls
 .osbyte49	  CMP #&49								;OSBYTE &49 (73) - Integra-B calls
@@ -4156,7 +4156,9 @@ ENDIF
             STY prv82+&52
             BPL L9933
             JMP L9983
-			
+
+.osbyte45Internal
+{
 .L995C      JSR PrvEn								;switch in private RAM
             PHP
             SEI
@@ -4176,8 +4178,9 @@ ENDIF
             DEY
             STY prv82+&52
             BPL L9967
-.L9983      PLP
+.^L9983     PLP
             JMP PrvDisexitSc
+}
 			
 ;*SRWIPE Command
 .srwipe
