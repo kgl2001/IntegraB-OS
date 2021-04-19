@@ -159,6 +159,7 @@ oswdbtY = &F1
 
 ; SFTODO: These may need renaming, or they may not be as general as I am assuming
 CmdTblOffset = 6
+CmdTblParOffset = 8
 CmdTblPtrOffset = 10
 
 ; This is a byte of unused CFS/RFS workspace which IBOS repurposes to track
@@ -507,6 +508,7 @@ GUARD	&C000
 		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used SFTODO: I'm not sure this is entirely true - the code at searchCmdTbl seems to use the 0 byte at the end of CmdTbl to know when to stop, and if I type "*SRWE" on an emulated IBOS 1.20 machine I get a "Bad id" error, suggesting the command is recognised (if not necessarily useful). It is possible some *other* code does use this, I'm *guessing* the *HELP display code uses this in order to keep SRWE and SRWP "secret" (but I haven't looked yet).
 		ASSERT P% = CmdRef + CmdTblOffset
 		EQUW CmdTbl							;Start of * command table
+		ASSERT P% = CmdRef + CmdTblParOffset
 		EQUW CmdParTbl							;Start of * command parameter table
 		ASSERT P% = CmdRef + CmdTblPtrOffset
 		EQUW CmdExTbl							;Start of * command execute address table
@@ -900,17 +902,16 @@ transientTblCmdLength = L00AC
             TAY									;save start of *command lookup table address to X & Y
             PLA									;recover stack value
             JSR emitEntryAFromTableYX								;write *command to screen???
-            LDA #&09
+            LDA #vduTab
             JSR emitDynamicSyntaxCharacter
 
             BIT transientDynamicSyntaxState						
-            BVS dontSFTODO
+            BVS dontEmitParameters
 
-	  ; SFTODO: Why not move the next two instructions just before emitEntryAFromTableYX and then we don't need to PHA/PLA?
             TSX									;get stack pointer
             LDA L0103,X								;read A-on-entry from stack
             PHA									;and save
-            LDY #&08								;offset for address *command parameters lookup table
+            LDY #CmdTblParOffset							;offset for address *command parameters lookup table
             LDA (transientTblPtr),Y
             TAX
             INY
@@ -921,7 +922,7 @@ transientTblCmdLength = L00AC
             LDA #vduCr
             JSR emitDynamicSyntaxCharacter
 
-.dontSFTODO
+.dontEmitParameters
             PLA
             STA L00AA
             PLA
