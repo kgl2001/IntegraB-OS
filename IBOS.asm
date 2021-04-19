@@ -1018,6 +1018,7 @@ tmp = &AC
 			
             LDA (ptr),Y								;get length of string plus 1
             STA tmp
+	  ; SFTODO: Could we replace next three instructions with JMP doneChar? Or even BNE doneChar, since length of string plus 1 can't be 0?
             CMP #&01
             BEQ charLoopDone ; SFTODO: can this happen? do we have "zero length strings"?
             INY
