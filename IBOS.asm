@@ -6558,6 +6558,7 @@ osfileBlock = L02EE
             RTS
 }
 
+{
 ;Initialisation lookup table for RTC registers &00 to &09
 .LA786		EQUB &00								;Register &00 - Seconds:	 	00
 		EQUB &00								;Register &01 - Sec Alarm:	 	00
@@ -6572,7 +6573,7 @@ osfileBlock = L02EE
 		EQUB &00								;Register &09 - Year:		00
 
 ;Stop Clock and Initialise RTC registers &00 to &0B
-.LA790      LDX #&0B								;Select 'Register B' register on RTC: Register &0B
+.^LA790      LDX #&0B								;Select 'Register B' register on RTC: Register &0B
             LDA #&86								;Stop Clock, Set Binary mode, Set 24hr mode
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             DEX									;Select 'Register A' register on RTC: Register &0A
@@ -6584,6 +6585,7 @@ osfileBlock = L02EE
             DEX									;Next register
             BPL LA79E								;Until <0
             RTS									;Exit
+}
 
 .LA7A8      BCS LA7C2
             LDX #&33
