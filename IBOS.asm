@@ -1070,10 +1070,14 @@ tmp = &AC
 
 .emitDynamicSyntaxCharacter
 {
+; This is the physical column on screen for *HELP output, which is indented by
+; two spaces; for non-indented output we start counting at 2 anyway, so we get
+; the same gap but the physical column for the tab will be tabColumn - 2.
 tabColumn = 12
 
 .L84F8      BIT transientDynamicSyntaxState
-            BPL SFTODOCASEB
+            BPL emitToScreen
+	  ; We're emitting to an error message we're building up on the stack.
             PHA
             TXA
             PHA
@@ -1086,35 +1090,36 @@ tabColumn = 12
             PLA
             STA L0100,X
             CMP #vduCr
-            BNE L8519
+            BNE notCr
             LDA #&00
             STA L0100,X
             JMP L0100
 			
-.L8519      INC transientDynamicSyntaxState
+.notCr      INC transientDynamicSyntaxState
             PLA
             TAX
             PLA
             RTS
 			
-.L851F      INC transientDynamicSyntaxState
+.notTab     INC transientDynamicSyntaxState
             JMP OSASCI
 			
-.SFTODOCASEB
+.emitToScreen
             CMP #vduTab
-            BNE L851F
+            BNE notTab
             TXA
             PHA
             LDA transientDynamicSyntaxState
             AND #transientDynamicSyntaxStateCountMask
             TAX
             LDA #' '
-.L8531      CPX #tabColumn
-            BCS L853B
+.tabLoop    CPX #tabColumn
+            BCS atOrPastTabColumn
             JSR OSWRCH
             INX
-            BNE L8531
-.L853B      PLA
+            BNE tabLoop
+.atOrPastTabColumn
+            PLA
             TAX
             RTS
 }
