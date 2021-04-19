@@ -804,6 +804,7 @@ transientTblCmdLength = L00AC
 			
 {
 .^L83A9     PHA
+	  ; SFTODO: The following sequence of instructions looks in practice like a long-winded way of setting transientTblPtr to point to CmdRef; can we simply do that directly?
             JSR ibosRef
             STX transientTblPtr
             STY transientTblPtr + 1
@@ -814,6 +815,7 @@ transientTblCmdLength = L00AC
             LDA (transientTblPtr),Y
             STA transientTblPtr + 1
             STX transientTblPtr
+	  ; SFTODO: End of sequence referred to above
             PLA
             PHA
             ASL A
