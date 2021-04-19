@@ -806,7 +806,11 @@ transientTblCmdLength = L00AC
 			
 {
 .^L83A9     PHA
-	  ; SFTODO: The following sequence of instructions looks in practice like a long-winded way of setting transientTblPtr to point to CmdRef; can we simply do that directly?
+	  ; SFTODO: The following seems needlessly long-winded; I wonder if this is a legacy of an earlier version of the code where the caller did JSR ibosRef (note that we have some
+	  ; redundant calls to it in IBOS 1.20 before calling this subroutine). As it is, I think we could replace the following with something like:
+	  ; PHA:ASL A:ASL A:TAY:LDA ibosSubTbl,Y:STA transientTblPtr:LDA ibosSubTbl+1,Y:STA transientTblPtr+1:LDA ibosSubTbl+2,Y:STA L00A8:LDA ibosSubTbl+3,Y:STA L00A9
+	  ; If we rejigged the order of the data at ibosSubTbl we might be able to use a loop to do those copies. Actually we don't really even need to populate
+	  ; transientTblPtr, do we? We want the values in X and Y really. Anyway, you get the idea.
             JSR ibosRef
             STX transientTblPtr
             STY transientTblPtr + 1
@@ -817,8 +821,7 @@ transientTblCmdLength = L00AC
             LDA (transientTblPtr),Y
             STA transientTblPtr + 1
             STX transientTblPtr
-	  ; SFTODO: End of sequence referred to above
-	  ; SFTODO: Multiply A-on-entry by 4 and copy the the four bytes starting at CmdRef+4*A-on-entry into transientTblPtr and L00A8/A9 - maybe I'm missing something, this seems really odd
+	  ; SFTODO: Multiply A-on-entry by 4 and copy the the four bytes starting at ibosSubTbl+4*A-on-entry into transientTblPtr and L00A8/A9
             PLA
             PHA
             ASL A
@@ -839,7 +842,6 @@ transientTblCmdLength = L00AC
             STA transientTblPtr + 1
             PLA
             STA transientTblPtr
-	  ; SFTODO: I am *guessing* the table we're looking at here has entries of the form 2-byte-string-table, 1-byte-start-index-to-show-from-that-table, 1-byte-end-index-to-show
 .L83D9      LDX transientTblPtr
             LDY transientTblPtr + 1
             LDA L00A8
