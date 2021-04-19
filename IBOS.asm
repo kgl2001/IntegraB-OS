@@ -188,6 +188,7 @@ transientConfigPrefixSFTODO = &BD; SFTODO: I suspect these uses aren't the same 
 transientConfigBitMask = &BC
 
 vduBell = 7
+vduTab = 9
 vduCr = 13
 vduSetMode = 22
 
@@ -1070,14 +1071,14 @@ tmp = &AC
             TXA
             PHA
             TSX
-            LDA L0102,X								;get A on entry
+            LDA L0102,X								;get A on entry, i.e. character to emit
             PHA
             LDA transientDynamicSyntaxState
             AND #transientDynamicSyntaxStateCountMask
             TAX
             PLA
             STA L0100,X
-            CMP #&0D ; SFTODO: vduCr?
+            CMP #vduCr
             BNE L8519
             LDA #&00
             STA L0100,X
@@ -1093,7 +1094,7 @@ tmp = &AC
             JMP OSASCI
 			
 .SFTODOCASEB
-            CMP #&09
+            CMP #vduTab
             BNE L851F
             TXA
             PHA
