@@ -8559,7 +8559,6 @@ osfileBlock = L02EE
             ASL A
             ORA prvOswordBlockCopy + 9,Y
             RTS
-}
 
 ; SFTODO: This has only one caller
 .LB87A      PHA
@@ -8575,6 +8574,7 @@ osfileBlock = L02EE
             ADC prv82+&4F
             ADC prv82+&4E
             RTS
+}
 
 ;XY?0=&61
 ;OSWORD &49 (73) - Integra-B calls
