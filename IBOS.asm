@@ -2197,7 +2197,8 @@ inputBuf = &700
             RTS
 
 ;Unrecognised OSWORD call - Service call &08
-.service08  LDA oswdbtA								;read OSWORD call number
+{
+.^service08 LDA oswdbtA								;read OSWORD call number
 
 	  CMP #&0E								;OSWORD &0E (14) Read real time clock
 	  BNE service08a
@@ -2228,6 +2229,7 @@ inputBuf = &700
             JMP osword49
 			
 .service08d JMP exitSCa								;restore service call parameters and exit
+}
 
 ;*BOOT Command
 ;The *BOOT parameters are stored in Private RAM at &81xx
