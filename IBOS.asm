@@ -8634,7 +8634,8 @@ osfileBlock = L02EE
 }
 
 ;OSWORD &49 (73) - Integra-B calls XY?0 parameter lookup code
-.oswd49_1	SEC
+{
+.^oswd49_1	SEC
             LDA prvOswordBlockCopy							;get XY?0 value
             SBC #&60								;XY?0 is in range &60-&6F. Convert to &00-&0F for lookup purposes
             ASL A									;x2 (each entry in lookup table is 2 bytes)
@@ -8658,6 +8659,7 @@ osfileBlock = L02EE
 		EQUW LB8B1-1							;XY?0=&69: Function TBC
 		EQUW LB8FC-1							;XY?0=&6A: Function TBC
 		EQUW LB901-1							;XY?0=&6B: Function TBC
+}
 			
 .LB7BC	  BIT prvOswordBlockCopy + 7
             BMI LB7F9
