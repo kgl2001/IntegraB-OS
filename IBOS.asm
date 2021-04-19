@@ -816,6 +816,7 @@ transientTblCmdLength = L00AC
             STA transientTblPtr + 1
             STX transientTblPtr
 	  ; SFTODO: End of sequence referred to above
+	  ; SFTODO: Multiply A-on-entry by 4 and copy the the four bytes starting at CmdRef+4*A-on-entry into transientTblPtr and L00A8/A9 - maybe I'm missing something, this seems really odd
             PLA
             PHA
             ASL A
