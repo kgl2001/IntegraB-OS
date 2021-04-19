@@ -469,13 +469,17 @@ opcodeStaAbs = &8D
 ; intuitive personally.
 crtcHorzTotal = SHEILA + &00
 crtcHorzDisplayed = SHEILA + &01
+systemViaBase = &40
+viaRegisterInterruptEnable = 14
 
 romselPrvEn  = &40
 romselMemsel = &80
 ramselPrvs8  = &10
+ramselPrvs4  = &20
 ramselPrvs1  = &40
 ramselShen   = &80
 ramselPrvs81 = ramselPrvs8 OR ramselPrvs1
+ramselPrvs841 = ramselPrvs81 OR ramselPrvs4
 
 ; bits in the 6502 flags registers (as stacked via PHP)
 flagC = &01
@@ -2007,23 +2011,24 @@ fullResetPrv = &2800
 ;This code is relocated from IBOS ROM to RAM starting at &2800
 .fullResetPrvTemplate
 ptr = &00 ; 2 bytes
-.L89E9      LDA romselCopy									;Get current SWR bank number.
+.L89E9      LDA romselCopy								;Get current SWR bank number.
             PHA									;Save it
             LDX #&0F								;Start at SWR bank 15
-.L89EE      STX romselCopy									;Select memory bank
+.zeroSWRLoop
+	  STX romselCopy								;Select memory bank
             STX romsel
             LDA #&80								;Start at address &8000
-	  JSR zeroPageAUpToC0-fullResetPrvTemplate+fullResetPrv							;Fill bank with &00 (will try both RAM & ROM)
+	  JSR zeroPageAUpToC0-fullResetPrvTemplate+fullResetPrv				;Fill bank with &00 (will try both RAM & ROM)
             DEX
-            BPL L89EE								;Until all RAM banks are wiped.
-            LDA #&F0								;Set Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
+            BPL zeroSWRLoop								;Until all RAM banks are wiped.
+            LDA #ramselShen OR ramselPrvs841						;Set Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
             STA ramselCopy
             STA ramsel
-            LDA #&40								;Set Private RAM Enable (PRVEN) & Unset Shadow / Main toggle (MEMSEL)
+            LDA #romselPrvEn								;Set Private RAM Enable (PRVEN) & Unset Shadow / Main toggle (MEMSEL)
             STA romselCopy
             STA romsel
             LDA #&30								;Start at shadow address &3000
-	  JSR zeroPageAUpToC0-fullResetPrvTemplate+fullResetPrv							;Fill shadow and private memory with &00
+	  JSR zeroPageAUpToC0-fullResetPrvTemplate+fullResetPrv				;Fill shadow and private memory with &00
             LDA #&FF								;Write &FF to PRVS1 &830C..&830F
             STA prv83+&0C
             STA prv83+&0D
@@ -2043,8 +2048,10 @@ ptr = &00 ; 2 bytes
             DEY
             DEY
             BPL L8A2D								;Repeat for all 16 values
+	  ; SFTODO: We could just do LDA #&7F:STA systemViaBase + viaRegisterInterruptEnable - we know we're running on the host...
+	  ; Simulate a power-on reset
             LDA #osbyteWriteSheila							;Write to SHEILA (&FExx)
-            LDX #&4E								;Write to SHEILA+&4E (&FE4E)
+            LDX #systemViaBase + viaRegisterInterruptEnable					;Write to SHEILA+&4E (&FE4E)
             LDY #&7F								;Data to be written
             JSR OSBYTE								;Write &7F to SHEILA+&4E (System VIA)
             JMP (RESET)								;Carry out Reset
