@@ -527,7 +527,11 @@ GUARD	&C000
 		EQUS "IBOS", 0							;09: Title string
 		EQUS "1.20"							;xx: Version string
 .copyright	EQUS 0, "(C)"							;xx: Copyright symbol
-		EQUS " Computech 1989", 0						;xx: Copyright message
+		EQUS " "
+.computechStart
+		EQUS "Computech"
+.computechEnd
+		EQUS " 1989", 0						;xx: Copyright message
 
 ;Store *Command reference table pointer address in X & Y
 .CmdRef		LDX #CmdRef MOD &100
@@ -4210,12 +4214,13 @@ ENDIF
             LDX #&00
             LDY #&00
             JSR OSBYTE
-            LDX #&17								;Start at ROM header offset &17
-.L98BF      LDA prv80+&00,X								;Read 'Computech ' from ROM header
+            LDX #computechStart - romHeader						;Start at ROM header offset &17
+.bannerLoop1
+	  LDA romHeader,X								;Read 'Computech ' from ROM header
             JSR OSWRCH								;Write to screen
             INX									;Next Character
-            CPX #&21								;Check for final character
-            BNE L98BF								;Loop
+            CPX #(computechEnd + 1) - romHeader						;Check for final character
+            BNE bannerLoop1								;Loop
             LDX #&09								;Lookup table offset
 .L98CC      LDA reverseBanner,X							;Read INTEGRA-B Text from lookup table
             JSR OSWRCH								;Write to screen
