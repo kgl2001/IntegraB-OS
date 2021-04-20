@@ -4440,18 +4440,19 @@ ramPresenceFlags = &A8
 	  JSR parseRomBankListChecked2
             JSR PrvEn								;switch in private RAM
             LDX #&00
-.L998F      ROR transientRomBankMask + 1
+.bankLoop   ROR transientRomBankMask + 1
             ROR transientRomBankMask
-            BCC L9998
-            JSR L99A0
-.L9998      INX
+            BCC skipBank
+            JSR wipeBankAIfRam
+.skipBank   INX
             CPX #maxBank + 1
-            BNE L998F
+            BNE bankLoop
             JMP PrvDisexitSc
 
 ; SFTODO: This has only one caller, the code immediately above - could it just be inlined?
-.L99A0      JSR testRamUsingVariableMainRamSubroutine
-            BNE L99BF
+.wipeBankAIfRam
+            JSR testRamUsingVariableMainRamSubroutine
+            BNE rts
             PHA
             LDX #lo(wipeRamTemplate)							;LSB of relocatable Wipe RAM code
             LDY #hi(wipeRamTemplate)							;MSB of relocatable Wipe RAM code
@@ -4465,7 +4466,7 @@ ramPresenceFlags = &A8
             LDA #&00
             STA romTypeTable,X							;clear ROM Type byte
             STA prvRomTypeTableCopy,X							;clear Private RAM copy of ROM Type byte
-.L99BF      RTS
+.rts        RTS
 }
 
 ; SFTODO: Dead data
