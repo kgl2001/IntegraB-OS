@@ -5972,7 +5972,8 @@ osfileBlock = L02EE
 }
 
 ;*INSERT Command
-.insert     JSR LA2E4								;Error check input data
+{
+.^insert     JSR LA2E4								;Error check input data
             LDX #userRegBankInsertStatus						;get *INSERT status
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA L00AE								;update *INSERT status
@@ -5987,14 +5988,14 @@ osfileBlock = L02EE
 .LA317      JMP exitSC								;Exit Service Call
 
 .LA31A      JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
-            JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (L00A8),Y
+            JSR findNextCharAfterSpace							;find next character. offset stored in Y
+            LDA (transientCmdPtr),Y
             AND #&DF								;Capitalise
             CMP #&49								;and check for 'I' (Immediate)
             RTS
 
 ;*UNPLUG Command
-.unplug	  JSR LA2E4								;Error check input data
+.^unplug	  JSR LA2E4								;Error check input data
             JSR invertTransientRomBankMask								;Invert all bits in &AE and &AF
             LDX #&06								;INSERT status for ROMS &0F to &08
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
@@ -6008,6 +6009,7 @@ osfileBlock = L02EE
             INY
             JSR LA4C5
 .LA347      JMP exitSC								;Exit Service Call
+}
 
 .LA34A	  EQUB &00								;ROM at Banks 0 & 1
 	  EQUB &00								;ROM at Banks 2 & 3
