@@ -6375,7 +6375,8 @@ osfileBlock = L02EE
 ;For OSMODEs, 0, 1, 3, 4 & 5: W..Z = 4..7
 ;For OSMODE 2: W..Z = 12..15
 
-.LA4E3      JSR PrvEn								;switch in private RAM
+{
+.^LA4E3      JSR PrvEn								;switch in private RAM
             LDA prvOsMode								;read OSMODE
             LDX #&03								;a total of 4 pseudo banks
             LDY #&07								;for osmodes other than 2, absolute banks are 4..7
@@ -6388,6 +6389,7 @@ osfileBlock = L02EE
             DEX									;reduce pseudo bank number by 1
             BPL LA4F3								;until all 4 pseudo banks have been assigned an appropriate absolute bank
             JMP PrvDis								;switch out private RAM
+}
 
 ; SFTODO: This little fragment of code is only called once via JMP, can't it just be moved to avoid the JMP (and improve readability)?
 .LA4FE      JSR createRomBankMask
