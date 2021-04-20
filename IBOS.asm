@@ -114,6 +114,7 @@ userRegPrinterIgnore = &0E ; 0-7: Printer ignore
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7L Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
+userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
 
@@ -2085,19 +2086,19 @@ ptr = &00 ; 2 bytes
 ;For data at addresses &32 and above, data is stored in private RAM at location &8300 + Addr OR &80.
 .intDefault	EQUB userRegInsertStatusHigh,&FF						;*INSERT status for ROMS &0F to &08. Default: &FF (All 8 ROMS enabled)
 		EQUB userRegInsertStatusLow,&FF						;*INSERT status for ROMS &07 to &00. Default: &FF (All 8 ROMS enabled)
-;		EQUB &0A,&E7								;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift. Default was &17. Changed to &E7 in IBOS 1.21
-;		EQUB &0B,&20								;0-2: FDRIVE / 3-5: CAPS. Default was &23. Changed to &20 in IBOS 1.21
+;		EQUB userRegModeShadowTV,&E7							;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift. Default was &17. Changed to &E7 in IBOS 1.21
+;		EQUB userRegModeShadowTV,&20							;0-2: FDRIVE / 3-5: CAPS. Default was &23. Changed to &20 in IBOS 1.21
 		EQUB userRegModeShadowTV,&17							;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift.
 		EQUB userRegFdriveCaps,&23							;0-2: FDRIVE / 3-5: CAPS.
 		EQUB userRegKeyboardDelay,&19							;0-7: Keyboard Delay
 		EQUB userRegKeyboardRepeat,&05						;0-7: Keyboard Repeat
 		EQUB userRegPrinterIgnore,&0A							;0-7: Printer Ignore
 		EQUB userRegTubeBaudPrinter,&2D						;0: Tube / 2-4: BAUD / 5-7: Printer
-;		EQUB &10,&A1								;0: File system / 4: Boot / 5-7: Data. Default was &A0. Changed to &A1 in IBOS 1.21
+;		EQUB userRegDiscNetBootData,&A1						;0: File system / 4: Boot / 5-7: Data. Default was &A0. Changed to &A1 in IBOS 1.21
 		EQUB userRegDiscNetBootData,&A0						;0: File system / 4: Boot / 5-7: Data.
 		EQUB userRegOsModeShx,&04							;0-2: OSMODE / 3: SHX
-;		EQUB &35,&14								;Century - Default was &13 (1900). Changed to &14 (2000) in IBOS 1.21
-		EQUB &35,&13								;Century - Default is &13 (1900)
+;		EQUB userRegCentury,&14							;Century - Default was &13 (1900). Changed to &14 (2000) in IBOS 1.21
+		EQUB userRegCentury,&13							;Century - Default is &13 (1900)
 		EQUB &38,&FF
 		EQUB &39,&FF
 		EQUB userRegPrvPrintBufferStart,&90
@@ -6498,7 +6499,7 @@ osfileBlock = L02EE
             INX									;Select 'Year' register on RTC: Register &09
             LDA prvOswordBlockCopy + 9								;Get 'Year' from &8229
             JSR wrRTCRAM								;Write data from A to RTC memory location X
-            LDX #&35
+            LDX #userRegCentury
             LDA prvOswordBlockCopy + 8
             JMP writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
 }
@@ -7911,7 +7912,7 @@ osfileBlock = L02EE
             STA prvOswordBlockCopy + 9
             LDA prv82+&4D
             BNE LB1E9
-.^LB1E4      LDX #&35
+.^LB1E4      LDX #userRegCentury
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
 .LB1E9      STA prvOswordBlockCopy + 8
             RTS
