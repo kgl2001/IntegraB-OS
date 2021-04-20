@@ -2099,12 +2099,12 @@ ptr = &00 ; 2 bytes
 ;		EQUB userRegDiscNetBootData,&A1						;0: File system / 4: Boot / 5-7: Data. Default was &A0. Changed to &A1 in IBOS 1.21
 		EQUB userRegDiscNetBootData,&A0						;0: File system / 4: Boot / 5-7: Data.
 		EQUB userRegOsModeShx,&04							;0-2: OSMODE / 3: SHX
-;		EQUB userRegCentury,&14							;Century - Default was &13 (1900). Changed to &14 (2000) in IBOS 1.21
-		EQUB userRegCentury,&13							;Century - Default is &13 (1900)
+;		EQUB userRegCentury,20 							;Century - Default was &13 (1900). Changed to &14 (2000) in IBOS 1.21
+		EQUB userRegCentury,19 							;Century - Default is &13 (1900)
 		EQUB userRegBankWriteProtectStatus,&FF
 		EQUB userRegBankWriteProtectStatus + 1,&FF
 		EQUB userRegPrvPrintBufferStart,&90
-		EQUB userRegRamPresenceFlags,&0F								;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks). SFTODO: Where is this accessed?
+		EQUB userRegRamPresenceFlags,&0F						;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks).
 .intDefaultEnd
 	  ASSERT (P% + 2) - fullResetPrvTemplate <= 256 ; SFTODO: +2 because as per above SFTODO I think we actually use an extra entry off the end of this table
 }
