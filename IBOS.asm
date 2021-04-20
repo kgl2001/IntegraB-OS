@@ -4054,7 +4054,7 @@ tmp = &A8
             AND #&07								;mask OSMODE value
             LDX #prvOsMode - prv83							;select OSMODE register
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-            JSR LA4E3								;Assign default pseudo RAM banks to absolute RAM banks
+            JSR assignDefaultPseudoRamBanks						;Assign default pseudo RAM banks to absolute RAM banks
             PLA
             AND #&08								;mask off SHX bit
             BEQ shxInA
@@ -6374,20 +6374,22 @@ osfileBlock = L02EE
 ;Assign default pseudo RAM banks to absolute RAM banks
 ;For OSMODEs, 0, 1, 3, 4 & 5: W..Z = 4..7
 ;For OSMODE 2: W..Z = 12..15
-
+; SFTODO: This has only one caller
+.assignDefaultPseudoRamBanks
 {
-.^LA4E3      JSR PrvEn								;switch in private RAM
+.LA4E3     JSR PrvEn								;switch in private RAM
             LDA prvOsMode								;read OSMODE
             LDX #&03								;a total of 4 pseudo banks
             LDY #&07								;for osmodes other than 2, absolute banks are 4..7
             CMP #&02								;check for osmode 2
-            BNE LA4F3
+            BNE notOsMode2
             LDY #maxBank								;if osmode is 2, absolute banks are 12..15
-.LA4F3      TYA									;
-            STA prvPseudoBankNumbers,X								;assign pseudo bank to the appropriate absolute bank
+.notOsMode2
+.loop	  TYA									;
+            STA prvPseudoBankNumbers,X							;assign pseudo bank to the appropriate absolute bank
             DEY									;reduce absolute bank number by 1
             DEX									;reduce pseudo bank number by 1
-            BPL LA4F3								;until all 4 pseudo banks have been assigned an appropriate absolute bank
+            BPL loop								;until all 4 pseudo banks have been assigned an appropriate absolute bank
             JMP PrvDis								;switch out private RAM
 }
 
