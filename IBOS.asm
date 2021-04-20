@@ -4000,16 +4000,16 @@ ENDIF
             LDA #vduSetMode								;select switch MODE
             JSR OSWRCH								;write switch MODE
             LDX lastBreakType								;Read Hard / Soft Break
-            BNE L9758								;Branch on hard break (power on / Ctrl Break)
+            BNE softReset								;Branch on hard break (power on / Ctrl Break)
             LDX #prvOsMode - prv83									;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            BEQ L9758								;branch if OSMODE=0
+            BEQ softReset								;branch if OSMODE=0
             LDX #prvSFTODOMODE - prv83						;read mode? SFTODO: OK, so probably prvSFTODOMODE is the (configured?) screen mode? That would account for b7 being shadow-ish
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             JSR OSWRCH								;write mode?
             JMP L9768
 			
-.L9758      LDX #userRegModeShadowTV							;get MODE value - Shadow: bit 3, Mode: bits 0, 1 & 2
+.softReset  LDX #userRegModeShadowTV							;get MODE value - Shadow: bit 3, Mode: bits 0, 1 & 2
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&0F								;Lower nibble only
             CMP #&08								;Is shadow bit set?
