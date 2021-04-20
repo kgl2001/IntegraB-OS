@@ -159,8 +159,9 @@ osbyteKeyboardScanFrom10 = &7A
 osbyteAcknowledgeEscape = &7E
 osbyteCheckEOF = &7F
 osbyteReadHimem = &84
-osbyteReadWriteOshwm = &B4
 osbyteIssueServiceRequest = &8F
+osbyteTV = &90
+osbyteReadWriteOshwm = &B4
 osbyteWriteSheila = &97
 osbyteReadWriteBreakEscapeEffect = &C8
 osbyteReadWriteVduQueueLength = &DA
@@ -3972,26 +3973,29 @@ ENDIF
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
 .softBreak
 .L9719      JSR LBC98
-            LDX #userRegModeShadowTV								;get TV / MODE parameters
+            LDX #userRegModeShadowTV							;get TV / MODE parameters
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+	  ; Arithmetic shift A right 5 bits to get a sign-extended version of the TV setting in A.
+	  ; SFTODO: Could we optimise this using technique from http://wiki.nesdev.com/w/index.php/6502_assembly_optimisations#Arithmetic_shift_right?
             PHA									;save value
             ROL A									;move msb to carry
             PHP									;save msb
             ROR A									;move bit from carry back to msb
             LDX #&05								;set counter to 5: move bits 8-5 to 3-0. Pad upper bits with msb
-.L9727      PLP									;recover msb
+.shiftLoop  PLP									;recover msb
             PHP									;and save again
             ROR A									;store bit to msb
             DEX
-            BNE L9727								;loop for 5
+            BNE shiftLoop								;loop for 5
             PLP
-            TAX									;then save to X
+            TAX									;then save TV setting in X
             PLA									;recover parameter &0A value
             AND #&10								;is bit 4 set (TV interlace)?
-            BEQ L9736								;no? then jump to set Y=0
+            BEQ interlaceInA								;no? then jump to set Y=0
             LDA #&01								;else set Y=1
-.L9736      TAY									;set Y=0
-            LDA #&90								;select *TV X,Y
+.interlaceInA
+	  TAY									;set Y=0
+            LDA #osbyteTV								;select *TV X,Y
             JSR OSBYTE								;execute *TV X,Y
             LDA #vduSetMode								;select switch MODE
             JSR OSWRCH								;write switch MODE
