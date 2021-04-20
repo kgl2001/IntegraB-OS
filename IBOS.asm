@@ -4491,6 +4491,7 @@ ramPresenceFlags = &A8
 }
 
 {
+; Search prvSFTODOFOURBANKS for A; if found, remove it, shuffling the elements down so all the non-&FF entries are at the start and are followed by enough &FF entries to fill the list.
 .^removeBankAFromSFTODOFOURBANKS
 .L99E5      LDX #&03
 .findLoop   CMP prvSFTODOFOURBANKS,X
