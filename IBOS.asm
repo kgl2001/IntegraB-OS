@@ -480,6 +480,7 @@ prvTubeReleasePending = prv83 + &42 ; used during OSWORD 42; &FF means we have c
 
 prvIbosBankNumber = prv83 + &00 ; SFTODO: not sure about this, but service01 seems to set this
 prvPseudoBankNumbers = prv83 + &08 ; 4 bytes, absolute RAM bank number for the Pseudo RAM banks W, X, Y, Z
+prvRomTypeTableCopy = prv83 + &2C ; 16 bytes
 
 prvSFTODOMODE = prv83 + &3F ; SFTODO: this is a screen mode (including a shadow flag in b7), but I'm not sure exactly what screen mode yet - current? *CONFIGUREd? something else?
 
@@ -6408,10 +6409,10 @@ osfileBlock = L02EE
 .^service10 SEC
             JSR LA7A8
             BCS LA570
-            JMP LA5B8
+            JMP softReset ; SFTODO: Rename this label given its use here?
 			
 .LA570      LDA ramselCopy
-            AND #&80
+            AND #ramselShen
             STA ramselCopy
 
             JSR PrvEn								;switch in private RAM
@@ -6420,19 +6421,19 @@ osfileBlock = L02EE
 
 ;copy ROM type table to Private RAM
             LDX #&0F
-.LA580      LDA L02A1,X
-            STA prv83+&2C,X
+.copyLoop   LDA romTypeTable,X
+            STA prvRomTypeTableCopy,X
             DEX
-            BPL LA580
+            BPL copyLoop
 
             JSR PrvDis								;switch out private RAM
 
             LDX lastBreakType
-            BEQ LA5B8
-            LDA #&7A
+            BEQ softReset
+            LDA #osbyteKeyboardScanFrom10
             JSR OSBYTE
             CPX #&47
-            BNE LA5B8
+            BNE softReset
             LDA #&00
             STA L0287
             LDA #&FF
@@ -6441,18 +6442,18 @@ osfileBlock = L02EE
 	  ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
 ;Set all bytes in ROM Type Table and Private RAM to 0
             LDX #&0F
-.bankLoop   CPX romselCopy ; SFTODO: are we confident romselCopy doesn't have b7/b6 set??
+.zeroLoop   CPX romselCopy ; SFTODO: are we confident romselCopy doesn't have b7/b6 set??
             BEQ skipBank
             LDA #&00
             STA romTypeTable,X
             STA romPrivateWorkspaceTable,X
 .skipBank   DEX
-            BPL bankLoop
+            BPL zeroLoop
 
             JMP finish
 
 	  ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
-.LA5B8      LDA #&00
+.softReset  LDA #&00
             STA L03A4
             LDX #userRegBankInsertStatus
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
