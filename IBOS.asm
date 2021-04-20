@@ -4459,7 +4459,7 @@ ramPresenceFlags = &A8
             PLA
             JSR variableMainRamSubroutine						;Call relocated Wipe RAM code
             PHA
-            JSR removeBankAFromSFTODOFOURBANKS
+            JSR removeBankAFromSFTODOFOURBANKS						;SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
             PLA
             TAX
             LDA #&00
@@ -4468,8 +4468,10 @@ ramPresenceFlags = &A8
 .L99BF      RTS
 }
 
-; SFTODO: How are these strings accessed? Which label?
-		EQUS "RAM","ROM"
+; SFTODO: Dead data
+{
+	  EQUS "RAM","ROM"
+}
 
 ; SFTODO: This has only one caller
 .writeRomHeaderAndPatchUsingVariableMainRamSubroutine
