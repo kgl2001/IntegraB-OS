@@ -450,8 +450,8 @@ prvOswordBlockCopySize = 16
 ; SFTODO: Split prvOswordBlockOrigAddr into two addresses prvOswordX and prvOswordY? Might better reflect how code uses it, not sure yet.
 prvOswordBlockOrigAddr = prv82 + &30 ; 2 bytes, used for address of original OSWORD &42/&43 parameter block
 
-prvShx = prv83 + &3D ; &08 on, &FF off SFTODO: Not sure about those on/off values, we test this against 0 in some places - is it &00 on?
-prvOsMode = prv83 + &3C ; OSMODE, extracted from relevant bits of userRegOsModeShx SFTODO: WHEN/BY WHAT CODE?
+prvOsMode = prv83 + &3C ; working copy of OSMODE, initialised from relevant bits of userRegOsModeShx in service01
+prvShx = prv83 + &3D ; working copy of SHX, initialised from relevant bit of userRegOsModeShx in service01 (&00 on, &FF off)
 prvTubeReleasePending = prv83 + &42 ; used during OSWORD 42; &FF means we have claimed the tube and need to release it at end of transfer, 0 means we don't
 ; SFTODO: If private RAM is battery backed, could we just keep OSMODE in
 ; prvOsMode and not bother with the copy in the low bits of userRegOsModeShx?
@@ -3932,6 +3932,7 @@ ENDIF
 }
 
 ;Absolute workspace claim - Service call &01
+; SFTODO: I think this code is high enough in the IBOS ROM we don't need to be indirecting via writePrivateRam8300X and could just set PRV1 and access directly?
 .service01
 {
             LDA #&00
@@ -3952,23 +3953,23 @@ ENDIF
 			
 .L96EE      LDX #userRegPrvPrintBufferStart
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            LDX #prvPrvPrintBufferStart-prv83                                                                   ; SFTODO: not too happy with this format
+            LDX #prvPrvPrintBufferStart-prv83                                                       ; SFTODO: not too happy with this format
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX lastBreakType
             BEQ softBreak
-            LDX #userRegOsModeShx								;0-2: OSMODE / 3: SHX
+            LDX #userRegOsModeShx							;0-2: OSMODE / 3: SHX
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA
             AND #&07								;mask OSMODE value
-            LDX #prvOsMode - prv83								;select OSMODE register
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+            LDX #prvOsMode - prv83							;select OSMODE register
+            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             JSR LA4E3								;Assign default pseudo RAM banks to absolute RAM banks
             PLA
-            AND #&08
-            BEQ L9714
+            AND #&08								;mask off SHX bit
+            BEQ shxInA
             LDA #&FF
-.L9714      LDX #&3D								;select SHX register (&08: On, &FF: Off)
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+.shxInA     LDX #prvShx - prv83							;select SHX register (&08: On, &FF: Off)
+            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
 .softBreak
 .L9719      JSR LBC98
             LDX #userRegModeShadowTV								;get TV / MODE parameters
