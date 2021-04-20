@@ -4420,11 +4420,12 @@ ramPresenceFlags = &A8
             LDA prvPseudoBankNumbers,Y
             BMI noSuchBank								;&FF indicates no absolute bank assigned to this pseudo-bank
             JSR findAInPrvSFTODOFOURBanks
-            BPL L9977
+            BPL SFTODOXSET
 .noSuchBank CLC
-            BCC L9978
-.L9977      SEC
-.L9978      ROL oswdbtX
+            BCC bankStateInC
+.SFTODOXSET SEC
+.bankStateInC
+            ROL oswdbtX
             LDY prvTmp
             DEY
             STY prvTmp
@@ -4529,7 +4530,7 @@ ramPresenceFlags = &A8
 .L9A24      RTS
 }
 
-; Return with X such that prvSFTODOFOURBANKS[X] == A, or with X=-1 if there is no such X.
+; Return with X such that prvSFTODOFOURBANKS[X] == A (N flag clear), or with X=-1 if there is no such X (N flag set).
 ; SFTODO: This only has one caller
 .findAInPrvSFTODOFOURBanks
 {
