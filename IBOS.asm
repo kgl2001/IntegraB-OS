@@ -169,6 +169,7 @@ osbyteIssueServiceRequest = &8F
 osbyteTV = &90
 osbyteReadWriteOshwm = &B4
 osbyteWriteSheila = &97
+osbyteReadWriteAciaRegister = &9C
 osbyteReadWriteBreakEscapeEffect = &C8
 osbyteReadWriteKeyboardStatus = &CA
 osbyteEnableDisableStartupMessage = &D7
@@ -4107,7 +4108,7 @@ tmp = &A8
 	  ; Get the boot flag from userRegDiscNetBootData into b3 of A
             PLA
             PHA
-	  ; SFTODO: So where do we set b7 to select NFS or DFS priority?
+	  ; SFTODO: So where do we set b7 to select NFS or DFS priority? I wonder if this has been bodged in slightly and could be more efficiently handled here, but perhaps there's a good reason for doing it elsewhere.
             LDY #%11000000								;preserve b6-7 of startup options SFTODO: presumably from keyboard links? would it be a worthwhile enhancement to allow IBOS to control *all* bits of the startup options?
             LSR A
             AND #1<<3
@@ -4118,12 +4119,13 @@ tmp = &A8
             TAX
             LDA #osbyteReadWriteStartupOptions
             JSR OSBYTE
-            PLA
+	  ; Set the baud rate directly on the ACIA. SFTODO: Is that right? Why do we need this, since we're setting it via the OS using OSBYTE above anyway?
+            PLA									;get userRegDiscNetBootData value
             JSR lsrA3
-            AND #&1C
+            AND #%00011100								;A="data" (baud rate) shifted into b2-4
             TAX
             LDY #&E3
-            LDA #&9C
+            LDA #osbyteReadWriteAciaRegister
             JSR OSBYTE
 .exitSCaIndirect
             JMP exitSCa								;restore service call parameters and exit
