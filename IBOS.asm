@@ -155,6 +155,8 @@ osfileLoad = &FF
 
 keycodeAt = &47 ; internal key code for "@"
 
+osargsReadFilingSystemNumber = 0
+
 osbyteSetPrinterType = &05
 osbyteSetPrinterIgnore = &06
 osbyteSetSerialReceiveRate = &07
@@ -2857,6 +2859,7 @@ ptr = &00 ; 2 bytes
 	  ; Turn the tube off.
             BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
             BPL exitSCIndirect							;nothing to do if already off
+	  ; SFTODO: We seem to be using currentLanguageRom if b7 clear, otherwise we take the bank number from romsel (which will be our bank, won't it) - not sure what's going on exactly
             LDA currentLanguageRom
             BPL L8FBF
             LDA romselCopy
@@ -2875,9 +2878,9 @@ ptr = &00 ; 2 bytes
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&00
             STA tubePresenceFlag
-            LDA #&00
-            LDX #&A8
-            LDY #&00
+            LDA #osargsReadFilingSystemNumber
+            LDX #&A8 ; SFTODO: is this relevant?
+            LDY #&00 ; handle = 0 for this call
             JSR OSARGS
             TAY
             LDX #&12
