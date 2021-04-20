@@ -3895,7 +3895,7 @@ ENDIF
             STA osRdRmPtr + 1
             LDY XKEYVBank
             JSR OSRDRM
-            CMP #&47
+            CMP #'G'
             BNE notExtendedVectorGROM
             LDA XKEYVBank
             ORA #romselMemsel
