@@ -164,6 +164,7 @@ osbyteTV = &90
 osbyteReadWriteOshwm = &B4
 osbyteWriteSheila = &97
 osbyteReadWriteBreakEscapeEffect = &C8
+osbyteEnableDisableStartupMessage = &D7
 osbyteReadWriteVduQueueLength = &DA
 
 oswordInputLine = &00
@@ -4194,16 +4195,16 @@ ENDIF
 
 ; SFTODO: This has only one caller
 {
-.^L989F     LDX #prvOsMode - prv83								;select OSMODE
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            CMP #&00								;If OSMODE=0
-            BEQ L991D								;Then no startup message
-            LDA #&D7								;Startup message suppression and !BOOT option status
+.^L989F     LDX #prvOsMode - prv83							;select OSMODE
+            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
+            CMP #&00								;If OSMODE=0 SFTODO: Could save a byte with "TAX"
+            BEQ rts									;Then leave startup message alone
+            LDA #osbyteEnableDisableStartupMessage					;Startup message suppression and !BOOT option status
             LDX #&00
             LDY #&FF
             JSR OSBYTE
             TXA
-            BPL L991D
+            BPL rts
             LDA #&D7								;Startup message suppression and !BOOT option status
             LDX #&00
             LDY #&00
@@ -4215,7 +4216,7 @@ ENDIF
             CPX #&21								;Check for final character
             BNE L98BF								;Loop
             LDX #&09								;Lookup table offset
-.L98CC      LDA L991E,X								;Read INTEGRA-B Text from lookup table
+.L98CC      LDA reverseBanner,X							;Read INTEGRA-B Text from lookup table
             JSR OSWRCH								;Write to screen
             DEX									;Next Character
             BPL L98CC								;Loop
@@ -4249,12 +4250,13 @@ ENDIF
             JSR OSWRCH								;Write to screen
 .L9912      JSR OSNEWL								;New Line
             BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
-            BMI L991D
+            BMI rts
             JMP OSNEWL								;New Line
 			
-.L991D      RTS
+.rts        RTS
 
-.L991E		EQUS " B-ARGETNI"							;INTEGRA-B Reversed
+.reverseBanner
+       		EQUS " B-ARGETNI"							;INTEGRA-B Reversed
 }
 
 ; SFTODO: There are a few cases where we JMP to osbyteXXInternal, if we rearranged the code a little (could always use macros to maintain readability, if that's a factor) we could probably save some JMPs
