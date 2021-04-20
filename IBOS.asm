@@ -158,7 +158,8 @@ osfileReadInformation = &05
 osfileReadInformationLengthOffset = &0A
 osfileLoad = &FF
 
-keycodeAt = &47 ; internal key code for "@"
+keycodeAt = &47 ; internal keycode for "@"
+keycodeNone = &FF ; internal keycode returned if no key is pressed
 
 osargsReadFilingSystemNumber = 0
 
@@ -3934,13 +3935,14 @@ ENDIF
             JSR PrvDis								;switch out private RAM
             LDA #osbyteKeyboardScanFrom10
             JSR OSBYTE
-            CPX #&FF
-            BEQ L9652
+            CPX #keycodeNone
+            BEQ noKeyPressed
 .L964C      LDX romselCopy
             DEX
             JMP L968D
 			
-.L9652      LDA lastBreakType
+.noKeyPressed
+	  LDA lastBreakType
             BNE notSoftReset1
             LDX #&43
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
