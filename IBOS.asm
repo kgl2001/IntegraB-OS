@@ -4114,7 +4114,7 @@ tmp = &A8
             AND #1<<3
             EOR #1<<3
 .bootInA    ORA tmp
-            ORA #%00000111
+            ORA #%00000111								;force mode 7 SFTODO: seems a bit pointless but harmless, I guess
             AND #%00111111
             TAX
             LDA #osbyteReadWriteStartupOptions
