@@ -4478,7 +4478,7 @@ ramPresenceFlags = &A8
 ; SFTODO: This has only one caller
 .writeRomHeaderAndPatchUsingVariableMainRamSubroutine
 {
-.^L99C6	  PHA
+.L99C6	  PHA
 	  LDX #lo(writeRomHeaderTemplate)
 	  LDY #hi(writeRomHeaderTemplate)
 	  JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9E59 to &03A7
@@ -4557,7 +4557,7 @@ ramPresenceFlags = &A8
 {
 .^srset     LDA (transientCmdPtr),Y
             CMP #'?'
-            BEQ L9A79
+            BEQ showStatus
             JSR parseRomBankList
             JSR PrvEn								;switch in private RAM
             LDX #&00
@@ -4594,7 +4594,8 @@ ramPresenceFlags = &A8
             BCC L9A6E
 .L9A76      JMP PrvDisexitSc
 
-.L9A79      CLC
+.showStatus
+            CLC
             JSR PrvEn								;switch in private RAM
             LDY #&00
 .L9A7F      CLC
@@ -4603,15 +4604,15 @@ ramPresenceFlags = &A8
             JSR OSWRCH
             LDA #'='
             JSR OSWRCH								;Write to screen
-            LDA prvPseudoBankNumbers,Y								;read absolute bank assigned to psuedo bank
-            BPL L9A98								;check if valid bank has been assigned
+            LDA prvPseudoBankNumbers,Y							;read absolute bank assigned to psuedo bank
+            BPL showAssignedBank							;check if valid bank has been assigned
             LDA #'?'
             JSR OSWRCH								;Write to screen
-            JMP L9A9C								;Next
-			
-.L9A98      SEC
+            JMP bankShown
+.showAssignedBank
+            SEC
             JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
-.L9A9C      CPY #&03								;Check for 4th bank
+.bankShown  CPY #&03								;Check for 4th bank
             BEQ L9AAB								;Yes? Then end
             LDA #','
             JSR OSWRCH								;Write to screen
