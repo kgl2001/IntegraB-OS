@@ -6257,7 +6257,8 @@ osfileBlock = L02EE
 			
 ;Called by *UNPLUG Immediate
 ;Set all bytes in ROM Type Table to 0
-.LA4C5      LDY #&0F
+{
+.^LA4C5      LDY #&0F
 .LA4C7      ASL L00AE
             ROL L00AF
             BCS LA4D2
@@ -6266,6 +6267,7 @@ osfileBlock = L02EE
 .LA4D2      DEY
             BPL LA4C7
             RTS
+}
 			
 ;Invert all bits in &AE and &AF
 .invertTransientRomBankMask
@@ -6336,8 +6338,9 @@ osfileBlock = L02EE
 .^LA537     JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call
 }
-			
-.LA53D      LDX #userRegBankWriteProtectStatus
+
+{
+.^LA53D      LDX #userRegBankWriteProtectStatus
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA prv82+&52
             INX
@@ -6358,6 +6361,7 @@ osfileBlock = L02EE
             JSR LA664
             PLP
             RTS
+}
 
 ;SPOOL/EXEC file closure warning - Service call 10
 {
