@@ -1431,36 +1431,37 @@ tabColumn = 12
             JMP L0100
 }
 			
-
+; Parse "ON" or "OFF" from the command line, returning with C clear if we succeed, in which case A=&FF for ON or 0 for OFF. If parsing fails we return with C set and A=&7F.
+.parseOnOff
 {
-.^L8699      JSR findNextCharAfterSpace							;find next character. offset stored in Y
+.L8699      JSR findNextCharAfterSpace							;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             AND #&DF								;capitalise
             CMP #'O'
-            BNE L86C4
+            BNE invalid
             INY
             LDA (transientCmdPtr),Y
             AND #&DF								;capitalise
             CMP #'N'
-            BNE L86B2
+            BNE notOn
             INY
             LDA #&FF
             CLC
             RTS
 			
-.L86B2      CMP #'F'
-            BNE L86C4
+.notOn      CMP #'F'
+            BNE invalid
             INY
             LDA (transientCmdPtr),Y
-            AND #&DF
+            AND #&DF								;capitalise
             CMP #'F'
-            BNE L86C0
+            BNE off									;accept "OF" to mean "OFF"
             INY
-.L86C0      LDA #&00
+.off        LDA #&00
             CLC
             RTS
 			
-.L86C4      LDA #&7F
+.invalid    LDA #&7F
             SEC
             RTS
 }
@@ -2425,7 +2426,7 @@ ptr = &00 ; 2 bytes
 ;*PURGE Command
 .purge
 {
-            JSR L8699
+            JSR parseOnOff
             BCC L8C8F
             LDA (L00A8),Y
             CMP #&3F
@@ -2786,7 +2787,7 @@ ptr = &00 ; 2 bytes
 ;*SHX Command
 .shx
 {
-            JSR L8699
+            JSR parseOnOff
             BCC L8F60
             LDA (L00A8),Y
             CMP #'?'
@@ -2833,7 +2834,7 @@ ptr = &00 ; 2 bytes
 ; SFTODOWIP
 ;*TUBE Command
 {
-.^tube       JSR L8699
+.^tube       JSR parseOnOff
             BCC L8FAF
             LDA (transientCmdPtr),Y
             CMP #'?'
@@ -8595,7 +8596,7 @@ osfileBlock = L02EE
             BEQ LB690
             CMP #vduCr
             BEQ LB690
-            JSR L8699
+            JSR parseOnOff
             BCS LB61B
             PHP
             LDX #&33
