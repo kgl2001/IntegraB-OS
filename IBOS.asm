@@ -2884,7 +2884,7 @@ ptr = &00 ; 2 bytes
             JSR OSARGS
             TAY
             LDX #&12
-            JSR L9050
+            JSR doOsbyteIssueServiceRequest
             LDA #&00
             LDX #prvSFTODOTUBEISH - prv83
             JMP writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
@@ -2909,19 +2909,19 @@ ptr = &00 ; 2 bytes
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX #&FF								;service type &FF - tube system main initialisation
             LDY #&00
-            JSR L9050								;issue paged ROM service request
+            JSR doOsbyteIssueServiceRequest								;issue paged ROM service request
             LDA #&FF
             STA tubePresenceFlag
             LDX #&FE								;service type &FE - tube system post initialisation
             LDY #&00
-            JSR L9050								;issue paged ROM service request
+            JSR doOsbyteIssueServiceRequest								;issue paged ROM service request
             LDA #&00
             LDX #&A8
             LDY #&00
             JSR OSARGS
             TAY
             LDX #&12								;service type &12 - initialise file system
-            JSR L9050								;issue paged ROM service request
+            JSR doOsbyteIssueServiceRequest								;issue paged ROM service request
             LDA #&00
             LDX #prvSFTODOTUBEISH - prv83
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
@@ -2930,8 +2930,9 @@ ptr = &00 ; 2 bytes
             BVC L9045
             STA SHEILA+&E3
             JMP L0032
-			
-.L9050      LDA #osbyteIssueServiceRequest						;issue paged ROM service request
+
+.doOsbyteIssueServiceRequest
+            LDA #osbyteIssueServiceRequest						;issue paged ROM service request
             JMP OSBYTE								;execute paged ROM service request
 }
 			
