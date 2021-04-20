@@ -4419,7 +4419,7 @@ ramPresenceFlags = &A8
 
 .L99F1      LDA #&FF
             STA prv83+&0C,X
-.^L99F6      LDX #&00
+.L99F6      LDX #&00
             LDY #&00
 .L99FA      LDA prv83+&0C,X
             BMI L9A03
@@ -4438,22 +4438,24 @@ ramPresenceFlags = &A8
 .L9A13      CPY #&04
             BNE L9A0D
             RTS
-}
-			
-.L9A18      PHA
+
+.^L9A18      PHA
             JSR L99F6
             PLA
             CPX #&04
             BCS L9A24
             STA prv83+&0C,X
 .L9A24      RTS
+}
 
-.L9A25      LDX #&03
+{
+.^L9A25      LDX #&03
 .L9A27      CMP prv83+&0C,X
             BEQ L9A2F
             DEX
             BPL L9A27
 .L9A2F      RTS
+}
 
 ;*SRSET Command
 {
