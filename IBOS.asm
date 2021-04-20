@@ -3970,7 +3970,7 @@ ENDIF
             CPX romselCopy
             BCC L968D
             DEX
-.L968D      JSR passServiceCallToAllROMs
+.L968D      JSR passServiceCallToROMsLessEqualX
             LDA lastBreakType
             BNE notSoftReset
             LDA currentLanguageRom
@@ -3978,24 +3978,25 @@ ENDIF
 .notSoftReset
 	  LDX #userRegLangFile
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            JSR lsrA4
+            JSR lsrA4								;get *CONFIGURE LANG value
             JMP L96A7
 			
 .L96A5      LDA romselCopy
 .L96A7      TAX
             LDA romTypeTable,X
             ROL A
-            BPL L96B1
+            BPL noLanguageEntry
             JMP LDBE6								;OSBYTE 142 - ENTER LANGUAGE ROM AT &8000 (http://mdfs.net/Docs/Comp/BBC/OS1-20/D940)
-			
-.L96B1      BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
+
+.noLanguageEntry
+            BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BPL L96A5
             LDA #&00
             CLC
             JMP L0400								;assume there is code within this ROM that is being relocated to &0400???
 
 ; SFTODO: This has only one caller
-.passServiceCallToAllROMs
+.passServiceCallToROMsLessEqualX
 .L96BC      TXA
             PHA
             TSX
@@ -4006,7 +4007,7 @@ ENDIF
             LDA romselCopy
             PHA
             LDA #&03								;service call number
-            JMP LF16E								;OSBYTE 143 - Pass service commands to sideways ROMs (http://mdfs.net/Docs/Comp/BBC/OS1-20/F135)
+            JMP LF16E								;OSBYTE 143 - Pass service commands to sideways ROMs (http://mdfs.net/Docs/Comp/BBC/OS1-20/F135), except we enter partway through to start at bank X not bank 15
 }
 
 ;Absolute workspace claim - Service call &01
