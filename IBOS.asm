@@ -3945,23 +3945,24 @@ ENDIF
             LDX #&43
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             PHA
-            JSR L966E
+            JSR setDfsNfsPriority
             PLA
             AND #&7F
             TAX
             CPX romselCopy
             BCC L968D
 .notSoftReset1
-            JSR L966E
+            JSR setDfsNfsPriority
             JMP selectConfiguredFilingSystemAndLanguage
-			
-.L966E      LDX #userRegDiscNetBootData							;Register &10 (0: File system / 4: Boot / 5-7: Data )
+
+.setDfsNfsPriority
+            LDX #userRegDiscNetBootData							;Register &10 (0: File system / 4: Boot / 5-7: Data )
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ROR A
             ROR A									;Move File system bit to msb
             AND #&80								;and isolate bit
             TAX
-            LDA #&FF								;select read / write start-up options
+            LDA #osbyteReadWriteStartupOptions						;select read / write start-up options
             LDY #&7F								;retain lower 7 bits
             JSR OSBYTE								;execute read / write start-up options
             RTS
