@@ -5997,7 +5997,9 @@ osfileBlock = L02EE
 .^PrvDisexitSc
 .LA2DE      JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call
-			
+}
+
+{
 .^LA2E4      JSR parseRomBankList
             BCC rts
             BVC syntaxErrorIndirect
