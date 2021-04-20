@@ -142,6 +142,9 @@ osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force sh
 currentLanguageRom = &028C ; SFTODO: not sure yet if we're using this for what the OS does or repurposing it
 currentMode = &0355
 
+romTypeTable = &02A1
+romPrivateWorkspaceTable = &0DF0
+
 osCmdPtr = &F2
 osErrorPtr = &FD
 
@@ -6435,18 +6438,20 @@ osfileBlock = L02EE
             LDA #&FF
             STA L03A4
 
+	  ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
 ;Set all bytes in ROM Type Table and Private RAM to 0
             LDX #&0F
-.LA5A6      CPX romselCopy
-            BEQ LA5B2
+.bankLoop   CPX romselCopy ; SFTODO: are we confident romselCopy doesn't have b7/b6 set??
+            BEQ skipBank
             LDA #&00
-            STA L02A1,X
-            STA L0DF0,X
-.LA5B2      DEX
-            BPL LA5A6
+            STA romTypeTable,X
+            STA romPrivateWorkspaceTable,X
+.skipBank   DEX
+            BPL bankLoop
 
-            JMP LA5CE
-			
+            JMP finish
+
+	  ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
 .LA5B8      LDA #&00
             STA L03A4
             LDX #userRegBankInsertStatus
@@ -6457,7 +6462,7 @@ osfileBlock = L02EE
             STA transientRomBankMask + 1
             JSR unplugBanksUsingTransientRomBankMask
 	  ; SFTODO: Next bit of code is either claiming or not claiming the service call based on prvSFTODOTUBEISH; it will return with A=&10 (this call) or 0.
-.LA5CE      LDX #prvSFTODOTUBEISH - prv83
+.finish     LDX #prvSFTODOTUBEISH - prv83
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             EOR #&FF
             AND #&10
