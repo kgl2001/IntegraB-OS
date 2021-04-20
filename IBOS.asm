@@ -4594,13 +4594,16 @@ ramPresenceFlags = &A8
 .L9B24      RTS
 }
 
+
 .L9B25      JSR parseRomBankList
             BCS L9B2B
             RTS
 			
 .L9B2B      JMP badId						;Error Bad ID
 
-.L9B2E      LDX #&00
+
+{
+.^L9B2E      LDX #&00
 .L9B30      STY L00AC
             STA L00AD
             SEC
@@ -4620,6 +4623,7 @@ ramPresenceFlags = &A8
             ADC #&00
             ORA #&80
             RTS
+}
 
 ; SFTODO: This comment is a WIP
 ; OSWORD &42 and &43 do similar jobs but have different parameter blocks. In order to share code between them more easily,
