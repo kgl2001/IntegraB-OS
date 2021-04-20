@@ -2590,12 +2590,12 @@ ptr = &00 ; 2 bytes
             BMI L8E02								;if nothing in private memory then finish, otherwise
             SEC									;left justify (ignore leading 0s)
             JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
-            LDA #&2C								;','
+            LDA #','
             JSR OSWRCH								;write to screen
             INY									;repeat
             CPY #&04								;upto 4 times for maximum of 4 banks
             BNE L8DEF
-.L8E02      LDA #&7F								;delete the last ',' that was just printed
+.L8E02      LDA #vduDel								;delete the last ',' that was just printed
             JSR OSWRCH								;write to screen
 .L8E07      JSR OSNEWL
 .L8E0A      JSR PrvDis								;switch out private RAM
