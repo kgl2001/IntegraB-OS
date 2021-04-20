@@ -3948,7 +3948,7 @@ ENDIF
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             BIT L03A4								;?
             BPL L96EE
-            JMP L9808
+            JMP exitSCaIndirect
 			
 .L96EE      LDX #userRegPrvPrintBufferStart
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
@@ -4093,7 +4093,8 @@ ENDIF
             LDY #&E3
             LDA #&9C
             JSR OSBYTE
-.L9808      JMP exitSCa								;restore service call parameters and exit
+.exitSCaIndirect
+            JMP exitSCa								;restore service call parameters and exit
 }
 
 .L980B      LSR A
