@@ -5999,25 +5999,27 @@ osfileBlock = L02EE
             JMP exitSC								;Exit Service Call
 }
 
+.parseRomBankListChecked
 {
-.^LA2E4      JSR parseRomBankList
+.LA2E4      JSR parseRomBankList
             BCC rts
             BVC syntaxErrorIndirect
 .^badId
 .LA2EB      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
-			EQUB &80
-			EQUS "Bad id", &00
+	  EQUB &80
+	  EQUS "Bad id", &00
 
 .syntaxErrorIndirect
             JMP syntaxError
 
+	  ; SFTODO: Can we repurpose another nearby RTS and get rid of this?
 .rts        RTS
 }
 
 ;*INSERT Command
 {
-.^insert     JSR LA2E4								;Error check input data
+.^insert    JSR parseRomBankListChecked								;Error check input data
             LDX #userRegBankInsertStatus						;get *INSERT status
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA transientRomBankMask								;update *INSERT status
@@ -6041,7 +6043,7 @@ osfileBlock = L02EE
             RTS
 
 ;*UNPLUG Command
-.^unplug	  JSR LA2E4								;Error check input data
+.^unplug	  JSR parseRomBankListChecked								;Error check input data
             JSR invertTransientRomBankMask								;Invert all bits in &AE and &AF
             LDX #&06								;INSERT status for ROMS &0F to &08
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
