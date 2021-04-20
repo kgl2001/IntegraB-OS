@@ -3902,7 +3902,7 @@ ENDIF
             STA XKEYVBank
 .notExtendedVectorGROM
             CLC
-            JSR LA7A8
+            JSR SFTODOALARMSOMETHING
             BIT L03A4
             BPL L9611
             JMP L964C
@@ -6437,7 +6437,7 @@ osfileBlock = L02EE
 ;SPOOL/EXEC file closure warning - Service call 10 SFTODO: I *suspect* we are using this as a "part way through reset" service call rather than for its nominal purpose - have a look at OS 1.2 disassembly and see when this is actually generated. Do filing systems or anything issue it during "normal" operation? (e.g. if you do "*EXEC" with no argument.)
 {
 .^service10 SEC
-            JSR LA7A8
+            JSR SFTODOALARMSOMETHING
             BCS LA570
             JMP softReset ; SFTODO: Rename this label given its use here?
 			
@@ -6771,8 +6771,9 @@ osfileBlock = L02EE
             RTS									;Exit
 }
 
+.SFTODOALARMSOMETHING
 {
-.^LA7A8      BCS LA7C2
+.LA7A8      BCS LA7C2
             LDX #userRegAlarm
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&40
