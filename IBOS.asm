@@ -4131,9 +4131,9 @@ tmp = &A8
             JMP exitSCa								;restore service call parameters and exit
 }
 
-; SFTODO: lsrA4 has only one caller
+; SFTODO: lsrA4 has only one caller (but there are places where it should be used and isn't)
 .lsrA4      LSR A
-; SFTODO: Use of JSR lsrA3 or JSR lsrA2 is silly - the former is neutral on space and slower, the latter is both larger and slower... Given this and the fact lsrA4 has only one caller, this should simply be inlined.
+; SFTODO: Use of JSR lsrA3 or JSR lsrA2 is silly - the former is neutral on space and slower, the latter is both larger and slower
 .lsrA3      LSR A
 .lsrA2      LSR A
             LSR A
@@ -7280,6 +7280,7 @@ osfileBlock = L02EE
 
 {
 .^LAC72		LDA prvOswordBlockCopy + 2
+	; SFTODO: Use lsrA4
             LSR A
             LSR A
             LSR A
@@ -7933,6 +7934,7 @@ osfileBlock = L02EE
 .LB194      JSR LB1CA
 .LB197      JSR LA83B
             LDA prvOswordBlockCopy
+	  ; SFTODO: Use lsrA4
             LSR A
             LSR A
             LSR A
