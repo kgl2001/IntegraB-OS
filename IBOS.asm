@@ -3939,7 +3939,7 @@ ENDIF
             BEQ noKeyPressed
 .L964C      LDX romselCopy
             DEX
-            JMP L968D
+            JMP selectFirstFilingSystemROMLessEqualXAndLanguage
 			
 .noKeyPressed
 	  LDA lastBreakType
@@ -3952,7 +3952,7 @@ ENDIF
             AND #&7F
             TAX
             CPX romselCopy
-            BCC L968D
+            BCC selectFirstFilingSystemROMLessEqualXAndLanguage
 .notSoftReset1
             JSR setDfsNfsPriority
             JMP selectConfiguredFilingSystemAndLanguage
@@ -3976,9 +3976,10 @@ ENDIF
             TAX
 	  ; SFTODO: If the selected filing system is >= our bank, start one bank lower?! This seems odd, although *if* we know we're bank 15, this really just means "start below us" (presumably to avoid infinite recursion)
             CPX romselCopy
-            BCC L968D
+            BCC selectFirstFilingSystemROMLessEqualXAndLanguage
             DEX
-.L968D      JSR passServiceCallToROMsLessEqualX
+.selectFirstFilingSystemROMLessEqualXAndLanguage
+            JSR passServiceCallToROMsLessEqualX
             LDA lastBreakType
             BNE notSoftReset
             LDA currentLanguageRom
