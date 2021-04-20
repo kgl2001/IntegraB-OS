@@ -4407,8 +4407,9 @@ ramPresenceFlags = &A8
             STA variableMainRamSubroutine + (writeRomHeaderTemplateSFTODO - writeRomHeaderTemplate)
             JMP variableMainRamSubroutine								;Call relocated code
 }
-			
-.L99E5      LDX #&03
+
+{
+.^L99E5      LDX #&03
 .L99E7      CMP prv83+&0C,X
             BEQ L99F1
             DEX
@@ -4418,7 +4419,7 @@ ramPresenceFlags = &A8
 
 .L99F1      LDA #&FF
             STA prv83+&0C,X
-.L99F6      LDX #&00
+.^L99F6      LDX #&00
             LDY #&00
 .L99FA      LDA prv83+&0C,X
             BMI L9A03
@@ -4437,6 +4438,7 @@ ramPresenceFlags = &A8
 .L9A13      CPY #&04
             BNE L9A0D
             RTS
+}
 			
 .L9A18      PHA
             JSR L99F6
