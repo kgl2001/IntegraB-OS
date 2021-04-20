@@ -3941,7 +3941,7 @@ ENDIF
             JMP L968D
 			
 .L9652      LDA lastBreakType
-            BNE L9668
+            BNE notSoftReset1
             LDX #&43
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             PHA
@@ -3951,7 +3951,8 @@ ENDIF
             TAX
             CPX romselCopy
             BCC L968D
-.L9668      JSR L966E
+.notSoftReset1
+            JSR L966E
             JMP selectConfiguredFilingSystemAndLanguage
 			
 .L966E      LDX #userRegDiscNetBootData							;Register &10 (0: File system / 4: Boot / 5-7: Data )
