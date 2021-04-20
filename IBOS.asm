@@ -6030,7 +6030,7 @@ osfileBlock = L02EE
             JSR writeUserRegAndCheckNextCharI						;Check for Immediate 'I' flag
             BNE exitSCIndirect1								;Exit if not immediate
             INY
-            JSR LA49C								;Initialise inserted ROMs
+            JSR insertBanksUsingTransientRomBankMask					;Initialise inserted ROMs
 .exitSCIndirect1
             JMP exitSC								;Exit Service Call
 
@@ -6276,7 +6276,8 @@ osfileBlock = L02EE
 {
 ; SFTODO: This only has one caller - probably irrelevant given we also have LA49C entry point
 .^LA499      JSR createRomBankMask
-.^LA49C      JSR PrvEn								;switch in private RAM
+.^insertBanksUsingTransientRomBankMask
+.LA49C      JSR PrvEn								;switch in private RAM
 
 
 ;Called by *INSERT Immediate (SFTODO: but note we also fall through into it from code above)
