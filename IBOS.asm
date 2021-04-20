@@ -6277,12 +6277,11 @@ osfileBlock = L02EE
 ; SFTODO: This only has one caller - probably irrelevant given we also have LA49C entry point
 .^createRomBankMaskAndInsertBanks
 .LA499      JSR createRomBankMask
+;Read ROM Type from ROM header for ROMs with a 1 bit in transientRomBankMask and save to ROM Type Table and Private RAM; used to immediately *INSERT a ROM without waiting for BREAK.
 .^insertBanksUsingTransientRomBankMask
 .LA49C      JSR PrvEn								;switch in private RAM
 
 
-;Called by *INSERT Immediate (SFTODO: but note we also fall through into it from code above)
-;Read ROM Type from ROM header and save to ROM Type Table and Private RAM
             LDY #&0F
 .bankLoop   ASL transientRomBankMask
             ROL transientRomBankMask + 1
