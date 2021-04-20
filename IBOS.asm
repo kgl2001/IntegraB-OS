@@ -1433,27 +1433,27 @@ tabColumn = 12
 			
 
 {
-.^L8699      JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (L00A8),Y
-            AND #&DF
-            CMP #&4F
+.^L8699      JSR findNextCharAfterSpace							;find next character. offset stored in Y
+            LDA (transientCmdPtr),Y
+            AND #&DF								;capitalise
+            CMP #'O'
             BNE L86C4
             INY
-            LDA (L00A8),Y
-            AND #&DF
-            CMP #&4E
+            LDA (transientCmdPtr),Y
+            AND #&DF								;capitalise
+            CMP #'N'
             BNE L86B2
             INY
             LDA #&FF
             CLC
             RTS
 			
-.L86B2      CMP #&46
+.L86B2      CMP #'F'
             BNE L86C4
             INY
-            LDA (L00A8),Y
+            LDA (transientCmdPtr),Y
             AND #&DF
-            CMP #&46
+            CMP #'F'
             BNE L86C0
             INY
 .L86C0      LDA #&00
@@ -1466,7 +1466,7 @@ tabColumn = 12
 }
 
 {
-.^L86C8      PHA
+.^L86C8     PHA
             LDA #'O'
             JSR OSWRCH
             PLA
