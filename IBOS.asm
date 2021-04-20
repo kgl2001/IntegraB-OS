@@ -457,6 +457,7 @@ prvTubeReleasePending = prv83 + &42 ; used during OSWORD 42; &FF means we have c
 ; prvOsMode and not bother with the copy in the low bits of userRegOsModeShx?
 ; That would save some code.
 
+prvIbosBankNumber = prv83 + &00 ; SFTODO: not sure about this, but service01 seems to set this
 prvPseudoBankNumbers = prv83 + &08 ; 4 bytes, absolute RAM bank number for the Pseudo RAM banks W, X, Y, Z
 
 prvSFTODOMODE = prv83 + &3F ; SFTODO: this is a screen mode (including a shadow flag in b7), but I'm not sure exactly what screen mode yet - current? *CONFIGUREd? something else?
@@ -3940,9 +3941,10 @@ ENDIF
             LDA #&FF								;set data to &FF
 .L96D9      JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             DEX									;repeat
-            BNE L96D9								;until 0.
+            BNE L96D9								;until 0. (but not writing to &8300)
             LDA romselCopy								;get current ROM number
             AND #&0F								;mask
+	  ASSERT prvIbosBankNumber == prv83 + 0
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             BIT L03A4								;?
             BPL L96EE
