@@ -104,8 +104,7 @@ rtcUserBase = &0E
 ; accessing them, which will be handled automatically by
 ; readUserReg/writeUserReg if necessary).
 userRegLangFile = &05 ; b0-3: FILE, b4-7: LANG
-userRegInsertStatusHigh = &06 ; b7=ROM 15 SFTODO? enabled, b0=ROM 8 SFTODO? enabled
-userRegInsertStatusLow = &07 ; b7=ROM 15 SFTODO? enabled, b0=ROM 8 SFTODO? enabled
+userRegBankInsertStatus = &06 ; 2 bytes, 1 bit per bank
 userRegModeShadowTV = &0A ; 0-2: MODE / 3: SHADOW / 4: TV interlace / 5-7: TV screen shift
 userRegFdriveCaps = &0B ; 0-2: FDRIVE / 3-5: CAPS
 userRegKeyboardDelay = &0C ; 0-7: Keyboard delay
@@ -116,7 +115,7 @@ userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Dat
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
-userRegBankWriteProtectStatus = &38 ; 2 bytes
+userRegBankWriteProtectStatus = &38 ; 2 bytes, 1 bit per bank
 userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
 
 ; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
@@ -2085,8 +2084,8 @@ ptr = &00 ; 2 bytes
 ;Read by code at &8834
 ;For data at addresses &00-&31, data is stored in RTC RAM at location Addr + &0E (RTC RAM &0E-&3F)
 ;For data at addresses &32 and above, data is stored in private RAM at location &8300 + Addr OR &80.
-.intDefault	EQUB userRegInsertStatusHigh,&FF						;*INSERT status for ROMS &0F to &08. Default: &FF (All 8 ROMS enabled)
-		EQUB userRegInsertStatusLow,&FF						;*INSERT status for ROMS &07 to &00. Default: &FF (All 8 ROMS enabled)
+.intDefault	EQUB userRegBankInsertStatus,&FF						;*INSERT status for ROMS &0F to &08. Default: &FF (All 8 ROMS enabled)
+		EQUB userRegBankInsertStatus + 1,&FF						;*INSERT status for ROMS &07 to &00. Default: &FF (All 8 ROMS enabled)
 ;		EQUB userRegModeShadowTV,&E7							;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift. Default was &17. Changed to &E7 in IBOS 1.21
 ;		EQUB userRegModeShadowTV,&20							;0-2: FDRIVE / 3-5: CAPS. Default was &23. Changed to &20 in IBOS 1.21
 		EQUB userRegModeShadowTV,&17							;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift.
@@ -5906,11 +5905,11 @@ osfileBlock = L02EE
 
 ;*INSERT Command
 .insert     JSR LA2E4								;Error check input data
-            LDX #userRegInsertStatusHigh						;get *INSERT status
+            LDX #userRegBankInsertStatus						;get *INSERT status
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA L00AE								;update *INSERT status
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
-            LDX #userRegInsertStatusLow
+            LDX #userRegBankInsertStatus + 1
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA L00AF
             JSR LA31A								;Check for Immediate 'I' flag
@@ -6335,10 +6334,10 @@ osfileBlock = L02EE
 			
 .LA5B8      LDA #&00
             STA L03A4
-            LDX #userRegInsertStatusHigh
+            LDX #userRegBankInsertStatus
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA L00AE
-            LDX #userRegInsertStatusLow
+            LDX #userRegBankInsertStatus + 1
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA L00AF
             JSR LA4C5
