@@ -1431,8 +1431,9 @@ tabColumn = 12
             JMP L0100
 }
 			
-			
-.L8699      JSR findNextCharAfterSpace								;find next character. offset stored in Y
+
+{
+.^L8699      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y
             AND #&DF
             CMP #&4F
@@ -1462,8 +1463,10 @@ tabColumn = 12
 .L86C4      LDA #&7F
             SEC
             RTS
+}
 
-.L86C8      PHA
+{
+.^L86C8      PHA
             LDA #'O'
             JSR OSWRCH
             PLA
@@ -1474,6 +1477,7 @@ tabColumn = 12
 .L86D6      LDA #'F'
             JSR OSWRCH
             JMP OSWRCH					;write 'OFF' to screen
+}
 			
 ;Convert binary number in A to numeric characters and write characters to screen
 ;C set on entry means left pad to three characters with spaces, clear means no padding.
@@ -2826,6 +2830,7 @@ ptr = &00 ; 2 bytes
             JMP exitSC								;exit Service Call
 }
 
+; SFTODOWIP
 ;*TUBE Command
 {
 .^tube       JSR L8699
@@ -2853,7 +2858,7 @@ ptr = &00 ; 2 bytes
             PLA
             TAX
             JMP L90F4
-
+		
 .^L8FC8      LDA #&00
             LDX #prvSFTODOTUBE2ISH - prv83
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
