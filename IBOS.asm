@@ -3916,7 +3916,7 @@ ENDIF
             BNE notPowerOnStarBoot							;branch if not
             CLC
             LDA prvBootSFTODO								;get data from Private RAM
-            BEQ notPowerOnStarBoot							;we don't have a *BOOT command in effect
+            BEQ notPowerOnStarBoot							;branch if we don't have a *BOOT command in effect
             ADC #&0F
             LDX #&00
 .L9625      STA L0B00,X
@@ -3945,7 +3945,7 @@ ENDIF
 	  LDA lastBreakType
             BNE notSoftReset1
             LDX #&43
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             PHA ; SFTODO: Why can't we just do the read from &8343 *after* JSR setDfsNfsPriority and avoid this PHA/PLA?
             JSR setDfsNfsPriority
             PLA
@@ -4232,11 +4232,11 @@ tmp = &A8
 .softReset  BIT prvSFTODOTUBE2ISH
 	  BPL L983D
 .L9836      PLA
-            JSR L985D
+            JSR PrvDisStaRamsel
             JMP exitSCa								;restore service call parameters and exit
 			
 .L983D      PLA
-            JSR L985D
+            JSR PrvDisStaRamsel
             PLA
             TAY
             PLA
@@ -4247,7 +4247,6 @@ tmp = &A8
 
 ; SFTODO: This only has one caller
 .clearShenPrvEn ; SFTODO: not super happy with this name
-{
 .L984C      LDA ramselCopy
             PHA
             LDA #&00
@@ -4256,8 +4255,8 @@ tmp = &A8
             JSR PrvEn								;switch in private RAM
             PLA
             RTS
-}
-			
+
+.PrvDisStaRamsel
 .L985D      PHA
             JSR PrvDis								;switch out private RAM
             PLA
