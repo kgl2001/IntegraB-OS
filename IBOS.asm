@@ -2834,20 +2834,22 @@ ptr = &00 ; 2 bytes
 ; SFTODOWIP
 ;*TUBE Command
 {
-.^tube       JSR parseOnOff
-            BCC L8FAF
+.^tube      JSR parseOnOff
+            BCC tubeOnOrOff
             LDA (transientCmdPtr),Y
             CMP #'?'
-            BNE L8FAC
+            BNE syntaxErrorIndirect
             JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDA tubePresenceFlag
 .^L8FA3      JSR L86C8
             JSR OSNEWL
 .L8FA9      JMP exitSC								;Exit Service Call
 
-.L8FAC      JMP syntaxError
+.syntaxErrorIndirect
+            JMP syntaxError
 
-.L8FAF      BNE L8FF1
+.tubeOnOrOff
+            BNE L8FF1
             BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BPL L8FA9
             LDA L028C
