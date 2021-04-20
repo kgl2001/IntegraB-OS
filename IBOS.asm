@@ -4237,24 +4237,27 @@ ramPresenceFlags = &A8
             STA ramPresenceFlags
             LDX #&07								;Check all 8 32k banks for RAM
             LDA #&00								;Start with 0k RAM
-.L98EA      LSR ramPresenceFlags									;Check if RAM bank
-            BCC L98F0								;If 0 then no RAM, so don't increment RAM count
+.countLoop  LSR ramPresenceFlags							;Check if RAM bank
+            BCC notPresent								;If 0 then no RAM, so don't increment RAM count
             ADC #32 - 1								;Add 32k (-1 because carry is set)
-.L98F0      DEX									;Check next 32k bank
-            BPL L98EA								;Loop until 0
-            CMP #&00								;If RAM total = 0k (will occur with either 0 RAM banks or 8 x 32k RAM banks), then
-            BEQ L98FE								;Write '256K' to screen
+.notPresent DEX									;Check next 32k bank
+            BPL countLoop								;Loop until 0
+            CMP #&00								;If RAM total = 0k (will occur with either 0 RAM banks or 8 x 32k RAM banks), then SFTODO: could do "TAX" to save a byte
+            BEQ allBanksPresent							;Write '256K' to screen
+	  ; SFTODO: We could save the SEC by just doing JSR printADecimalPad
             SEC
             JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
-            JMP L990D								;Write 'K' to screen
-			
-.L98FE      LDA #'2'
+            JMP printKAndNewline							;Write 'K' to screen
+
+.allBanksPresent
+            LDA #'2'
             JSR OSWRCH								;Write to screen
             LDA #'5'
             JSR OSWRCH								;Write to screen
             LDA #'6'
             JSR OSWRCH								;Write to screen
-.L990D      LDA #'K'
+.printKAndNewline
+            LDA #'K'
             JSR OSWRCH								;Write to screen
 .softReset  JSR OSNEWL								;New Line
             BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
