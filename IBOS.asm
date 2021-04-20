@@ -6011,6 +6011,7 @@ osfileBlock = L02EE
 .LA347      JMP exitSC								;Exit Service Call
 }
 
+{
 .LA34A	  EQUB &00								;ROM at Banks 0 & 1
 	  EQUB &00								;ROM at Banks 2 & 3
 	  EQUB &04								;Check for RAM at Banks 4 & 5
@@ -6021,7 +6022,7 @@ osfileBlock = L02EE
 	  EQUB &80								;Check for RAM at Banks E & F
 
 ;*ROMS Command
-.roms	  LDA #&0F								;Start at ROM &0F
+.^roms	  LDA #&0F								;Start at ROM &0F
             STA L00AA								;Save ROM number at &AA
 .LA356      JSR LA360								;Get and print details of ROM
             DEC L00AA								;Next ROM
@@ -6109,6 +6110,7 @@ osfileBlock = L02EE
             CMP L00AB								;at copyright offset pointer (end of title string + version string)?
             BCC LA3F5								;loop if not.
             JMP OSNEWL								;otherwise finished for this rom so write new line and return
+}
 
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be used to indicate "everything but the listed banks". Return with C set iff at least one bit of transientRomBankMask is set.
 .parseRomBankList
