@@ -2842,7 +2842,7 @@ ptr = &00 ; 2 bytes
 ;*TUBE Command
 {
 .^tube      JSR parseOnOff
-            BCC tubeOnOrOff
+            BCC turnTubeOnOrOff
             LDA (transientCmdPtr),Y
             CMP #'?'
             BNE syntaxErrorIndirect
@@ -2856,9 +2856,9 @@ ptr = &00 ; 2 bytes
 .syntaxErrorIndirect
             JMP syntaxError
 
-.tubeOnOrOff
-            BNE tubeOn
-	  ; Turn the tube off.
+.turnTubeOnOrOff
+            BNE turnTubeOn
+	  ; Turn the tube off. SFTODO: How? All we seem to do is re-enter the current(ish) language.
             BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
             BPL exitSCIndirect							;nothing to do if already off
 	  ; SFTODO: We seem to be using currentLanguageRom if b7 clear, otherwise we take the bank number from romsel (which will be our bank, won't it) - not sure what's going on exactly
@@ -2891,8 +2891,8 @@ ptr = &00 ; 2 bytes
             LDA #&00
             LDX #prvSFTODOTUBEISH - prv83
             JMP writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-			
-.tubeOn     LDA #&81
+
+.turnTubeOn LDA #&81
             STA SHEILA+&E0
             LDA SHEILA+&E0
             LSR A
