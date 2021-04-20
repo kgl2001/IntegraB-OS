@@ -4437,11 +4437,11 @@ ramPresenceFlags = &A8
 ;*SRWIPE Command
 .srwipe
 {
-	  JSR L9B25
+	  JSR parseRomBankListChecked2
             JSR PrvEn								;switch in private RAM
             LDX #&00
-.L998F      ROR L00AF
-            ROR L00AE
+.L998F      ROR transientRomBankMask + 1
+            ROR transientRomBankMask
             BCC L9998
             JSR L99A0
 .L9998      INX
@@ -4462,9 +4462,9 @@ ramPresenceFlags = &A8
             JSR L99E5
             PLA
             TAX
-            LDA #&00								;
-            STA romTypeTable,X								;clear ROM Type byte
-            STA prvRomTypeTableCopy,X								;clear Private RAM copy of ROM Type byte
+            LDA #&00
+            STA romTypeTable,X							;clear ROM Type byte
+            STA prvRomTypeTableCopy,X							;clear Private RAM copy of ROM Type byte
 .L99BF      RTS
 }
 
@@ -4620,7 +4620,7 @@ ramPresenceFlags = &A8
 .^srdata
             CLC
 .L9AB5      PHP
-            JSR L9B25
+            JSR parseRomBankListChecked2
             JSR PrvEn								;switch in private RAM
             LDX #&00
 .L9ABE      ROR L00AF
@@ -4669,21 +4669,26 @@ ramPresenceFlags = &A8
             BIT L9B0C
             BCS L9B09
 .^checkRamBankAndMakeAbsolute
-.L9B18     AND #&7F						;drop the highest bit
-            CMP #&10						;check if RAM bank is absolute or pseudo address 
+.L9B18      AND #&7F								;drop the highest bit
+            CMP #&10								;check if RAM bank is absolute or pseudo address
             BCC L9B24
             TAX
             ; SFTODO: Any danger this is ever going to have X>3 and access an arbitrary byte?
-            LDA prvPseudoBankNumbers,X						;lookup table to convert pseudo RAM W, X, Y, Z into absolute address???
-            BMI L9B2B						;check for Bad ID
+            LDA prvPseudoBankNumbers,X							;lookup table to convert pseudo RAM W, X, Y, Z into absolute address???
+            BMI badIdIndirect								;check for Bad ID
 .L9B24      RTS
 }
 
 
+; SFTODO: Do we really need this *and* parseRomBankListChecked? Isn't parseRomBankListChecked better than this one?
+.parseRomBankListChecked2
+{
 .L9B25      JSR parseRomBankList
-            BCS L9B2B
+            BCS badIdIndirect
             RTS
-			
+}
+
+.badIdIndirect
 .L9B2B      JMP badId						;Error Bad ID
 
 
