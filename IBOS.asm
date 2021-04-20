@@ -3981,16 +3981,16 @@ ENDIF
             JSR lsrA4								;get *CONFIGURE LANG value
             JMP L96A7
 			
-.L96A5      LDA romselCopy
+.noTube     LDA romselCopy
 .L96A7      TAX
             LDA romTypeTable,X
             ROL A
             BPL noLanguageEntry
-            JMP LDBE6								;OSBYTE 142 - ENTER LANGUAGE ROM AT &8000 (http://mdfs.net/Docs/Comp/BBC/OS1-20/D940)
+            JMP LDBE6								;OSBYTE 142 - ENTER LANGUAGE ROM AT &8000 (http://mdfs.net/Docs/Comp/BBC/OS1-20/D940) - we enter one byte early so carry is clear, which might indicate "initialisation" (this based on that mdfs.net page; I can't find anything about this in a quick look at other documentation)
 
 .noLanguageEntry
             BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
-            BPL L96A5
+            BPL noTube
             LDA #&00
             CLC
             JMP L0400								;assume there is code within this ROM that is being relocated to &0400???
