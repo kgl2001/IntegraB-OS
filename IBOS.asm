@@ -6756,7 +6756,7 @@ osfileBlock = L02EE
 
 {
 .^LA7A8      BCS LA7C2
-            LDX #&33
+            LDX #userRegAlarm
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&40
             LSR A
@@ -8254,7 +8254,7 @@ osfileBlock = L02EE
 .LB34A		EQUB &06,&0E
 .LB34C		EQUB &0F,&07
 
-.^LB34E      LDX #&33
+.^LB34E      LDX #userRegAlarm
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ASL A
             PHP
@@ -8281,7 +8281,7 @@ osfileBlock = L02EE
             STA romsel
             BCC LB3CA
 
-	  LDX #&33
+	  LDX #userRegAlarm
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA									;and save value
             AND #&01								;read first bit (0)
@@ -8358,7 +8358,7 @@ osfileBlock = L02EE
             JSR LB331
             BVC LB447
             BPL LB447
-            LDX #&33
+            LDX #userRegAlarm
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LSR A
             AND #&20
@@ -8622,7 +8622,7 @@ osfileBlock = L02EE
             LSR A
             LSR A
             PHP
-            LDX #&33
+            LDX #userRegAlarm
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ASL A
             PLP
@@ -8642,7 +8642,7 @@ osfileBlock = L02EE
             JSR parseOnOff
             BCS LB61B
             PHP
-            LDX #&33
+            LDX #userRegAlarm
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PLP
             BNE LB67C
@@ -8687,7 +8687,7 @@ osfileBlock = L02EE
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&20
             JSR printOnOff
-            LDX #&33
+            LDX #userRegAlarm
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&80
             BEQ LB6E0
