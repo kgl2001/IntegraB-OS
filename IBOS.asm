@@ -4459,7 +4459,7 @@ ramPresenceFlags = &A8
             PLA
             JSR variableMainRamSubroutine						;Call relocated Wipe RAM code
             PHA
-            JSR L99E5
+            JSR removeBankAFromSFTODOFOURBANKS
             PLA
             TAX
             LDA #&00
@@ -4491,34 +4491,37 @@ ramPresenceFlags = &A8
 }
 
 {
-.^L99E5      LDX #&03
-.L99E7      CMP prvSFTODOFOURBANKS,X
-            BEQ L99F1
+.^removeBankAFromSFTODOFOURBANKS
+.L99E5      LDX #&03
+.findLoop   CMP prvSFTODOFOURBANKS,X
+            BEQ found
             DEX
-            BPL L99E7
-            SEC
+            BPL findLoop
+            SEC ; SFTODO: Not sure any callers care about this, and I think we'll *always* exit with carry set even if we do find a match
             RTS
 
-.L99F1      LDA #&FF
+.found      LDA #&FF
             STA prvSFTODOFOURBANKS,X
 .L99F6      LDX #&00
             LDY #&00
-.L99FA      LDA prvSFTODOFOURBANKS,X
-            BMI L9A03
+.shuffleLoop
+	  LDA prvSFTODOFOURBANKS,X
+            BMI unassigned
             STA prvSFTODOFOURBANKS,Y
             INY
-.L9A03      INX
+.unassigned INX
             CPX #&04
-            BNE L99FA
+            BNE shuffleLoop
             TYA
             TAX
-            JMP L9A13
+            JMP padLoopStart
 			
-.L9A0D      LDA #&FF
+.padLoop    LDA #&FF
             STA prvSFTODOFOURBANKS,Y
             INY
-.L9A13      CPY #&04
-            BNE L9A0D
+.padLoopStart
+	  CPY #&04
+            BNE padLoop
             RTS
 
 .^L9A18      PHA
@@ -4646,7 +4649,7 @@ ramPresenceFlags = &A8
             CMP #&02
             BNE L9B0D
 .L9AE8      LDA prvOswordBlockCopy + 1
-            JSR L99E5
+            JSR removeBankAFromSFTODOFOURBANKS
             PLP
             BCS L9AF9
             LDA prvOswordBlockCopy + 1
