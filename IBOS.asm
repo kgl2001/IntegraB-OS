@@ -4102,14 +4102,14 @@ tmp = &A8
             LDX #userRegDiscNetBootData							;Register &10 (0: File system / 4: Boot / 5-7: Data )
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA
-            LDY #%11001000
+            LDY #%11001000								;preserve b7, b6 and b3 (boot flag) on soft reset
             LDA lastBreakType
             BEQ bootInAMaskInY							;branch if soft reset
 	  ; Get the boot flag from userRegDiscNetBootData into b3 of A
             PLA
             PHA
 	  ; SFTODO: So where do we set b7 to select NFS or DFS priority? I wonder if this has been bodged in slightly and could be more efficiently handled here, but perhaps there's a good reason for doing it elsewhere.
-            LDY #%11000000								;preserve b6-7 of startup options SFTODO: presumably from keyboard links? would it be a worthwhile enhancement to allow IBOS to control *all* bits of the startup options?
+            LDY #%11000000								;preserve b6-7 of startup options on non-soft reset SFTODO: presumably from keyboard links? would it be a worthwhile enhancement to allow IBOS to control *all* bits of the startup options?
             LSR A
             AND #1<<3
             EOR #1<<3
