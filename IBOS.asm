@@ -4352,7 +4352,7 @@ ramPresenceFlags = &A8
             TAX
             JSR testRamUsingVariableMainRamSubroutine
             BNE L994A
-            LDA prv83+&2C,X
+            LDA prvRomTypeTableCopy,X
             BEQ L994D
             CMP #&02
             BEQ L994D
@@ -4422,7 +4422,7 @@ ramPresenceFlags = &A8
             TAX
             LDA #&00								;
             STA romTypeTable,X								;clear ROM Type byte
-            STA prv83+&2C,X								;clear Private RAM copy of ROM Type byte
+            STA prvRomTypeTableCopy,X								;clear Private RAM copy of ROM Type byte
 .L99BF      RTS
 }
 
@@ -4513,7 +4513,7 @@ ramPresenceFlags = &A8
             PHA
             JSR testRamUsingVariableMainRamSubroutine
             BNE L9A59
-            LDA prv83+&2C,X
+            LDA prvRomTypeTableCopy,X
             BEQ L9A56
             CMP #&02
             BNE L9A59
@@ -4596,7 +4596,7 @@ ramPresenceFlags = &A8
             STA L00AD
             JSR testRamUsingVariableMainRamSubroutine
             BNE L9B0D
-            LDA prv83+&2C,X
+            LDA prvRomTypeTableCopy,X
             BEQ L9AE8
             CMP #&02
             BNE L9B0D
@@ -4611,7 +4611,7 @@ ramPresenceFlags = &A8
             JSR writeRomHeaderAndPatchUsingVariableMainRamSubroutine
             LDX prvOswordBlockCopy + 1
             LDA #&02
-            STA prv83+&2C,X
+            STA prvRomTypeTableCopy,X
             STA romTypeTable,X
 .L9B09      LDX prvOswordBlockCopy + 1
 .L9B0C      RTS
@@ -6101,7 +6101,7 @@ osfileBlock = L02EE
             BNE LA3BC								;if any other bits set, then ROM exists so skip code for Unplugged ROM check, and get and write ROM details
             LDY #&55								;'U' (Unplugged)
             JSR PrvEn								;switch in private RAM
-            LDA prv83+&2C,X;								;get backup copy of ROM Type
+            LDA prvRomTypeTableCopy,X;								;get backup copy of ROM Type
             JSR PrvDis								;switch out private RAM
             BNE LA3BC								;if any bits set, then unplugged ROM exists so get and write ROM details
             JSR printSpace								;write ' ' to screen in place of 'U'
@@ -6288,7 +6288,7 @@ osfileBlock = L02EE
             TAY
             TXA
             STA romTypeTable,Y								;Save ROM Type to ROM Type table
-            STA prv83+&2C,Y								;Save ROM Type to Private RAM copy of ROM Type table
+            STA prvRomTypeTableCopy,Y								;Save ROM Type to Private RAM copy of ROM Type table
 .LA4BE      DEY
             BPL LA4A1
             JSR PrvDis								;switch out private RAM
