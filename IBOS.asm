@@ -4194,6 +4194,7 @@ ENDIF
             JMP exitSCa								;restore service call parameters and exit
 
 ; SFTODO: This has only one caller
+; SFTODO: At least in b-em, I note that with a second processor, we get the INTEGRA-B banner *as well as* the tube banner. This doesn't happen with the standard OS banner. Arguably this is desirable, but we *could* potentially not show our own banner if we have a second processor attached to be more "standard".
 {
 .^L989F     LDX #prvOsMode - prv83							;select OSMODE
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
@@ -4205,7 +4206,7 @@ ENDIF
             JSR OSBYTE
             TXA
             BPL rts
-            LDA #&D7								;Startup message suppression and !BOOT option status
+            LDA #osbyteEnableDisableStartupMessage					;Startup message suppression and !BOOT option status
             LDX #&00
             LDY #&00
             JSR OSBYTE
@@ -4222,7 +4223,7 @@ ENDIF
             BPL L98CC								;Loop
             LDA lastBreakType								;Check Break status. 0=soft, 1=power up, 2=hard
             BEQ L9912								;No Beep and don't write amount of Memory to screen
-            LDA #&07								;Beep
+            LDA #vduBell								;Beep
             JSR OSWRCH								;Write to screen
             LDX #userRegRamPresenceFlags						;Read 'RAM installed in banks' register
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
@@ -4249,7 +4250,7 @@ ENDIF
 .L990D      LDA #'K'
             JSR OSWRCH								;Write to screen
 .L9912      JSR OSNEWL								;New Line
-            BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
+            BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
             BMI rts
             JMP OSNEWL								;New Line
 			
