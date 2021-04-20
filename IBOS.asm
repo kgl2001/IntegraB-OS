@@ -1431,7 +1431,7 @@ tabColumn = 12
             JMP L0100
 }
 			
-; Parse "ON" or "OFF" from the command line, returning with C clear if we succeed, in which case A=&FF for ON or 0 for OFF. If parsing fails we return with C set and A=&7F.
+; Parse "ON" or "OFF" from the command line, returning with C clear if we succeed, in which case A=&FF for ON or 0 for OFF. If parsing fails we return with C set and A=&7F. Flags reflect value in A on exit.
 .parseOnOff
 {
 .L8699      JSR findNextCharAfterSpace							;find next character. offset stored in Y
@@ -2843,7 +2843,7 @@ ptr = &00 ; 2 bytes
             BNE syntaxErrorIndirect
             JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDA tubePresenceFlag
-.^L8FA3      JSR printOnOff
+.^L8FA3     JSR printOnOff
             JSR OSNEWL
 .L8FA9      JMP exitSC								;Exit Service Call
 
@@ -2851,8 +2851,8 @@ ptr = &00 ; 2 bytes
             JMP syntaxError
 
 .tubeOnOrOff
-            BNE L8FF1
-            BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
+            BNE tubeOn
+            BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
             BPL L8FA9
             LDA L028C
             BPL L8FBF
@@ -2866,10 +2866,10 @@ ptr = &00 ; 2 bytes
 		
 .^L8FC8      LDA #&00
             LDX #prvSFTODOTUBE2ISH - prv83
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&FF
             LDX #prvSFTODOTUBEISH - prv83
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&00
             STA tubePresenceFlag
             LDA #&00
@@ -2881,9 +2881,9 @@ ptr = &00 ; 2 bytes
             JSR L9050
             LDA #&00
             LDX #prvSFTODOTUBEISH - prv83
-            JMP writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JMP writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
 			
-.L8FF1      LDA #&81
+.tubeOn     LDA #&81
             STA SHEILA+&E0
             LDA SHEILA+&E0
             LSR A
@@ -2894,13 +2894,13 @@ ptr = &00 ; 2 bytes
 	  EQUS "No Tube!", &00
 
 ;Initialise Tube
-.L9009      BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
+.L9009      BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
             BMI L8FA9
             LDA #&FF
             LDX #prvSFTODOTUBE2ISH - prv83
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX #prvSFTODOTUBEISH - prv83
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX #&FF								;service type &FF - tube system main initialisation
             LDY #&00
             JSR L9050								;issue paged ROM service request
@@ -2918,14 +2918,14 @@ ptr = &00 ; 2 bytes
             JSR L9050								;issue paged ROM service request
             LDA #&00
             LDX #prvSFTODOTUBEISH - prv83
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&7F
 .L9045      BIT SHEILA+&E2
             BVC L9045
             STA SHEILA+&E3
             JMP L0032
 			
-.L9050      LDA #&8F								;issue paged ROM service request
+.L9050      LDA #osbyteIssueServiceRequest						;issue paged ROM service request
             JMP OSBYTE								;execute paged ROM service request
 }
 			
