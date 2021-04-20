@@ -4445,7 +4445,7 @@ ramPresenceFlags = &A8
             BCC L9998
             JSR L99A0
 .L9998      INX
-            CPX #&10
+            CPX #maxBank + 1
             BNE L998F
             JMP PrvDisexitSc
 
