@@ -107,6 +107,7 @@ userRegLangFile = &05 ; b0-3: FILE, b4-7: LANG
 userRegInsertStatusHigh = &06 ; b7=ROM 15 SFTODO? enabled, b0=ROM 8 SFTODO? enabled
 userRegInsertStatusLow = &07 ; b7=ROM 15 SFTODO? enabled, b0=ROM 8 SFTODO? enabled
 userRegModeShadowTV = &0A ; 0-2: MODE / 3: SHADOW / 4: TV interlace / 5-7: TV screen shift
+userRegFdriveCaps = &0B ; 0-2: FDRIVE / 3-5: CAPS
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7L Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
@@ -2083,7 +2084,7 @@ ptr = &00 ; 2 bytes
 ;		EQUB &0A,&E7								;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift. Default was &17. Changed to &E7 in IBOS 1.21
 ;		EQUB &0B,&20								;0-2: FDRIVE / 3-5: CAPS. Default was &23. Changed to &20 in IBOS 1.21
 		EQUB userRegModeShadowTV,&17							;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift.
-		EQUB &0B,&23								;0-2: FDRIVE / 3-5: CAPS.
+		EQUB userRegFdriveCaps,&23							;0-2: FDRIVE / 3-5: CAPS.
 		EQUB &0C,&19								;0-7: Keyboard Delay
 		EQUB &0D,&05								;0-7: Keyboard Repeat
 		EQUB &0E,&0A								;0-7: Printer Ignore
@@ -4037,7 +4038,7 @@ ENDIF
             TAX
             LDA #&05								;select printer destination
             JSR OSBYTE								;write printer destination
-            LDX #&0B
+            LDX #userRegFdriveCaps
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA
             AND #&38
