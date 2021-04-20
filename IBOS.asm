@@ -4090,7 +4090,8 @@ tmp = &A8
             PLA
 	  ; SFTODO: This is a little odd - we're masking off the 3 bits allocated to FDRIVE, but the *FX255 command only allows
 	  ; two bits for FDRIVE - our top FDRIVE bit will be put in b6 of the *FX255 argument. I suppose this does allow control
-	  ; over the filing-system specific interpretation for b6.
+	  ; over the filing-system specific interpretation for b6. No we won't, because we force b6-7 clear below anyway. SO
+	  ; this is harmless but still a little odd.
             AND #%00000111								;get FDRIVE bits
             ASL A
             ASL A
@@ -4106,7 +4107,8 @@ tmp = &A8
 	  ; Get the boot flag from userRegDiscNetBootData into b3 of A
             PLA
             PHA
-            LDY #&C0
+	  ; SFTODO: So where do we set b7 to select NFS or DFS priority?
+            LDY #%11000000								;preserve b6-7 of startup options SFTODO: presumably from keyboard links? would it be a worthwhile enhancement to allow IBOS to control *all* bits of the startup options?
             LSR A
             AND #1<<3
             EOR #1<<3
