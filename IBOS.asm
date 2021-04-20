@@ -117,6 +117,7 @@ userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegBankWriteProtectStatus = &38 ; 2 bytes, 1 bit per bank
 userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
+userRegRamPresenceFlags = &7F ; b0 set=RAM in banks 0-1, b1 set=RAM in banks 2-3, ...
 
 ; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
 ; SFTODO: I am thinking these names - maybe now, and probably also in "final" vsn - should have the actual address as part of the name - because different bits of code use the same location for different things, this will help to make it a bit more obvious if two bits of code are trying to use the same location for two different purposes at once (mainly important when we come to modify the code, but just might be relevant if there are bugs in the existing code)
@@ -156,6 +157,7 @@ keycodeAt = &47 ; internal key code for "@"
 osbyteFlushSelectedBuffer = &15
 osbyteKeyboardScanFrom10 = &7A
 osbyteAcknowledgeEscape = &7E
+osbyteCheckEOF = &7F
 osbyteReadHimem = &84
 osbyteReadWriteOshwm = &B4
 osbyteIssueServiceRequest = &8F
@@ -2102,7 +2104,7 @@ ptr = &00 ; 2 bytes
 		EQUB userRegBankWriteProtectStatus,&FF
 		EQUB userRegBankWriteProtectStatus + 1,&FF
 		EQUB userRegPrvPrintBufferStart,&90
-		EQUB &7F,&0F								;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks).
+		EQUB userRegRamPresenceFlags,&0F								;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks). SFTODO: Where is this accessed?
 .intDefaultEnd
 	  ASSERT (P% + 2) - fullResetPrvTemplate <= 256 ; SFTODO: +2 because as per above SFTODO I think we actually use an extra entry off the end of this table
 }
@@ -3049,7 +3051,7 @@ ptr = &00 ; 2 bytes
             STA L00AA
             JSR PrvEn								;switch in private RAM
 .L913A      JSR OSNEWL
-            LDA #&7F
+            LDA #osbyteCheckEOF
             LDX L00A8
             JSR OSBYTE
             CPX #&00
@@ -3090,7 +3092,7 @@ ptr = &00 ; 2 bytes
             CPX L00A9
             BNE L9183
             BEQ L9165
-.L9196      LDA #&7E
+.L9196      LDA #osbyteAcknowledgeEscape
             JSR OSBYTE
             JSR PrvDis								;switch out private RAM
             JSR L9268								;close file with file handle at &A8
@@ -4204,7 +4206,7 @@ ENDIF
             BEQ L9912								;No Beep and don't write amount of Memory to screen
             LDA #&07								;Beep
             JSR OSWRCH								;Write to screen
-            LDX #&7F								;Read 'RAM installed in banks' register
+            LDX #userRegRamPresenceFlags						;Read 'RAM installed in banks' register
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA L00A8
             LDX #&07								;Check all 8 32k banks for RAM
@@ -5968,7 +5970,7 @@ osfileBlock = L02EE
             LDA L00AA								;Get ROM Number
 	  LSR A
             TAY
-            LDX #&7F								;read RAM installed in bank flag from private &83FF
+            LDX #userRegRamPresenceFlags						;read RAM installed in bank flag from private &83FF
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND LA34A,Y								;Get data from lookup table
             BNE LA380								;Branch if RAM
