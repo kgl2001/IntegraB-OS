@@ -4245,6 +4245,7 @@ ramPresenceFlags = &A8
             CMP #&00								;If RAM total = 0k (will occur with either 0 RAM banks or 8 x 32k RAM banks), then SFTODO: could do "TAX" to save a byte
             BEQ allBanksPresent							;Write '256K' to screen
 	  ; SFTODO: We could save the SEC by just doing JSR printADecimalPad
+	  ; SFTODO: Do we really want padding here? If we have (say) 64K, surely it's neater to print "Computech INTEGRA-B 64K" not "Computech INTEGRA-B  64K"?
             SEC
             JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
             JMP printKAndNewline							;Write 'K' to screen
@@ -4263,11 +4264,12 @@ ramPresenceFlags = &A8
             BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
             BMI rts
             JMP OSNEWL								;New Line
-			
+
+	  ; SFTODO: Control can't flow through to here, can we move the rts label to a nearby rts to save a byte?
 .rts        RTS
 
 .reverseBanner
-       		EQUS " B-ARGETNI"							;INTEGRA-B Reversed
+       	  EQUS " B-ARGETNI"							;INTEGRA-B Reversed
 .reverseBannerEnd
 }
 
