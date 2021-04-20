@@ -116,6 +116,7 @@ userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Dat
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
+userRegBankWriteProtectStatus = &38 ; 2 bytes
 userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
 
 ; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
@@ -2099,8 +2100,8 @@ ptr = &00 ; 2 bytes
 		EQUB userRegOsModeShx,&04							;0-2: OSMODE / 3: SHX
 ;		EQUB userRegCentury,&14							;Century - Default was &13 (1900). Changed to &14 (2000) in IBOS 1.21
 		EQUB userRegCentury,&13							;Century - Default is &13 (1900)
-		EQUB &38,&FF
-		EQUB &39,&FF
+		EQUB userRegBankWriteProtectStatus,&FF
+		EQUB userRegBankWriteProtectStatus + 1,&FF
 		EQUB userRegPrvPrintBufferStart,&90
 		EQUB &7F,&0F								;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks).
 .intDefaultEnd
@@ -6242,7 +6243,7 @@ osfileBlock = L02EE
             BCC LA513
             JMP badId
 			
-.^LA513     LDX #&38
+.^LA513     LDX #userRegBankWriteProtectStatus
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA L00AE
             PLP
@@ -6263,7 +6264,7 @@ osfileBlock = L02EE
             JMP exitSC								;Exit Service Call
 }
 			
-.LA53D      LDX #&38
+.LA53D      LDX #userRegBankWriteProtectStatus
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA prv82+&52
             INX
