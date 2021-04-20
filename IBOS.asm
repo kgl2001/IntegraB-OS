@@ -3944,7 +3944,7 @@ ENDIF
             BNE notSoftReset1
             LDX #&43
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            PHA
+            PHA ; SFTODO: Why can't we just do the read from &8343 *after* JSR setDfsNfsPriority and avoid this PHA/PLA?
             JSR setDfsNfsPriority
             PLA
             AND #&7F
@@ -3956,7 +3956,7 @@ ENDIF
             JMP selectConfiguredFilingSystemAndLanguage
 
 .setDfsNfsPriority
-            LDX #userRegDiscNetBootData							;Register &10 (0: File system / 4: Boot / 5-7: Data )
+            LDX #userRegDiscNetBootData							;Register &10 (0: File system disc/net flag / 4: Boot / 5-7: Data )
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ROR A
             ROR A									;Move File system bit to msb
