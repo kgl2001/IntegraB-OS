@@ -480,6 +480,8 @@ prvOswordBlockCopySize = 16
 ; SFTODO: Split prvOswordBlockOrigAddr into two addresses prvOswordX and prvOswordY? Might better reflect how code uses it, not sure yet.
 prvOswordBlockOrigAddr = prv82 + &30 ; 2 bytes, used for address of original OSWORD &42/&43 parameter block
 
+prvTmp = prv82 + &52 ; 1 byte, SFTODO: seems to be used as scratch space by some code without relying on value being preserved
+
 prvOsMode = prv83 + &3C ; working copy of OSMODE, initialised from relevant bits of userRegOsModeShx in service01
 prvShx = prv83 + &3D ; working copy of SHX, initialised from relevant bit of userRegOsModeShx in service01 (&00 on, &FF off)
 prvSFTODOTUBE2ISH = prv83 + &40
@@ -2178,7 +2180,7 @@ ptr = &00 ; 2 bytes
 .L8A9F      PLP
             LDA #&00
             ROL A
-            STA prv82+&52
+            STA prvTmp
             BIT prv82+&53
             BVC L8AB3
             BPL L8AC1
@@ -2190,7 +2192,7 @@ ptr = &00 ; 2 bytes
             ROR A
             STA ramselCopy
             STA ramsel
-.L8AC1      LDA prv82+&52
+.L8AC1      LDA prvTmp
             TAX
             JSR PrvDis								;switch out private RAM
             PLP
@@ -4297,10 +4299,11 @@ tmp = &A8
 
 ; SFTODO: This has only one caller
 ; SFTODO: At least in b-em, I note that with a second processor, we get the INTEGRA-B banner *as well as* the tube banner. This doesn't happen with the standard OS banner. Arguably this is desirable, but we *could* potentially not show our own banner if we have a second processor attached to be more "standard".
+; SFTODO: Perhaps a bit of a novelty, but could we make the startup banner *CONFIGURE-able?
 .displayBannerIfRequired
 {
 ramPresenceFlags = &A8
-.L989F     LDX #prvOsMode - prv83							;select OSMODE
+.L989F      LDX #prvOsMode - prv83							;select OSMODE
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&00								;If OSMODE=0 SFTODO: Could save a byte with "TAX"
             BEQ rts									;Then leave startup message alone
@@ -4381,7 +4384,7 @@ ramPresenceFlags = &A8
             LDA #&00
             STA oswdbtX
             LDY #&03
-.L9933      STY prv82+&52
+.L9933      STY prvTmp
             LDA prvPseudoBankNumbers,Y
             BMI L994A
             TAX
@@ -4395,13 +4398,15 @@ ramPresenceFlags = &A8
             BCC L994E
 .L994D      SEC
 .L994E      ROL oswdbtX
-            LDY prv82+&52
+            LDY prvTmp
             DEY
-            STY prv82+&52
+            STY prvTmp
             BPL L9933
             JMP L9983
 }
 
+;OSBYTE &45 (69) - Test PSEUDO/Absolute usage (http://beebwiki.mdfs.net/OSBYTE_%2645)
+;SFTODOWIP
 .osbyte45Internal
 {
 .L995C      JSR PrvEn								;switch in private RAM
@@ -4410,7 +4415,7 @@ ramPresenceFlags = &A8
             LDA #&00
             STA oswdbtX
             LDY #&03
-.L9967      STY prv82+&52
+.L9967      STY prvTmp
             LDA prvPseudoBankNumbers,Y
             BMI L9974
             JSR L9A25
@@ -4419,9 +4424,9 @@ ramPresenceFlags = &A8
             BCC L9978
 .L9977      SEC
 .L9978      ROL oswdbtX
-            LDY prv82+&52
+            LDY prvTmp
             DEY
-            STY prv82+&52
+            STY prvTmp
             BPL L9967
 .^L9983     PLP
             JMP PrvDisexitSc
@@ -6426,18 +6431,18 @@ osfileBlock = L02EE
 {
 .^LA53D      LDX #userRegBankWriteProtectStatus
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            STA prv82+&52
+            STA prvTmp
             INX
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHP
             SEI
             LSR A
-            ROR prv82+&52
+            ROR prvTmp
             LSR A
-            ROR prv82+&52
+            ROR prvTmp
             ORA #&80
             STA SHEILA+&38
-            LDA prv82+&52
+            LDA prvTmp
             LSR A
             LSR A
             ORA #&40
