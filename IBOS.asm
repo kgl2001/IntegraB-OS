@@ -4200,6 +4200,7 @@ ENDIF
 ; SFTODO: This has only one caller
 ; SFTODO: At least in b-em, I note that with a second processor, we get the INTEGRA-B banner *as well as* the tube banner. This doesn't happen with the standard OS banner. Arguably this is desirable, but we *could* potentially not show our own banner if we have a second processor attached to be more "standard".
 {
+ramPresenceFlags = &A8
 .^L989F     LDX #prvOsMode - prv83							;select OSMODE
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&00								;If OSMODE=0 SFTODO: Could save a byte with "TAX"
@@ -4233,12 +4234,12 @@ ENDIF
             JSR OSWRCH								;Write to screen
             LDX #userRegRamPresenceFlags						;Read 'RAM installed in banks' register
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            STA L00A8
+            STA ramPresenceFlags
             LDX #&07								;Check all 8 32k banks for RAM
             LDA #&00								;Start with 0k RAM
-.L98EA      LSR L00A8								;Check if RAM bank
+.L98EA      LSR ramPresenceFlags									;Check if RAM bank
             BCC L98F0								;If 0 then no RAM, so don't increment RAM count
-            ADC #&1F								;Add 32k (&1F + Carry)
+            ADC #32 - 1								;Add 32k (-1 because carry is set)
 .L98F0      DEX									;Check next 32k bank
             BPL L98EA								;Loop until 0
             CMP #&00								;If RAM total = 0k (will occur with either 0 RAM banks or 8 x 32k RAM banks), then
