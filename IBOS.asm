@@ -4191,8 +4191,10 @@ ENDIF
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             PLA
             JMP exitSCa								;restore service call parameters and exit
-			
-.L989F      LDX #prvOsMode - prv83								;select OSMODE
+
+; SFTODO: This has only one caller
+{
+.^L989F     LDX #prvOsMode - prv83								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&00								;If OSMODE=0
             BEQ L991D								;Then no startup message
@@ -4253,6 +4255,7 @@ ENDIF
 .L991D      RTS
 
 .L991E		EQUS " B-ARGETNI"							;INTEGRA-B Reversed
+}
 
 ; SFTODO: There are a few cases where we JMP to osbyteXXInternal, if we rearranged the code a little (could always use macros to maintain readability, if that's a factor) we could probably save some JMPs
 .osbyte44Internal
