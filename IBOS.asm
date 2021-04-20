@@ -4028,7 +4028,7 @@ ENDIF
 .screenModeInA
 	  JSR OSWRCH								;Write MODE
 .screenModeSet
-	  JSR L989F
+	  JSR displayBannerIfRequired
             LDX #userRegKeyboardDelay							;get keyboard auto-repeat delay (cSecs)
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             TAX
@@ -4199,9 +4199,10 @@ ENDIF
 
 ; SFTODO: This has only one caller
 ; SFTODO: At least in b-em, I note that with a second processor, we get the INTEGRA-B banner *as well as* the tube banner. This doesn't happen with the standard OS banner. Arguably this is desirable, but we *could* potentially not show our own banner if we have a second processor attached to be more "standard".
+.displayBannerIfRequired
 {
 ramPresenceFlags = &A8
-.^L989F     LDX #prvOsMode - prv83							;select OSMODE
+.L989F     LDX #prvOsMode - prv83							;select OSMODE
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&00								;If OSMODE=0 SFTODO: Could save a byte with "TAX"
             BEQ rts									;Then leave startup message alone
