@@ -4407,7 +4407,6 @@ ramPresenceFlags = &A8
 }
 
 ;OSBYTE &45 (69) - Test PSEUDO/Absolute usage (http://beebwiki.mdfs.net/OSBYTE_%2645)
-;SFTODOWIP
 .osbyte45Internal
 {
 .L995C      JSR PrvEn								;switch in private RAM
@@ -4415,21 +4414,22 @@ ramPresenceFlags = &A8
             SEI
             LDA #&00
             STA oswdbtX
+	  ; SFTODO: Is all the saving and restoring of Y needed? findAInPrvSFTODOFOURBANKS doesn't seem to corrupt Y.
             LDY #&03
-.L9967      STY prvTmp
+.bankLoop   STY prvTmp
             LDA prvPseudoBankNumbers,Y
-            BMI noSuchBank								;&FF indicates no absolute bank assigned to this pseudo-bank
-            JSR findAInPrvSFTODOFOURBanks
-            BPL SFTODOXSET
-.noSuchBank CLC
+            BMI bankAbs   								;&FF indicates no absolute bank assigned to this pseudo-bank SFTODO: I guess we say that's an absolute addressing bank as it is less likely our caller will decide to try to use it, but it is a bit arbitrary
+            JSR findAInPrvSFTODOFOURBANKS ; SFTODO: I am inferring SFTODOFOURBANKS is therefore a list of up to 4 banks being used for pseudo-addressing - the fact we need to do the previous BMI suggests the list is padded to the full 4 entries with &FF
+            BPL bankPseudo								;branch if we found a match
+.bankAbs    CLC
             BCC bankStateInC
-.SFTODOXSET SEC
+.bankPseudo SEC
 .bankStateInC
             ROL oswdbtX
             LDY prvTmp
             DEY
             STY prvTmp
-            BPL L9967
+            BPL bankLoop
 .^L9983     PLP
             JMP PrvDisexitSc
 }
@@ -4455,9 +4455,9 @@ ramPresenceFlags = &A8
             PHA
             LDX #lo(wipeRamTemplate)							;LSB of relocatable Wipe RAM code
             LDY #hi(wipeRamTemplate)							;MSB of relocatable Wipe RAM code
-            JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of Wipe RAM code from &9E38 to &03A7
+            JSR copyYxToVariableMainRamSubroutine						;relocate &32 bytes of Wipe RAM code from &9E38 to &03A7
             PLA
-            JSR variableMainRamSubroutine								;Call relocated Wipe RAM code
+            JSR variableMainRamSubroutine						;Call relocated Wipe RAM code
             PHA
             JSR L99E5
             PLA
@@ -4532,7 +4532,7 @@ ramPresenceFlags = &A8
 
 ; Return with X such that prvSFTODOFOURBANKS[X] == A (N flag clear), or with X=-1 if there is no such X (N flag set).
 ; SFTODO: This only has one caller
-.findAInPrvSFTODOFOURBanks
+.findAInPrvSFTODOFOURBANKS
 {
 .L9A25      LDX #&03
 .loop       CMP prvSFTODOFOURBANKS,X
