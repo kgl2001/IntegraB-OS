@@ -6432,8 +6432,8 @@ osfileBlock = L02EE
             BEQ softReset
             LDA #osbyteKeyboardScanFrom10
             JSR OSBYTE
-            CPX #&47
-            BNE softReset
+            CPX #keycodeAt
+            BNE softReset ; SFTODO: Rename label given use here?
             LDA #&00
             STA L0287
             LDA #&FF
