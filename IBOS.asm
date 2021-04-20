@@ -139,6 +139,7 @@ vduStatusShadow = &10
 negativeVduQueueSize = &026A
 tubePresenceFlag = &027A ; SFTODO: allmem says 0=inactive, is there actually a specific bit or value for active? what does this code rely on?
 osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force shadow modes (note that AllMem.txt seems to have this wrong, at least my copy does)
+currentLanguageRom = &028C ; SFTODO: not sure yet if we're using this for what the OS does or repurposing it
 currentMode = &0355
 
 osCmdPtr = &F2
@@ -2845,16 +2846,18 @@ ptr = &00 ; 2 bytes
             LDA tubePresenceFlag
 .^L8FA3     JSR printOnOff
             JSR OSNEWL
-.L8FA9      JMP exitSC								;Exit Service Call
+.exitSCIndirect
+            JMP exitSC								;Exit Service Call
 
 .syntaxErrorIndirect
             JMP syntaxError
 
 .tubeOnOrOff
             BNE tubeOn
+	  ; Turn the tube off.
             BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
-            BPL L8FA9
-            LDA L028C
+            BPL exitSCIndirect							;nothing to do if already off
+            LDA currentLanguageRom
             BPL L8FBF
             LDA romselCopy
             AND #&0F
@@ -2895,7 +2898,7 @@ ptr = &00 ; 2 bytes
 
 ;Initialise Tube
 .L9009      BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
-            BMI L8FA9
+            BMI exitSCIndirect							;nothing to do if already on
             LDA #&FF
             LDX #prvSFTODOTUBE2ISH - prv83
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
@@ -3022,7 +3025,7 @@ ptr = &00 ; 2 bytes
             STA L0103,X
             LDA romselCopy
             AND #&0F
-            STA L028C
+            STA currentLanguageRom
             JSR L88D7
 .L90DE      PLA
             TAY
@@ -3928,7 +3931,7 @@ ENDIF
 .L968D      JSR L96BC
             LDA lastBreakType
             BNE L969A
-            LDA L028C
+            LDA currentLanguageRom
             BPL L96A7
 .L969A      LDX #&05
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
