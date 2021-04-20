@@ -3962,7 +3962,7 @@ ENDIF
             LDX #prvPrvPrintBufferStart-prv83                                                       ; SFTODO: not too happy with this format
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX lastBreakType
-            BEQ softBreak
+            BEQ softReset
             LDX #userRegOsModeShx							;0-2: OSMODE / 3: SHX
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA
@@ -3976,7 +3976,7 @@ ENDIF
             LDA #&FF
 .shxInA     LDX #prvShx - prv83							;select SHX register (&08: On, &FF: Off)
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-.softBreak
+.softReset
 .L9719      JSR LBC98
             LDX #userRegModeShadowTV							;get TV / MODE parameters
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
@@ -4228,7 +4228,7 @@ ENDIF
             DEX									;Next Character
             BPL bannerLoop2								;Loop
             LDA lastBreakType								;Check Break status. 0=soft, 1=power up, 2=hard
-            BEQ L9912								;No Beep and don't write amount of Memory to screen
+            BEQ softReset								;No Beep and don't write amount of Memory to screen
             LDA #vduBell								;Beep
             JSR OSWRCH								;Write to screen
             LDX #userRegRamPresenceFlags						;Read 'RAM installed in banks' register
@@ -4255,7 +4255,7 @@ ENDIF
             JSR OSWRCH								;Write to screen
 .L990D      LDA #'K'
             JSR OSWRCH								;Write to screen
-.L9912      JSR OSNEWL								;New Line
+.softReset  JSR OSNEWL								;New Line
             BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
             BMI rts
             JMP OSNEWL								;New Line
@@ -9975,7 +9975,7 @@ ptr = &A8
 .initPrintBuffer
 {
 .LBE3E      LDX lastBreakType
-            BEQ softBreak
+            BEQ softReset
             ; On hard break or power-on reset, set up the printer buffer so it
             ; uses private RAM from prvPrvPrintBufferStart onwards.
             JSR PrvEn								;switch in private RAM
@@ -10001,7 +10001,7 @@ ptr = &A8
             STA prv83+&19
             STA prv83+&1A
             STA prv83+&1B
-.softBreak
+.softReset
 .LBE7B      JSR purgePrintBuffer
             JSR PrvDis								;switch out private RAM
             ; Copy the rom access subroutine used by the printer buffer from ROM into RAM.
