@@ -113,6 +113,7 @@ userRegPrinterIgnore = &0E ; 0-7: Printer ignore
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7L Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
+userRegAlarm = &33 ; SFTODO? bits 0-5??
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegBankWriteProtectStatus = &38 ; 2 bytes, 1 bit per bank
@@ -3426,23 +3427,23 @@ ptr = &00 ; 2 bytes
 ConfParBitUserRegOffset = 0
 ConfParBitStartBitOffset = 1
 ConfParBitBitCountOffset = 2
-.ConfParBit	EQUB userRegLangFile,&00,&04							;FILE ->	  &05 Bits 0..3
-		EQUB userRegLangFile,&04,&04							;LANG ->	  &05 Bits 4..7
-		EQUB userRegTubeBaudPrinter,&02,&03							;BAUD ->	  &0F Bits 2..4
-		EQUB userRegDiscNetBootData,&05,&03							;DATA ->	  &10 Bits 5..7
-		EQUB userRegFdriveCaps,&00,&03							;FDRIVE ->  &0B Bits 0..2
-		EQUB userRegTubeBaudPrinter,&05,&03							;PRINTER -> &0F Bits 5..7
-		EQUB &0E,&00,&00							;IGNORE ->  &0E Bits 0..7
-		EQUB &0C,&00,&00							;DELAY ->	  &0C Bits 0..7
-		EQUB &0D,&00,&00							;REPEAT ->  &0D Bits 0..7
-		EQUB &0B,&03,&03							;CAPS ->	  &0B Bits 3..5
-		EQUB &0A,&04,&04							;TV ->	  &0A Bits 4..7
-		EQUB &0A,&00,&04							;MODE ->	  &0A Bits 0..3
-		EQUB userRegTubeBaudPrinter,&00,&01							;TUBE ->	  &0F Bit  0
-		EQUB &10,&04,&81							;BOOT ->	  &10 Bit  4
-		EQUB userRegOsModeShx,&03,&81							;SHX ->	  &32 Bit  3
-		EQUB userRegOsModeShx,&00,&03							;OSMODE ->  &32 Bits 0..2
-		EQUB &33,&00,&06							;ALARM ->	  &33 Bits 0..5
+.ConfParBit	EQUB userRegLangFile,&00,&04						;FILE ->	  &05 Bits 0..3
+		EQUB userRegLangFile,&04,&04						;LANG ->	  &05 Bits 4..7
+		EQUB userRegTubeBaudPrinter,&02,&03					;BAUD ->	  &0F Bits 2..4
+		EQUB userRegDiscNetBootData,&05,&03					;DATA ->	  &10 Bits 5..7
+		EQUB userRegFdriveCaps,&00,&03					;FDRIVE ->  &0B Bits 0..2
+		EQUB userRegTubeBaudPrinter,&05,&03					;PRINTER -> &0F Bits 5..7
+		EQUB userRegPrinterIgnore,&00,&00					;IGNORE ->  &0E Bits 0..7
+		EQUB userRegKeyboardDelay,&00,&00					;DELAY ->	  &0C Bits 0..7
+		EQUB userRegKeyboardRepeat,&00,&00					;REPEAT ->  &0D Bits 0..7
+		EQUB userRegFdriveCaps,&03,&03					;CAPS ->	  &0B Bits 3..5
+		EQUB userRegModeShadowTV,&04,&04					;TV ->	  &0A Bits 4..7
+		EQUB userRegModeShadowTV,&00,&04					;MODE ->	  &0A Bits 0..3
+		EQUB userRegTubeBaudPrinter,&00,&01					;TUBE ->	  &0F Bit  0
+		EQUB userRegDiscNetBootData,&04,&81					;BOOT ->	  &10 Bit  4
+		EQUB userRegOsModeShx,&03,&81						;SHX ->	  &32 Bit  3
+		EQUB userRegOsModeShx,&00,&03						;OSMODE ->  &32 Bits 0..2
+		EQUB userRegAlarm,&00,&06						;ALARM ->	  &33 Bits 0..5
 
 ;*CONFIGURE / *STATUS Options
 .ConfTypTbl	EQUW Conf0-1							;FILE <0-15>(D/N)		Type 0:
