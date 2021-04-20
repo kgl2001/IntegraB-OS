@@ -168,6 +168,7 @@ osbyteKeyboardScanFrom10 = &7A
 osbyteAcknowledgeEscape = &7E
 osbyteCheckEOF = &7F
 osbyteReadHimem = &84
+osbyteEnterLanguage = &8E
 osbyteIssueServiceRequest = &8F
 osbyteTV = &90
 osbyteReadWriteOshwm = &B4
@@ -2866,12 +2867,13 @@ ptr = &00 ; 2 bytes
             LDA romselCopy
             AND #&0F
 .L8FBF      PHA
-            JSR L8FC8
+            JSR reselectFilingSystem
             PLA
             TAX
-            JMP L90F4
-		
-.^L8FC8      LDA #&00
+            JMP doOsbyteEnterLanguage
+
+.^reselectFilingSystem ; SFTODO: Do we need the name to indicate the updates to SFTODOTUBE{,2}ISH?
+.L8FC8      LDA #&00
             LDX #prvSFTODOTUBE2ISH - prv83
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&FF
@@ -3024,7 +3026,7 @@ ptr = &00 ; 2 bytes
             JSR OSWRCH
             BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BPL L90DE
-            JSR L8FC8
+            JSR reselectFilingSystem
             TSX
             LDA L0103,X
             ORA #&40
@@ -3049,12 +3051,16 @@ ptr = &00 ; 2 bytes
 }
 
 ;*NLE Command
-.nle	  LDX romselCopy									;Get current ROM number
-.L90F4      LDA #&8E
+{
+.^nle	  LDX romselCopy									;Get current ROM number
+.^doOsbyteEnterLanguage
+            LDA #osbyteEnterLanguage
             JMP OSBYTE								;Enter IBOS as a language ROM
+}
 			
 ;*GOIO Command
-.goio	  LDA (L00A8),Y
+{
+.^goio	  LDA (L00A8),Y
             CMP #&28
             PHP
             BNE L9101
@@ -3083,9 +3089,11 @@ ptr = &00 ; 2 bytes
             LDA #&01
             JSR L00AF
             JMP exitSC								;Exit Service Call
+}
 			
 ;*APPEND Command
-.append	  LDA #&C0								;open file for update
+{
+.^append	  LDA #&C0								;open file for update
             JSR L922B								;get address of file name and open file
             LDA #&00
             STA L00AA
@@ -3138,6 +3146,7 @@ ptr = &00 ; 2 bytes
             JSR L9268								;close file with file handle at &A8
             JSR OSNEWL
             JMP L8E07
+}
 			
 
 ;OSWORD A=&0, Read line from input - Parameter block
