@@ -2640,9 +2640,9 @@ ptr = &00 ; 2 bytes
 ;Test for SWRAM			
 .L8E10      TXA
             PHA
-            LDA L02A1,Y								;read ROM Type from ROM Type Table
+            LDA romTypeTable,Y							;read ROM Type from ROM Type Table
             BNE L8E68								;exit if not 0
-            LDA prv83+&2C,Y								;read ROM Type from Private RAM backup
+            LDA prvRomTypeTableCopy,Y							;read ROM Type from Private RAM backup
             BNE L8E68								;exit if not 0
             PHP
             SEI
@@ -3959,7 +3959,7 @@ ENDIF
 			
 .L96A5      LDA romselCopy
 .L96A7      TAX
-            LDA L02A1,X
+            LDA romTypeTable,X
             ROL A
             BPL L96B1
             JMP LDBE6								;OSBYTE 142 - ENTER LANGUAGE ROM AT &8000 (http://mdfs.net/Docs/Comp/BBC/OS1-20/D940)
@@ -4421,7 +4421,7 @@ ramPresenceFlags = &A8
             PLA
             TAX
             LDA #&00								;
-            STA L02A1,X								;clear ROM Type byte
+            STA romTypeTable,X								;clear ROM Type byte
             STA prv83+&2C,X								;clear Private RAM copy of ROM Type byte
 .L99BF      RTS
 }
@@ -4612,7 +4612,7 @@ ramPresenceFlags = &A8
             LDX prvOswordBlockCopy + 1
             LDA #&02
             STA prv83+&2C,X
-            STA L02A1,X
+            STA romTypeTable,X
 .L9B09      LDX prvOswordBlockCopy + 1
 .L9B0C      RTS
 
@@ -6095,7 +6095,7 @@ osfileBlock = L02EE
 .LA38D      JSR OSWRCH								;write to screen
             JSR PrvEn								;switch in private RAM
             LDX L00AA								;Get ROM Number
-            LDA L02A1,X								;get ROM Type
+            LDA romTypeTable,X								;get ROM Type
             LDY #' '								;' '
             AND #&FE								;bit 0 of ROM Type is undefined, so mask out
             BNE LA3BC								;if any other bits set, then ROM exists so skip code for Unplugged ROM check, and get and write ROM details
@@ -6287,7 +6287,7 @@ osfileBlock = L02EE
             PLA
             TAY
             TXA
-            STA L02A1,Y								;Save ROM Type to ROM Type table
+            STA romTypeTable,Y								;Save ROM Type to ROM Type table
             STA prv83+&2C,Y								;Save ROM Type to Private RAM copy of ROM Type table
 .LA4BE      DEY
             BPL LA4A1
@@ -6304,7 +6304,7 @@ osfileBlock = L02EE
             ROL transientRomBankMask + 1
             BCS skipBank
             LDA #&00
-            STA L02A1,Y
+            STA romTypeTable,Y
 .skipBank   DEY
             BPL unplugLoop
             RTS
