@@ -3962,19 +3962,21 @@ ENDIF
             JSR OSBYTE								;execute read / write start-up options
             RTS
 			
-.L9680      LDX #&05
+.L9680      LDX #userRegLangFile
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            AND #&0F
+            AND #&0F								;get *CONFIGURE FILE value
             TAX
+	  ; SFTODO: If the selected filing system is >= our bank, start one bank lower?! This seems odd, although *if* we know we're bank 15, this really just means "start below us" (presumably to avoid infinite recursion)
             CPX romselCopy
             BCC L968D
             DEX
-.L968D      JSR L96BC
+.L968D      JSR passServiceCallToAllROMs
             LDA lastBreakType
-            BNE L969A
+            BNE notSoftReset
             LDA currentLanguageRom
-            BPL L96A7
-.L969A      LDX #&05
+            BPL L96A7 ; SFTODO: Do we expect this to always branch? Not at all sure.
+.notSoftReset
+	  LDX #userRegLangFile
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             JSR lsrA4
             JMP L96A7
@@ -3991,17 +3993,19 @@ ENDIF
             LDA #&00
             CLC
             JMP L0400								;assume there is code within this ROM that is being relocated to &0400???
-			
+
+; SFTODO: This has only one caller
+.passServiceCallToAllROMs
 .L96BC      TXA
             PHA
             TSX
-            LDA L0104,X
-            TAY
+            LDA L0104,X								;get Y from the service call
+            TAY ; SFTODO: Just use LDY L0104,X to load directly?
             PLA
             TAX
             LDA romselCopy
             PHA
-            LDA #&03
+            LDA #&03								;service call number
             JMP LF16E								;OSBYTE 143 - Pass service commands to sideways ROMs (http://mdfs.net/Docs/Comp/BBC/OS1-20/F135)
 }
 
