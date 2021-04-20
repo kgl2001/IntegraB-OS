@@ -230,6 +230,7 @@ shadowModeOffset = &80 ; SFTODO!?
 
 lastBreakType = &028D ; 0=soft reset, 1=power on reset, 2=hard reset SFTODO: named constants?
 
+serviceSelectFilingSystem = &12
 serviceConfigure = &28
 serviceStatus = &29
 serviceAboutToEnterLanguage = &2A
@@ -2883,7 +2884,7 @@ ptr = &00 ; 2 bytes
             LDY #&00 ; handle = 0 for this call
             JSR OSARGS
             TAY
-            LDX #&12
+            LDX #serviceSelectFilingSystem
             JSR doOsbyteIssueServiceRequest
             LDA #&00
             LDX #prvSFTODOTUBEISH - prv83
