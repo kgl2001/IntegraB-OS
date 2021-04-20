@@ -10046,11 +10046,11 @@ ptr = &A8
             AND #flagV
             BEQ cnpvCount
             ; We're purging the buffer.
-            LDX #&47
+            LDX #prvPrintBufferPurgeOption - prv83
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            BEQ LBE16
+            BEQ purgeOff
             JSR purgePrintBuffer
-.LBE16      JMP restoreRamselClearPrvenReturnFromVectorHandler
+.purgeOff   JMP restoreRamselClearPrvenReturnFromVectorHandler
 
 .cnpvCount
 .LBE19      LDA L0107,X ; get original flags
