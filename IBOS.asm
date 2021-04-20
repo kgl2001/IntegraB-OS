@@ -466,6 +466,7 @@ prvPrintBufferBankEnd   = prv82 + &0E
 ; the IBOS ROM bank number and the others will be &FF.
 prvPrintBufferBankList  = prv83 + &18 ; 4 bytes
 prvPrvPrintBufferStart = prv83 + &45 ; working copy of userRegPrvPrintBufferStart
+prvPrintBufferPurgeOption = prv83 + &47 ; &FF for *PURGE ON, &00 for *PURGE OFF
 
 ; SFTODO: I believe we do this copy because we want to swizzle it and we mustn't corrupt the user's version, but wait until I've examined more code before writing permanent comment to that effect
 prvOswordBlockCopy = prv82 + &20 ; 16 bytes, used for copy of OSWORD &42/&43 parameter block
@@ -2443,21 +2444,22 @@ ptr = &00 ; 2 bytes
 .purge
 {
             JSR parseOnOff
-            BCC L8C8F
-            LDA (L00A8),Y
-            CMP #&3F
-            BNE L8C86
+            BCC purgeOnOrOff
+            LDA (transientCmdPtr),Y
+            CMP #'?'
+            BNE purgeNow
             JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
-            LDX #&47
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            JMP L8FA3
-			
-.L8C86      JSR PrvEn								;switch in private RAM
-            JSR purgePrintBuffer
-            JMP L8E0A
+            LDX #prvPrintBufferPurgeOption - prv83
+            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
+            JMP printOnOffOSNEWLExitSC
 
-.L8C8F      LDX #&47
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+.purgeNow   JSR PrvEn 								;switch in private RAM
+            JSR purgePrintBuffer
+            JMP PrvDisExitSC
+
+.purgeOnOrOff
+	  LDX #prvPrintBufferPurgeOption - prv83
+            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             JMP exitSC								;Exit Service Call
 }
 			
@@ -2639,7 +2641,8 @@ ptr = &00 ; 2 bytes
 .L8E02      LDA #vduDel								;delete the last ',' that was just printed
             JSR OSWRCH								;write to screen
 .L8E07      JSR OSNEWL
-.L8E0A      JSR PrvDis								;switch out private RAM
+.PrvDisExitSC
+            JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call
 
 ;Test for SWRAM			
@@ -2811,7 +2814,7 @@ ptr = &00 ; 2 bytes
             JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDX #&3D								;select SHX register (&08: On, &FF: Off)
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            JMP L8FA3
+            JMP printOnOffOSNEWLExitSC
 			
 .L8F60      LDX #&3D								;select SHX register (&08: On, &FF: Off)
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
@@ -2856,7 +2859,8 @@ ptr = &00 ; 2 bytes
             BNE syntaxErrorIndirect
             JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDA tubePresenceFlag
-.^L8FA3     JSR printOnOff
+.^printOnOffOSNEWLExitSC
+.L8FA3      JSR printOnOff
             JSR OSNEWL
 .exitSCIndirect
             JMP exitSC								;Exit Service Call
@@ -8680,7 +8684,7 @@ osfileBlock = L02EE
             JSR LAD63
             DEC prvOswordBlockCopy + 1
             JSR LA5DE
-            LDA #&2F								;'/'
+            LDA #'/'
             JSR OSWRCH								;write to screen
             JSR printSpace								;write ' ' to screen
             LDX #&0B								;Select 'Register B' register on RTC: Register &0B
