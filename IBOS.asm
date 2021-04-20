@@ -6018,22 +6018,24 @@ osfileBlock = L02EE
 .^insert     JSR LA2E4								;Error check input data
             LDX #userRegBankInsertStatus						;get *INSERT status
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            ORA L00AE								;update *INSERT status
+            ORA transientRomBankMask								;update *INSERT status
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             LDX #userRegBankInsertStatus + 1
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            ORA L00AF
-            JSR LA31A								;Check for Immediate 'I' flag
-            BNE LA317								;Exit if not immediate
+            ORA transientRomBankMask + 1
+            JSR writeUserRegAndCheckNextCharI						;Check for Immediate 'I' flag
+            BNE exitSCIndirect1								;Exit if not immediate
             INY
             JSR LA49C								;Initialise inserted ROMs
-.LA317      JMP exitSC								;Exit Service Call
+.exitSCIndirect1
+            JMP exitSC								;Exit Service Call
 
-.LA31A      JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
+.writeUserRegAndCheckNextCharI
+            JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             JSR findNextCharAfterSpace							;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             AND #&DF								;Capitalise
-            CMP #&49								;and check for 'I' (Immediate)
+            CMP #'I'								;and check for 'I' (Immediate)
             RTS
 
 ;*UNPLUG Command
@@ -6046,11 +6048,12 @@ osfileBlock = L02EE
             LDX #&07								;INSERT status for ROMS &07 to &00
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND L00AF
-            JSR LA31A
-            BNE LA347
+            JSR writeUserRegAndCheckNextCharI						;Check for Immediate 'I' flag
+            BNE exitSCIndirect2
             INY
             JSR unplugBanksUsingTransientRomBankMask
-.LA347      JMP exitSC								;Exit Service Call
+.exitSCIndirect2
+            JMP exitSC								;Exit Service Call
 }
 
 {
