@@ -1466,8 +1466,10 @@ tabColumn = 12
             RTS
 }
 
+; Print "OFF" if A=0, otherwise print "ON".
+.printOnOff
 {
-.^L86C8     PHA
+.L86C8      PHA
             LDA #'O'
             JSR OSWRCH
             PLA
@@ -2841,7 +2843,7 @@ ptr = &00 ; 2 bytes
             BNE syntaxErrorIndirect
             JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDA tubePresenceFlag
-.^L8FA3      JSR L86C8
+.^L8FA3      JSR printOnOff
             JSR OSNEWL
 .L8FA9      JMP exitSC								;Exit Service Call
 
@@ -8645,7 +8647,7 @@ osfileBlock = L02EE
             LDX #&0B								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&20
-            JSR L86C8
+            JSR printOnOff
             LDX #&33
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&80
