@@ -3426,12 +3426,12 @@ ptr = &00 ; 2 bytes
 ConfParBitUserRegOffset = 0
 ConfParBitStartBitOffset = 1
 ConfParBitBitCountOffset = 2
-.ConfParBit	EQUB &05,&00,&04							;FILE ->	  &05 Bits 0..3
-		EQUB &05,&04,&04							;LANG ->	  &05 Bits 4..7
-		EQUB &0F,&02,&03							;BAUD ->	  &0F Bits 2..4
-		EQUB &10,&05,&03							;DATA ->	  &10 Bits 5..7
-		EQUB &0B,&00,&03							;FDRIVE ->  &0B Bits 0..2
-		EQUB &0F,&05,&03							;PRINTER -> &0F Bits 5..7
+.ConfParBit	EQUB userRegLangFile,&00,&04							;FILE ->	  &05 Bits 0..3
+		EQUB userRegLangFile,&04,&04							;LANG ->	  &05 Bits 4..7
+		EQUB userRegTubeBaudPrinter,&02,&03							;BAUD ->	  &0F Bits 2..4
+		EQUB userRegDiscNetBootData,&05,&03							;DATA ->	  &10 Bits 5..7
+		EQUB userRegFdriveCaps,&00,&03							;FDRIVE ->  &0B Bits 0..2
+		EQUB userRegTubeBaudPrinter,&05,&03							;PRINTER -> &0F Bits 5..7
 		EQUB &0E,&00,&00							;IGNORE ->  &0E Bits 0..7
 		EQUB &0C,&00,&00							;DELAY ->	  &0C Bits 0..7
 		EQUB &0D,&00,&00							;REPEAT ->  &0D Bits 0..7
