@@ -252,6 +252,9 @@ BYTEVL      = &020A
 BRKVH       = &0203
 BRKVL       = &0202
 
+XKEYV       = &0DDB
+XKEYVBank   = XKEYV + 2
+
 RESET       = &FFFC
 OSCLI       = &FFF7
 OSBYTE      = &FFF4
@@ -3876,19 +3879,20 @@ ENDIF
 {
 .^service03 LDA KEYVH
             CMP #&FF
-            BNE L9605
+            BNE notExtendedVector
             LDA #&0D
-            STA L00F6
+            STA osRdRmPtr
             LDA #&80
-            STA L00F7
-            LDY L0DDD
+            STA osRdRmPtr + 1
+            LDY XKEYVBank
             JSR OSRDRM
             CMP #&47
-            BNE L9605
+            BNE notExtendedVector ; SFTODO: rename label?
             LDA L0DDD
             ORA #&80
             STA L0DDD
-.L9605      CLC
+.notExtendedVector
+            CLC
             JSR LA7A8
             BIT L03A4
             BPL L9611
