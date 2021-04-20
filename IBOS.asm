@@ -2812,7 +2812,8 @@ ptr = &00 ; 2 bytes
 }
 
 ;*CLOAD Command
-.cload      LDA #&40								;open file for input
+{
+.^cload      LDA #&40								;open file for input
             JSR L922B								;get address of file name and open file
             TAY									;move file handle to Y
             LDX #&00								;start at RTC clock User area 0
@@ -2821,18 +2822,20 @@ ptr = &00 ; 2 bytes
             INX									;get next byte
             BPL L8F83								;for 128 bytes
 
-.L8F8C      JSR L9268								;close file with file handle at &A8
+.^L8F8C      JSR L9268								;close file with file handle at &A8
             JMP exitSC								;exit Service Call
+}
 
 ;*TUBE Command
-.tube       JSR L8699
+{
+.^tube       JSR L8699
             BCC L8FAF
-            LDA (L00A8),Y
-            CMP #&3F
+            LDA (transientCmdPtr),Y
+            CMP #'?'
             BNE L8FAC
             JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDA tubePresenceFlag
-.L8FA3      JSR L86C8
+.^L8FA3      JSR L86C8
             JSR OSNEWL
 .L8FA9      JMP exitSC								;Exit Service Call
 
@@ -2850,9 +2853,8 @@ ptr = &00 ; 2 bytes
             PLA
             TAX
             JMP L90F4
-			
-			
-.L8FC8      LDA #&00
+
+.^L8FC8      LDA #&00
             LDX #prvSFTODOTUBE2ISH - prv83
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&FF
@@ -2915,6 +2917,7 @@ ptr = &00 ; 2 bytes
 			
 .L9050      LDA #&8F								;issue paged ROM service request
             JMP OSBYTE								;execute paged ROM service request
+}
 			
 ; Page in PRVS1.
 ; SFTODO: Is there any chance of saving space by sharing some code with the
