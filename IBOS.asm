@@ -4191,7 +4191,8 @@ tmp = &A8
 }
 
 ;Vectors claimed - Service call &0F
-.service0F  LDX #&43
+{
+.^service0F  LDX #&43
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             AND #&80
             PHA
@@ -4217,6 +4218,7 @@ tmp = &A8
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             PLA
             JMP exitSCa								;restore service call parameters and exit
+}
 
 ; SFTODO: This has only one caller
 ; SFTODO: At least in b-em, I note that with a second processor, we get the INTEGRA-B banner *as well as* the tube banner. This doesn't happen with the standard OS banner. Arguably this is desirable, but we *could* potentially not show our own banner if we have a second processor attached to be more "standard".
