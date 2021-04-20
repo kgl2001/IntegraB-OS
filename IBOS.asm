@@ -4029,9 +4029,9 @@ tmp = &A8
             STA ramsel								;shadow off
             LDX #&07								;start at address 7
             LDA #&FF								;set data to &FF
-.L96D9      JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+.writeLoop  JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             DEX									;repeat
-            BNE L96D9								;until 0. (but not writing to &8300)
+            BNE writeLoop								;until 0. (but not writing to &8300)
             LDA romselCopy								;get current ROM number
             AND #maxBank								;mask
 	  ASSERT prvIbosBankNumber == prv83 + 0
