@@ -106,6 +106,7 @@ rtcUserBase = &0E
 userRegLangFile = &05 ; b0-3: FILE, b4-7: LANG
 userRegInsertStatusHigh = &06 ; b7=ROM 15 SFTODO? enabled, b0=ROM 8 SFTODO? enabled
 userRegInsertStatusLow = &07 ; b7=ROM 15 SFTODO? enabled, b0=ROM 8 SFTODO? enabled
+userRegModeShadowTV = &0A ; 0-2: MODE / 3: SHADOW / 4: TV interlace / 5-7: TV screen shift
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7L Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
@@ -2081,7 +2082,7 @@ ptr = &00 ; 2 bytes
 		EQUB userRegInsertStatusLow,&FF						;*INSERT status for ROMS &07 to &00. Default: &FF (All 8 ROMS enabled)
 ;		EQUB &0A,&E7								;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift. Default was &17. Changed to &E7 in IBOS 1.21
 ;		EQUB &0B,&20								;0-2: FDRIVE / 3-5: CAPS. Default was &23. Changed to &20 in IBOS 1.21
-		EQUB &0A,&17								;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift.
+		EQUB userRegModeShadowTV,&17							;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift.
 		EQUB &0B,&23								;0-2: FDRIVE / 3-5: CAPS.
 		EQUB &0C,&19								;0-7: Keyboard Delay
 		EQUB &0D,&05								;0-7: Keyboard Repeat
@@ -3960,7 +3961,7 @@ ENDIF
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
 .softBreak
 .L9719      JSR LBC98
-            LDX #&0A								;get TV / MODE parameters
+            LDX #userRegModeShadowTV								;get TV / MODE parameters
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA									;save value
             ROL A									;move msb to carry
@@ -3993,7 +3994,7 @@ ENDIF
             JSR OSWRCH								;write mode?
             JMP L9768
 			
-.L9758      LDX #&0A								;get MODE value - Shadow: bit 3, Mode: bits 0, 1 & 2
+.L9758      LDX #userRegModeShadowTV							;get MODE value - Shadow: bit 3, Mode: bits 0, 1 & 2
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&0F								;Lower nibble only
             CMP #&08								;Is shadow bit set?
