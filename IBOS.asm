@@ -2838,7 +2838,6 @@ ptr = &00 ; 2 bytes
             JMP exitSC								;exit Service Call
 }
 
-; SFTODOWIP
 ;*TUBE Command
 {
 .^tube      JSR parseOnOff
@@ -2867,12 +2866,12 @@ ptr = &00 ; 2 bytes
             LDA romselCopy
             AND #&0F
 .L8FBF      PHA
-            JSR reselectFilingSystem
+            JSR disableTube
             PLA
             TAX
             JMP doOsbyteEnterLanguage
 
-.^reselectFilingSystem ; SFTODO: Do we need the name to indicate the updates to SFTODOTUBE{,2}ISH?
+.^disableTube
 .L8FC8      LDA #&00
             LDX #prvSFTODOTUBE2ISH - prv83
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
@@ -2896,7 +2895,7 @@ ptr = &00 ; 2 bytes
             STA SHEILA+&E0
             LDA SHEILA+&E0
             LSR A
-            BCS L9009								;Tube exists - Initialise
+            BCS enableTube
             JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
 	  EQUB &80
@@ -2904,6 +2903,7 @@ ptr = &00 ; 2 bytes
 
 ;Initialise Tube
 ; SFTODO: Some code in common with the above case here (OSARGS/filing system reselection), could factor it out
+.enableTube
 .L9009      BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
             BMI exitSCIndirect							;nothing to do if already on
             LDA #&FF
@@ -3026,7 +3026,7 @@ ptr = &00 ; 2 bytes
             JSR OSWRCH
             BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BPL L90DE
-            JSR reselectFilingSystem
+            JSR disableTube
             TSX
             LDA L0103,X
             ORA #&40
