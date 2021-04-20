@@ -4403,7 +4403,7 @@ ramPresenceFlags = &A8
             DEY
             STY prvTmp
             BPL L9933
-            JMP L9983
+            JMP plpPrvDisexitSc
 }
 
 ;OSBYTE &45 (69) - Test PSEUDO/Absolute usage (http://beebwiki.mdfs.net/OSBYTE_%2645)
@@ -4430,7 +4430,8 @@ ramPresenceFlags = &A8
             DEY
             STY prvTmp
             BPL bankLoop
-.^L9983     PLP
+.^plpPrvDisexitSc
+.L9983      PLP
             JMP PrvDisexitSc
 }
 			
@@ -4642,7 +4643,7 @@ ramPresenceFlags = &A8
 .L9AC9      INX
             CPX #&10
             BNE L9ABE
-            JMP L9983
+            JMP plpPrvDisexitSc
 			
 .L9AD1      STX prvOswordBlockCopy + 1
             PHP
@@ -5728,7 +5729,7 @@ osfileBlock = L02EE
             BPL LA0BC
             LDA #tubeEntryRelease + tubeClaimId
             JSR tubeEntry
-.LA0BC      JMP L9983
+.LA0BC      JMP plpPrvDisexitSc
 }
 
 ;SFTODOWIP
