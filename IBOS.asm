@@ -147,6 +147,7 @@ romPrivateWorkspaceTable = &0DF0
 
 osCmdPtr = &F2
 osErrorPtr = &FD
+osRdRmPtr = &F6
 
 osfindClose = &00
 osfindOpenInput = &40
@@ -539,6 +540,7 @@ GUARD	&C000
 ;ROM Header Information
 .romHeader	JMP language							;00: Language entry point
 		JMP service							;03: Service entry point
+.romType
 		EQUB &C2								;06: ROM type - Bits 1, 6 & 7 set - Language & Service
 .copyrightOffset
 		EQUB copyright MOD &100						;07: Copyright offset pointer
@@ -6273,13 +6275,13 @@ osfileBlock = L02EE
 ;Called by *INSERT Immediate (SFTODO: but note we also fall through into it from code above)
 ;Read ROM Type from ROM header and save to ROM Type Table and Private RAM
             LDY #&0F
-.LA4A1      ASL transientRomBankMask
+.bankLoop   ASL transientRomBankMask
             ROL transientRomBankMask + 1
-            BCC LA4BE
-            LDA #&06								;set address pointer to &8006 - ROM Type
-            STA L00F6								;address pointer into paged ROM
-            LDA #&80
-            STA L00F7								;address pointer into paged ROM
+            BCC skipBank
+            LDA #lo(romType)
+            STA osRdRmPtr								;address pointer into paged ROM
+            LDA #hi(romType)
+            STA osRdRmPtr + 1								;address pointer into paged ROM
             TYA
             PHA
             JSR OSRDRM								;Read ROM Type from paged ROM
@@ -6289,8 +6291,8 @@ osfileBlock = L02EE
             TXA
             STA romTypeTable,Y								;Save ROM Type to ROM Type table
             STA prvRomTypeTableCopy,Y								;Save ROM Type to Private RAM copy of ROM Type table
-.LA4BE      DEY
-            BPL LA4A1
+.skipBank   DEY
+            BPL bankLoop
             JSR PrvDis								;switch out private RAM
             RTS
 }
