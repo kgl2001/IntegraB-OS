@@ -6224,9 +6224,10 @@ osfileBlock = L02EE
 .rts        RTS
 }
 
-; SFTODO: This only has one caller
-.LA499      JSR createRomBankMask
-.LA49C      JSR PrvEn								;switch in private RAM
+{
+; SFTODO: This only has one caller - probably irrelevant given we also have LA49C entry point
+.^LA499      JSR createRomBankMask
+.^LA49C      JSR PrvEn								;switch in private RAM
 
 
 ;Called by *INSERT Immediate (SFTODO: but note we also fall through into it from code above)
@@ -6252,6 +6253,7 @@ osfileBlock = L02EE
             BPL LA4A1
             JSR PrvDis								;switch out private RAM
             RTS
+}
 			
 ;Called by *UNPLUG Immediate
 ;Set all bytes in ROM Type Table to 0
