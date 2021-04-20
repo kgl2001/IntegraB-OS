@@ -463,6 +463,7 @@ prvOswordBlockOrigAddr = prv82 + &30 ; 2 bytes, used for address of original OSW
 
 prvOsMode = prv83 + &3C ; working copy of OSMODE, initialised from relevant bits of userRegOsModeShx in service01
 prvShx = prv83 + &3D ; working copy of SHX, initialised from relevant bit of userRegOsModeShx in service01 (&00 on, &FF off)
+prvSFTODOTUBEISH = prv83 + &41
 prvTubeReleasePending = prv83 + &42 ; used during OSWORD 42; &FF means we have claimed the tube and need to release it at end of transfer, 0 means we don't
 ; SFTODO: If private RAM is battery backed, could we just keep OSMODE in
 ; prvOsMode and not bother with the copy in the low bits of userRegOsModeShx?
@@ -2854,7 +2855,7 @@ ptr = &00 ; 2 bytes
             LDX #&40
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&FF
-            LDX #&41
+            LDX #prvSFTODOTUBEISH - prv83
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&00
             STA tubePresenceFlag
@@ -2866,7 +2867,7 @@ ptr = &00 ; 2 bytes
             LDX #&12
             JSR L9050
             LDA #&00
-            LDX #&41
+            LDX #prvSFTODOTUBEISH - prv83
             JMP writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
 			
 .L8FF1      LDA #&81
@@ -2885,7 +2886,7 @@ ptr = &00 ; 2 bytes
             LDA #&FF
             LDX #&40
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
-            LDX #&41
+            LDX #prvSFTODOTUBEISH - prv83
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX #&FF								;service type &FF - tube system main initialisation
             LDY #&00
@@ -2903,7 +2904,7 @@ ptr = &00 ; 2 bytes
             LDX #&12								;service type &12 - initialise file system
             JSR L9050								;issue paged ROM service request
             LDA #&00
-            LDX #&41
+            LDX #prvSFTODOTUBEISH - prv83
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&7F
 .L9045      BIT SHEILA+&E2
@@ -4142,9 +4143,9 @@ tmp = &A8
 
 ;Tube system initialisation - Service call &FF
 {
-.^serviceFF JSR L984C
+.^serviceFF JSR clearShenPrvEn
             PHA
-            BIT prv83+&41
+            BIT prvSFTODOTUBEISH
             BMI L9836
             LDA lastBreakType
             BEQ softReset
@@ -4173,6 +4174,8 @@ tmp = &A8
             JMP LDC16								;Set up Sideways ROM latch and RAM copy (http://mdfs.net/Docs/Comp/BBC/OS1-20/D940)
 
 ; SFTODO: This only has one caller
+.clearShenPrvEn ; SFTODO: not super happy with this name
+{
 .L984C      LDA ramselCopy
             PHA
             LDA #&00
@@ -4181,6 +4184,7 @@ tmp = &A8
             JSR PrvEn								;switch in private RAM
             PLA
             RTS
+}
 			
 .L985D      PHA
             JSR PrvDis								;switch out private RAM
@@ -6419,7 +6423,7 @@ osfileBlock = L02EE
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA L00AF
             JSR LA4C5
-.LA5CE      LDX #&41
+.LA5CE      LDX #prvSFTODOTUBEISH - prv83
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             EOR #&FF
             AND #&10
