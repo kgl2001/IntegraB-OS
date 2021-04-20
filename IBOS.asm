@@ -154,6 +154,7 @@ osfileLoad = &FF
 
 keycodeAt = &47 ; internal key code for "@"
 
+osbyteSetPrinterType = &05
 osbyteSetPrinterIgnore = &06
 osbyteSetSerialReceiveRate = &07
 osbyteSetSerialTransmitRate = &08
@@ -169,8 +170,10 @@ osbyteTV = &90
 osbyteReadWriteOshwm = &B4
 osbyteWriteSheila = &97
 osbyteReadWriteBreakEscapeEffect = &C8
+osbyteReadWriteKeyboardStatus = &CA
 osbyteEnableDisableStartupMessage = &D7
 osbyteReadWriteVduQueueLength = &DA
+osbyteReadWriteStartupOptions = &FF
 
 oswordInputLine = &00
 
@@ -3946,6 +3949,7 @@ ENDIF
 ; SFTODO: I think this code is high enough in the IBOS ROM we don't need to be indirecting via writePrivateRam8300X and could just set PRV1 and access directly?
 .service01
 {
+tmp = &A8
             LDA #&00
             STA ramselCopy
             STA ramsel								;shadow off
@@ -4047,7 +4051,7 @@ ENDIF
             LDX #userRegPrinterIgnore							;get character ignored by printer
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             TAX
-            LDA #osbyteSetPrinterIgnore								;select character ignored by printer
+            LDA #osbyteSetPrinterIgnore							;select character ignored by printer
             JSR OSBYTE								;write character ignored by printer
             LDX #userRegTubeBaudPrinter							;get RS485 baud rate for receiving and transmitting data (bits 2,3,4) & printer destination (bit 5)
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
@@ -4067,46 +4071,50 @@ ENDIF
             PLA
             JSR lsrA3								;3 x LSR
             TAX
-            LDA #&05								;select printer destination
+            LDA #osbyteSetPrinterType							;select printer destination
             JSR OSBYTE								;write printer destination
             LDX #userRegFdriveCaps
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA
-            AND #&38
+            AND #%00111000								;get CAPS bits
             LDX #&A0								;CAPS Lock Engaged + Shift Enabled?
             CMP #&08								;CAPS Lock Engaged?
-            BEQ L97C8
+            BEQ capsInA
             LDX #&30								;
             CMP #&10								;SHIFT Lock Engaged?
-            BEQ L97C8
+            BEQ capsInA
             LDX #&20
-.L97C8      LDY #&00
-            LDA #&CA								;select keyboard status byte
+.capsInA    LDY #&00
+            LDA #osbyteReadWriteKeyboardStatus						;select keyboard status byte
             JSR OSBYTE								;write keyboard status byte
             PLA
-            AND #&07
+	  ; SFTODO: This is a little odd - we're masking off the 3 bits allocated to FDRIVE, but the *FX255 command only allows
+	  ; two bits for FDRIVE - our top FDRIVE bit will be put in b6 of the *FX255 argument. I suppose this does allow control
+	  ; over the filing-system specific interpretation for b6.
+            AND #%00000111								;get FDRIVE bits
             ASL A
             ASL A
             ASL A
             ASL A
-            STA L00A8
-            LDX #&10								;Register &10 (0: File system / 4: Boot / 5-7: Data )
+            STA tmp
+            LDX #userRegDiscNetBootData							;Register &10 (0: File system / 4: Boot / 5-7: Data )
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA
             LDY #&C8
             LDA lastBreakType
-            BEQ L97EE
+            BEQ bootInA								;branch if soft reset
+	  ; Get the boot flag from userRegDiscNetBootData into b3 of A
             PLA
             PHA
             LDY #&C0
             LSR A
-            AND #&08
-            EOR #&08
-.L97EE      ORA L00A8
-            ORA #&07
-            AND #&3F
+            AND #1<<3
+            EOR #1<<3
+.bootInA    ORA tmp
+            ORA #%00000111
+            AND #%00111111
             TAX
-            LDA #&FF
+            LDA #osbyteReadWriteStartupOptions
             JSR OSBYTE
             PLA
             JSR lsrA3
