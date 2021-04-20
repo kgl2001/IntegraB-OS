@@ -4221,11 +4221,12 @@ ENDIF
             INX									;Next Character
             CPX #(computechEnd + 1) - romHeader						;Check for final character
             BNE bannerLoop1								;Loop
-            LDX #&09								;Lookup table offset
-.L98CC      LDA reverseBanner,X							;Read INTEGRA-B Text from lookup table
+            LDX #(reverseBannerEnd - 1) - reverseBanner					;Lookup table offset
+.bannerLoop2
+	  LDA reverseBanner,X							;Read INTEGRA-B Text from lookup table
             JSR OSWRCH								;Write to screen
             DEX									;Next Character
-            BPL L98CC								;Loop
+            BPL bannerLoop2								;Loop
             LDA lastBreakType								;Check Break status. 0=soft, 1=power up, 2=hard
             BEQ L9912								;No Beep and don't write amount of Memory to screen
             LDA #vduBell								;Beep
@@ -4263,6 +4264,7 @@ ENDIF
 
 .reverseBanner
        		EQUS " B-ARGETNI"							;INTEGRA-B Reversed
+.reverseBannerEnd
 }
 
 ; SFTODO: There are a few cases where we JMP to osbyteXXInternal, if we rearranged the code a little (could always use macros to maintain readability, if that's a factor) we could probably save some JMPs
