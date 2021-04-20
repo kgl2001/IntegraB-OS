@@ -1095,7 +1095,7 @@ tmp = &AC
 .L84C1      LDA #&00
             ROR A ; move C on entry into b7 of A
             BVC L84C8
-            ORA #&40
+            ORA #&40 ; SFTODO: flagV??
 .L84C8      STA transientDynamicSyntaxState ; stash original V (&40, b6) and C (&80, b7) in transientDynamicSyntaxState
             BPL generateToScreen
             LDY #&00
@@ -1804,11 +1804,11 @@ firstDigitCmdPtrY = &BB
 {
 .L887C      PHA
             LDA ramselCopy
-            AND #&80
-            ORA #&40
+            AND #ramselShen
+            ORA #ramselPrvs1
             STA ramsel							;retain value of ramselCopy so it can be restored after read / write operation complete
             LDA romselCopy
-            ORA #&40
+            ORA #romselPrvEn
             STA romsel							;retain value of &F4 so it can be restored after read / write operation complete
             PLA
             RTS
