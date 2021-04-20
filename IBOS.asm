@@ -4503,7 +4503,7 @@ ramPresenceFlags = &A8
 
 .found      LDA #&FF
             STA prvSFTODOFOURBANKS,X
-.L99F6      LDX #&00
+.shuffle    LDX #&00
             LDY #&00
 .shuffleLoop
 	  LDA prvSFTODOFOURBANKS,X
@@ -4525,13 +4525,16 @@ ramPresenceFlags = &A8
             BNE padLoop
             RTS
 
-.^L9A18      PHA
-            JSR L99F6
+; If there's an unused entry, add A to SFTODOFOURBANKS and return with C clear, otherwise return with C set to indicate no room.
+; SFTODO: This has only one caller
+.^addBankAToSFTODOFOURBANKS
+.L9A18      PHA
+            JSR shuffle
             PLA
             CPX #&04
-            BCS L9A24
+            BCS rts
             STA prvSFTODOFOURBANKS,X
-.L9A24      RTS
+.rts        RTS
 }
 
 ; Return with X such that prvSFTODOFOURBANKS[X] == A (N flag clear), or with X=-1 if there is no such X (N flag set).
@@ -4654,7 +4657,7 @@ ramPresenceFlags = &A8
             PLP
             BCS L9AF9
             LDA prvOswordBlockCopy + 1
-            JSR L9A18
+            JSR addBankAToSFTODOFOURBANKS
             BCS L9B12
 .L9AF9      LDA L00AD
             JSR writeRomHeaderAndPatchUsingVariableMainRamSubroutine
