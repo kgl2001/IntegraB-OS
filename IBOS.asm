@@ -125,7 +125,7 @@ transientOs4243SwrAddr = &A8 ; 2 bytes
 transientOs4243MainAddr = &AA ; 2 bytes
 ; SFTODO: &AC/&AD IS USED FOR ANOTHER 16-BIT WORD, SEE adjustTransferParameters
 transientOs4243BytesToTransfer = &AE ; 2 bytes
-transientRomBankMask = &AE ; 2 bytes
+transientRomBankMask = &AE ; 2 bytes SFTODO: Rename this "set" or something instead of "mask"???
 
 transientCmdPtr = &A8 ; 2 bytes
 transientTblPtr = &AA ; 2 bytes
@@ -2902,7 +2902,7 @@ ptr = &00 ; 2 bytes
 	  EQUS "No Tube!", &00
 
 ;Initialise Tube
-; SFTODO: Some code in common with the above case here (OSARGS/filing system reselection), could factor it out
+; SFTODO: Some code in common with disableTube here (OSARGS/filing system reselection), could factor it out
 .enableTube
 .L9009      BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
             BMI exitSCIndirect							;nothing to do if already on
@@ -6043,7 +6043,7 @@ osfileBlock = L02EE
             JSR LA31A
             BNE LA347
             INY
-            JSR LA4C5
+            JSR unplugBanksUsingTransientRomBankMask
 .LA347      JMP exitSC								;Exit Service Call
 }
 
@@ -6292,16 +6292,17 @@ osfileBlock = L02EE
 }
 			
 ;Called by *UNPLUG Immediate
-;Set all bytes in ROM Type Table to 0
+;Set bytes in ROM Type Table to 0 for banks with a 0 bit in transientRomBankMask; other banks are not touched.
+.unplugBanksUsingTransientRomBankMask
 {
-.^LA4C5      LDY #&0F
-.LA4C7      ASL L00AE
-            ROL L00AF
-            BCS LA4D2
+.LA4C5      LDY #&0F
+.unplugLoop ASL transientRomBankMask
+            ROL transientRomBankMask + 1
+            BCS skipBank
             LDA #&00
             STA L02A1,Y
-.LA4D2      DEY
-            BPL LA4C7
+.skipBank   DEY
+            BPL unplugLoop
             RTS
 }
 			
@@ -6450,17 +6451,18 @@ osfileBlock = L02EE
             STA L03A4
             LDX #userRegBankInsertStatus
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            STA L00AE
+            STA transientRomBankMask
             LDX #userRegBankInsertStatus + 1
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            STA L00AF
-            JSR LA4C5
+            STA transientRomBankMask + 1
+            JSR unplugBanksUsingTransientRomBankMask
+	  ; SFTODO: Next bit of code is either claiming or not claiming the service call based on prvSFTODOTUBEISH; it will return with A=&10 (this call) or 0.
 .LA5CE      LDX #prvSFTODOTUBEISH - prv83
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             EOR #&FF
             AND #&10
             TSX
-            STA L0103,X
+            STA L0103,X								;modify stacked A, i.e. A we will return from service call with
             JMP exitSCa								;restore service call parameters and exit
 }
 			
