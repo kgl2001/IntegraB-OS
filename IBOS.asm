@@ -463,6 +463,7 @@ prvOswordBlockOrigAddr = prv82 + &30 ; 2 bytes, used for address of original OSW
 
 prvOsMode = prv83 + &3C ; working copy of OSMODE, initialised from relevant bits of userRegOsModeShx in service01
 prvShx = prv83 + &3D ; working copy of SHX, initialised from relevant bit of userRegOsModeShx in service01 (&00 on, &FF off)
+prvSFTODOTUBE2ISH = prv83 + &40
 prvSFTODOTUBEISH = prv83 + &41
 prvTubeReleasePending = prv83 + &42 ; used during OSWORD 42; &FF means we have claimed the tube and need to release it at end of transfer, 0 means we don't
 ; SFTODO: If private RAM is battery backed, could we just keep OSMODE in
@@ -2852,7 +2853,7 @@ ptr = &00 ; 2 bytes
 			
 			
 .L8FC8      LDA #&00
-            LDX #&40
+            LDX #prvSFTODOTUBE2ISH - prv83
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&FF
             LDX #prvSFTODOTUBEISH - prv83
@@ -2884,7 +2885,7 @@ ptr = &00 ; 2 bytes
 .L9009      BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BMI L8FA9
             LDA #&FF
-            LDX #&40
+            LDX #prvSFTODOTUBE2ISH - prv83
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX #prvSFTODOTUBEISH - prv83
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
@@ -3136,7 +3137,7 @@ ptr = &00 ; 2 bytes
 }
 			
 ;*PRINT Command
-.print      LDA #&40								;open file for input
+.print      LDA #osfindOpenInput							;open file for input
             JSR L922B								;get address of file name and open file
             LDA #&EC
             LDX #&00
@@ -4156,8 +4157,8 @@ tmp = &A8
             AND #&01 ; mask off tube bit (SFTODO: named constant? or more trouble than it's worth?)
             BNE L982E
             LDA #&FF
-.L982E      STA prv83+&40
-.softReset  BIT prv83+&40
+.L982E      STA prvSFTODOTUBE2ISH
+.softReset  BIT prvSFTODOTUBE2ISH
 	  BPL L983D
 .L9836      PLA
             JSR L985D
@@ -8218,12 +8219,12 @@ osfileBlock = L02EE
             PHA
             LDA ramselCopy
             PHA
-            AND #&80
-            ORA #&40
+            AND #ramselShen
+            ORA #ramselPrvs1
             STA ramselCopy
             STA ramsel
             LDA romselCopy
-            ORA #&40
+            ORA #romselPrvEn
             STA romselCopy
             STA romsel
             BCC LB3CA
@@ -9405,12 +9406,12 @@ ibosCNPVIndex = 6
             BCS returnFromBYTEV
             LDA ramselCopy
             PHA
-            ORA #&40
+            ORA #ramselPrvs1
             STA ramselCopy
             STA ramsel
             LDA romselCopy
             PHA
-            ORA #&40
+            ORA #romselPrvEn
             STA romselCopy
             STA romsel
             LDA prvOsMode						;read OSMODE
@@ -10049,7 +10050,7 @@ ptr = &A8
             SBC prvPrintBufferBankStart
             STA prvPrintBufferSizeMid
             LDA romselCopy
-            ORA #&40
+            ORA #romselPrvEn
             STA prvPrintBufferBankList
             LDA #&FF
             STA prv83+&19
