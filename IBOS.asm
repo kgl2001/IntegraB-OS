@@ -3997,26 +3997,33 @@ ENDIF
 	  TAY									;set Y=0
             LDA #osbyteTV								;select *TV X,Y
             JSR OSBYTE								;execute *TV X,Y
+	  ; Set the screen mode. On a soft reset we preserve the last selected
+	  ; mode (like the Master), unless we're in OSMODE 0; on other resets
+	  ; we select the *CONFIGUREd mode.
             LDA #vduSetMode								;select switch MODE
             JSR OSWRCH								;write switch MODE
             LDX lastBreakType								;Read Hard / Soft Break
-            BNE softReset								;Branch on hard break (power on / Ctrl Break)
-            LDX #prvOsMode - prv83									;select OSMODE
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            BEQ softReset								;branch if OSMODE=0
-            LDX #prvSFTODOMODE - prv83						;read mode? SFTODO: OK, so probably prvSFTODOMODE is the (configured?) screen mode? That would account for b7 being shadow-ish
+            BNE dontPreserveScreenMode							;Branch on hard break (power on / Ctrl Break)
+            LDX #prvOsMode - prv83							;select OSMODE
+            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
+            BEQ dontPreserveScreenMode							;branch if OSMODE=0
+            LDX #prvSFTODOMODE - prv83							;read mode? SFTODO: OK, so probably prvSFTODOMODE is the (configured?) screen mode? That would account for b7 being shadow-ish
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             JSR OSWRCH								;write mode?
-            JMP L9768
-			
-.softReset  LDX #userRegModeShadowTV							;get MODE value - Shadow: bit 3, Mode: bits 0, 1 & 2
+            JMP screenModeSet
+
+.dontPreserveScreenMode
+            LDX #userRegModeShadowTV							;get MODE value - Shadow: bit 3, Mode: bits 0, 1 & 2
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&0F								;Lower nibble only
-            CMP #&08								;Is shadow bit set?
-            BCC L9765								;Branch if no shadow (less than &8)
-            ADC #&77								;Set MODE to (&80 thru &87): &77 + &1 (Carry) + &8 (shadow enabled) + MODE
-.L9765      JSR OSWRCH								;Write MODE
-.L9768      JSR L989F
+	  ; Map the "compressed mode" in the range 0-15 to 0-7 or 128-135.
+            CMP #maxMode + 1
+            BCC screenModeInA
+            ADC #(shadowModeOffset - (maxMode + 1)) - 1					;-1 because C is set
+.screenModeInA
+	  JSR OSWRCH								;Write MODE
+.screenModeSet
+	  JSR L989F
             LDX #userRegKeyboardDelay							;get keyboard auto-repeat delay (cSecs)
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             TAX
