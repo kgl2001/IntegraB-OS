@@ -109,6 +109,7 @@ userRegInsertStatusLow = &07 ; b7=ROM 15 SFTODO? enabled, b0=ROM 8 SFTODO? enabl
 userRegModeShadowTV = &0A ; 0-2: MODE / 3: SHADOW / 4: TV interlace / 5-7: TV screen shift
 userRegFdriveCaps = &0B ; 0-2: FDRIVE / 3-5: CAPS
 userRegKeyboardDelay = &0C ; 0-7: Keyboard delay
+userRegKeyboardRepeat = &0D ; 0-7: Keyboard repeat
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7L Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
@@ -204,6 +205,7 @@ vduTab = 9
 vduCls = 12
 vduCr = 13
 vduSetMode = 22
+vduDel = 127
 
 maxMode = 7 ; SFTODO!?
 shadowModeOffset = &80 ; SFTODO!?
@@ -2087,7 +2089,7 @@ ptr = &00 ; 2 bytes
 		EQUB userRegModeShadowTV,&17							;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift.
 		EQUB userRegFdriveCaps,&23							;0-2: FDRIVE / 3-5: CAPS.
 		EQUB userRegKeyboardDelay,&19							;0-7: Keyboard Delay
-		EQUB &0D,&05								;0-7: Keyboard Repeat
+		EQUB userRegKeyboardRepeat,&05						;0-7: Keyboard Repeat
 		EQUB &0E,&0A								;0-7: Printer Ignore
 		EQUB userRegTubeBaudPrinter,&2D						;0: Tube / 2-4: BAUD / 5-7: Printer
 ;		EQUB &10,&A1								;0: File system / 4: Boot / 5-7: Data. Default was &A0. Changed to &A1 in IBOS 1.21
@@ -2740,7 +2742,7 @@ ptr = &00 ; 2 bytes
             LDA (L00A8),Y								;get next character from command parameter
             CMP #'?'								;check for '='
             BEQ L8F38								;branch if set
-            CMP #&0D								;check for no parameters
+            CMP #vduCr								;check for no parameters
             BNE L8F47
             LDA #&00								;if no parameters then
             JMP L8F41								;set &27F to 0
@@ -3054,11 +3056,11 @@ ptr = &00 ; 2 bytes
 .L914B      LDY L00A8
             JSR OSBGET
             BCS L9165
-            CMP #&0D
+            CMP #vduCr
             BEQ L913A
-            CMP #&20
+            CMP #' '
             BCC L914B
-            CMP #&7F
+            CMP #vduDel
             BCS L914B
             JSR OSWRCH
             BNE L914B
@@ -3080,7 +3082,7 @@ ptr = &00 ; 2 bytes
 .L9183      LDA prv80+&00,X
             LDY L00A8
             JSR OSBPUT
-            CMP #&0D
+            CMP #vduCr
             BEQ L9165
             INX
             CPX L00A9
@@ -3191,7 +3193,7 @@ ptr = &00 ; 2 bytes
 ;get start and end of file name offset and store in Y & X
 .L9247      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (L00A8),Y								;read character
-            CMP #&0D								;CR?
+            CMP #vduCr								;CR?
             BNE L9253								;not CR, so jump
 .L9250      JMP syntaxError								;no file name, so error with 'Syntax:'
 
@@ -3200,7 +3202,7 @@ ptr = &00 ; 2 bytes
 .L9255      LDA (L00A8),Y								;read character
             CMP #&20								;check for ' '
             BEQ L9262								;ok. end of file name
-            CMP #&0D								;check for CR
+            CMP #vduCr								;check for CR
             BEQ L9262								;ok. end of file name
             INY									;otherwise get next character
             BNE L9255								;loop
@@ -4009,7 +4011,7 @@ ENDIF
             TAX
             LDA #&0B								;select keyboard auto-repeat delay
             JSR OSBYTE								;write keyboard auto-repeat delay
-            LDX #&0D								;get keyboard auto-repeat rate (cSecs)
+            LDX #userRegKeyboardRepeat							;get keyboard auto-repeat rate (cSecs)
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             TAX
             LDA #&0C								;select keyboard auto-repeat rate
@@ -8408,7 +8410,7 @@ osfileBlock = L02EE
             LDX #&00
 .LB5A3      LDA prv80+&C8,X
             JSR OSASCI
-            CMP #&0D
+            CMP #vduCr
             BEQ LB5B0
             INX
             BNE LB5A3
