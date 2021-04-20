@@ -3917,7 +3917,7 @@ ENDIF
             BPL L96A7
 .L969A      LDX #&05
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            JSR L980B
+            JSR lsrA4
             JMP L96A7
 			
 .L96A5      LDA romselCopy
@@ -4131,7 +4131,9 @@ tmp = &A8
             JMP exitSCa								;restore service call parameters and exit
 }
 
-.L980B      LSR A
+; SFTODO: lsrA4 has only one caller
+.lsrA4      LSR A
+; SFTODO: Use of JSR lsrA3 or JSR lsrA2 is silly - the former is neutral on space and slower, the latter is both larger and slower... Given this and the fact lsrA4 has only one caller, this should simply be inlined.
 .lsrA3      LSR A
 .lsrA2      LSR A
             LSR A
