@@ -4156,7 +4156,7 @@ tmp = &A8
             LDA #&FF
 .L982E      STA prv83+&40
 .softReset  BIT prv83+&40
-			BPL L983D
+	  BPL L983D
 .L9836      PLA
             JSR L985D
             JMP exitSCa								;restore service call parameters and exit
@@ -4170,7 +4170,8 @@ tmp = &A8
             LDA #&FF
             LDX #&00
             JMP LDC16								;Set up Sideways ROM latch and RAM copy (http://mdfs.net/Docs/Comp/BBC/OS1-20/D940)
-			
+
+; SFTODO: This only has one caller
 .L984C      LDA ramselCopy
             PHA
             LDA #&00
