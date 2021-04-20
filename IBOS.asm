@@ -492,7 +492,8 @@ prvTubeReleasePending = prv83 + &42 ; used during OSWORD 42; &FF means we have c
 ; That would save some code.
 
 prvIbosBankNumber = prv83 + &00 ; SFTODO: not sure about this, but service01 seems to set this
-prvPseudoBankNumbers = prv83 + &08 ; 4 bytes, absolute RAM bank number for the Pseudo RAM banks W, X, Y, Z
+prvPseudoBankNumbers = prv83 + &08 ; 4 bytes, absolute RAM bank number for the Pseudo RAM banks W, X, Y, Z; SFTODO: may be &FF indicating "no such bank" if SRSET is used?
+prvSFTODOFOURBANKS = prv83 + &0C ; 4 bytes, SFTODO: something to do with the pseudo RAM banks I think
 prvRomTypeTableCopy = prv83 + &2C ; 16 bytes
 
 prvSFTODOMODE = prv83 + &3F ; SFTODO: this is a screen mode (including a shadow flag in b7), but I'm not sure exactly what screen mode yet - current? *CONFIGUREd? something else?
@@ -2089,10 +2090,10 @@ ptr = &00 ; 2 bytes
             LDA #&30								;Start at shadow address &3000
 	  JSR zeroPageAUpToC0-fullResetPrvTemplate+fullResetPrv				;Fill shadow and private memory with &00
             LDA #&FF								;Write &FF to PRVS1 &830C..&830F
-            STA prv83+&0C
-            STA prv83+&0D
-            STA prv83+&0E
-            STA prv83+&0F
+            STA prvSFTODOFOURBANKS
+            STA prvSFTODOFOURBANKS + 1
+            STA prvSFTODOFOURBANKS + 2
+            STA prvSFTODOFOURBANKS + 3
             LDA #&00								;Unset Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
             STA ramselCopy
             STA ramsel
@@ -4417,10 +4418,10 @@ ramPresenceFlags = &A8
             LDY #&03
 .L9967      STY prvTmp
             LDA prvPseudoBankNumbers,Y
-            BMI L9974
+            BMI noSuchBank								;&FF indicates no absolute bank assigned to this pseudo-bank
             JSR L9A25
             BPL L9977
-.L9974      CLC
+.noSuchBank CLC
             BCC L9978
 .L9977      SEC
 .L9978      ROL oswdbtX
@@ -4490,7 +4491,7 @@ ramPresenceFlags = &A8
 
 {
 .^L99E5      LDX #&03
-.L99E7      CMP prv83+&0C,X
+.L99E7      CMP prvSFTODOFOURBANKS,X
             BEQ L99F1
             DEX
             BPL L99E7
@@ -4498,12 +4499,12 @@ ramPresenceFlags = &A8
             RTS
 
 .L99F1      LDA #&FF
-            STA prv83+&0C,X
+            STA prvSFTODOFOURBANKS,X
 .L99F6      LDX #&00
             LDY #&00
-.L99FA      LDA prv83+&0C,X
+.L99FA      LDA prvSFTODOFOURBANKS,X
             BMI L9A03
-            STA prv83+&0C,Y
+            STA prvSFTODOFOURBANKS,Y
             INY
 .L9A03      INX
             CPX #&04
@@ -4513,7 +4514,7 @@ ramPresenceFlags = &A8
             JMP L9A13
 			
 .L9A0D      LDA #&FF
-            STA prv83+&0C,Y
+            STA prvSFTODOFOURBANKS,Y
             INY
 .L9A13      CPY #&04
             BNE L9A0D
@@ -4524,13 +4525,14 @@ ramPresenceFlags = &A8
             PLA
             CPX #&04
             BCS L9A24
-            STA prv83+&0C,X
+            STA prvSFTODOFOURBANKS,X
 .L9A24      RTS
 }
 
+; SFTODO: This only has one caller
 {
 .^L9A25      LDX #&03
-.L9A27      CMP prv83+&0C,X
+.L9A27      CMP prvSFTODOFOURBANKS,X
             BEQ L9A2F
             DEX
             BPL L9A27
@@ -4539,8 +4541,8 @@ ramPresenceFlags = &A8
 
 ;*SRSET Command
 {
-.^srset     LDA (L00A8),Y
-            CMP #&3F
+.^srset     LDA (transientCmdPtr),Y
+            CMP #'?'
             BEQ L9A79
             JSR parseRomBankList
             JSR PrvEn								;switch in private RAM
@@ -4821,10 +4823,10 @@ ramPresenceFlags = &A8
 .parsedOk   STA prvOswordBlockCopy + 1						;absolute ROM number
             BCC parsedOk2
 	  ; SFTODO: What do these addresses hold? I *speculate* they hold the real banks assigned to pseudo-banks W-Z, &FF meaning "not assigned".
-            LDA prv83+&0C
-            AND prv83+&0D
-            AND prv83+&0E
-            AND prv83+&0F
+            LDA prvSFTODOFOURBANKS
+            AND prvSFTODOFOURBANKS + 1
+            AND prvSFTODOFOURBANKS + 2
+            AND prvSFTODOFOURBANKS + 3
             BMI badIdIndirect
             LDA prvOswordBlockCopy						;function
             ORA #&40							;set pseudo addressing mode
@@ -5092,7 +5094,7 @@ ramPresenceFlags = &A8
             CMP #&04
             BCS sevSecRts
             TAX
-            LDA prv83+&0C,X
+            LDA prvSFTODOFOURBANKS,X
             BMI clvSecRts
             TAX
 .clcRts
@@ -5122,7 +5124,7 @@ ramPresenceFlags = &A8
             BVC absoluteAddress
             ; We're dealing with a pseudo-address.
             ; SFTODO: What do next four lines do?
-            LDA prv83+&0C,X
+            LDA prvSFTODOFOURBANKS,X
             CLV
             BMI L9DAE
             TAX
@@ -6375,9 +6377,10 @@ osfileBlock = L02EE
 ;For OSMODEs, 0, 1, 3, 4 & 5: W..Z = 4..7
 ;For OSMODE 2: W..Z = 12..15
 ; SFTODO: This has only one caller
+; SFTODO: The OSMODE 2 behaviour seems weird; surely we *don't* have SWR in banks 12-15 (isn't IBOS in bank 15, for a start?), so while this is nominally B+-compatible (although not even that; doesn't the B+ have SWR in banks 0, 1, 12, 13 or something like that?), as soon as any softwre actually tries to work with these banks, won't it break? Maybe I'm missing something...
 .assignDefaultPseudoRamBanks
 {
-.LA4E3     JSR PrvEn								;switch in private RAM
+.LA4E3      JSR PrvEn								;switch in private RAM
             LDA prvOsMode								;read OSMODE
             LDX #&03								;a total of 4 pseudo banks
             LDY #&07								;for osmodes other than 2, absolute banks are 4..7
