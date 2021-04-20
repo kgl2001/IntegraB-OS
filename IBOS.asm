@@ -429,6 +429,8 @@ prv83       = &8300
 ; showing all the addresses in order later on, there's no need for these labels
 ; to be in physical address order. SFTODO: Might actually be in physical order, I'll see how it works out.
 
+prvBootSFTODO = prv81 ; SFTODO: Rename this once I've been over the code and I know *exactly* what lives at this address
+
 ; The printer buffer is implemented using two "extended pointers" - one for
 ; reading, one for writing. Each consists of a two byte address and a one byte
 ; index to a bank in prvPrintBufferBankList; note that these addresses are
@@ -3910,10 +3912,10 @@ ENDIF
 .L9611      JSR PrvEn								;switch in private RAM
             LDX lastBreakType								;get last Break type
             CPX #&01								;power on break?
-            BNE L9640								;if not the exit
+            BNE notPowerOnStarBoot							;branch if not
             CLC
-            LDA prv81								;get data from Private RAM
-            BEQ L9640								;if 0 then exit
+            LDA prvBootSFTODO								;get data from Private RAM
+            BEQ notPowerOnStarBoot							;we don't have a *BOOT command in effect
             ADC #&0F
             LDX #&00
 .L9625      STA L0B00,X
@@ -3928,8 +3930,9 @@ ENDIF
             INX
             CPX prv81
             BNE L9634
-.L9640      JSR PrvDis								;switch out private RAM
-            LDA #&7A
+.notPowerOnStarBoot
+            JSR PrvDis								;switch out private RAM
+            LDA #osbyteKeyboardScanFrom10
             JSR OSBYTE
             CPX #&FF
             BEQ L9652
@@ -3949,9 +3952,9 @@ ENDIF
             CPX romselCopy
             BCC L968D
 .L9668      JSR L966E
-            JMP L9680
+            JMP selectConfiguredFilingSystemAndLanguage
 			
-.L966E      LDX #&10								;Register &10 (0: File system / 4: Boot / 5-7: Data )
+.L966E      LDX #userRegDiscNetBootData							;Register &10 (0: File system / 4: Boot / 5-7: Data )
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ROR A
             ROR A									;Move File system bit to msb
@@ -3961,8 +3964,9 @@ ENDIF
             LDY #&7F								;retain lower 7 bits
             JSR OSBYTE								;execute read / write start-up options
             RTS
-			
-.L9680      LDX #userRegLangFile
+
+.selectConfiguredFilingSystemAndLanguage
+            LDX #userRegLangFile
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&0F								;get *CONFIGURE FILE value
             TAX
