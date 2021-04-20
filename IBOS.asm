@@ -154,6 +154,11 @@ osfileLoad = &FF
 
 keycodeAt = &47 ; internal key code for "@"
 
+osbyteSetPrinterIgnore = &06
+osbyteSetSerialReceiveRate = &07
+osbyteSetSerialTransmitRate = &08
+osbyteSetAutoRepeatDelay = &0B
+osbyteSetAutoRepeatPeriod = &0C
 osbyteFlushSelectedBuffer = &15
 osbyteKeyboardScanFrom10 = &7A
 osbyteAcknowledgeEscape = &7E
@@ -4032,35 +4037,35 @@ ENDIF
             LDX #userRegKeyboardDelay							;get keyboard auto-repeat delay (cSecs)
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             TAX
-            LDA #&0B								;select keyboard auto-repeat delay
+            LDA #osbyteSetAutoRepeatDelay						;select keyboard auto-repeat delay
             JSR OSBYTE								;write keyboard auto-repeat delay
             LDX #userRegKeyboardRepeat							;get keyboard auto-repeat rate (cSecs)
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             TAX
-            LDA #&0C								;select keyboard auto-repeat rate
+            LDA #osbyteSetAutoRepeatPeriod						;select keyboard auto-repeat rate
             JSR OSBYTE								;write keyboard auto-repeat rate
             LDX #userRegPrinterIgnore							;get character ignored by printer
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             TAX
-            LDA #&06								;select character ignored by printer
+            LDA #osbyteSetPrinterIgnore								;select character ignored by printer
             JSR OSBYTE								;write character ignored by printer
-            LDX #&0F								;get RS485 baud rate for receiving and transmitting data (bits 2,3,4) & printer destination (bit 5)
+            LDX #userRegTubeBaudPrinter							;get RS485 baud rate for receiving and transmitting data (bits 2,3,4) & printer destination (bit 5)
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            JSR L980D								;2 x LSR
+            JSR lsrA2								;2 x LSR
             PHA
             AND #&07								;get lower 3 bits
             CLC
             ADC #&01								;increment to convert to baud rate
             PHA
             TAX									;baud rate value
-            LDA #&07								;select RS485 baud rate for receiving data
+            LDA #osbyteSetSerialReceiveRate						;select RS485 baud rate for receiving data
             JSR OSBYTE								;write RS485 baud rate for receiving data
             PLA
             TAX									;baud rate value
-            LDA #&08								;select RS485 baud rate for transmitting data
+            LDA #osbyteSetSerialTransmitRate						;select RS485 baud rate for transmitting data
             JSR OSBYTE								;write RS485 baud rate for transmitting data
             PLA
-            JSR L980C								;3 x LSR
+            JSR lsrA3								;3 x LSR
             TAX
             LDA #&05								;select printer destination
             JSR OSBYTE								;write printer destination
@@ -4104,7 +4109,7 @@ ENDIF
             LDA #&FF
             JSR OSBYTE
             PLA
-            JSR L980C
+            JSR lsrA3
             AND #&1C
             TAX
             LDY #&E3
@@ -4115,8 +4120,8 @@ ENDIF
 }
 
 .L980B      LSR A
-.L980C      LSR A
-.L980D      LSR A
+.lsrA3      LSR A
+.lsrA2      LSR A
             LSR A
             RTS
 
