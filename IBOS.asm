@@ -108,6 +108,7 @@ userRegInsertStatusHigh = &06 ; b7=ROM 15 SFTODO? enabled, b0=ROM 8 SFTODO? enab
 userRegInsertStatusLow = &07 ; b7=ROM 15 SFTODO? enabled, b0=ROM 8 SFTODO? enabled
 userRegModeShadowTV = &0A ; 0-2: MODE / 3: SHADOW / 4: TV interlace / 5-7: TV screen shift
 userRegFdriveCaps = &0B ; 0-2: FDRIVE / 3-5: CAPS
+userRegKeyboardDelay = &0C ; 0-7: Keyboard delay
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7L Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
@@ -2085,7 +2086,7 @@ ptr = &00 ; 2 bytes
 ;		EQUB &0B,&20								;0-2: FDRIVE / 3-5: CAPS. Default was &23. Changed to &20 in IBOS 1.21
 		EQUB userRegModeShadowTV,&17							;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift.
 		EQUB userRegFdriveCaps,&23							;0-2: FDRIVE / 3-5: CAPS.
-		EQUB &0C,&19								;0-7: Keyboard Delay
+		EQUB userRegKeyboardDelay,&19							;0-7: Keyboard Delay
 		EQUB &0D,&05								;0-7: Keyboard Repeat
 		EQUB &0E,&0A								;0-7: Printer Ignore
 		EQUB userRegTubeBaudPrinter,&2D						;0: Tube / 2-4: BAUD / 5-7: Printer
@@ -4003,7 +4004,7 @@ ENDIF
             ADC #&77								;Set MODE to (&80 thru &87): &77 + &1 (Carry) + &8 (shadow enabled) + MODE
 .L9765      JSR OSWRCH								;Write MODE
 .L9768      JSR L989F
-            LDX #&0C								;get keyboard auto-repeat delay (cSecs)
+            LDX #userRegKeyboardDelay							;get keyboard auto-repeat delay (cSecs)
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             TAX
             LDA #&0B								;select keyboard auto-repeat delay
@@ -7991,7 +7992,7 @@ osfileBlock = L02EE
             STA L00AB
 .LB27B      LDX #&00
             LDA (L00A8),Y
-            CMP #&2B								;'+'
+            CMP #'+'
             BNE LB285
             LDX #&0B
 .LB285      CMP #'-'
