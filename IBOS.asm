@@ -3876,10 +3876,19 @@ ENDIF
 }
 			
 ;Autoboot - Service call &03
+.service03
 {
-.^service03 LDA KEYVH
+	  ; If KEYV is set up to use the extended vector mechanism by a ROM
+	  ; which has &47 ("G") at &800D, set romselMemsel on the extended
+	  ; vector bank number. SFTODO: I believe this will have the effect of
+	  ; ensuring main/video memory is paged in. This seems weird, I am
+	  ; guessing it's a workaround for a particular ROM, but I don't know
+	  ; what or why. Just *maybe* this is the GXR? (But does that claim
+	  ; KEYV?) Just might be worth asking on stardot about this at some
+	  ; point.
+	  LDA KEYVH
             CMP #&FF
-            BNE notExtendedVector
+            BNE notExtendedVectorGROM
             LDA #&0D
             STA osRdRmPtr
             LDA #&80
@@ -3887,11 +3896,11 @@ ENDIF
             LDY XKEYVBank
             JSR OSRDRM
             CMP #&47
-            BNE notExtendedVector ; SFTODO: rename label?
-            LDA L0DDD
-            ORA #&80
-            STA L0DDD
-.notExtendedVector
+            BNE notExtendedVectorGROM
+            LDA XKEYVBank
+            ORA #romselMemsel
+            STA XKEYVBank
+.notExtendedVectorGROM
             CLC
             JSR LA7A8
             BIT L03A4
