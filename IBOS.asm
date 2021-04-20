@@ -2901,6 +2901,7 @@ ptr = &00 ; 2 bytes
 	  EQUS "No Tube!", &00
 
 ;Initialise Tube
+; SFTODO: Some code in common with the above case here (OSARGS/filing system reselection), could factor it out
 .L9009      BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
             BMI exitSCIndirect							;nothing to do if already on
             LDA #&FF
@@ -2910,19 +2911,19 @@ ptr = &00 ; 2 bytes
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX #&FF								;service type &FF - tube system main initialisation
             LDY #&00
-            JSR doOsbyteIssueServiceRequest								;issue paged ROM service request
+            JSR doOsbyteIssueServiceRequest						;issue paged ROM service request
             LDA #&FF
             STA tubePresenceFlag
             LDX #&FE								;service type &FE - tube system post initialisation
             LDY #&00
-            JSR doOsbyteIssueServiceRequest								;issue paged ROM service request
-            LDA #&00
-            LDX #&A8
-            LDY #&00
+            JSR doOsbyteIssueServiceRequest						;issue paged ROM service request
+            LDA #osargsReadFilingSystemNumber
+            LDX #&A8 ; SFTODO: is this relevant?
+            LDY #&00 ; handle = 0 for this call
             JSR OSARGS
             TAY
-            LDX #&12								;service type &12 - initialise file system
-            JSR doOsbyteIssueServiceRequest								;issue paged ROM service request
+            LDX #serviceSelectFilingSystem
+            JSR doOsbyteIssueServiceRequest						;issue paged ROM service request
             LDA #&00
             LDX #prvSFTODOTUBEISH - prv83
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
