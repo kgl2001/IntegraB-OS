@@ -110,6 +110,7 @@ userRegModeShadowTV = &0A ; 0-2: MODE / 3: SHADOW / 4: TV interlace / 5-7: TV sc
 userRegFdriveCaps = &0B ; 0-2: FDRIVE / 3-5: CAPS
 userRegKeyboardDelay = &0C ; 0-7: Keyboard delay
 userRegKeyboardRepeat = &0D ; 0-7: Keyboard repeat
+userRegPrinterIgnore = &0E ; 0-7: Printer ignore
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7L Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
@@ -2090,7 +2091,7 @@ ptr = &00 ; 2 bytes
 		EQUB userRegFdriveCaps,&23							;0-2: FDRIVE / 3-5: CAPS.
 		EQUB userRegKeyboardDelay,&19							;0-7: Keyboard Delay
 		EQUB userRegKeyboardRepeat,&05						;0-7: Keyboard Repeat
-		EQUB &0E,&0A								;0-7: Printer Ignore
+		EQUB userRegPrinterIgnore,&0A							;0-7: Printer Ignore
 		EQUB userRegTubeBaudPrinter,&2D						;0: Tube / 2-4: BAUD / 5-7: Printer
 ;		EQUB &10,&A1								;0: File system / 4: Boot / 5-7: Data. Default was &A0. Changed to &A1 in IBOS 1.21
 		EQUB userRegDiscNetBootData,&A0						;0: File system / 4: Boot / 5-7: Data.
@@ -4016,7 +4017,7 @@ ENDIF
             TAX
             LDA #&0C								;select keyboard auto-repeat rate
             JSR OSBYTE								;write keyboard auto-repeat rate
-            LDX #&0E								;get character ignored by printer
+            LDX #userRegPrinterIgnore							;get character ignored by printer
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             TAX
             LDA #&06								;select character ignored by printer
