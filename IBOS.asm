@@ -4091,7 +4091,7 @@ tmp = &A8
             PLA
 	  ; SFTODO: This is a little odd - we're masking off the 3 bits allocated to FDRIVE, but the *FX255 command only allows
 	  ; two bits for FDRIVE - our top FDRIVE bit will be put in b6 of the *FX255 argument. I suppose this does allow control
-	  ; over the filing-system specific interpretation for b6. No we won't, because we force b6-7 clear below anyway. SO
+	  ; over the filing-system specific interpretation for b6. No we won't, because we force b6-7 clear below anyway. So
 	  ; this is harmless but still a little odd.
             AND #%00000111								;get FDRIVE bits
             ASL A
@@ -4102,9 +4102,9 @@ tmp = &A8
             LDX #userRegDiscNetBootData							;Register &10 (0: File system / 4: Boot / 5-7: Data )
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA
-            LDY #&C8
+            LDY #%11001000
             LDA lastBreakType
-            BEQ bootInA								;branch if soft reset
+            BEQ bootInAMaskInY							;branch if soft reset
 	  ; Get the boot flag from userRegDiscNetBootData into b3 of A
             PLA
             PHA
@@ -4113,7 +4113,8 @@ tmp = &A8
             LSR A
             AND #1<<3
             EOR #1<<3
-.bootInA    ORA tmp
+.bootInAMaskInY
+            ORA tmp
             ORA #%00000111								;force mode 7 SFTODO: seems a bit pointless but harmless, I guess
             AND #%00111111
             TAX
