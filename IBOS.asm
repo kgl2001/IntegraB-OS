@@ -233,6 +233,8 @@ vduDel = 127
 maxMode = 7 ; SFTODO!?
 shadowModeOffset = &80 ; SFTODO!?
 
+maxBank = 15 ; SFTODO!?
+
 lastBreakType = &028D ; 0=soft reset, 1=power on reset, 2=hard reset SFTODO: named constants?
 
 serviceSelectFilingSystem = &12
@@ -2060,7 +2062,7 @@ fullResetPrv = &2800
 ptr = &00 ; 2 bytes
 .L89E9      LDA romselCopy								;Get current SWR bank number.
             PHA									;Save it
-            LDX #&0F								;Start at SWR bank 15
+            LDX #maxBank								;Start at SWR bank 15
 .zeroSWRLoop
 	  STX romselCopy								;Select memory bank
             STX romsel
@@ -2279,7 +2281,7 @@ ptr = &00 ; 2 bytes
             STA oswdbtX
             PLA
             LDA romselCopy
-            AND #&0F
+            AND #maxBank
             PHA
             JMP exitSC								;Exit Service Call
 			
@@ -2549,7 +2551,7 @@ ptr = &00 ; 2 bytes
 }
 			
 .L8D46      LDA romselCopy
-            AND #&0F
+            AND #maxBank
             ORA #romselPrvEn
             STA prvPrintBufferBankList
             LDA #&FF
@@ -2870,7 +2872,7 @@ ptr = &00 ; 2 bytes
             LDA currentLanguageRom
             BPL L8FBF
             LDA romselCopy
-            AND #&0F
+            AND #maxBank
 .L8FBF      PHA
             JSR disableTube
             PLA
@@ -3038,7 +3040,7 @@ ptr = &00 ; 2 bytes
             ORA #&40
             STA L0103,X
             LDA romselCopy
-            AND #&0F
+            AND #maxBank
             STA currentLanguageRom
             JSR L88D7
 .L90DE      PLA
@@ -3999,7 +4001,7 @@ tmp = &A8
             DEX									;repeat
             BNE L96D9								;until 0. (but not writing to &8300)
             LDA romselCopy								;get current ROM number
-            AND #&0F								;mask
+            AND #maxBank								;mask
 	  ASSERT prvIbosBankNumber == prv83 + 0
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             BIT L03A4								;?
@@ -6071,7 +6073,7 @@ osfileBlock = L02EE
 	  EQUB &80								;Check for RAM at Banks E & F
 
 ;*ROMS Command
-.^roms	  LDA #&0F								;Start at ROM &0F
+.^roms	  LDA #maxBank								;Start at ROM &0F
             STA L00AA								;Save ROM number at &AA
 .LA356      JSR LA360								;Get and print details of ROM
             DEC L00AA								;Next ROM
@@ -6282,7 +6284,7 @@ osfileBlock = L02EE
 .LA49C      JSR PrvEn								;switch in private RAM
 
 
-            LDY #&0F
+            LDY #maxBank
 .bankLoop   ASL transientRomBankMask
             ROL transientRomBankMask + 1
             BCC skipBank
@@ -6309,7 +6311,7 @@ osfileBlock = L02EE
 ;Set bytes in ROM Type Table to 0 for banks with a 0 bit in transientRomBankMask; other banks are not touched.
 .unplugBanksUsingTransientRomBankMask
 {
-.LA4C5      LDY #&0F
+.LA4C5      LDY #maxBank
 .unplugLoop ASL transientRomBankMask
             ROL transientRomBankMask + 1
             BCS skipBank
@@ -6343,7 +6345,7 @@ osfileBlock = L02EE
             LDY #&07								;for osmodes other than 2, absolute banks are 4..7
             CMP #&02								;check for osmode 2
             BNE LA4F3
-            LDY #&0F								;if osmode is 2, absolute banks are 12..15
+            LDY #maxBank								;if osmode is 2, absolute banks are 12..15
 .LA4F3      TYA									;
             STA prvPseudoBankNumbers,X								;assign pseudo bank to the appropriate absolute bank
             DEY									;reduce absolute bank number by 1
@@ -6430,7 +6432,7 @@ osfileBlock = L02EE
             JSR LA53D
 
 ;copy ROM type table to Private RAM
-            LDX #&0F
+            LDX #maxBank
 .copyLoop   LDA romTypeTable,X
             STA prvRomTypeTableCopy,X
             DEX
@@ -6451,7 +6453,7 @@ osfileBlock = L02EE
 
 	  ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
 ;Set all bytes in ROM Type Table and Private RAM to 0
-            LDX #&0F
+            LDX #maxBank
 .zeroLoop   CPX romselCopy ; SFTODO: are we confident romselCopy doesn't have b7/b6 set??
             BEQ skipBank
             LDA #&00
@@ -9108,7 +9110,7 @@ ASSERT romCodeStubEnd - romCodeStub <= bytesToCopy
             BPL LB956
             ; Patch the stub so it contains our bank number.
             LDA romselCopy
-            AND #&0F
+            AND #maxBank
             STA osPrintBuf + (romCodeStubLoadBankImm + 1 - romCodeStub)
             RTS
 }
@@ -9767,7 +9769,7 @@ ptr = &A8
             ; in the original state.
             LDA romselCopy
             PHA
-            AND #&0F
+            AND #maxBank
             STA romselCopy
             STA romsel
             ; We're going to use ptr as temporary zp workspace, so stack the existing values.
