@@ -3974,15 +3974,15 @@ ENDIF
             LDA lastBreakType
             BNE notSoftReset
             LDA currentLanguageRom
-            BPL L96A7 ; SFTODO: Do we expect this to always branch? Not at all sure.
+            BPL enterLangA ; SFTODO: Do we expect this to always branch? Not at all sure.
 .notSoftReset
 	  LDX #userRegLangFile
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             JSR lsrA4								;get *CONFIGURE LANG value
-            JMP L96A7
+            JMP enterLangA
 			
 .noTube     LDA romselCopy
-.L96A7      TAX
+.enterLangA TAX
             LDA romTypeTable,X
             ROL A
             BPL noLanguageEntry
