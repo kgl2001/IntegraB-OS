@@ -4630,38 +4630,42 @@ ramPresenceFlags = &A8
 {
 ;*SRROM Command
 .^srrom	  SEC
-            BCS L9AB5
+            BCS common
 
 ;*SRDATA Command
 .^srdata
             CLC
-.L9AB5      PHP
+.common     PHP
             JSR parseRomBankListChecked2
             JSR PrvEn								;switch in private RAM
             LDX #&00
-.L9ABE      ROR transientRomBankMask + 1
+.bankLoop   ROR transientRomBankMask + 1
             ROR transientRomBankMask
-            BCC L9AC9
+            BCC skipBank
             PLP
             PHP
             JSR L9AD1
-.L9AC9      INX
-            CPX #&10
-            BNE L9ABE
+.skipBank   INX
+            CPX #maxBank + 1
+            BNE bankLoop
             JMP plpPrvDisexitSc
-			
+
+; SFTODO: This has only one caller, just above, can it simply be inlined?
+; SFTODO: This seems to be using prvOswordBlockCopy + 1 as scratch space; we should perhaps have a separate name for it in this context, or maybe not - maybe just allocate a block local "bank = prvOswordBlockCopy + 1"?
+; SFTODO: This seems to use L00AD as scratch space too - is there really no zero page (shorter code) location we could have used instead of prvOswordBlockCopy + 1?
+; SFTODO: Probably not, but is there any chance of sharing more code between this and srset?
 .L9AD1      STX prvOswordBlockCopy + 1
             PHP
             LDA #&00
             ROR A
             STA L00AD
             JSR testRamUsingVariableMainRamSubroutine
-            BNE L9B0D
+            BNE L9B0D								;branch if not RAM
             LDA prvRomTypeTableCopy,X
-            BEQ L9AE8
-            CMP #&02
+            BEQ emptyBank
+            CMP #&02 ; SFTODO: as in srset
             BNE L9B0D
-.L9AE8      LDA prvOswordBlockCopy + 1
+.emptyBank  LDA prvOswordBlockCopy + 1
             JSR removeBankAFromSFTODOFOURBANKS
             PLP
             BCS L9AF9
