@@ -7485,7 +7485,7 @@ osfileBlock = L02EE
 .LAC6E		EQUS " ", "/", ".", "-"
 
 {
-.^LAC72		LDA prvOswordBlockCopy + 2
+.^LAC72		LDA prvDateSFTODO2
 	; SFTODO: Use lsrA4
             LSR A
             LSR A
@@ -7504,10 +7504,10 @@ osfileBlock = L02EE
             CMP #&03
             BCS LAC91
             DEX
-.LAC91      LDA prvOswordBlockCopy + 12								;get day of week
+.LAC91      LDA prvDateDayOfWeek							;get day of week
             CLC									;Carry Set=Month, Clear=Day of Week
             JSR LAAF5								;Save Day of Week text to buffer XY?xxx
-            LDA prvOswordBlockCopy + 3
+            LDA prvDateSFTODO3
             BNE LACA0
             JMP LAD5A
 }
@@ -7612,6 +7612,7 @@ osfileBlock = L02EE
 
 ;read buffer address from &8224 and store at &A8
 ;set buffer pointer to 0
+;SFTODOWIP
 {
 .^LAD63      LDA prvDateSFTODO4								;get OSWORD X register (lookup table LSB) SFTODO: not sure this comment is always true, e.g. we can be called via *TIME
             STA transientDateBufferPtr							;and save
@@ -7626,7 +7627,7 @@ osfileBlock = L02EE
             STY prvOswordBlockCopy + 1
 .LAD7E      RTS
 
-.LAD7F      BIT prvOswordBlockCopy + 1							;
+.LAD7F      BIT prvDateSFTODO1
             BMI LAD8D								;do the reverse of below
             JSR LABEA
             JSR LAD96
