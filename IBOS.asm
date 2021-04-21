@@ -7350,7 +7350,7 @@ SFTODOUNITSCHAR = prv82 + &4F
             INY									;increase buffer pointer
 .skipLeadingZero
             LDA SFTODOUNITSCHAR								;get 1s
-            JMP LABE4								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return.
+            JMP emitAToDateBufferUsingY								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return.
 
 ;postfix for dates. eg 25th, 1st, 2nd, 3rd
 .LAB71		EQUS "th", "st", "nd", "rd"
@@ -7379,7 +7379,7 @@ SFTODOUNITSCHAR = prv82 + &4F
             LDA LAB71+1,X								;get 2nd character from table + offset
             BCC LABA8								;don't capitalise
             AND #&DF								;capitalise
-.LABA8      JMP LABE4								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
+.LABA8      JMP emitAToDateBufferUsingY								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
 
 ;Split number in register A into 10s and 1s, characterise and store 1s in &824F and 10s in &824E
 .convertAToTensUnitsChars
@@ -7414,7 +7414,7 @@ SFTODOUNITSCHAR = prv82 + &4F
             STA (L00A8),Y								;save contents of A to Buffer Address+Y
             INY									;increase buffer pointer
             LDA LABC1+1,X								;get 'm'
-            JMP LABE4								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
+            JMP emitAToDateBufferUsingY								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
 }
 			
 ;&AA stores the buffer address offset
@@ -7423,7 +7423,8 @@ SFTODOUNITSCHAR = prv82 + &4F
 {
 .^emitAToDateBuffer
 .LABE2      LDY transientDateBufferIndex								;read buffer pointer
-.^LABE4      STA (transientDateBufferPtr),Y								;save contents of A to Buffer Address+Y
+.^emitAToDateBufferUsingY
+.LABE4      STA (transientDateBufferPtr),Y								;save contents of A to Buffer Address+Y
             INY									;increase buffer pointer
             STY transientDateBufferIndex								;save buffer pointer
             RTS
