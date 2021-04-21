@@ -7457,6 +7457,11 @@ ENDIF
             RTS
 }
 
+; SFTODOWIP
+; SFTODOWIP COMMENT
+; prvDateSFTODO2:
+;     b0..3: 0 => return with C set
+;            <4
 {
 .^LABEA      LDA prvDateSFTODO2								;&44 for OSWORD 0E
             AND #&0F								;&04 for OSWORD 0E
@@ -7467,7 +7472,7 @@ ENDIF
 			
 .LABF5      LDA transientDateSFTODO1
             CMP #&04
-            BCC LAC27								;branch if <4
+            BCC SFTODOSTEP2MAYBE								;branch if <4
             LDX #&00
             AND #&02
             EOR #&02
@@ -7490,7 +7495,7 @@ ENDIF
 .LAC1F      JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             LDA #':'
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-.LAC27      LDX #&00
+.SFTODOSTEP2MAYBE      LDX #&00
             LDA transientDateSFTODO1
             CMP #&04
             BCS LAC34								;branch if >=4
