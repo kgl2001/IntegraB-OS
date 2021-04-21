@@ -7740,8 +7740,9 @@ ENDIF
 ;read buffer address from &8224 and store at &A8
 ;set buffer pointer to 0
 ;SFTODOWIP
+.initDateBufferAndEmitTimeAndDate
 {
-.^LAD63      LDA prvDateSFTODO4							;get OSWORD X register (lookup table LSB) SFTODO: not sure this comment is always true, e.g. we can be called via *TIME
+.LAD63      LDA prvDateSFTODO4							;get OSWORD X register (lookup table LSB) SFTODO: not sure this comment is always true, e.g. we can be called via *TIME
             STA transientDateBufferPtr							;and save
             LDA prvDateSFTODO4 + 1							;get OSWORD Y register (lookup table MSB) SFTODO: ditto
             STA transientDateBufferPtr + 1						;and save
@@ -8735,7 +8736,7 @@ ENDIF
             LDA #hi(prvDateBuffer)
             STA prvDateSFTODO4 + 1							;store #&80 to address &8225
             JSR getRtcDateTime							;read TIME & DATE information from RTC and store in Private RAM (&82xx)
-            JSR LAD63								;format text for output to screen?
+            JSR initDateBufferAndEmitTimeAndDate								;format text for output to screen?
             JSR printDateBuffer								;output TIME & DATE data from address &8000 to screen
 .LB506      JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call								;
@@ -8770,7 +8771,7 @@ ENDIF
             STA prvDateSFTODO4							;store #&00 to address &8224
             LDA #hi(prvDateBuffer)
             STA prvDateSFTODO4 + 1							;store #&80 to address &8225
-            JSR LAD63								;format text for output to screen?
+            JSR initDateBufferAndEmitTimeAndDate								;format text for output to screen?
             JSR printDateBuffer								;output DATE data from address &8000 to screen
 .LB54C      JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call								;
@@ -8806,7 +8807,7 @@ ENDIF
             STA prvDateSFTODO2
             LDA #&F8
             STA prvDateSFTODO3
-            JSR LAD63
+            JSR initDateBufferAndEmitTimeAndDate
             SEC
             LDA #&17
             SBC L00AA
@@ -8947,7 +8948,7 @@ ENDIF
             LDA #&80
             STA prvOswordBlockCopy + 5
             JSR copyRtcAlarmToPrv
-            JSR LAD63
+            JSR initDateBufferAndEmitTimeAndDate
             DEC prvOswordBlockCopy + 1
             JSR printDateBuffer
             LDA #'/'
@@ -9161,7 +9162,7 @@ ENDIF
             STA prvOswordBlockCopy + 4							;save OSWORD X register (lookup table LSB)
             LDA prvOswordBlockOrigAddr + 1						;get OSWORD Y register (lookup table MSB)
             STA prvOswordBlockCopy + 5							;save OSWORD Y register (lookup table MSB)
-            JSR LAD63
+            JSR initDateBufferAndEmitTimeAndDate
             SEC
             RTS
 
@@ -9243,7 +9244,7 @@ ENDIF
 	  STA prvOswordBlockCopy + 4
             LDA #&80
             STA prvOswordBlockCopy + 5							;set buffer address to &8000
-            JSR LAD63
+            JSR initDateBufferAndEmitTimeAndDate
             JMP LB7BC
 			
 ;XY?0=&68
