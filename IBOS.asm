@@ -6614,8 +6614,9 @@ osfileBlock = L02EE
 }
 			
 ;Write contents from Private memory address &8000 to screen
+.printDateBuffer
 {
-.^LA5DE      LDX #&00
+.LA5DE      LDX #&00
 .LA5E0      LDA prvDateBuffer,X
             BEQ LA5EE
             JSR OSASCI
@@ -8735,7 +8736,7 @@ ENDIF
             STA prvDateSFTODO4 + 1							;store #&80 to address &8225
             JSR getRtcDateTime							;read TIME & DATE information from RTC and store in Private RAM (&82xx)
             JSR LAD63								;format text for output to screen?
-            JSR LA5DE								;output TIME & DATE data from address &8000 to screen
+            JSR printDateBuffer								;output TIME & DATE data from address &8000 to screen
 .LB506      JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call								;
 			
@@ -8770,7 +8771,7 @@ ENDIF
             LDA #hi(prvDateBuffer)
             STA prvDateSFTODO4 + 1							;store #&80 to address &8225
             JSR LAD63								;format text for output to screen?
-            JSR LA5DE								;output DATE data from address &8000 to screen
+            JSR printDateBuffer								;output DATE data from address &8000 to screen
 .LB54C      JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call								;
 			
@@ -8948,7 +8949,7 @@ ENDIF
             JSR copyRtcAlarmToPrv
             JSR LAD63
             DEC prvOswordBlockCopy + 1
-            JSR LA5DE
+            JSR printDateBuffer
             LDA #'/'
             JSR OSWRCH								;write to screen
             JSR printSpace								;write ' ' to screen
