@@ -7577,8 +7577,9 @@ ENDIF
 ;     b6..7: 0 => don't emit anything after month
 ;            b7: 0 => don't emit century, 1 => emit century
 ;            b6: (if century is emitted) 0 => emit "'" as century 1=> emit century as two digit number
+.emitDateToDateBuffer ; SFTODO: "date" here as in "the day identifier, omitting any time indicator within that day"
 {
-.^LAC72
+.LAC72
 ; SFTODO: Experimentally using nested scopes here to try to make things clearer, by making it more obvious that some labels have restricted scope - not sure if this is really helpful, let's see
 ; SFTODO: Chopping the individual blocks up into macros might make things clearer?
 ; 1. Optionally emit the day of the week, optionally truncated and/or capitalised, and optionally followed by some punctuation. prvDataSFTODO2's high nybble controls most of those options, although prvDataSFTODO3=0 will prevent punctuation and cause an early return.
@@ -7739,9 +7740,9 @@ ENDIF
             BMI LAD8D								;do the reverse of below
             JSR LABEA
             JSR LAD96
-            JMP LAC72
+            JMP emitDateToDateBuffer
 			
-.LAD8D      JSR LAC72
+.LAD8D      JSR emitDateToDateBuffer
             JSR LAD96
             JMP LABEA
 			
