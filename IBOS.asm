@@ -3926,7 +3926,11 @@ ENDIF
 	  ; guessing it's a workaround for a particular ROM, but I don't know
 	  ; what or why. Just *maybe* this is the GXR? (But does that claim
 	  ; KEYV?) Just might be worth asking on stardot about this at some
-	  ; point.
+	  ; point. - OK, looking at the Integra-B manual, it does mention GXR
+	  ; in the "Applications" section, but I think this is much more likely
+	  ; to be for GENIE, which will almost certainly be claiming KEYV to
+	  ; allow it to be entered. (I haven't checked GXR or GENIE yet to see
+	  ; what is at &800D.)
 	  LDA KEYVH
             CMP #&FF
             BNE notExtendedVectorGROM
@@ -7317,6 +7321,7 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
 			
 ;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
 ;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+;SFTODOWIP
 {
 .^LAB3C      JSR LABAB								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
             LDY L00AA								;get buffer pointer
