@@ -7754,7 +7754,7 @@ ENDIF
 
 ; SFTODOWIP: Next line implies b7 of prvDateSFTODO1 "mainly" controls ordering
 .emitTimeAndDateToDateBuffer
-.LAD7F      BIT prvDateSFTODO1							;b7 of prvDateSFTODO1 controls the ordering
+.LAD7F      BIT prvDateSFTODO1							;b7 of prvDateSFTODO1 controls whether time or date comes first
             BMI dateFirst
             JSR emitTimeToDateBuffer
             JSR emitSeparatorToDateBuffer
