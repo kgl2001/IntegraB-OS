@@ -7623,7 +7623,7 @@ osfileBlock = L02EE
             LDA #&00
             STA transientDateBufferIndex							;set buffer pointer to 0
             JSR LAD7F
-            LDA #&0D ; SFTODO: vduCr?
+            LDA #vduCr
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDY L00AA								;get buffer pointer
             STY prvOswordBlockCopy + 1
