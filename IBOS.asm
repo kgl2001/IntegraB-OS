@@ -6925,20 +6925,21 @@ osfileBlock = L02EE
 }
 
 {
-.^LA7DF      DEY
-            LDA LA7F2,Y
+.^LA7DF      DEY ; SFTODO: We could avoid this DEY/INY if we changed next line to LDA monthDaysTable-1,Y
+            LDA monthDaysTable,Y
             INY
-            CPY #&02
-            BNE LA7F1
+            CPY #2									;February
+            BNE rts
             PHA
             JSR LA7CD
             PLA
-            BCC LA7F1
+            BCC rts
             LDA #&1D
-.LA7F1      RTS
+.rts        RTS
 
 ;Lookup table for Number of Days in each month
-.LA7F2	  EQUB 31 ; January
+.monthDaysTable
+        	  EQUB 31 ; January
 	  EQUB 28 ; February
 	  EQUB 31 ; March
 	  EQUB 30 ; April
