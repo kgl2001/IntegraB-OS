@@ -7482,11 +7482,11 @@ ENDIF
             BEQ LAC1F
             LDA prvDateHours								;read Hours
             BEQ LAC1D								;check for 00hrs. If so, convert to 12
-            CMP #&0D								;
+            CMP #13 								;
             BCC LAC1F								;check for 13hrs and above
-            SBC #&0C								;if so, subtract 12
+            SBC #12 								;if so, subtract 12
             BCS LAC1F
-.LAC1D      LDA #&0C								;get '0C' SFTODO!?
+.LAC1D      LDA #12
 .LAC1F      JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             LDA #':'
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
@@ -7505,7 +7505,7 @@ ENDIF
             CMP #&0C
             BCC LAC55
             LDA #'/'
-            BNE LAC4A
+            BNE LAC4A ; always branch
 .LAC48      LDA #':'
 .LAC4A      JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDX #&00
@@ -7682,7 +7682,7 @@ ENDIF
             JSR LAD96
             JMP LABEA
 			
-.LAD96      LDA prvOswordBlockCopy + 1
+.LAD96      LDA prvDateSFTODO1
             AND #&F0
             CMP #&D0
             BEQ LADBE
