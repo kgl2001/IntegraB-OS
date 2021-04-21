@@ -4554,6 +4554,7 @@ ramPresenceFlags = &A8
 }
 
 ;*SRSET Command
+; SFTODOWIP
 {
 .^srset     LDA (transientCmdPtr),Y
             CMP #'?'
@@ -4598,7 +4599,7 @@ ramPresenceFlags = &A8
             CLC
             JSR PrvEn								;switch in private RAM
             LDY #&00
-.L9A7F      CLC
+.showLoop   CLC
             TYA
             ADC #'W'								;Start at 'W'
             JSR OSWRCH
@@ -4613,13 +4614,14 @@ ramPresenceFlags = &A8
             SEC
             JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
 .bankShown  CPY #&03								;Check for 4th bank
-            BEQ L9AAB								;Yes? Then end
+            BEQ osnewlPrvDisexitSc							;Yes? Then end
             LDA #','
             JSR OSWRCH								;Write to screen
             JSR printSpace								;write ' ' to screen
-            INY										;Next
-            BNE L9A7F								;Loop for 'X', 'Y' & 'Z'
-.L9AAB      JSR OSNEWL								;New Line
+            INY									;Next
+            BNE showLoop								;Loop for 'X', 'Y' & 'Z'
+.osnewlPrvDisexitSc
+            JSR OSNEWL								;New Line
             JMP PrvDisexitSc
 }
 
