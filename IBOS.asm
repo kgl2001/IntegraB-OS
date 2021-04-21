@@ -7546,7 +7546,7 @@ ENDIF
 {
 .^LAC72
 ; SFTODO: Experimentally using nested scopes here to try to make things clearer, by making it more obvious that some labels have restricted scope - not sure if this is really helpful, let's see
-; 1. Optionally emit the day of the week, optionally truncated and/or capitalised, and optionally followed by some punctuation.
+; 1. Optionally emit the day of the week, optionally truncated and/or capitalised, and optionally followed by some punctuation. prvDataSFTODO2's high nybble controls most of those options, although prvDataSFTODO3=0 will prevent punctuation and cause an early return.
     {
 	  LDA prvDateSFTODO2
 	  ; SFTODO: Use lsrA4
@@ -7589,7 +7589,7 @@ ENDIF
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
     }
 .^SFTODOSTEP2
-; 2.
+; 2. Optionally print the day of the month with optional formatting/capitalisation. Options controlled by b0-2 of prvDateSFTODO3. If b3-7 of prvDateSFTODO3 are zero we return early. Otherwise we output dataSeparators[b0-2 of prvDataSFTODO1].
             LDA prvDateSFTODO3
             AND #&07
             STA transientDateSFTODO1
@@ -7618,6 +7618,7 @@ ENDIF
             TAX
             LDA dateSeparators,X							;get character from look up table
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+; 3.
 .SFTODOSTEP3MAYBE      LDA prvDateSFTODO3
             LSR A
             LSR A
