@@ -7553,7 +7553,7 @@ ENDIF
             DEX
 .LAC91      LDA prvDateDayOfWeek							;get day of week
             CLC									;Carry Set=Month, Clear=Day of Week
-            JSR emitDayOrMonthName							;Save Day of Week text to buffer XY?xxx
+            JSR emitDayOrMonthName							;X is maximum number of characters to emit
             LDA prvDateSFTODO3
             BNE LACA0
             JMP LAD5A
@@ -7582,7 +7582,7 @@ ENDIF
             BEQ LACD0
             TAX
 .LACD0      LDA prvDateDayOfMonth							;read Day of Month
-            JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+            JSR emitADecimalFormatted							;X controls formatting
             LDA transientDateSFTODO1
             CMP #&04
             BCC LACE5
@@ -7615,7 +7615,7 @@ ENDIF
             JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             JMP LAD2A
 }
-
+;SFTODO: It may be the above and below blocks would be better merged and then some of their global labels might not be needed
 {
 .^LAD18      LDX #&03
             CMP #&06
@@ -7669,7 +7669,7 @@ ENDIF
             LDA #vduCr
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDY L00AA								;get buffer pointer
-            STY prvOswordBlockCopy + 1
+            STY prvDateSFTODO1
 .LAD7E      RTS
 
 .LAD7F      BIT prvDateSFTODO1
@@ -7710,6 +7710,7 @@ ENDIF
 }
 
 {
+; SFTODO: This has only one caller
 .^LADCB      LDA #&00
             STA prvOswordBlockCopy
             SEC
