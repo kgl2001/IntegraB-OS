@@ -7327,60 +7327,60 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
 SFTODOTENSCHAR = prv82 + &4E
 SFTODOUNITSCHAR = prv82 + &4F
 .^emitADecimalFormatted
-.LAB3C      JSR convertAToTensUnitsChars								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
-            LDY transientDateBufferIndex								;get buffer pointer
+.LAB3C      JSR convertAToTensUnitsChars						;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
+            LDY transientDateBufferIndex						;get buffer pointer
 .LAB41      CPX #&00
             BEQ printTensChar
-            LDA SFTODOTENSCHAR								;get 10s
+            LDA SFTODOTENSCHAR							;get 10s
             CMP #'0'								;is it '0'
             BNE printTensChar
             CPX #&01	
             BEQ skipLeadingZero
             LDA #' '								;convert '0' to ' '
-            STA SFTODOTENSCHAR								;and save to &824E
-            LDA SFTODOUNITSCHAR								;get 1s
+            STA SFTODOTENSCHAR							;and save to &824E
+            LDA SFTODOUNITSCHAR							;get 1s
             CMP #'0'								;is it '0'
             BNE printTensChar
             CPX #&03
             BNE printTensChar
             LDA #' '								;convert '0' to ' '
-            STA SFTODOUNITSCHAR								;and save to &824F
+            STA SFTODOUNITSCHAR							;and save to &824F
 .printTensChar
-	  LDA SFTODOTENSCHAR								;get 10s
-            STA (transientDateBufferPtr),Y								;store at buffer &XY?Y
+	  LDA SFTODOTENSCHAR							;get 10s
+            STA (transientDateBufferPtr),Y						;store at buffer &XY?Y
             INY									;increase buffer pointer
 .skipLeadingZero
-            LDA SFTODOUNITSCHAR								;get 1s
-            JMP emitAToDateBufferUsingY								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return.
+            LDA SFTODOUNITSCHAR							;get 1s
+            JMP emitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return.
 
 ;postfix for dates. eg 25th, 1st, 2nd, 3rd
 .LAB71		EQUS "th", "st", "nd", "rd"
 	
 .^LAB79      PHP									;save carry flag. Used to select capitalisation
-            JSR convertAToTensUnitsChars								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
-            LDA SFTODOTENSCHAR								;get 10s
+            JSR convertAToTensUnitsChars						;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
+            LDA SFTODOTENSCHAR							;get 10s
             CMP #'1'								;check for '1'
             BNE LAB89								;branch if not 1.
 .LAB84      LDX #&00								;if the number is in 10s, then always 'th'
             JMP LAB94
 			
-.LAB89      LDA SFTODOUNITSCHAR								;get 1s
+.LAB89      LDA SFTODOUNITSCHAR							;get 1s
             CMP #'4'								;check if '4'
             BCS LAB84								;branch if >='4'
             AND #&0F								;mask lower 4 bits
             ASL A									;x2 - 1 becomes 2, 2 becomes 4, 3 becomes 6
             TAX
 .LAB94      PLP									;restore carry flag. Used to select capitalisation
-            LDY transientDateBufferIndex								;get buffer pointer
+            LDY transientDateBufferIndex						;get buffer pointer
             LDA LAB71,X								;get 1st character from table + offset
             BCC LAB9E								;don't capitalise
             AND #&DF								;capitalise
-.LAB9E      STA (transientDateBufferPtr),Y								;store at buffer &XY?Y
+.LAB9E      STA (transientDateBufferPtr),Y						;store at buffer &XY?Y
             INY									;increase buffer pointer
             LDA LAB71+1,X								;get 2nd character from table + offset
             BCC LABA8								;don't capitalise
             AND #&DF								;capitalise
-.LABA8      JMP emitAToDateBufferUsingY								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
+.LABA8      JMP emitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
 
 ;Split number in register A into 10s and 1s, characterise and store 1s in &824F and 10s in &824E
 .convertAToTensUnitsChars
