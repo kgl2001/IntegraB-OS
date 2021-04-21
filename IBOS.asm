@@ -146,6 +146,8 @@ currentMode = &0355
 romTypeTable = &02A1
 romPrivateWorkspaceTable = &0DF0
 
+romTypeSrData = 2 ; ROM type byte used for banks allocated to pseudo-addressing via *SRDATA
+
 osCmdPtr = &F2
 osErrorPtr = &FD
 osRdRmPtr = &F6
@@ -4572,7 +4574,7 @@ ramPresenceFlags = &A8
             BNE plyAndSkipBank 							;branch if not RAM
             LDA prvRomTypeTableCopy,X
             BEQ emptyBank
-            CMP #&02								;SFTODO: what does rom type 2 mean? My suspicion is we use this to indicate "already SRDATA, so we can use it", but need to check that in other code
+            CMP #romTypeSrData
             BNE plyAndSkipBank
 .emptyBank  CLC
             BCC skipIffC
@@ -4665,7 +4667,7 @@ SFTODOTmp = L00AD ; SFTODO: Use a "proper" label on RHS
             BNE L9B0D								;branch if not RAM
             LDA prvRomTypeTableCopy,X
             BEQ emptyBank
-            CMP #&02 ; SFTODO: as in srset
+            CMP #romTypeSrData
             BNE L9B0D
 .emptyBank  LDA bankTmp
             JSR removeBankAFromSFTODOFOURBANKS
@@ -4677,7 +4679,7 @@ SFTODOTmp = L00AD ; SFTODO: Use a "proper" label on RHS
 .isSrrom    LDA SFTODOTmp
             JSR writeRomHeaderAndPatchUsingVariableMainRamSubroutine
             LDX bankTmp
-            LDA #&02
+            LDA #romTypeSrData
             STA prvRomTypeTableCopy,X
             STA romTypeTable,X
 .L9B09      LDX bankTmp
