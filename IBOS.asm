@@ -7323,34 +7323,40 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
 ;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 ; SFTODO: X on entry means something - I think X=0=>print leading 0s, X=1=>omit leading 0s, X=2=>convert leading 0s to space but do allow 0 in units, X=3=>convert leading 0s to space, if A=0 print a space for the units
 ;SFTODOWIP
+; Emit A (<=99) into transientDateBuffer, formatted as a decimal number according to X:
+;   A    0     5     25
+; X=0 => "00"  "05"  "25"
+; X=1 => "0"   "5"   "25"
+; X=2 => " 0"  " 5"  "25"
+; X=3 => "  "  " 5"  "25"
 {
-SFTODOTENSCHAR = prv82 + &4E
-SFTODOUNITSCHAR = prv82 + &4F
+tensChar = prv82 + &4E
+unitsChar = prv82 + &4F
 .^emitADecimalFormatted
 .LAB3C      JSR convertAToTensUnitsChars						;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
             LDY transientDateBufferIndex						;get buffer pointer
 .LAB41      CPX #&00
             BEQ printTensChar
-            LDA SFTODOTENSCHAR							;get 10s
+            LDA tensChar								;get 10s
             CMP #'0'								;is it '0'
             BNE printTensChar
             CPX #&01	
             BEQ skipLeadingZero
             LDA #' '								;convert '0' to ' '
-            STA SFTODOTENSCHAR							;and save to &824E
-            LDA SFTODOUNITSCHAR							;get 1s
+            STA tensChar								;and save to &824E
+            LDA unitsChar								;get 1s
             CMP #'0'								;is it '0'
             BNE printTensChar
             CPX #&03
             BNE printTensChar
             LDA #' '								;convert '0' to ' '
-            STA SFTODOUNITSCHAR							;and save to &824F
+            STA unitsChar								;and save to &824F
 .printTensChar
-	  LDA SFTODOTENSCHAR							;get 10s
+	  LDA tensChar								;get 10s
             STA (transientDateBufferPtr),Y						;store at buffer &XY?Y
             INY									;increase buffer pointer
 .skipLeadingZero
-            LDA SFTODOUNITSCHAR							;get 1s
+            LDA unitsChar								;get 1s
             JMP emitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return.
 
 ;postfix for dates. eg 25th, 1st, 2nd, 3rd
@@ -7358,13 +7364,13 @@ SFTODOUNITSCHAR = prv82 + &4F
 	
 .^LAB79      PHP									;save carry flag. Used to select capitalisation
             JSR convertAToTensUnitsChars						;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
-            LDA SFTODOTENSCHAR							;get 10s
+            LDA tensChar								;get 10s
             CMP #'1'								;check for '1'
             BNE LAB89								;branch if not 1.
 .LAB84      LDX #&00								;if the number is in 10s, then always 'th'
             JMP LAB94
 			
-.LAB89      LDA SFTODOUNITSCHAR							;get 1s
+.LAB89      LDA unitsChar								;get 1s
             CMP #'4'								;check if '4'
             BCS LAB84								;branch if >='4'
             AND #&0F								;mask lower 4 bits
@@ -7391,10 +7397,10 @@ SFTODOUNITSCHAR = prv82 + &4F
             BCS tensLoop								;count 10s till negative. Total 10s stored in Y
             ADC #10									;restore last subtract to get positive again. This gets the units
             ORA #'0'								;convert units to character
-            STA SFTODOUNITSCHAR							;save units to &824F
+            STA unitsChar								;save units to &824F
             TYA									;get 10s
             ORA #'0'								;convert 10s to character
-            STA SFTODOTENSCHAR							;save 10s to &824F
+            STA tensChar								;save 10s to &824F
             RTS
 }
 
