@@ -143,8 +143,8 @@ transientDynamicSyntaxState = &AE ; 1 byte
 ; SFTODO: Named constants for b7 and b6
 transientDynamicSyntaxStateCountMask = %00111111
 
-transientDatePtrSFTODO1 = &A8 ; SFTODO!?
-transientDateSFTODO1 = &AA ; SFTODO!?
+transientDateBufferPtr = &A8 ; SFTODO!?
+transientDateBufferIndex = &AA ; SFTODO!?
 
 vduStatus = &D0
 vduStatusShadow = &10
@@ -7403,10 +7403,11 @@ osfileBlock = L02EE
 ;&00A8 stores the address of buffer address
 ;this code saves the contents of A to buffer address + buffer address offset
 {
-.^LABE2      LDY transientDateSFTODO1								;read buffer pointer
-.^LABE4      STA (transientDatePtrSFTODO1),Y								;save contents of A to Buffer Address+Y
+.^emitAToDateBuffer
+.LABE2      LDY transientDateBufferIndex								;read buffer pointer
+.^LABE4      STA (transientDateBufferPtr),Y								;save contents of A to Buffer Address+Y
             INY									;increase buffer pointer
-            STY transientDateSFTODO1								;save buffer pointer
+            STY transientDateBufferIndex								;save buffer pointer
             RTS
 }
 
@@ -7442,7 +7443,7 @@ osfileBlock = L02EE
 .LAC1D      LDA #&0C								;get '0C'
 .LAC1F      JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             LDA #':'								;':'
-            JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 .LAC27      LDX #&00
             LDA L00AB
             CMP #&04
@@ -7460,7 +7461,7 @@ osfileBlock = L02EE
             LDA #&2F								;'/'
             BNE LAC4A
 .LAC48      LDA #&3A								;':'
-.LAC4A      JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+.LAC4A      JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDX #&00
             LDA prvOswordBlockCopy + 15								;read seconds
             JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
@@ -7471,7 +7472,7 @@ osfileBlock = L02EE
             AND #&01
             BEQ LAC6C
             LDA #&20								;' '
-            JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDA prvOswordBlockCopy + 13								;read hours
             JSR LABC5								;write am / pm to 
 .LAC6C      CLC
@@ -7516,12 +7517,12 @@ osfileBlock = L02EE
             CMP #&04
             BCC LACB6
             LDA #&2C								;','
-            JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDA L00AB
             CMP #&08
             BCC LACBB
 .LACB6      LDA #&20								;' '
-            JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 .^LACBB      LDA prvOswordBlockCopy + 3
             AND #&07
             STA L00AB
@@ -7549,7 +7550,7 @@ osfileBlock = L02EE
             AND #&03								;mask lower 3 bits
             TAX
             LDA LAC6E,X								;get character from look up table
-            JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 .LACF8      LDA prvOswordBlockCopy + 3
             LSR A
             LSR A
@@ -7585,7 +7586,7 @@ osfileBlock = L02EE
             AND #&03								;mask lower 3 bits
             TAX
             LDA LAC6E,X								;get character from look up table
-            JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 .^LAD3D      LDA prvOswordBlockCopy + 3
             AND #&C0
             BEQ LAD5A
@@ -7602,7 +7603,7 @@ osfileBlock = L02EE
 .^LAD5A      RTS
 
 .LAD5B      LDA #&27								;'''
-            JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             JMP LAD52
 }
 			
@@ -7611,14 +7612,14 @@ osfileBlock = L02EE
 ;set buffer pointer to 0
 {
 .^LAD63      LDA prvDateSFTODO4								;get OSWORD X register (lookup table LSB) SFTODO: not sure this comment is always true, e.g. we can be called via *TIME
-            STA transientDatePtrSFTODO1							;and save
+            STA transientDateBufferPtr							;and save
             LDA prvDateSFTODO5								;get OSWORD Y register (lookup table MSB) SFTODO: ditto
-            STA transientDatePtrSFTODO1 + 1								;and save
+            STA transientDateBufferPtr + 1								;and save
             LDA #&00
-            STA transientDateSFTODO1							;set buffer pointer to 0
+            STA transientDateBufferIndex							;set buffer pointer to 0
             JSR LAD7F
             LDA #&0D ; SFTODO: vduCr?
-            JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDY L00AA								;get buffer pointer
             STY prvOswordBlockCopy + 1
 .LAD7E      RTS
@@ -7646,17 +7647,17 @@ osfileBlock = L02EE
             BNE LADAF
             LDX #&2E
 .LADAF      TXA
-            JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDA L00AB
             AND #&10
             BEQ LAD7E
 .LADB9      LDA #&20								;' '
-            JMP LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JMP emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 			
 .LADBE      LDA #&20								;' '
-            JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDA #&40								;'@'
-            JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             JMP LADB9
 }
 
@@ -8697,7 +8698,7 @@ osfileBlock = L02EE
             LDA #&00
             STA prv82+&4C
 .LB5D9      LDA #&20								;' '
-            JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDX prv82+&4B
             LDA prv80+&C8,X
             LDX #&03
@@ -8708,7 +8709,7 @@ osfileBlock = L02EE
             CMP #&06
             BCC LB5D9
             LDA #&0D
-            JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDX #&00
 .LB5FD      LDA prv80+&00,X
             JSR OSASCI
