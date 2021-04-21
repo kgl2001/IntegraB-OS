@@ -7574,6 +7574,8 @@ ENDIF
 ;                <6  => emit month as name without truncation
 ;            <4 => emit month as formatted decimal in mode X, where X=0 if n==3 else n
 ;     b6..7: 0 => don't emit anything after month
+;            b7: 0 => don't emit century, 1 => emit century
+;            b6:
 {
 .^LAC72
 ; SFTODO: Experimentally using nested scopes here to try to make things clearer, by making it more obvious that some labels have restricted scope - not sure if this is really helpful, let's see
@@ -7696,12 +7698,12 @@ ENDIF
             AND #&C0
             BEQ LAD5Arts
             CMP #&80
-            BCC LAD52
+            BCC emitYear
             BEQ LAD5B
             LDX #&00
             LDA prvDateCentury								;read century
             JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
-.LAD52      LDX #&00
+.emitYear   LDX #&00
             LDA prvDateYear								;read year
             JMP emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 			
@@ -7709,7 +7711,7 @@ ENDIF
 
 .LAD5B      LDA #'''								;'''
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-            JMP LAD52
+            JMP emitYear
     }
 }
 			
