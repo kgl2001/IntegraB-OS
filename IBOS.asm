@@ -7409,6 +7409,7 @@ unitsChar = prv82 + &4F
 .timeSuffixes
 	  EQUS "am", "pm"
 
+; Emit time suffix for hour A (<=23) into transientDateBuffer.
 ; SFTODO: This only has one caller, could it just be inlined?
 .^emitTimeSuffixForA
 .LABC5      TAX
@@ -7424,9 +7425,24 @@ unitsChar = prv82 + &4F
             LDA timeSuffixes,X							;get 'a' or 'p'
             STA (transientDateBufferPtr),Y						;save contents of A to Buffer Address+Y
             INY									;increase buffer pointer
-            LDA timeSuffixes + 1,X							;get 'm' SFTODO: So we could just do LDA #'m' - and we could get rid of the "m"s in LABC1 and the ASL A above to double - in fact we might as well rewrite all this to just set A to 'a' or 'p' instead of 0 or 2 in order to use LABC1
+            LDA timeSuffixes + 1,X							;get 'm'
             JMP emitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
 }
+
+IF FALSE
+; SFTODO: emitTimeSuffixForA is a bit more complex than necessary - here's a shorter alternative implementation, not tested!
+.emitTimeSuffixForA
+{
+	LDX #'a'
+	TAY:BEQ suffixInX 								;branch if 00 hrs ('am')
+	CMP #13
+	BCC suffixInX								;branch if A<13 (hrs) ('am')
+	LDX #'p'									;('pm')
+.suffixInX
+	TXA:JSR emitAToDateBuffer
+	LDA #'m':FALLTHROUGH_TO emitAToDateBuffer
+}
+ENDIF
 			
 ;&AA stores the buffer address offset
 ;&00A8 stores the address of buffer address
