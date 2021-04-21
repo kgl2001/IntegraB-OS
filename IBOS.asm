@@ -7273,19 +7273,21 @@ osfileBlock = L02EE
 {
 capitalisationMask = prv82 + &4F
 calOffsetPtr = prv82 + &50
-.^LAAF5	  BCC LAAFA								;If Carry clear then jump to Day of Week
+.^LAAF5	  BCC indexInA
 	  CLC
             ADC #&07								;move calOffset pointer to first month
-.LAAFA      STX calOffsetPtr								;save calOffset pointer to &8250
+.indexInA   STX calOffsetPtr								;save calOffset pointer to &8250
             CPY #&00								;First letter?
-            BNE LAB09								;No? Then branch
+            BNE initCapitalisationMask							;No? Then branch
             LDY #&DF								;Load capitalise mask
-            STY capitalisationMask								;Save mask to &824F
-            JMP LAB0E
-			
-.LAB09      LDY #&FF								;otherwise no capitalise
-            STY capitalisationMask								;save mask to &824F
-.LAB0E      TAX
+            STY capitalisationMask							;Save mask to &824F
+            JMP capitalisationMaskSet
+
+.initCapitalisationMask
+            LDY #&FF								;otherwise no capitalise
+            STY capitalisationMask							;save mask to &824F
+.capitalisationMaskSet
+            TAX
             INX
             LDA calOffset,X								;get calText pointer for next month / day
             STA prv82+&4E								;save calText pointer for next month / day to &824E
