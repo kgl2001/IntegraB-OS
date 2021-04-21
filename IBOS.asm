@@ -506,6 +506,7 @@ prvDateSFTODO4 = prvOswordBlockCopy + 4 ; 2 bytes SFTODO!?
 prvDateSFTODO6 = prvOswordBlockCopy + 6
 prvDateSFTODO7 = prvOswordBlockCopy + 7
 ; SFTODO: I suspect the following locations are not arbitrary and have some relation to OSWORD &E; if so they may be best renamed to indicate this after, not sure until I've been through all the code
+prvDateSFTODO8 = prvOswordBlockCopy + 8 ; SFTODO: CENTURY!?!?!?! JUST BASED ON ITS POSITION
 prvDateYear = prvOswordBlockCopy + 9
 prvDateMonth = prvOswordBlockCopy + 10
 prvDateDayOfMonth = prvOswordBlockCopy + 11
@@ -7579,28 +7580,28 @@ osfileBlock = L02EE
             LDX #&00
 .LAD20      AND #&01
             TAY
-            LDA prvOswordBlockCopy + 10								;Get Month
+            LDA prvDateMonth								;Get Month
             SEC									;Carry Set=Month, Clear=Day of Week
             JSR LAAF5								;Save Month text to buffer XY?xxx
-.^LAD2A      LDA prvOswordBlockCopy + 3
+.^LAD2A      LDA prvDateSFTODO3
             AND #&C0
             BEQ LAD5A
-            LDA prvOswordBlockCopy + 1
+            LDA prvDateSFTODO1
             AND #&03								;mask lower 3 bits
             TAX
             LDA LAC6E,X								;get character from look up table
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-.^LAD3D      LDA prvOswordBlockCopy + 3
+.^LAD3D      LDA prvDateSFTODO3
             AND #&C0
             BEQ LAD5A
             CMP #&80
             BCC LAD52
             BEQ LAD5B
             LDX #&00
-            LDA prvOswordBlockCopy + 8								;read century
+            LDA prvDateSFTODO8								;read century
             JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 .LAD52      LDX #&00
-            LDA prvOswordBlockCopy + 9								;read year
+            LDA prvDateYear								;read year
             JMP LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 			
 .^LAD5A      RTS
