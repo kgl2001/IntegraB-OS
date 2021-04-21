@@ -7621,13 +7621,15 @@ ENDIF
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
     }
 ; 3.
-.SFTODOSTEP3MAYBE      LDA prvDateSFTODO3
+.SFTODOSTEP3MAYBE
+    {
+	  LDA prvDateSFTODO3
             LSR A
             LSR A
             LSR A
             AND #&07
             STA transientDateSFTODO1
-            BEQ LAD3D
+            BEQ SFTODOSTEP4MAYBE
             CMP #&04
             BCS LAD18
             LDX #&00
@@ -7655,7 +7657,9 @@ ENDIF
             TAX
             LDA dateSeparators,X								;get character from look up table
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-.LAD3D      LDA prvDateSFTODO3
+    }
+.SFTODOSTEP4MAYBE
+	  LDA prvDateSFTODO3
             AND #&C0
             BEQ LAD5Arts
             CMP #&80
