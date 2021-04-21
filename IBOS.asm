@@ -4554,11 +4554,11 @@ ramPresenceFlags = &A8
 }
 
 ;*SRSET Command
-; SFTODOWIP
 {
 .^srset     LDA (transientCmdPtr),Y
             CMP #'?'
             BEQ showStatus
+	  ; Select the first four suitable banks from the list provided and store them at prvPseudoBankNumbers.
             JSR parseRomBankList
             JSR PrvEn								;switch in private RAM
             LDX #&00
@@ -4589,11 +4589,12 @@ ramPresenceFlags = &A8
 .skipBank   INX
             CPX #maxBank + 1
             BNE bankLoop
+	  ; There aren't four entries in prvPseudoBankNumbers (if there were we'd have taken the "BCS done" branch above), so pad the list with &FF entries.
             LDA #&FF
-.L9A6E      STA prvPseudoBankNumbers,Y
+.padLoop    STA prvPseudoBankNumbers,Y
             INY
             CPY #&04
-            BCC L9A6E
+            BCC padLoop
 .done       JMP PrvDisexitSc
 
 .showStatus
