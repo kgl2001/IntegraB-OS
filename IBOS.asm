@@ -7694,7 +7694,7 @@ ENDIF
             LDA dateSeparators,X								;get character from look up table
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
     }
-.SFTODOSTEP4MAYBE
+.SFTODOSTEP4MAYBE ; SFTODO: THESE STEP N LABELS SHOULD BE CHANGED TO REFLECT THINGS LIKE DAYOFWEEK, DAY, MONTH
     {
 	  LDA prvDateSFTODO3
             AND #&C0
