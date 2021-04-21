@@ -7544,6 +7544,7 @@ ENDIF
 ;     (now at SFTODOSTEP2)
 ;
 ; Roughly speaking this is emitting a string of the form "<day of week><day of month><month><century><year>"; the actual format of each of those elements, including whether they are just zero length strings and what punctuation they have, is controlled by prvDateSFTODO*.
+; SFTODO: Is this extremely "compact" representation mandated by some API? Given our relatively large amount of private workspace in our private RAM, I can't help suspecting we could use whole bytes for some of these bitfields and substantially shrink the code. I may be wrong about that.
 ;
 ; prvDateSFTODO1:
 ;    b0..1: dateSeparators[n] to emit after day of month/month
