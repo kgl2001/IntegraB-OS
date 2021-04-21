@@ -7545,6 +7545,8 @@ ENDIF
 ;
 {
 .^LAC72
+; SFTODO: Experimentally using nested scopes here to try to make things clearer, by making it more obvious that some labels have restricted scope - not sure if this is really helpful, let's see
+; 1. Optionally emit the day of the week, optionally truncated and/or capitalised, and optionally followed by some punctuation.
     {
 	  LDA prvDateSFTODO2
 	  ; SFTODO: Use lsrA4
@@ -7560,12 +7562,13 @@ ENDIF
             LDA transientDateSFTODO1
             LDX #&00
             CMP #&05
-            BCS LAC91
+            BCS maxCharsInX
             LDX #&03
             CMP #&03
-            BCS LAC91
+            BCS maxCharsInX
             DEX
-.LAC91      LDA prvDateDayOfWeek							;get day of week
+.maxCharsInX
+	  LDA prvDateDayOfWeek							;get day of week
             CLC									;Carry Set=Month, Clear=Day of Week
             JSR emitDayOrMonthName							;X is maximum number of characters to emit
             LDA prvDateSFTODO3
@@ -7585,10 +7588,12 @@ ENDIF
 .LACB6      LDA #' '
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
     }
-.^SFTODOSTEP2      LDA prvDateSFTODO3
+.^SFTODOSTEP2
+; 2.
+            LDA prvDateSFTODO3
             AND #&07
             STA transientDateSFTODO1
-            BEQ LACF8
+            BEQ SFTODOSTEP3MAYBE
             LDX #&01
             CMP #&04
             BCS LACD0
@@ -7613,7 +7618,7 @@ ENDIF
             TAX
             LDA dateSeparators,X							;get character from look up table
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-.LACF8      LDA prvDateSFTODO3
+.SFTODOSTEP3MAYBE      LDA prvDateSFTODO3
             LSR A
             LSR A
             LSR A
