@@ -7324,7 +7324,7 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
 ;SFTODOWIP
 {
 .^LAB3C      JSR LABAB								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
-            LDY L00AA								;get buffer pointer
+            LDY transientDateBufferIndex								;get buffer pointer
 .LAB41      CPX #&00
             BEQ LAB65
             LDA prv82+&4E								;get 10s
@@ -7342,7 +7342,7 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
             LDA #&20								;convert '0' to ' '
             STA prv82+&4F								;and save to &824F
 .LAB65      LDA prv82+&4E								;get 10s
-            STA (L00A8),Y								;store at buffer &XY?Y
+            STA (transientDateBufferPtr),Y								;store at buffer &XY?Y
             INY									;increase buffer pointer
 .LAB6B      LDA prv82+&4F								;get 1s
             JMP LABE4								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return.
