@@ -6757,14 +6757,15 @@ osfileBlock = L02EE
 }
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
+.getRtcSecondsMinutesHours
 {
-.^LA6F3      JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
-            LDX #rtcRegSeconds								;Select 'Seconds' register on RTC: Register &00
+.LA6F3      JSR waitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
+            LDX #rtcRegSeconds							;Select 'Seconds' register on RTC: Register &00
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            STA prvDateSeconds								;Store 'Seconds' at &822F
-            LDX #rtcRegMinutes								;Select 'Minutes' register on RTC: Register &02
+            STA prvDateSeconds							;Store 'Seconds' at &822F
+            LDX #rtcRegMinutes							;Select 'Minutes' register on RTC: Register &02
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            STA prvDateMinutes								;Store 'Minutes' at &822E
+            STA prvDateMinutes							;Store 'Minutes' at &822E
             LDX #rtcRegHours								;Select 'Hours' register on RTC: Register &04
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             STA prvDateHours								;Store 'Hours' at &822D
@@ -6806,6 +6807,7 @@ osfileBlock = L02EE
             RTS
 }
 
+; SFTODO: This has only one caller; can't we just fall through into it?
 ;Read 'Sec Alarm', 'Min Alarm' & 'Hr Alarm' from Private RAM (&82xx) and write to RTC
 .copyPrvAlarmToRtc
 {
@@ -6823,7 +6825,7 @@ osfileBlock = L02EE
 
 {
 .^LA769      JSR getRtcDayMonthYear								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from RTC and Store in Private RAM (&82xx)
-            JMP LA6F3								;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
+            JMP getRtcSecondsMinutesHours								;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
 }
 
 ; SFTODO: Following block is dead code
