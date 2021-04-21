@@ -6988,39 +6988,41 @@ osfileBlock = L02EE
 .^LA83B      SEC
 .LA83C      PHP
             LDA prvDateCentury
-            LDX #&00
-            LDY #&63
+            LDX #0
+            LDY #99
             JSR checkABetweenXAndY
-            LDA #&80
+            LDA #&80 ; SFTODO: Does anything actually check the individual bits in the result we build up? If not this code could potentially be simplified.
             JSR recordCheckResultForA
             LDA prvDateYear
-            LDX #&00
-            LDY #&63
+            LDX #0
+            LDY #99
             JSR checkABetweenXAndY
             LDA #&40
             JSR recordCheckResultForA
             LDA prvDateMonth
-            LDX #&01
-            LDY #&0C
+            LDX #1
+            LDY #12
             JSR checkABetweenXAndY
             LDA #&20
             JSR recordCheckResultForA
             PLP
-            BCC LA880
+            BCC lookupMonthDays
             LDA prvDateMonth
-            CMP #&FF
-            BNE LA878
-            LDY #&1F
-            BNE LA887
-.LA878      CMP #&02
-            BNE LA880
-            LDY #&1D
-            BNE LA887
-.LA880      LDY prvDateMonth
+            CMP #&FF ; SFTODO: why would we have &FF in month? Not saying we can't, just superficially odd without having been over all code yet...
+            BNE haveMonth
+            LDY #31 ; if we can't tell what month, err on the side of caution.
+            BNE monthDaysInY ; always branch
+.haveMonth  CMP #2 									; February
+            BNE lookupMonthDays
+            LDY #29
+            BNE monthDaysInY ; always branch
+.lookupMonthDays
+	  LDY prvDateMonth
             JSR LA7DF
             TAY
-.LA887      LDA prvDateDayOfMonth
-            LDX #&01
+.monthDaysInY
+	  LDA prvDateDayOfMonth
+            LDX #1
             JSR checkABetweenXAndY
             LDA #&10
             JSR recordCheckResultForA
