@@ -7533,19 +7533,27 @@ ENDIF
 
 ; SFTODO WIP COMMENTS
 ; On entry prvDateSFTODO2 is &ab
-;     a  = 0 => LACBB
-;     a != 0:
+;     if a != 0:
 ;         Y=(!a) & 1 - this controls capitalisation in emit day name, so b0 of a controls that
 ;         emit day name using (roughly) a characters max
+;	stop if prvDateSFTODO3 is 0
+;         if b >= 4:
+;             print ","
+;	if b < 4 or b > 8:
+;             print " "
+;     (now at SFTODOSTEP2)
+;
 {
-.^LAC72		LDA prvDateSFTODO2
-	; SFTODO: Use lsrA4
+.^LAC72
+    {
+	  LDA prvDateSFTODO2
+	  ; SFTODO: Use lsrA4
             LSR A
             LSR A
             LSR A
             LSR A
             STA transientDateSFTODO1
-            BEQ LACBB
+            BEQ SFTODOSTEP2
             AND #&01
             EOR #&01
             TAY
@@ -7573,10 +7581,11 @@ ENDIF
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDA transientDateSFTODO1
             CMP #&08
-            BCC LACBB
+            BCC SFTODOSTEP2
 .LACB6      LDA #' '
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-.^LACBB      LDA prvDateSFTODO3
+    }
+.^SFTODOSTEP2      LDA prvDateSFTODO3
             AND #&07
             STA transientDateSFTODO1
             BEQ LACF8
