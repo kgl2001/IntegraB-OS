@@ -7367,11 +7367,11 @@ SFTODO2 = prv82 + &4F
             ASL A									;x2 - 1 becomes 2, 2 becomes 4, 3 becomes 6
             TAX
 .LAB94      PLP									;restore carry flag. Used to select capitalisation
-            LDY L00AA								;get buffer pointer
+            LDY transientDateBufferIndex								;get buffer pointer
             LDA LAB71,X								;get 1st character from table + offset
             BCC LAB9E								;don't capitalise
             AND #&DF								;capitalise
-.LAB9E      STA (L00A8),Y								;store at buffer &XY?Y
+.LAB9E      STA (transientDateBufferPtr),Y								;store at buffer &XY?Y
             INY									;increase buffer pointer
             LDA LAB71+1,X								;get 2nd character from table + offset
             BCC LABA8								;don't capitalise
