@@ -7275,11 +7275,11 @@ osfileBlock = L02EE
 {
 endCalOffset = prv82 + &4E
 capitalisationMask = prv82 + &4F
-calOffsetPtr = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to print"
+maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to print"
 .^LAAF5	  BCC indexInA
 	  CLC
-            ADC #&07								;move calOffset pointer to first month
-.indexInA   STX calOffsetPtr								;save calOffset pointer to &8250
+            ADC #&07								;adjust month index to skip past the day of week entries in calOffsetTable
+.indexInA   STX maxOutputLength
             CPY #&00								;First letter? SFTODO: Seems a little odd, given we LDY transientDataBufferIndex *below*
             BNE initCapitalisationMask							;No? Then branch
             LDY #&DF								;Load capitalise mask
@@ -7291,11 +7291,11 @@ calOffsetPtr = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to pri
 .capitalisationMaskSet
             TAX
             INX
-            LDA calOffsetTable,X								;get calText pointer for next month / day
-            STA endCalOffset								;save calText pointer for next month / day to &824E
+            LDA calOffsetTable,X							;get calText offset for next month / day
+            STA endCalOffset								;save calText offset for next month / day to &824E
             DEX
-            LDA calOffsetTable,X								;get calText pointer for current month / day
-            TAX									;move calText pointer for current month / day to X
+            LDA calOffsetTable,X							;get calText offset for current month / day
+            TAX									;move calText offset for current month / day to X
             LDY transientDateBufferIndex						;get buffer pointer
             LDA calText,X								;get first letter
             AND #&DF								;capitalise this letter
@@ -7305,10 +7305,10 @@ calOffsetPtr = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to pri
             AND capitalisationMask							;apply capitalisation mask
 .charInA    STA (transientDateBufferPtr),Y						;store at buffer &XY?Y
             INY									;increase buffer pointer
-            INX									;increment calText pointer for current month / day
-            DEC calOffsetPtr								;***why reduce this pointer?***
+            INX									;increment calText offset for current month / day
+            DEC maxOutputLength							;don't output more than (initial) maxOutputLength characters
             BEQ done
-            CPX endCalOffset								;reached the calText pointer for next month / day?
+            CPX endCalOffset								;reached the calText offset for next month / day?
             BNE loop 								;no? loop.
 .done       STY transientDateBufferIndex						;save buffer pointer
             RTS
