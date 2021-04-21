@@ -7417,9 +7417,9 @@ unitsChar = prv82 + &4F
             ADC #&00								;otherwise ('am')
             ASL A									;x2 - A=0 ('am') or A=2 ('pm')
             TAX
-            LDY L00AA								;get buffer pointer
+            LDY transientDateBufferIndex								;get buffer pointer
             LDA LABC1,X								;get 'a' or 'p'
-            STA (L00A8),Y								;save contents of A to Buffer Address+Y
+            STA (transientDateBufferPtr),Y								;save contents of A to Buffer Address+Y
             INY									;increase buffer pointer
             LDA LABC1+1,X								;get 'm'
             JMP emitAToDateBufferUsingY								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
@@ -7630,7 +7630,7 @@ unitsChar = prv82 + &4F
 			
 .^LAD5A      RTS
 
-.LAD5B      LDA #&27								;'''
+.LAD5B      LDA #'''								;'''
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             JMP LAD52
 }
