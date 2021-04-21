@@ -145,6 +145,7 @@ transientDynamicSyntaxStateCountMask = %00111111
 
 transientDateBufferPtr = &A8 ; SFTODO!?
 transientDateBufferIndex = &AA ; SFTODO!?
+transientDateSFTODO1 = &AB ; SFTODO!?
 
 vduStatus = &D0
 vduStatusShadow = &10
@@ -7491,12 +7492,12 @@ osfileBlock = L02EE
             LSR A
             LSR A
             LSR A
-            STA L00AB
+            STA transientDateSFTODO1
             BEQ LACBB
             AND #&01
             EOR #&01
             TAY
-            LDA L00AB
+            LDA transientDateSFTODO1
             LDX #&00
             CMP #&05
             BCS LAC91
@@ -7525,7 +7526,7 @@ osfileBlock = L02EE
             BCC LACBB
 .LACB6      LDA #&20								;' '
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-.^LACBB      LDA prvOswordBlockCopy + 3
+.^LACBB      LDA prvDateSFTODO3
             AND #&07
             STA L00AB
             BEQ LACF8
