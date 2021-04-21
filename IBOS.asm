@@ -7321,6 +7321,7 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
 			
 ;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
 ;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+; SFTODO: X on entry means something - I think X=0=>print leading 0s, X=1=>omit leading 0s, X=2=>convert leading 0s to space but do allow 0 in units, X=3=>convert leading 0s to space, if A=0 print a space for the units
 ;SFTODOWIP
 {
 SFTODOTENSCHAR = prv82 + &4E
@@ -7328,25 +7329,27 @@ SFTODOUNITSCHAR = prv82 + &4F
 .^LAB3C      JSR convertAToTensUnitsChars								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
             LDY transientDateBufferIndex								;get buffer pointer
 .LAB41      CPX #&00
-            BEQ LAB65
+            BEQ printTensChar
             LDA SFTODOTENSCHAR								;get 10s
             CMP #'0'								;is it '0'
-            BNE LAB65
+            BNE printTensChar
             CPX #&01	
-            BEQ LAB6B
+            BEQ skipLeadingZero
             LDA #' '								;convert '0' to ' '
             STA SFTODOTENSCHAR								;and save to &824E
             LDA SFTODOUNITSCHAR								;get 1s
             CMP #'0'								;is it '0'
-            BNE LAB65
+            BNE printTensChar
             CPX #&03
-            BNE LAB65
+            BNE printTensChar
             LDA #' '								;convert '0' to ' '
             STA SFTODOUNITSCHAR								;and save to &824F
-.LAB65      LDA SFTODOTENSCHAR								;get 10s
+.printTensChar
+	  LDA SFTODOTENSCHAR								;get 10s
             STA (transientDateBufferPtr),Y								;store at buffer &XY?Y
             INY									;increase buffer pointer
-.LAB6B      LDA SFTODOUNITSCHAR								;get 1s
+.skipLeadingZero
+            LDA SFTODOUNITSCHAR								;get 1s
             JMP LABE4								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return.
 
 ;postfix for dates. eg 25th, 1st, 2nd, 3rd
