@@ -7514,21 +7514,21 @@ osfileBlock = L02EE
 }
 
 {
-.^LACA0      LDA prvOswordBlockCopy + 1
+.^LACA0      LDA prvDateSFTODO1
             AND #&0F
-            STA L00AB
+            STA transientDateSFTODO1
             CMP #&04
             BCC LACB6
-            LDA #&2C								;','
+            LDA #','
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-            LDA L00AB
+            LDA transientDateSFTODO1
             CMP #&08
             BCC LACBB
-.LACB6      LDA #&20								;' '
+.LACB6      LDA #' '
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 .^LACBB      LDA prvDateSFTODO3
             AND #&07
-            STA L00AB
+            STA transientDateSFTODO1
             BEQ LACF8
             LDX #&01
             CMP #&04
@@ -7537,29 +7537,29 @@ osfileBlock = L02EE
             CMP #&03
             BEQ LACD0
             TAX
-.LACD0      LDA prvOswordBlockCopy + 11								;read Day of Month
+.LACD0      LDA prvDateDayOfMonth							;read Day of Month
             JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
-            LDA L00AB
+            LDA transientDateSFTODO1
             CMP #&04
             BCC LACE5
             BEQ LACDF
             CLC									;don't capitalise
-.LACDF      LDA prvOswordBlockCopy + 11;								;Get Day of Month from RTC
+.LACDF      LDA prvDateDayOfMonth							;Get Day of Month from RTC
             JSR LAB79								;Convert to text, then save to buffer XY?Y, increment buffer address offset.
-.LACE5      LDA prvOswordBlockCopy + 3
+.LACE5      LDA prvDateSFTODO3
             AND #&F8
             BEQ LAD5A
-            LDA prvOswordBlockCopy + 1
+            LDA prvDateSFTODO1
             AND #&03								;mask lower 3 bits
             TAX
             LDA LAC6E,X								;get character from look up table
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-.LACF8      LDA prvOswordBlockCopy + 3
+.LACF8      LDA prvDateSFTODO3
             LSR A
             LSR A
             LSR A
             AND #&07
-            STA L00AB
+            STA transientDateSFTODO1
             BEQ LAD3D
             CMP #&04
             BCS LAD18
@@ -7567,7 +7567,7 @@ osfileBlock = L02EE
             CMP #&03
             BEQ LAD0F
             TAX
-.LAD0F      LDA prvOswordBlockCopy + 10								;read month
+.LAD0F      LDA prvDateMonth								;read month
             JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             JMP LAD2A
 }
