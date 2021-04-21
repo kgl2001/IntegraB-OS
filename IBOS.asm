@@ -7739,17 +7739,17 @@ ENDIF
 ;set buffer pointer to 0
 ;SFTODOWIP
 {
-.^LAD63      LDA prvDateSFTODO4								;get OSWORD X register (lookup table LSB) SFTODO: not sure this comment is always true, e.g. we can be called via *TIME
+.^LAD63      LDA prvDateSFTODO4							;get OSWORD X register (lookup table LSB) SFTODO: not sure this comment is always true, e.g. we can be called via *TIME
             STA transientDateBufferPtr							;and save
-            LDA prvDateSFTODO4 + 1								;get OSWORD Y register (lookup table MSB) SFTODO: ditto
-            STA transientDateBufferPtr + 1								;and save
+            LDA prvDateSFTODO4 + 1							;get OSWORD Y register (lookup table MSB) SFTODO: ditto
+            STA transientDateBufferPtr + 1						;and save
             LDA #&00
-            STA transientDateBufferIndex							;set buffer pointer to 0
+            STA transientDateBufferIndex						;set buffer pointer to 0
             JSR LAD7F
             LDA #vduCr
-            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-            LDY L00AA								;get buffer pointer
-            STY prvDateSFTODO1
+            JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            LDY transientDateBufferIndex						;get buffer pointer
+            STY prvDateSFTODO1 ; SFTODO: seems weird, maybe this is different from other prvDateSFTODO1 uses (it's "normally" a bitfield relating to date formatting)
 .^LAD7Erts     RTS
 
 .LAD7F      BIT prvDateSFTODO1
