@@ -4656,6 +4656,7 @@ ramPresenceFlags = &A8
 ; SFTODO: This has only one caller, just above, can it simply be inlined?
 ; SFTODO: This seems to use L00AD as scratch space too - is there really no second zero page (=> shorter code) location we could have used instead of prvOswordBlockCopy + 1?
 ; SFTODO: Probably not, but is there any chance of sharing more code between this and srset?
+; SFTODO: I think this returns with C clear on success, C set on error - if C is set, V indicates something
 bankTmp = prvOswordBlockCopy + 1 ; we just use this as scratch space SFTODO: ah, maybe we are just using this location because other really-OSWORD code uses the same subroutines which expect the bank to be in this location
 SFTODOTmp = L00AD ; SFTODO: Use a "proper" label on RHS
 .L9AD1      STX bankTmp
@@ -4664,18 +4665,18 @@ SFTODOTmp = L00AD ; SFTODO: Use a "proper" label on RHS
             ROR A
             STA SFTODOTmp
             JSR testRamUsingVariableMainRamSubroutine
-            BNE L9B0D								;branch if not RAM
+            BNE failSFTODOA								;branch if not RAM
             LDA prvRomTypeTableCopy,X
             BEQ emptyBank
             CMP #romTypeSrData
-            BNE L9B0D
+            BNE failSFTODOA
 .emptyBank  LDA bankTmp
             JSR removeBankAFromSFTODOFOURBANKS
             PLP
             BCS isSrrom
             LDA bankTmp
             JSR addBankAToSFTODOFOURBANKS
-            BCS L9B12 ; SFTODO: branch if we already had four banks and so couldn't add this one
+            BCS failSFTODOB ; SFTODO: branch if we already had four banks and so couldn't add this one
 .isSrrom    LDA SFTODOTmp
             JSR writeRomHeaderAndPatchUsingVariableMainRamSubroutine
             LDX bankTmp
@@ -4686,22 +4687,24 @@ SFTODOTmp = L00AD ; SFTODO: Use a "proper" label on RHS
 	  LDX bankTmp
 .rts        RTS
 
-.L9B0D      PLP
+.failSFTODOA
+	  PLP
             SEC
             CLV
             BCS restoreXRts
-.L9B12      SEC
+.failSFTODOB
+	  SEC
             BIT rts ; set V
             BCS restoreXRts
 .^checkRamBankAndMakeAbsolute
 .L9B18      AND #&7F								;drop the highest bit
-            CMP #&10								;check if RAM bank is absolute or pseudo address
-            BCC L9B24
+            CMP #maxBank + 1								;check if RAM bank is absolute or pseudo address
+            BCC rts2
             TAX
             ; SFTODO: Any danger this is ever going to have X>3 and access an arbitrary byte?
             LDA prvPseudoBankNumbers,X							;lookup table to convert pseudo RAM W, X, Y, Z into absolute address???
             BMI badIdIndirect								;check for Bad ID
-.L9B24      RTS
+.rts2       RTS
 }
 
 
