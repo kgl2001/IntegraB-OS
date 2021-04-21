@@ -7271,7 +7271,7 @@ osfileBlock = L02EE
 ;On Month Entry:		Carry Set,   A=01-12 (Jan-Dec)
 ;On Day of Week Entry:	Carry Clear, A=01-07 (Sun-Sat)
 {
-capitalisationMask = prv82+&4F
+capitalisationMask = prv82 + &4F
 .^LAAF5	  BCC LAAFA								;If Carry clear then jump to Day of Week
 	  CLC
             ADC #&07								;move calOffset pointer to first month
