@@ -7543,6 +7543,16 @@ ENDIF
 ;             print " "
 ;     (now at SFTODOSTEP2)
 ;
+; prvDateSFTODO3:
+;     0 => emit just day of week
+;     b0..2: 0 => don't emit day of month
+;            >=4 => emit day of month using X=1
+;            3 => emit day of month using X=0
+;            0/1 => emit day of X using X=0/1
+;
+;            <4 => don't emit ordinal suffix for day of month
+;            4 => emit capitalised ordinal suffix for day of month
+;            >4 => emit uncapitalised ordinal suffix for day of month
 {
 .^LAC72
 ; SFTODO: Experimentally using nested scopes here to try to make things clearer, by making it more obvious that some labels have restricted scope - not sure if this is really helpful, let's see
