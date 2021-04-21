@@ -6912,10 +6912,10 @@ osfileBlock = L02EE
             SEC
             RTS
 
-.^LA7CD      LDA prvOswordBlockCopy + 9
+.^LA7CD      LDA prvDateYear
             CMP #&00
             BNE LA7D7
-            LDA prvOswordBlockCopy + 8
+            LDA prvDateCentury
 .LA7D7      LSR A
             BCS LA7C0
             LSR A
@@ -6934,7 +6934,7 @@ osfileBlock = L02EE
             JSR LA7CD
             PLA
             BCC rts
-            LDA #&1D
+            LDA #29
 .rts        RTS
 
 ;Lookup table for Number of Days in each month
