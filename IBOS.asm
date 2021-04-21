@@ -7323,30 +7323,30 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
 ;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 ;SFTODOWIP
 {
-SFTODO1 = prv82 + &4E
-SFTODO2 = prv82 + &4F
+SFTODOTENSCHAR = prv82 + &4E
+SFTODOUNITSCHAR = prv82 + &4F
 .^LAB3C      JSR LABAB								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
             LDY transientDateBufferIndex								;get buffer pointer
 .LAB41      CPX #&00
             BEQ LAB65
-            LDA SFTODO1								;get 10s
+            LDA SFTODOTENSCHAR								;get 10s
             CMP #'0'								;is it '0'
             BNE LAB65
             CPX #&01	
             BEQ LAB6B
             LDA #' '								;convert '0' to ' '
-            STA SFTODO1								;and save to &824E
-            LDA SFTODO2								;get 1s
+            STA SFTODOTENSCHAR								;and save to &824E
+            LDA SFTODOUNITSCHAR								;get 1s
             CMP #'0'								;is it '0'
             BNE LAB65
             CPX #&03
             BNE LAB65
             LDA #' '								;convert '0' to ' '
-            STA SFTODO2								;and save to &824F
-.LAB65      LDA SFTODO1								;get 10s
+            STA SFTODOUNITSCHAR								;and save to &824F
+.LAB65      LDA SFTODOTENSCHAR								;get 10s
             STA (transientDateBufferPtr),Y								;store at buffer &XY?Y
             INY									;increase buffer pointer
-.LAB6B      LDA SFTODO2								;get 1s
+.LAB6B      LDA SFTODOUNITSCHAR								;get 1s
             JMP LABE4								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return.
 
 ;postfix for dates. eg 25th, 1st, 2nd, 3rd
@@ -7354,13 +7354,13 @@ SFTODO2 = prv82 + &4F
 	
 .^LAB79      PHP									;save carry flag. Used to select capitalisation
             JSR LABAB								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
-            LDA SFTODO1								;get 10s
+            LDA SFTODOTENSCHAR								;get 10s
             CMP #&31								;check for '1'
             BNE LAB89								;branch if not 1.
 .LAB84      LDX #&00								;if the number is in 10s, then always 'th'
             JMP LAB94
 			
-.LAB89      LDA SFTODO2								;get 1s
+.LAB89      LDA SFTODOUNITSCHAR								;get 1s
             CMP #&34								;check if '4'
             BCS LAB84								;branch if >='4'
             AND #&0F								;mask lower 4 bits
@@ -7381,15 +7381,15 @@ SFTODO2 = prv82 + &4F
 ;Split number in register A into 10s and 1s, characterise and store 1s in &824F and 10s in &824E
 .LABAB      LDY #&FF
             SEC
-.LABAE      INY									;starting at 0
+.tensLoop   INY									;starting at 0
             SBC #10
-            BCS LABAE								;count 10s till negative. Total 10s stored in Y
+            BCS tensLoop								;count 10s till negative. Total 10s stored in Y
             ADC #10									;restore last subtract to get positive again. This gets the units
             ORA #'0'								;convert units to character
-            STA SFTODO2								;save units to &824F
+            STA SFTODOUNITSCHAR								;save units to &824F
             TYA									;get 10s
             ORA #'0'								;convert 10s to character
-            STA SFTODO1								;save 10s to &824F
+            STA SFTODOTENSCHAR								;save 10s to &824F
             RTS
 }
 
