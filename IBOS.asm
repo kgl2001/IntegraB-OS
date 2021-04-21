@@ -7588,7 +7588,7 @@ ENDIF
 .LACB6      LDA #' '
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
     }
-.^SFTODOSTEP2
+.SFTODOSTEP2
 ; 2. Optionally print the day of the month with optional formatting/capitalisation. Options controlled by b0-2 of prvDateSFTODO3. If b3-7 of prvDateSFTODO3 are zero we return early. Otherwise we output dataSeparators[b0-2 of prvDataSFTODO1].
             LDA prvDateSFTODO3
             AND #&07
@@ -7635,10 +7635,8 @@ ENDIF
 .LAD0F      LDA prvDateMonth								;read month
             JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             JMP LAD2A
-}
-;SFTODO: It may be the above and below blocks would be better merged and then some of their global labels might not be needed
-{
-.^LAD18      LDX #&03
+
+.LAD18      LDX #&03
             CMP #&06
             BCC LAD20
             LDX #&00
@@ -7647,7 +7645,7 @@ ENDIF
             LDA prvDateMonth								;Get Month
             SEC									;Carry Set=Month, Clear=Day of Week
             JSR emitDayOrMonthName								;Save Month text to buffer XY?xxx
-.^LAD2A      LDA prvDateSFTODO3
+.LAD2A      LDA prvDateSFTODO3
             AND #&C0
             BEQ LAD5Arts
             LDA prvDateSFTODO1
@@ -7655,7 +7653,7 @@ ENDIF
             TAX
             LDA dateSeparators,X								;get character from look up table
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-.^LAD3D      LDA prvDateSFTODO3
+.LAD3D      LDA prvDateSFTODO3
             AND #&C0
             BEQ LAD5Arts
             CMP #&80
@@ -7668,7 +7666,7 @@ ENDIF
             LDA prvDateYear								;read year
             JMP emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 			
-.^LAD5Arts      RTS
+.LAD5Arts      RTS
 
 .LAD5B      LDA #'''								;'''
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
