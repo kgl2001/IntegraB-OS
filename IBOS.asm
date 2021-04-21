@@ -7325,7 +7325,7 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
 {
 SFTODOTENSCHAR = prv82 + &4E
 SFTODOUNITSCHAR = prv82 + &4F
-.^LAB3C      JSR LABAB								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
+.^LAB3C      JSR convertAToTensUnitsChars								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
             LDY transientDateBufferIndex								;get buffer pointer
 .LAB41      CPX #&00
             BEQ LAB65
@@ -7353,7 +7353,7 @@ SFTODOUNITSCHAR = prv82 + &4F
 .LAB71		EQUS "th", "st", "nd", "rd"
 	
 .^LAB79      PHP									;save carry flag. Used to select capitalisation
-            JSR LABAB								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
+            JSR convertAToTensUnitsChars								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
             LDA SFTODOTENSCHAR								;get 10s
             CMP #&31								;check for '1'
             BNE LAB89								;branch if not 1.
@@ -7379,6 +7379,7 @@ SFTODOUNITSCHAR = prv82 + &4F
 .LABA8      JMP LABE4								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
 
 ;Split number in register A into 10s and 1s, characterise and store 1s in &824F and 10s in &824E
+.convertAToTensUnitsChars
 .LABAB      LDY #&FF
             SEC
 .tensLoop   INY									;starting at 0
