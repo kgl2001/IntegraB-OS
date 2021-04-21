@@ -8439,25 +8439,26 @@ ENDIF
 {
 .^LB2B5      JSR convertIntegerDefaultDecimal
             BCS parseError
-            STA prvOswordBlockCopy + 13
+            STA prvDateHours
             LDA (transientCmdPtr),Y
             INY
             CMP #':'
             BNE parseError
             JSR convertIntegerDefaultDecimal
             BCS parseError
-            STA prvOswordBlockCopy + 14
+            STA prvDateMinutes
             LDA (transientCmdPtr),Y
             CMP #':'
-            BEQ LB2DA
+            BEQ skipCharAndParseSeconds
             CMP #'/'
-            BEQ LB2DA
-            LDA #&00
-            BEQ LB2E0
-.LB2DA      INY
+            BEQ skipCharAndParseSeconds
+            LDA #0 ; default to 0 seconds if not specified
+            BEQ secondsInA ; always branch
+.skipCharAndParseSeconds
+            INY
             JSR convertIntegerDefaultDecimal
             BCS parseError
-.LB2E0      STA prvOswordBlockCopy + 15
+.secondsInA STA prvDateSeconds
             TYA
             PHA
             JSR LA83B
