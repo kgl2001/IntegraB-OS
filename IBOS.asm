@@ -493,13 +493,14 @@ prvOswordBlockCopySize = 16
 ; SFTODO: Split prvOswordBlockOrigAddr into two addresses prvOswordX and prvOswordY? Might better reflect how code uses it, not sure yet.
 prvOswordBlockOrigAddr = prv82 + &30 ; 2 bytes, used for address of original OSWORD &42/&43 parameter block
 
+prvDateBuffer = prv80 + 0 ; SFTODO: how big?
+
 ; SFTODO: EXPERIMENTAL LABELS USED BY DATE/CALENDAR CODE
 prvDateSFTODO0 = prvOswordBlockCopy
 prvDateSFTODO1 = prvOswordBlockCopy + 1
 prvDateSFTODO2 = prvOswordBlockCopy + 2
 prvDateSFTODO3 = prvOswordBlockCopy + 3
-prvDateSFTODO4 = prvOswordBlockCopy + 4
-prvDateSFTODO5 = prvOswordBlockCopy + 5 ; SFTODO: I think SFTODO4+5 FORM A 16-BIT PTR, SO MAYBE GET RID OF 5 AND USE 4+1?
+prvDateSFTODO4 = prvOswordBlockCopy + 4 ; 2 bytes SFTODO!?
 prvDateSFTODO6 = prvOswordBlockCopy + 6
 prvDateSFTODO7 = prvOswordBlockCopy + 7
 ; SFTODO: I suspect the following locations are not arbitrary and have some relation to OSWORD &E; if so they may be best renamed to indicate this after, not sure until I've been through all the code
@@ -7613,7 +7614,7 @@ osfileBlock = L02EE
 {
 .^LAD63      LDA prvDateSFTODO4								;get OSWORD X register (lookup table LSB) SFTODO: not sure this comment is always true, e.g. we can be called via *TIME
             STA transientDateBufferPtr							;and save
-            LDA prvDateSFTODO5								;get OSWORD Y register (lookup table MSB) SFTODO: ditto
+            LDA prvDateSFTODO4 + 1								;get OSWORD Y register (lookup table MSB) SFTODO: ditto
             STA transientDateBufferPtr + 1								;and save
             LDA #&00
             STA transientDateBufferIndex							;set buffer pointer to 0
@@ -8582,15 +8583,15 @@ osfileBlock = L02EE
             LDA (transientCmdPtr),Y							;read first character of command parameter
             CMP #'='								;check for '='
             BEQ setTime								;if '=' then set time, else read time
-            JSR initDateSFTODOS								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
+            JSR initDateSFTODOS							;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
             LDA #&FF
             STA prvDateSFTODO7							;store #&FF to address &8227
             STA prvDateSFTODO6							;store #&FF to address &8226
-            LDA #&00
+            LDA #lo(prvDateBuffer)
             STA prvDateSFTODO4							;store #&00 to address &8224
-            LDA #&80
-            STA prvDateSFTODO5							;store #&80 to address &8225
-            JSR getRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
+            LDA #hi(prvDateBuffer)
+            STA prvDateSFTODO4 + 1							;store #&80 to address &8225
+            JSR getRtcDateTime							;read TIME & DATE information from RTC and store in Private RAM (&82xx)
             JSR LAD63								;format text for output to screen?
             JSR LA5DE								;output TIME & DATE data from address &8000 to screen
 .LB506      JSR PrvDis								;switch out private RAM
@@ -8622,10 +8623,10 @@ osfileBlock = L02EE
 			
 .LB539      JMP LB4BF								;Error with Bad Date
 
-.LB53C      LDA #&00
+.LB53C      LDA #lo(prvDateBuffer)
             STA prvDateSFTODO4							;store #&00 to address &8224
-            LDA #&80
-            STA prvDateSFTODO5							;store #&80 to address &8225
+            LDA #hi(prvDateBuffer)
+            STA prvDateSFTODO4 + 1							;store #&80 to address &8225
             JSR LAD63								;format text for output to screen?
             JSR LA5DE								;output DATE data from address &8000 to screen
 .LB54C      JSR PrvDis								;switch out private RAM
@@ -8653,7 +8654,7 @@ osfileBlock = L02EE
 .LB571      LDA #&C8
             STA prvDateSFTODO4
             LDA #&80
-            STA prvDateSFTODO5
+            STA prvDateSFTODO4 + 1
             LDA #&05
             STA prvOswordBlockCopy
             LDA #&40
