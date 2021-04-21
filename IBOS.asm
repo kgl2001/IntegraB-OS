@@ -7294,21 +7294,21 @@ calOffsetPtr = prv82 + &50
             DEX
             LDA calOffset,X								;get calText pointer for current month / day
             TAX									;move calText pointer for current month / day to X
-            LDY L00AA								;get buffer pointer
+            LDY transientDateBufferIndex						;get buffer pointer
             LDA calText,X								;get first letter
             AND #&DF								;capitalise this letter
             JMP LAB2B
 			
-.LAB25      LDA calText,X								;get subsequent letters
+.loop       LDA calText,X								;get subsequent letters
             AND capitalisationMask								;apply capitalisation mask
-.LAB2B      STA (L00A8),Y								;store at buffer &XY?Y
+.LAB2B      STA (transientDateBufferPtr),Y								;store at buffer &XY?Y
             INY									;increase buffer pointer
             INX									;increment calText pointer for current month / day
             DEC calOffsetPtr								;***why reduce this pointer?***
-            BEQ LAB39
+            BEQ done
             CPX SFTODORENAME								;reached the calText pointer for next month / day?
-            BNE LAB25								;no? loop.
-.LAB39      STY L00AA								;save buffer pointer
+            BNE loop 								;no? loop.
+.done       STY transientDateBufferIndex						;save buffer pointer
             RTS
 }
 			
