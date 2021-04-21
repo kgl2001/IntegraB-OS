@@ -7380,14 +7380,14 @@ unitsChar = prv82 + &4F
 .suffixInX  PLP									;restore carry flag. Used to select capitalisation
             LDY transientDateBufferIndex						;get buffer pointer
             LDA dateSuffixes,X							;get 1st character from table + offset
-            BCC LAB9E								;don't capitalise
+            BCC noCaps1								;don't capitalise
             AND #&DF								;capitalise
-.LAB9E      STA (transientDateBufferPtr),Y						;store at buffer &XY?Y
+.noCaps1    STA (transientDateBufferPtr),Y						;store at buffer &XY?Y
             INY									;increase buffer pointer
             LDA dateSuffixes+1,X							;get 2nd character from table + offset
-            BCC LABA8								;don't capitalise
+            BCC noCaps2								;don't capitalise
             AND #&DF								;capitalise
-.LABA8      JMP emitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
+.noCaps2    JMP emitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
 
 ;Split number in register A into 10s and 1s, characterise and store 1s in &824F and 10s in &824E
 .convertAToTensUnitsChars
