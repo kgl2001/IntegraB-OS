@@ -2379,6 +2379,7 @@ ptr = &00 ; 2 bytes
 {
 .^service08 LDA oswdbtA								;read OSWORD call number
 
+; SFTODO: Does IBOS not implement OSWORD &0F to set the date/time? To be fair, it's probably little used - it would be quite rude for most software to do so - and it's potentially a bit fiddly. (Do note that beebwiki lists a function 5 to set from centiseconds since 1900, but this isn't in the Master Reference Manual and so it would be fair enough not to implement that.)
 	  CMP #&0E								;OSWORD &0E (14) Read real time clock
 	  BNE service08a
 	  JMP osword0e
@@ -8979,19 +8980,19 @@ ENDIF
             STA prvOswordBlockOrigAddr							;and save to &8230
             LDA oswdbtY								;get Y register value of most recent OSWORD call
             STA prvOswordBlockOrigAddr + 1							;and save to &8231
-            JSR oswordsv							;save XY entry table
-            JSR oswd0e_1							;execute OSWORD &0E
-            BCS osword0ea							;successful so don't restore XY entry table
-            JSR oswordrs							;restore XY entry table
-.osword0ea	LDA prvOswordBlockOrigAddr							;get X register value of most recent OSWORD call
+            JSR oswordsv								;save XY entry table
+            JSR oswd0e_1								;execute OSWORD &0E
+            BCS osword0ea								;successful so don't restore XY entry table
+            JSR oswordrs								;restore XY entry table
+.osword0ea	LDA prvOswordBlockOrigAddr						;get X register value of most recent OSWORD call
             STA oswdbtX								;and restore to &F0
-            LDA prvOswordBlockOrigAddr + 1							;get Y register value of most recent OSWORD call
+            LDA prvOswordBlockOrigAddr + 1						;get Y register value of most recent OSWORD call
             STA oswdbtY								;and restore to &F1
             LDA #&0E								;load A register value of most recent OSWORD call (&0E)
             STA oswdbtA								;and restore to &EF
             JSR PrvDis								;switch out private RAM
 
-            JMP unstackTransientCmdSpaceAndExitSC							;restore 8 bytes of data to &A8 from the stack and exit
+            JMP unstackTransientCmdSpaceAndExitSC						;restore 8 bytes of data to &A8 from the stack and exit
 }
 			
 ;OSWORD &49 (73) - Integra-B calls
