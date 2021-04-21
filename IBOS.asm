@@ -7543,7 +7543,7 @@ ENDIF
 ;             print " "
 ;     (now at SFTODOSTEP2)
 ;
-; Roughly speaking this is emitting a string of the form: <day of week> <day of month>
+; Roughly speaking this is emitting a string of the form "<day of week><day of month><month><century><year>"; the actual format of each of those elements, including whether they are just zero length strings and what punctuation they have, is controlled by prvDateSFTODO*.
 ;
 ; prvDateSFTODO1:
 ;    b0..1: dateSeparators[n] to emit after day of month/month
@@ -7575,7 +7575,7 @@ ENDIF
 ;            <4 => emit month as formatted decimal in mode X, where X=0 if n==3 else n
 ;     b6..7: 0 => don't emit anything after month
 ;            b7: 0 => don't emit century, 1 => emit century
-;            b6:
+;            b6: (if century is emitted) 0 => emit "'" as century 1=> emit century as two digit number
 {
 .^LAC72
 ; SFTODO: Experimentally using nested scopes here to try to make things clearer, by making it more obvious that some labels have restricted scope - not sure if this is really helpful, let's see
@@ -7699,7 +7699,7 @@ ENDIF
             BEQ LAD5Arts
             CMP #&80
             BCC emitYear
-            BEQ LAD5B
+            BEQ emitCenturyTick
             LDX #&00
             LDA prvDateCentury								;read century
             JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
@@ -7709,7 +7709,8 @@ ENDIF
 			
 .^LAD5Arts      RTS
 
-.LAD5B      LDA #'''								;'''
+.emitCenturyTick
+	  LDA #'''								;'''
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             JMP emitYear
     }
