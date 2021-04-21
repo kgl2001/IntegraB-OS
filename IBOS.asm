@@ -494,6 +494,7 @@ prvOswordBlockCopySize = 16
 prvOswordBlockOrigAddr = prv82 + &30 ; 2 bytes, used for address of original OSWORD &42/&43 parameter block
 
 prvDateBuffer = prv80 + 0 ; SFTODO: how big?
+prvDateBuffer2 = prv80 + &C8 ; SFTODO: how big? not a great name either
 
 ; SFTODO: EXPERIMENTAL LABELS USED BY DATE/CALENDAR CODE
 prvDateSFTODO0 = prvOswordBlockCopy
@@ -8651,9 +8652,9 @@ osfileBlock = L02EE
 			
 .LB56E      JMP LB4BF
 
-.LB571      LDA #&C8
+.LB571      LDA #lo(prvDateBuffer2)
             STA prvDateSFTODO4
-            LDA #&80
+            LDA #hi(prvDateBuffer2)
             STA prvDateSFTODO4 + 1
             LDA #&05
             STA prvOswordBlockCopy
