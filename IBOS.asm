@@ -7380,17 +7380,17 @@ SFTODOUNITSCHAR = prv82 + &4F
 
 ;Split number in register A into 10s and 1s, characterise and store 1s in &824F and 10s in &824E
 .convertAToTensUnitsChars
-.LABAB      LDY #&FF
+            LDY #&FF
             SEC
 .tensLoop   INY									;starting at 0
             SBC #10
             BCS tensLoop								;count 10s till negative. Total 10s stored in Y
             ADC #10									;restore last subtract to get positive again. This gets the units
             ORA #'0'								;convert units to character
-            STA SFTODOUNITSCHAR								;save units to &824F
+            STA SFTODOUNITSCHAR							;save units to &824F
             TYA									;get 10s
             ORA #'0'								;convert 10s to character
-            STA SFTODOTENSCHAR								;save 10s to &824F
+            STA SFTODOTENSCHAR							;save 10s to &824F
             RTS
 }
 
