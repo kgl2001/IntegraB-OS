@@ -4639,8 +4639,8 @@ ramPresenceFlags = &A8
             JSR parseRomBankListChecked2
             JSR PrvEn								;switch in private RAM
             LDX #&00
-.L9ABE      ROR L00AF
-            ROR L00AE
+.L9ABE      ROR transientRomBankMask + 1
+            ROR transientRomBankMask
             BCC L9AC9
             PLP
             PHP
