@@ -483,6 +483,12 @@ prvOswordBlockCopySize = 16
 ; SFTODO: Split prvOswordBlockOrigAddr into two addresses prvOswordX and prvOswordY? Might better reflect how code uses it, not sure yet.
 prvOswordBlockOrigAddr = prv82 + &30 ; 2 bytes, used for address of original OSWORD &42/&43 parameter block
 
+; SFTODO: EXPERIMENTAL LABELS USED BY DATE/CALENDAR CODE
+prvDateSFTODO1 = prvOswordBlockCopy
+prvDateSFTODO2 = prvOswordBlockCopy + 1
+prvDateSFTODO3 = prvOswordBlockCopy + 2
+prvDateSFTODO4 = prvOswordBlockCopy + 3
+
 prvTmp = prv82 + &52 ; 1 byte, SFTODO: seems to be used as scratch space by some code without relying on value being preserved
 
 prvOsMode = prv83 + &3C ; working copy of OSMODE, initialised from relevant bits of userRegOsModeShx in service01
@@ -6589,15 +6595,16 @@ osfileBlock = L02EE
 }
 
 ;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223, but why???
+.initDateSFTODOS
 {
-.^LA5EF      LDA #&05
-            STA prvOswordBlockCopy
+.LA5EF      LDA #&05
+            STA prvDateSFTODO1
             LDA #&84
-            STA prvOswordBlockCopy + 1
+            STA prvDateSFTODO2
             LDA #&44
-            STA prvOswordBlockCopy + 2
+            STA prvDateSFTODO3
             LDA #&EB
-            STA prvOswordBlockCopy + 3
+            STA prvDateSFTODO4
             RTS
 }
 
@@ -8548,7 +8555,7 @@ osfileBlock = L02EE
             LDA (L00A8),Y							;read first character of command parameter
             CMP #&3D								;check for '='
             BEQ LB50C								;if '=' then set time, else read time
-            JSR LA5EF								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
+            JSR initDateSFTODOS								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
             LDA #&FF
             STA prvOswordBlockCopy + 7							;store #&FF to address &8227
             STA prvOswordBlockCopy + 6							;store #&FF to address &8226
@@ -8573,11 +8580,11 @@ osfileBlock = L02EE
 
 ;*DATE Command
 {
-.^date		JSR PrvEn								;switch in private RAM
-            LDA (L00A8),Y							;read first character of command parameter
-            CMP #&3D								;check for '='
-            BEQ LB552								;if '=' then set date, else read date
-            JSR LA5EF								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
+.^date	  JSR PrvEn								;switch in private RAM
+            LDA (transientCmdPtr),Y							;read first character of command parameter
+            CMP #'='								;check for '='
+            BEQ setDate								;if '=' then set date, else read date
+            JSR initDateSFTODOS								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
             LDA prvOswordBlockCopy + 2
             AND #&F0
             STA prvOswordBlockCopy + 2							;store #&40 to address &8222
@@ -8597,7 +8604,7 @@ osfileBlock = L02EE
 .LB54C      JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call								;
 			
-.LB552      INY
+.setDate    INY
             JSR LB2F5
             BCC LB55B
             JMP LB4BF								;Error with Bad date
@@ -8978,7 +8985,7 @@ osfileBlock = L02EE
 ;XY&0=0: Read time and date in string format
 .^oswd0eReadString
 .LB81E      JSR LA769								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
-.LB821      JSR LA5EF								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
+.LB821      JSR initDateSFTODOS								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
             LDA prvOswordBlockOrigAddr							;get OSWORD X register (lookup table LSB)
             STA prvOswordBlockCopy + 4							;save OSWORD X register (lookup table LSB)
             LDA prvOswordBlockOrigAddr + 1						;get OSWORD Y register (lookup table MSB)
