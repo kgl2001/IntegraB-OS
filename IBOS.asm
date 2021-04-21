@@ -5477,21 +5477,22 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 ; SFTODO: Do we have to preserve AC/AD here? It obviously depends on how we're called, but this is transient command space and we're allowed to corrupt it if we're implementing a * command.
 .copyYxToVariableMainRamSubroutine
 {
-.L9F33     LDA L00AD
+ptr = &AC ; 2 bytes
+.L9F33      LDA ptr + 1
             PHA
-            LDA L00AC
+            LDA ptr
             PHA
-            STX L00AC
-            STY L00AD
+            STX ptr
+            STY ptr + 1
             LDY #variableMainRamSubroutineMaxSize - 1
-.L9F3F      LDA (L00AC),Y
+.L9F3F      LDA (ptr),Y
             STA variableMainRamSubroutine,Y
             DEY
             BPL L9F3F
             PLA
-            STA L00AC
+            STA ptr
             PLA
-            STA L00AD
+            STA ptr + 1
             RTS
 }
 
