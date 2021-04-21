@@ -499,7 +499,8 @@ prvDateBuffer2 = prv80 + &C8 ; SFTODO: how big? not a great name either
 
 ; SFTODO: EXPERIMENTAL LABELS USED BY DATE/CALENDAR CODE
 prvDateSFTODO0 = prvOswordBlockCopy
-prvDateSFTODO1 = prvOswordBlockCopy + 1
+prvDateSFTODO1 = prvOswordBlockCopy + 1 ; SFTODO: Use as a bitfield controlling formatting
+prvDateSFTODO1b = prvOswordBlockCopy + 1 ; SFTODO: Use as a copy of "final" transientDateBufferIndex
 prvDateSFTODO2 = prvOswordBlockCopy + 2
 prvDateSFTODO3 = prvOswordBlockCopy + 3
 prvDateSFTODO4 = prvOswordBlockCopy + 4 ; 2 bytes SFTODO!?
@@ -6615,11 +6616,11 @@ osfileBlock = L02EE
 ;Write contents from Private memory address &8000 to screen
 {
 .^LA5DE      LDX #&00
-.LA5E0      LDA prv80+&00,X
+.LA5E0      LDA prvDateBuffer,X
             BEQ LA5EE
             JSR OSASCI
             INX
-            CPX prvOswordBlockCopy + 1
+            CPX prvDateSFTODO1b
             BCC LA5E0
 .LA5EE      RTS
 }
@@ -7749,7 +7750,7 @@ ENDIF
             LDA #vduCr
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDY transientDateBufferIndex						;get buffer pointer
-            STY prvDateSFTODO1 ; SFTODO: seems weird, maybe this is different from other prvDateSFTODO1 uses (it's "normally" a bitfield relating to date formatting)
+            STY prvDateSFTODO1b
 .^LAD7Erts     RTS
 
 ; SFTODOWIP: Next line implies b7 of prvDateSFTODO1 "mainly" controls ordering
