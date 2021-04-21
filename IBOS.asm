@@ -7745,20 +7745,21 @@ ENDIF
             STA transientDateBufferPtr + 1						;and save
             LDA #&00
             STA transientDateBufferIndex						;set buffer pointer to 0
-            JSR LAD7F
+            JSR emitTimeAndDateToDateBuffer
             LDA #vduCr
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDY transientDateBufferIndex						;get buffer pointer
             STY prvDateSFTODO1 ; SFTODO: seems weird, maybe this is different from other prvDateSFTODO1 uses (it's "normally" a bitfield relating to date formatting)
 .^LAD7Erts     RTS
 
-.LAD7F      BIT prvDateSFTODO1
-            BMI LAD8D								;do the reverse of below
+; SFTODOWIP: Next line implies b7 of prvDateSFTODO1 "mainly" controls ordering
+.emitTimeAndDateToDateBuffer
+.LAD7F      BIT prvDateSFTODO1							;b7 of prvDateSFTODO1 controls the ordering
+            BMI dateFirst
             JSR emitTimeToDateBuffer
             JSR emitSeparatorToDateBuffer
             JMP emitDateToDateBuffer
-			
-.LAD8D      JSR emitDateToDateBuffer
+.dateFirst  JSR emitDateToDateBuffer
             JSR emitSeparatorToDateBuffer
             JMP emitTimeToDateBuffer
 }
