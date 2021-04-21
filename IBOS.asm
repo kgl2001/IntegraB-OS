@@ -4657,7 +4657,7 @@ ramPresenceFlags = &A8
 ; SFTODO: This seems to remove and maybe re-add (depending on C on entry; C set means SRROM, C clear means SRDATA) bank X to SFTODOFOURBANKS, but only adding provided X is suitable.
 ; SFTODO: This seems to use L00AD as scratch space too - is there really no second zero page (=> shorter code) location we could have used instead of prvOswordBlockCopy + 1?
 ; SFTODO: Probably not, but is there any chance of sharing more code between this and srset?
-; SFTODO: I think this returns with C clear on success, C set on error - if C is set, V indicates something
+; SFTODO: I think this returns with C clear on success, C set on error - if C is set, V indicates something - *but* our one caller doesn't seem to check C or V, so this is a bit pointless
 bankTmp = prvOswordBlockCopy + 1 ; we just use this as scratch space SFTODO: ah, maybe we are just using this location because other really-OSWORD code uses the same subroutines which expect the bank to be in this location
 romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" label on RHS
 .doBankX
@@ -4693,20 +4693,23 @@ romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" l
 	  PLP
             SEC
             CLV
-            BCS restoreXRts
+            BCS restoreXRts ; always branch
 .failSFTODOB
 	  SEC
             BIT rts ; set V
-            BCS restoreXRts
+            BCS restoreXRts ; always branch
+}
+
+{
 .^checkRamBankAndMakeAbsolute
 .L9B18      AND #&7F								;drop the highest bit
             CMP #maxBank + 1								;check if RAM bank is absolute or pseudo address
-            BCC rts2
+            BCC rts
             TAX
             ; SFTODO: Any danger this is ever going to have X>3 and access an arbitrary byte?
             LDA prvPseudoBankNumbers,X							;lookup table to convert pseudo RAM W, X, Y, Z into absolute address???
             BMI badIdIndirect								;check for Bad ID
-.rts2       RTS
+.rts        RTS
 }
 
 
