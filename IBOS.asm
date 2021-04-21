@@ -7019,30 +7019,30 @@ osfileBlock = L02EE
 .LA880      LDY prvDateMonth
             JSR LA7DF
             TAY
-.LA887      LDA prvOswordBlockCopy + 11
+.LA887      LDA prvDateDayOfMonth
             LDX #&01
             JSR LA8DB
             LDA #&10
             JSR LA8C9
-            LDA prvOswordBlockCopy + 12
+            LDA prvDateDayOfWeek
             LDX #&00
             LDY #&07
             JSR LA8DB
             LDA #&08
             JSR LA8C9
-            LDA prvOswordBlockCopy + 13
+            LDA prvDateHours
             LDX #&00
             LDY #&17
             JSR LA8DB
             LDA #&04
             JSR LA8C9
-            LDA prvOswordBlockCopy + 14
+            LDA prvDateMinutes
             LDX #&00
             LDY #&3B
             JSR LA8DB
             LDA #&02
             JSR LA8C9
-            LDA prvOswordBlockCopy + 15
+            LDA prvDateSeconds
             JSR LA8DB
             LDA #&01
 .LA8C9      BCC LA8D2
