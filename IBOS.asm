@@ -7750,7 +7750,7 @@ ENDIF
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDY L00AA								;get buffer pointer
             STY prvDateSFTODO1
-.LAD7E      RTS
+.^LAD7Erts     RTS
 
 .LAD7F      BIT prvDateSFTODO1
             BMI LAD8D								;do the reverse of below
@@ -7761,8 +7761,10 @@ ENDIF
 .LAD8D      JSR emitDateToDateBuffer
             JSR LAD96
             JMP emitTimeToDateBuffer
-			
-.LAD96      LDA prvDateSFTODO1
+}
+
+{
+.^LAD96      LDA prvDateSFTODO1
             AND #&F0
             CMP #&D0
             BEQ LADBE
@@ -7778,7 +7780,7 @@ ENDIF
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDA transientDateSFTODO1
             AND #&10
-            BEQ LAD7E
+            BEQ LAD7Erts
 .LADB9      LDA #' '
             JMP emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 			
