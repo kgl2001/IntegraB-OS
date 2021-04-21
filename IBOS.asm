@@ -496,6 +496,11 @@ prvDateSFTODO4 = prvOswordBlockCopy + 4
 prvDateSFTODO5 = prvOswordBlockCopy + 5
 prvDateSFTODO6 = prvOswordBlockCopy + 6
 prvDateSFTODO7 = prvOswordBlockCopy + 7
+; SFTODO: I suspect the following locations are not arbitrary and have some relation to OSWORD &E; if so they may be best renamed to indicate this after, not sure until I've been through all the code
+prvDateYear = prvOswordBlockCopy + 9
+prvDateMonth = prvOswordBlockCopy + 10
+prvDateDayOfMonth = prvOswordBlockCopy + 11
+prvDateDayOfWeek = prvOswordBlockCopy + 12
 
 prvTmp = prv82 + &52 ; 1 byte, SFTODO: seems to be used as scratch space by some code without relying on value being preserved
 
@@ -6761,20 +6766,21 @@ osfileBlock = L02EE
 }
 
 ;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from RTC and Store in Private RAM (&82xx)
+.getRtcDayMonthYear
 {
-.^LA70F      JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
+.LA70F      JSR waitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
             LDX #rtcRegDayOfWeek							;Select 'Day of Week' register on RTC: Register &06
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            STA prvOswordBlockCopy + 12								;Store 'Day of Week' at &822C
+            STA prvDateDayOfWeek							;Store 'Day of Week' at &822C
             INX:ASSERT rtcRegDayOfWeek + 1 == rtcRegDayOfMonth				;Select 'Day of Month' register on RTC: Register &07
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            STA prvOswordBlockCopy + 11							;Store 'Day of Month' at &822B
+            STA prvDateDayOfMonth							;Store 'Day of Month' at &822B
             INX:ASSERT rtcRegDayOfMonth + 1 == rtcRegMonth					;Select 'Month' register on RTC: Register &08
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            STA prvOswordBlockCopy + 10								;Store 'Month' at &822A
+            STA prvDateMonth								;Store 'Month' at &822A
             INX:ASSERT rtcRegMonth + 1 == rtcRegYear					;Select 'Year' register on RTC: Register &09
 .LA729      JSR rdRTCRAM								;Read data from RTC memory location X into A
-            STA prvOswordBlockCopy + 9								;Store 'Year' at &8229
+            STA prvDateYear								;Store 'Year' at &8229
             JMP LB1E4
 }
 
@@ -6810,7 +6816,7 @@ osfileBlock = L02EE
 }
 
 {
-.^LA769      JSR LA70F								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from RTC and Store in Private RAM (&82xx)
+.^LA769      JSR getRtcDayMonthYear								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from RTC and Store in Private RAM (&82xx)
             JMP LA6F3								;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
 }
 
@@ -7868,7 +7874,7 @@ osfileBlock = L02EE
 }
 
 {
-.^LAFAA      JSR LA70F
+.^LAFAA      JSR getRtcDayMonthYear
             LDA prv82+&42
             AND #&1E
             CMP #&1E
