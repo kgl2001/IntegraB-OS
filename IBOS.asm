@@ -7346,10 +7346,8 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
             INY									;increase buffer pointer
 .LAB6B      LDA prv82+&4F								;get 1s
             JMP LABE4								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return.
-}
-			
+
 ;postfix for dates. eg 25th, 1st, 2nd, 3rd
-{
 .LAB71		EQUS "th", "st", "nd", "rd"
 	
 .^LAB79      PHP									;save carry flag. Used to select capitalisation
@@ -7377,11 +7375,9 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
             BCC LABA8								;don't capitalise
             AND #&DF								;capitalise
 .LABA8      JMP LABE4								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
-}
 
 ;Split number in register A into 10s and 1s, characterise and store 1s in &824F and 10s in &824E
-{
-.^LABAB      LDY #&FF
+.LABAB      LDY #&FF
             SEC
 .LABAE      INY									;starting at 0
             SBC #10
