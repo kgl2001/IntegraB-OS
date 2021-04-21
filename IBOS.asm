@@ -506,7 +506,7 @@ prvDateSFTODO4 = prvOswordBlockCopy + 4 ; 2 bytes SFTODO!?
 prvDateSFTODO6 = prvOswordBlockCopy + 6
 prvDateSFTODO7 = prvOswordBlockCopy + 7
 ; SFTODO: I suspect the following locations are not arbitrary and have some relation to OSWORD &E; if so they may be best renamed to indicate this after, not sure until I've been through all the code
-prvDateSFTODO8 = prvOswordBlockCopy + 8 ; SFTODO: CENTURY!?!?!?! JUST BASED ON ITS POSITION
+prvDateCentury = prvOswordBlockCopy + 8
 prvDateYear = prvOswordBlockCopy + 9
 prvDateMonth = prvOswordBlockCopy + 10
 prvDateDayOfMonth = prvOswordBlockCopy + 11
@@ -7543,8 +7543,10 @@ ENDIF
 ;             print " "
 ;     (now at SFTODOSTEP2)
 ;
+; Roughly speaking this is emitting a string of the form: <day of week> <day of month>
+;
 ; prvDateSFTODO1:
-;    b0..1: dateSeparators[n] to emit after day of month
+;    b0..1: dateSeparators[n] to emit after day of month/month
 ;
 ; prvDateSFTODO2:
 ;    b4..7: 0 => don't emit day of week
@@ -7565,6 +7567,13 @@ ENDIF
 ;            4 => emit capitalised ordinal suffix for day of month
 ;            >4 => emit uncapitalised ordinal suffix for day of month
 ;     b3..7: 0 => don't emit anything after day of month
+;     b3   : 0 => capitalise month name, 1=> don't capitalise month name
+;     b3..5: 0 => don't emit month
+;            >=4 =>
+;	       >=6 => emit month as name truncated to 3 characters
+;                <6  => emit month as name without truncation
+;            <4 => emit month as formatted decimal in mode X, where X=0 if n==3 else n
+;     b6..7: 0 => don't emit anything after month
 {
 .^LAC72
 ; SFTODO: Experimentally using nested scopes here to try to make things clearer, by making it more obvious that some labels have restricted scope - not sure if this is really helpful, let's see
@@ -7671,7 +7680,7 @@ ENDIF
             TAY
             LDA prvDateMonth								;Get Month
             SEC									;Carry Set=Month, Clear=Day of Week
-            JSR emitDayOrMonthName								;Save Month text to buffer XY?xxx
+            JSR emitDayOrMonthName							;X is max characters to emit, Y controls capitalisation
 .LAD2A      LDA prvDateSFTODO3
             AND #&C0
             BEQ LAD5Arts
@@ -7690,7 +7699,7 @@ ENDIF
             BCC LAD52
             BEQ LAD5B
             LDX #&00
-            LDA prvDateSFTODO8								;read century
+            LDA prvDateCentury								;read century
             JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 .LAD52      LDX #&00
             LDA prvDateYear								;read year
