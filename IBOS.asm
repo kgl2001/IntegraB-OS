@@ -4654,6 +4654,7 @@ ramPresenceFlags = &A8
 ; SFTODO: This seems to be using prvOswordBlockCopy + 1 as scratch space; we should perhaps have a separate name for it in this context, or maybe not - maybe just allocate a block local "bank = prvOswordBlockCopy + 1"?
 ; SFTODO: This seems to use L00AD as scratch space too - is there really no zero page (shorter code) location we could have used instead of prvOswordBlockCopy + 1?
 ; SFTODO: Probably not, but is there any chance of sharing more code between this and srset?
+bankTmp = prvOswordBlockCopy + 1
 .L9AD1      STX prvOswordBlockCopy + 1
             PHP
             LDA #&00
@@ -4668,11 +4669,11 @@ ramPresenceFlags = &A8
 .emptyBank  LDA prvOswordBlockCopy + 1
             JSR removeBankAFromSFTODOFOURBANKS
             PLP
-            BCS L9AF9
+            BCS isSrrom
             LDA prvOswordBlockCopy + 1
             JSR addBankAToSFTODOFOURBANKS
-            BCS L9B12
-.L9AF9      LDA L00AD
+            BCS L9B12 ; SFTODO: branch if we already had four banks and so couldn't add this one
+.isSrrom    LDA L00AD
             JSR writeRomHeaderAndPatchUsingVariableMainRamSubroutine
             LDX prvOswordBlockCopy + 1
             LDA #&02
