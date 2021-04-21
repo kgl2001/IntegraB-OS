@@ -7271,6 +7271,7 @@ osfileBlock = L02EE
 ;On Month Entry:		Carry Set,   A=01-12 (Jan-Dec)
 ;On Day of Week Entry:	Carry Clear, A=01-07 (Sun-Sat)
 {
+SFTODORENAME = prv82 + &4E
 capitalisationMask = prv82 + &4F
 calOffsetPtr = prv82 + &50
 .^LAAF5	  BCC indexInA
@@ -7281,8 +7282,7 @@ calOffsetPtr = prv82 + &50
             BNE initCapitalisationMask							;No? Then branch
             LDY #&DF								;Load capitalise mask
             STY capitalisationMask							;Save mask to &824F
-            JMP capitalisationMaskSet
-
+            JMP capitalisationMaskSet ; SFTODO: We could BNE ; always
 .initCapitalisationMask
             LDY #&FF								;otherwise no capitalise
             STY capitalisationMask							;save mask to &824F
@@ -7290,7 +7290,7 @@ calOffsetPtr = prv82 + &50
             TAX
             INX
             LDA calOffset,X								;get calText pointer for next month / day
-            STA prv82+&4E								;save calText pointer for next month / day to &824E
+            STA SFTODORENAME								;save calText pointer for next month / day to &824E
             DEX
             LDA calOffset,X								;get calText pointer for current month / day
             TAX									;move calText pointer for current month / day to X
@@ -7306,7 +7306,7 @@ calOffsetPtr = prv82 + &50
             INX									;increment calText pointer for current month / day
             DEC calOffsetPtr								;***why reduce this pointer?***
             BEQ LAB39
-            CPX prv82+&4E								;reached the calText pointer for next month / day?
+            CPX SFTODORENAME								;reached the calText pointer for next month / day?
             BNE LAB25								;no? loop.
 .LAB39      STY L00AA								;save buffer pointer
             RTS
