@@ -1,6 +1,6 @@
-all: IBOS-01.rom
+all: IBOS-01.rom tags TAGS
 
-IBOS-01.rom: IBOS.asm Makefile
+IBOS-01.rom tags TAGS: IBOS.asm Makefile
 	python beebasm-tags.py IBOS.asm
 	python beebasm-tags.py -e IBOS.asm
 	beebasm -v -i IBOS.asm > IBOS-01.lst
@@ -9,4 +9,4 @@ IBOS-01.rom: IBOS.asm Makefile
 	@cmp IBOS-01.rom IBOS-Orig.rom || (echo "New ROM is not identical to original"; mv IBOS-01.rom IBOS-01-variant.rom; exit 1)
 
 clean:
-	/bin/rm -f IBOS.lst IBOS-01.rom IBOS-01-variant.rom
+	/bin/rm -f IBOS.lst IBOS-01.rom IBOS-01-variant.rom tags TAGS
