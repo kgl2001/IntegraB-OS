@@ -4478,6 +4478,7 @@ ramPresenceFlags = &A8
 }
 
 ; SFTODO: This has only one caller
+; A=0 on entry means the header should say "RAM", otherwise it will say "ROM".
 .writeRomHeaderAndPatchUsingVariableMainRamSubroutine
 {
 .L99C6	  PHA
@@ -4489,7 +4490,7 @@ ramPresenceFlags = &A8
             ; ROM - so patch variableMainRamSubroutine's ROM header to say "ROM" instead of "RAM"
             LDA #'O'
             STA variableMainRamSubroutine + (writeRomHeaderTemplateDataAO - writeRomHeaderTemplate)
-.ram        LDA prvOswordBlockCopy + 1
+.ram        LDA prvOswordBlockCopy + 1 ; SFTODO: THIS IS THE SAME LOCATINO AS IN SRROM/SRDATA SO WE NEED A GLOBAL NAME FOR IT RATHER THAN JUST THE LOCAL ONE WE CURRENTLY HAVE (bankTmp)
             JSR checkRamBankAndMakeAbsolute
             STA prvOswordBlockCopy + 1
             STA variableMainRamSubroutine + (writeRomHeaderTemplateSFTODO - writeRomHeaderTemplate)
@@ -5297,7 +5298,7 @@ SFTODOTmp = L00AD ; SFTODO: Use a "proper" label on RHS
 .^writeRomHeaderTemplateSFTODO ; SFTODO: Why do we modify this byte of the header?
             EQUB     &00,&00
 	  EQUB &60,&00,&00
-	  EQUB &02
+	  EQUB romTypeSrData ; SFTODO: This constant is arguably misnamed since we use it for *SRROM banks too (I think)
 	  EQUB &0C
 	  EQUB &FF
 	  EQUS "R"
