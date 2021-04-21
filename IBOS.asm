@@ -4651,35 +4651,36 @@ ramPresenceFlags = &A8
             JMP plpPrvDisexitSc
 
 ; SFTODO: This has only one caller, just above, can it simply be inlined?
-; SFTODO: This seems to be using prvOswordBlockCopy + 1 as scratch space; we should perhaps have a separate name for it in this context, or maybe not - maybe just allocate a block local "bank = prvOswordBlockCopy + 1"?
-; SFTODO: This seems to use L00AD as scratch space too - is there really no zero page (shorter code) location we could have used instead of prvOswordBlockCopy + 1?
+; SFTODO: This seems to use L00AD as scratch space too - is there really no second zero page (=> shorter code) location we could have used instead of prvOswordBlockCopy + 1?
 ; SFTODO: Probably not, but is there any chance of sharing more code between this and srset?
-bankTmp = prvOswordBlockCopy + 1
-.L9AD1      STX prvOswordBlockCopy + 1
+bankTmp = prvOswordBlockCopy + 1 ; we just use this as scratch space
+SFTODOTmp = L00AD ; SFTODO: Use a "proper" label on RHS
+
+.L9AD1      STX bankTmp
             PHP
             LDA #&00
             ROR A
-            STA L00AD
+            STA SFTODOTmp
             JSR testRamUsingVariableMainRamSubroutine
             BNE L9B0D								;branch if not RAM
             LDA prvRomTypeTableCopy,X
             BEQ emptyBank
             CMP #&02 ; SFTODO: as in srset
             BNE L9B0D
-.emptyBank  LDA prvOswordBlockCopy + 1
+.emptyBank  LDA bankTmp
             JSR removeBankAFromSFTODOFOURBANKS
             PLP
             BCS isSrrom
-            LDA prvOswordBlockCopy + 1
+            LDA bankTmp
             JSR addBankAToSFTODOFOURBANKS
             BCS L9B12 ; SFTODO: branch if we already had four banks and so couldn't add this one
-.isSrrom    LDA L00AD
+.isSrrom    LDA SFTODOTmp
             JSR writeRomHeaderAndPatchUsingVariableMainRamSubroutine
-            LDX prvOswordBlockCopy + 1
+            LDX bankTmp
             LDA #&02
             STA prvRomTypeTableCopy,X
             STA romTypeTable,X
-.L9B09      LDX prvOswordBlockCopy + 1
+.L9B09      LDX bankTmp
 .L9B0C      RTS
 
 .L9B0D      PLP
