@@ -7543,6 +7543,17 @@ ENDIF
 ;             print " "
 ;     (now at SFTODOSTEP2)
 ;
+; prvDateSFTODO1:
+;    b0..1: dateSeparators[n] to emit after day of month
+;
+; prvDateSFTODO2:
+;    b4..7: 0 => don't emit day of week
+;           >=5 => don't truncate day of week
+;           >=3 (but <5) => truncate day of week to 3 characters
+;           <3 => truncate day of week to n-1 characters
+;
+;    b4: 1 => capitalise day of week, 0=> don't capitalise day of week
+;
 ; prvDateSFTODO3:
 ;     0 => emit just day of week
 ;     b0..2: 0 => don't emit day of month
@@ -7553,6 +7564,7 @@ ENDIF
 ;            <4 => don't emit ordinal suffix for day of month
 ;            4 => emit capitalised ordinal suffix for day of month
 ;            >4 => emit uncapitalised ordinal suffix for day of month
+;     b3..7: 0 => don't emit anything after day of month
 {
 .^LAC72
 ; SFTODO: Experimentally using nested scopes here to try to make things clearer, by making it more obvious that some labels have restricted scope - not sure if this is really helpful, let's see
@@ -7581,7 +7593,7 @@ ENDIF
 .maxCharsInX
 	  LDA prvDateDayOfWeek							;get day of week
             CLC									;Carry Set=Month, Clear=Day of Week
-            JSR emitDayOrMonthName							;X is maximum number of characters to emit
+            JSR emitDayOrMonthName							;X is maximum number of characters to emit, Y controls capitalisation
             LDA prvDateSFTODO3
             BNE LACA0
             JMP LAD5Arts
