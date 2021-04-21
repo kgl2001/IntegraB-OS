@@ -6807,7 +6807,6 @@ osfileBlock = L02EE
             RTS
 }
 
-; SFTODO: This has only one caller; can't we just fall through into it?
 ;Read 'Sec Alarm', 'Min Alarm' & 'Hr Alarm' from Private RAM (&82xx) and write to RTC
 .copyPrvAlarmToRtc
 {
@@ -6823,9 +6822,10 @@ osfileBlock = L02EE
             JMP wrRTCRAM								;Write data from A to RTC memory location X
 }
 
+.getRtcDateTime
 {
-.^LA769      JSR getRtcDayMonthYear								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from RTC and Store in Private RAM (&82xx)
-            JMP getRtcSecondsMinutesHours								;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
+.LA769      JSR getRtcDayMonthYear
+            JMP getRtcSecondsMinutesHours
 }
 
 ; SFTODO: Following block is dead code
@@ -8586,7 +8586,7 @@ osfileBlock = L02EE
             STA prvDateSFTODO4							;store #&00 to address &8224
             LDA #&80
             STA prvDateSFTODO5							;store #&80 to address &8225
-            JSR LA769								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
+            JSR getRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
             JSR LAD63								;format text for output to screen?
             JSR LA5DE								;output TIME & DATE data from address &8000 to screen
 .LB506      JSR PrvDis								;switch out private RAM
@@ -9007,7 +9007,7 @@ osfileBlock = L02EE
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=0: Read time and date in string format
 .^oswd0eReadString
-.LB81E      JSR LA769								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
+.LB81E      JSR getRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
 .LB821      JSR initDateSFTODOS								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
             LDA prvOswordBlockOrigAddr							;get OSWORD X register (lookup table LSB)
             STA prvOswordBlockCopy + 4							;save OSWORD X register (lookup table LSB)
@@ -9020,7 +9020,7 @@ osfileBlock = L02EE
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=1: Read time and date in binary coded decimal (BCD) format
 .^oswd0eReadBCD
-.LB835      JSR LA769								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
+.LB835      JSR getRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
             LDY #&06
 .LB83A      JSR LB85A
             STA (oswdbtX),Y
@@ -9081,13 +9081,13 @@ osfileBlock = L02EE
 ;XY?0=&61
 ;OSWORD &49 (73) - Integra-B calls
 .LB891      JSR LB774								;Clear RTC buffer @ &8220-&822F
-            JSR LA769								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
+            JSR getRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
             CLC
             RTS
 			
 ;XY?0=&60
 ;OSWORD &49 (73) - Integra-B calls
-.LB899		JSR LA769								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
+.LB899		JSR getRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
 
 ;XY?0=&62
 ;OSWORD &49 (73) - Integra-B calls
