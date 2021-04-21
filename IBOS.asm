@@ -124,6 +124,7 @@ userRegRamPresenceFlags = &7F ; b0 set=RAM in banks 0-1, b1 set=RAM in banks 2-3
 ; SFTODO: I am thinking these names - maybe now, and probably also in "final" vsn - should have the actual address as part of the name - because different bits of code use the same location for different things, this will help to make it a bit more obvious if two bits of code are trying to use the same location for two different purposes at once (mainly important when we come to modify the code, but just might be relevant if there are bugs in the existing code)
 transientOs4243SwrAddr = &A8 ; 2 bytes
 transientOs4243MainAddr = &AA ; 2 bytes
+transientOs4243SFTODO = &AC ; 2 bytes
 ; SFTODO: &AC/&AD IS USED FOR ANOTHER 16-BIT WORD, SEE adjustTransferParameters
 transientOs4243BytesToTransfer = &AE ; 2 bytes
 transientRomBankMask = &AE ; 2 bytes SFTODO: Rename this "set" or something instead of "mask"???
@@ -4725,24 +4726,28 @@ romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" l
 .L9B2B      JMP badId						;Error Bad ID
 
 
+; SFTODO: This has only one caller
+; SFTODO: Entered with an address in AY
 {
+pseudoAddressingBankHeaderSize = &10
+pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 .^L9B2E      LDX #&00
-.L9B30      STY L00AC
-            STA L00AD
+.loop       STY transientOs4243SFTODO
+            STA transientOs4243SFTODO + 1
             SEC
-            LDA L00AC
-            SBC #&F0
+            LDA transientOs4243SFTODO
+            SBC #lo(pseudoAddressingBankDataSize)
             TAY
-            LDA L00AD
-            SBC #&3F
+            LDA transientOs4243SFTODO + 1
+            SBC #hi(pseudoAddressingBankDataSize)
             BCC L9B43
             INX
-            BNE L9B30
+            BNE loop
 .L9B43      CLC
-            LDA L00AC
+            LDA transientOs4243SFTODO
             ADC #&10
             TAY
-            LDA L00AD
+            LDA transientOs4243SFTODO + 1
             ADC #&00
             ORA #&80
             RTS
