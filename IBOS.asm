@@ -7690,21 +7690,21 @@ ENDIF
             AND #&40
             BNE LADB9
 .LADA5      LDA transientDateSFTODO1
-            LDX #&2C
+            LDX #','
             AND #&20
             BNE LADAF
-            LDX #&2E
+            LDX #'.'
 .LADAF      TXA
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDA transientDateSFTODO1
             AND #&10
             BEQ LAD7E
-.LADB9      LDA #&20								;' '
+.LADB9      LDA #' '
             JMP emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 			
-.LADBE      LDA #&20								;' '
+.LADBE      LDA #' '
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-            LDA #&40								;'@'
+            LDA #'@'
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             JMP LADB9
 }
