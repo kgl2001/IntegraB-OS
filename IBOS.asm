@@ -4647,23 +4647,25 @@ ramPresenceFlags = &A8
             BCC skipBank
             PLP
             PHP
-            JSR L9AD1
+            JSR doBankX
 .skipBank   INX
             CPX #maxBank + 1
             BNE bankLoop
             JMP plpPrvDisexitSc
 
 ; SFTODO: This has only one caller, just above, can it simply be inlined?
+; SFTODO: This seems to remove and maybe re-add (depending on C on entry; C set means SRROM, C clear means SRDATA) bank X to SFTODOFOURBANKS, but only adding provided X is suitable.
 ; SFTODO: This seems to use L00AD as scratch space too - is there really no second zero page (=> shorter code) location we could have used instead of prvOswordBlockCopy + 1?
 ; SFTODO: Probably not, but is there any chance of sharing more code between this and srset?
 ; SFTODO: I think this returns with C clear on success, C set on error - if C is set, V indicates something
 bankTmp = prvOswordBlockCopy + 1 ; we just use this as scratch space SFTODO: ah, maybe we are just using this location because other really-OSWORD code uses the same subroutines which expect the bank to be in this location
-SFTODOTmp = L00AD ; SFTODO: Use a "proper" label on RHS
-.L9AD1      STX bankTmp
+romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" label on RHS
+.doBankX
+            STX bankTmp
             PHP
             LDA #&00
             ROR A
-            STA SFTODOTmp
+            STA romRamFlagTmp
             JSR testRamUsingVariableMainRamSubroutine
             BNE failSFTODOA								;branch if not RAM
             LDA prvRomTypeTableCopy,X
@@ -4677,7 +4679,7 @@ SFTODOTmp = L00AD ; SFTODO: Use a "proper" label on RHS
             LDA bankTmp
             JSR addBankAToSFTODOFOURBANKS
             BCS failSFTODOB ; SFTODO: branch if we already had four banks and so couldn't add this one
-.isSrrom    LDA SFTODOTmp
+.isSrrom    LDA romRamFlagTmp
             JSR writeRomHeaderAndPatchUsingVariableMainRamSubroutine
             LDX bankTmp
             LDA #romTypeSrData
