@@ -7328,18 +7328,18 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
 .LAB41      CPX #&00
             BEQ LAB65
             LDA prv82+&4E								;get 10s
-            CMP #&30								;is it '0'
+            CMP #'0'								;is it '0'
             BNE LAB65
             CPX #&01	
             BEQ LAB6B
-            LDA #&20								;convert '0' to ' '
+            LDA #' '								;convert '0' to ' '
             STA prv82+&4E								;and save to &824E
             LDA prv82+&4F								;get 1s
-            CMP #&30								;is it '0'
+            CMP #'0'								;is it '0'
             BNE LAB65
             CPX #&03
             BNE LAB65
-            LDA #&20								;convert '0' to ' '
+            LDA #' '								;convert '0' to ' '
             STA prv82+&4F								;and save to &824F
 .LAB65      LDA prv82+&4E								;get 10s
             STA (transientDateBufferPtr),Y								;store at buffer &XY?Y
