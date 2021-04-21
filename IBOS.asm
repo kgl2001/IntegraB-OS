@@ -6723,7 +6723,7 @@ osfileBlock = L02EE
 			
 ;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
 {
-.^LA6CB      JSR LA775								;Check if RTC Update in Progress, and wait if necessary
+.^LA6CB      JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
             LDX #&06								;Select 'Day of Week' register on RTC: Register &06
             LDA prvOswordBlockCopy + 12								;Get 'Day of Week' from &822C
             JSR wrRTCRAM								;Write data from A to RTC memory location X
@@ -6743,7 +6743,7 @@ osfileBlock = L02EE
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
 {
-.^LA6F3      JSR LA775								;Check if RTC Update in Progress, and wait if necessary
+.^LA6F3      JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
             LDX #&00								;Select 'Seconds' register on RTC: Register &00
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             STA prvOswordBlockCopy + 15								;Store 'Seconds' at &822F
@@ -6758,7 +6758,7 @@ osfileBlock = L02EE
 
 ;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from RTC and Store in Private RAM (&82xx)
 {
-.^LA70F      JSR LA775								;Check if RTC Update in Progress, and wait if necessary
+.^LA70F      JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
             LDX #&06								;Select 'Day of Week' register on RTC: Register &06
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             STA prvOswordBlockCopy + 12								;Store 'Day of Week' at &822C
@@ -6777,7 +6777,7 @@ osfileBlock = L02EE
 ;Read 'Sec Alarm', 'Min Alarm' & 'Hr Alarm' from RTC and Store in Private RAM (&82xx)
 .copyRtcAlarmToPrv
 {
-.LA732      JSR LA775								;Check if RTC Update in Progress, and wait if necessary
+.LA732      JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
             LDX #&01								;Select 'Sec Alarm' register on RTC: Register &01
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             STA prvOswordBlockCopy + 15								;Store 'Sec Alarm' at &822F
@@ -6793,7 +6793,7 @@ osfileBlock = L02EE
 ;Read 'Sec Alarm', 'Min Alarm' & 'Hr Alarm' from Private RAM (&82xx) and write to RTC
 .copyPrvAlarmToRtc
 {
-.LA74E      JSR LA775								;Check if RTC Update in Progress, and wait if necessary
+.LA74E      JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
             LDX #&01								;Select 'Sec Alarm' register on RTC: Register &01
             LDA prvOswordBlockCopy + 15								;Get 'Sec Alarm' from &822F
             JSR wrRTCRAM								;Write data from A to RTC memory location X
@@ -6817,8 +6817,9 @@ osfileBlock = L02EE
 }
 
 ;Wait until RTC Update in Progress	is complete
+.waitOutRTCUpdate
 {
-.^LA775      LDX #&0A								;Select 'Register A' register on RTC: Register &0A
+.LA775      LDX #&0A								;Select 'Register A' register on RTC: Register &0A
 .LA777      JSR LA660								;3 x NOP delay
             STX SHEILA+&38								;Strobe in address
             JSR LA660								;3 x NOP delay
