@@ -6626,7 +6626,7 @@ osfileBlock = L02EE
 .LA5EF      LDA #&05
             STA prvDateSFTODO0
             LDA #&84
-            STA prvDateSFTODO1
+            STA prvDateSFTODO1 ; SFTODO: b7 of this is tested e.g. at LAD7F
             LDA #&44
             STA prvDateSFTODO2
             LDA #&EB
@@ -7271,6 +7271,7 @@ osfileBlock = L02EE
 ;On Month Entry:		Carry Set,   A=01-12 (Jan-Dec)
 ;On Day of Week Entry:	Carry Clear, A=01-07 (Sun-Sat)
 {
+capitalisationMask = prv82+&4F
 .^LAAF5	  BCC LAAFA								;If Carry clear then jump to Day of Week
 	  CLC
             ADC #&07								;move calOffset pointer to first month
@@ -7278,11 +7279,11 @@ osfileBlock = L02EE
             CPY #&00								;First letter?
             BNE LAB09								;No? Then branch
             LDY #&DF								;Load capitalise mask
-            STY prv82+&4F								;Save mask to &824F
+            STY capitalisationMask								;Save mask to &824F
             JMP LAB0E
 			
 .LAB09      LDY #&FF								;otherwise no capitalise
-            STY prv82+&4F								;save mask to &824F
+            STY capitalisationMask								;save mask to &824F
 .LAB0E      TAX
             INX
             LDA calOffset,X								;get calText pointer for next month / day
@@ -7296,7 +7297,7 @@ osfileBlock = L02EE
             JMP LAB2B
 			
 .LAB25      LDA calText,X								;get subsequent letters
-            AND prv82+&4F								;apply capitalisation mask
+            AND capitalisationMask								;apply capitalisation mask
 .LAB2B      STA (L00A8),Y								;store at buffer &XY?Y
             INY									;increase buffer pointer
             INX									;increment calText pointer for current month / day
