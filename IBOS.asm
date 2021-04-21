@@ -68,6 +68,8 @@
 ;Register &0D
 rtcRegDayOfWeek = &06
 rtcRegDayOfMonth = &07
+rtcRegMonth = &08
+rtcRegYear = &09
 
 rtcUserBase = &0E
 ;RTC User Registers (add &0E to get real RTC user register - registers &00-&0D are for RTC clock registers)
@@ -6766,11 +6768,11 @@ osfileBlock = L02EE
             STA prvOswordBlockCopy + 12								;Store 'Day of Week' at &822C
             INX:ASSERT rtcRegDayOfWeek + 1 == rtcRegDayOfMonth				;Select 'Day of Month' register on RTC: Register &07
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            STA prvOswordBlockCopy + 11								;Store 'Day of Month' at &822B
-            INX									;Select 'Month' register on RTC: Register &08
+            STA prvOswordBlockCopy + 11							;Store 'Day of Month' at &822B
+            INX:ASSERT rtcRegDayOfMonth + 1 == rtcRegMonth					;Select 'Month' register on RTC: Register &08
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             STA prvOswordBlockCopy + 10								;Store 'Month' at &822A
-            INX									;Select 'Year' register on RTC: Register &09
+            INX:ASSERT rtcRegMonth + 1 == rtcRegYear					;Select 'Year' register on RTC: Register &09
 .LA729      JSR rdRTCRAM								;Read data from RTC memory location X into A
             STA prvOswordBlockCopy + 9								;Store 'Year' at &8229
             JMP LB1E4
