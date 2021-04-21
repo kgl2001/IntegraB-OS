@@ -4478,13 +4478,13 @@ ramPresenceFlags = &A8
 }
 
 ; SFTODO: This has only one caller
-; A=0 on entry means the header should say "RAM", otherwise it will say "ROM".
+; A=0 on entry means the header should say "RAM", otherwise it will say "ROM". A is also copied into the (unused) second byte of the bank's service entry; SFTODO: I don't know why specifically, but maybe this is just done because that's what the Acorn DFS SRAM utilities do (speculation; I haven't checked).
 .writeRomHeaderAndPatchUsingVariableMainRamSubroutine
 {
 .L99C6	  PHA
 	  LDX #lo(writeRomHeaderTemplate)
 	  LDY #hi(writeRomHeaderTemplate)
-	  JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9E59 to &03A7
+	  JSR copyYxToVariableMainRamSubroutine						;relocate &32 bytes of code from &9E59 to &03A7
             PLA
             BEQ ram
             ; ROM - so patch variableMainRamSubroutine's ROM header to say "ROM" instead of "RAM"
@@ -4494,7 +4494,7 @@ ramPresenceFlags = &A8
             JSR checkRamBankAndMakeAbsolute
             STA prvOswordBlockCopy + 1
             STA variableMainRamSubroutine + (writeRomHeaderTemplateSFTODO - writeRomHeaderTemplate)
-            JMP variableMainRamSubroutine								;Call relocated code
+            JMP variableMainRamSubroutine						;Call relocated code
 }
 
 {
@@ -4656,9 +4656,8 @@ ramPresenceFlags = &A8
 ; SFTODO: This has only one caller, just above, can it simply be inlined?
 ; SFTODO: This seems to use L00AD as scratch space too - is there really no second zero page (=> shorter code) location we could have used instead of prvOswordBlockCopy + 1?
 ; SFTODO: Probably not, but is there any chance of sharing more code between this and srset?
-bankTmp = prvOswordBlockCopy + 1 ; we just use this as scratch space
+bankTmp = prvOswordBlockCopy + 1 ; we just use this as scratch space SFTODO: ah, maybe we are just using this location because other really-OSWORD code uses the same subroutines which expect the bank to be in this location
 SFTODOTmp = L00AD ; SFTODO: Use a "proper" label on RHS
-
 .L9AD1      STX bankTmp
             PHP
             LDA #&00
@@ -4683,16 +4682,17 @@ SFTODOTmp = L00AD ; SFTODO: Use a "proper" label on RHS
             LDA #romTypeSrData
             STA prvRomTypeTableCopy,X
             STA romTypeTable,X
-.L9B09      LDX bankTmp
-.L9B0C      RTS
+.restoreXRts
+	  LDX bankTmp
+.rts        RTS
 
 .L9B0D      PLP
             SEC
             CLV
-            BCS L9B09
+            BCS restoreXRts
 .L9B12      SEC
-            BIT L9B0C
-            BCS L9B09
+            BIT rts ; set V
+            BCS restoreXRts
 .^checkRamBankAndMakeAbsolute
 .L9B18      AND #&7F								;drop the highest bit
             CMP #&10								;check if RAM bank is absolute or pseudo address
