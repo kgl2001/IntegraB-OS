@@ -66,6 +66,9 @@
 ;Register &0B
 ;Register &0C
 ;Register &0D
+rtcRegSeconds = &00
+rtcRegMinutes = &02
+rtcRegHours = &04
 rtcRegDayOfWeek = &06
 rtcRegDayOfMonth = &07
 rtcRegMonth = &08
@@ -501,6 +504,9 @@ prvDateYear = prvOswordBlockCopy + 9
 prvDateMonth = prvOswordBlockCopy + 10
 prvDateDayOfMonth = prvOswordBlockCopy + 11
 prvDateDayOfWeek = prvOswordBlockCopy + 12
+prvDateHours = prvOswordBlockCopy + 13
+prvDateMinutes = prvOswordBlockCopy + 14
+prvDateSeconds = prvOswordBlockCopy + 15
 
 prvTmp = prv82 + &52 ; 1 byte, SFTODO: seems to be used as scratch space by some code without relying on value being preserved
 
@@ -6753,15 +6759,15 @@ osfileBlock = L02EE
 ;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
 {
 .^LA6F3      JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
-            LDX #&00								;Select 'Seconds' register on RTC: Register &00
+            LDX #rtcRegSeconds								;Select 'Seconds' register on RTC: Register &00
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            STA prvOswordBlockCopy + 15								;Store 'Seconds' at &822F
-            LDX #&02								;Select 'Minutes' register on RTC: Register &02
+            STA prvDateSeconds								;Store 'Seconds' at &822F
+            LDX #rtcRegMinutes								;Select 'Minutes' register on RTC: Register &02
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            STA prvOswordBlockCopy + 14								;Store 'Minutes' at &822E
-            LDX #&04								;Select 'Hours' register on RTC: Register &04
+            STA prvDateMinutes								;Store 'Minutes' at &822E
+            LDX #rtcRegHours								;Select 'Hours' register on RTC: Register &04
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            STA prvOswordBlockCopy + 13								;Store 'Hours' at &822D
+            STA prvDateHours								;Store 'Hours' at &822D
             RTS
 }
 
