@@ -7439,7 +7439,7 @@ unitsChar = prv82 + &4F
 }
 
 {
-.^LABEA      LDA prvOswordBlockCopy + 2								;&44 for OSWORD 0E
+.^LABEA      LDA prvDateSFTODO2								;&44 for OSWORD 0E
             AND #&0F								;&04 for OSWORD 0E
             STA transientDateSFTODO1
             BNE LABF5
@@ -7458,10 +7458,10 @@ unitsChar = prv82 + &4F
 .LAC05      LDA transientDateSFTODO1
             AND #&01
             PHP
-            LDA prvOswordBlockCopy + 13								;read Hours
+            LDA prvDateHours								;read Hours
             PLP
             BEQ LAC1F
-            LDA prvOswordBlockCopy + 13								;read Hours
+            LDA prvDateHours								;read Hours
             BEQ LAC1D								;check for 00hrs. If so, convert to 12
             CMP #&0D								;
             BCC LAC1F								;check for 13hrs and above
@@ -7478,19 +7478,19 @@ unitsChar = prv82 + &4F
             CMP #&01
             BEQ LAC34								;branch if =1
             TAX
-.LAC34      LDA prvOswordBlockCopy + 14								;read Minutes
+.LAC34      LDA prvDateMinutes								;read Minutes
             JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             LDA transientDateSFTODO1
             CMP #&08
             BCC LAC48
             CMP #&0C
             BCC LAC55
-            LDA #&2F								;'/'
+            LDA #'/'
             BNE LAC4A
-.LAC48      LDA #&3A								;':'
+.LAC48      LDA #':'
 .LAC4A      JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDX #&00
-            LDA prvOswordBlockCopy + 15								;read seconds
+            LDA prvDateSeconds								;read seconds
             JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 .LAC55      LDA transientDateSFTODO1
             CMP #&04
@@ -7498,7 +7498,7 @@ unitsChar = prv82 + &4F
             LDA transientDateSFTODO1
             AND #&01
             BEQ LAC6C
-            LDA #&20								;' '
+            LDA #' '
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDA prvOswordBlockCopy + 13								;read hours
             JSR LABC5								;write am / pm to 
