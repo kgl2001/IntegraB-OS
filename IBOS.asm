@@ -7459,11 +7459,20 @@ ENDIF
 
 ; SFTODOWIP
 ; SFTODOWIP COMMENT
+; This roughly emits "<hour><minute><second><time suffix>"
 ; prvDateSFTODO2:
 ;     b0..3: 0 => return with C set
-;            <4
+;            <4 => don't emit hour or time suffix
+;            b2 clear => X=2, b2 set => X=0 for formatting hour
+;            b0 clear => use 24h time
+;            >4 or 1 => emit minutes using format X=0, otherwise use format X=n
+;            <8 => use ':' after minute
+;            <12 (and >=8) => don't emit seconds
+;	   >=12 => use '/' after minute
+; Normal return has C clear
+.emitTimeToDateBuffer ; SFTODO: "time" as in "hour/min/sec, not day of month etc"
 {
-.^LABEA      LDA prvDateSFTODO2								;&44 for OSWORD 0E
+.LABEA      LDA prvDateSFTODO2								;&44 for OSWORD 0E
             AND #&0F								;&04 for OSWORD 0E
             STA transientDateSFTODO1
             BNE LABF5
@@ -7484,15 +7493,15 @@ ENDIF
             PHP
             LDA prvDateHours								;read Hours
             PLP
-            BEQ LAC1F
+            BEQ hoursInA
             LDA prvDateHours								;read Hours
-            BEQ LAC1D								;check for 00hrs. If so, convert to 12
+            BEQ zeroHours								;check for 00hrs. If so, convert to 12
             CMP #13 								;
-            BCC LAC1F								;check for 13hrs and above
+            BCC hoursInA								;check for 13hrs and above
             SBC #12 								;if so, subtract 12
-            BCS LAC1F
-.LAC1D      LDA #12
-.LAC1F      JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+            BCS hoursInA
+.zeroHours  LDA #12									;12am
+.hoursInA   JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             LDA #':'
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 .SFTODOSTEP2MAYBE      LDX #&00
@@ -7506,17 +7515,19 @@ ENDIF
             JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             LDA transientDateSFTODO1
             CMP #&08
-            BCC LAC48
+            BCC separatorColon
             CMP #&0C
-            BCC LAC55
+            BCC SFTODOMAYBESTEP3
             LDA #'/'
-            BNE LAC4A ; always branch
-.LAC48      LDA #':'
-.LAC4A      JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            BNE separatorInA ; always branch
+.separatorColon
+	  LDA #':'
+.separatorInA
+	  JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDX #&00
             LDA prvDateSeconds							;read seconds
             JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
-.LAC55      LDA transientDateSFTODO1
+.SFTODOMAYBESTEP3      LDA transientDateSFTODO1
             CMP #&04
             BCC LAC6C
             LDA transientDateSFTODO1
@@ -7743,13 +7754,13 @@ ENDIF
 
 .LAD7F      BIT prvDateSFTODO1
             BMI LAD8D								;do the reverse of below
-            JSR LABEA
+            JSR emitTimeToDateBuffer
             JSR LAD96
             JMP emitDateToDateBuffer
 			
 .LAD8D      JSR emitDateToDateBuffer
             JSR LAD96
-            JMP LABEA
+            JMP emitTimeToDateBuffer
 			
 .LAD96      LDA prvDateSFTODO1
             AND #&F0
