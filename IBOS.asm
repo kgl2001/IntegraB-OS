@@ -4563,15 +4563,15 @@ ramPresenceFlags = &A8
             JSR PrvEn								;switch in private RAM
             LDX #&00
             LDY #&00
-.L9A40      ROR L00AF
-            ROR L00AE
-            BCC L9A67
+.bankLoop   ROR transientRomBankMask + 1
+            ROR transientRomBankMask
+            BCC skipBank
             TYA
             PHA
             JSR testRamUsingVariableMainRamSubroutine
-            BNE L9A59
+            BNE L9A59 ; sFTODO: BRANCH IF NOT RAM
             LDA prvRomTypeTableCopy,X
-            BEQ L9A56
+            BEQ L9A56 ; SFTODO: BRANCH IF NOT IN USE BY A ROM
             CMP #&02
             BNE L9A59
 .L9A56      CLC
@@ -4579,15 +4579,15 @@ ramPresenceFlags = &A8
 .L9A59      SEC
 .L9A5A      PLA
             TAY
-            BCS L9A67
+            BCS skipBank
             TXA
             STA prvPseudoBankNumbers,Y
             INY
             CPY #&04
             BCS L9A76
-.L9A67      INX
-            CPX #&10
-            BNE L9A40
+.skipBank   INX
+            CPX #maxBank + 1
+            BNE bankLoop
             LDA #&FF
 .L9A6E      STA prvPseudoBankNumbers,Y
             INY
@@ -6157,7 +6157,7 @@ osfileBlock = L02EE
             LDA #&20								;' '
             BNE LA38D								;jump to write to screen
 .LA380      LDX L00AA								;get ROM number
-            JSR testRamUsingVariableMainRamSubroutine								;check if ROM is WP. Will return with Z set if writeable
+            JSR testRamUsingVariableMainRamSubroutine					;check if ROM is WP. Will return with Z set if writeable
             PHP
             LDA #'E'								;'E' (Enabled)
             PLP
