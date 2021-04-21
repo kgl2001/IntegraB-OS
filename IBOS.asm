@@ -7441,12 +7441,12 @@ unitsChar = prv82 + &4F
 {
 .^LABEA      LDA prvOswordBlockCopy + 2								;&44 for OSWORD 0E
             AND #&0F								;&04 for OSWORD 0E
-            STA L00AB
+            STA transientDateSFTODO1
             BNE LABF5
             SEC
             RTS
 			
-.LABF5      LDA L00AB
+.LABF5      LDA transientDateSFTODO1
             CMP #&04
             BCC LAC27								;branch if <4
             LDX #&00
@@ -7455,7 +7455,7 @@ unitsChar = prv82 + &4F
             BNE LAC05
             INX
             INX
-.LAC05      LDA L00AB
+.LAC05      LDA transientDateSFTODO1
             AND #&01
             PHP
             LDA prvOswordBlockCopy + 13								;read Hours
@@ -7472,7 +7472,7 @@ unitsChar = prv82 + &4F
             LDA #':'								;':'
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 .LAC27      LDX #&00
-            LDA L00AB
+            LDA transientDateSFTODO1
             CMP #&04
             BCS LAC34								;branch if >=4
             CMP #&01
@@ -7480,7 +7480,7 @@ unitsChar = prv82 + &4F
             TAX
 .LAC34      LDA prvOswordBlockCopy + 14								;read Minutes
             JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
-            LDA L00AB
+            LDA transientDateSFTODO1
             CMP #&08
             BCC LAC48
             CMP #&0C
@@ -7492,10 +7492,10 @@ unitsChar = prv82 + &4F
             LDX #&00
             LDA prvOswordBlockCopy + 15								;read seconds
             JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
-.LAC55      LDA L00AB
+.LAC55      LDA transientDateSFTODO1
             CMP #&04
             BCC LAC6C
-            LDA L00AB
+            LDA transientDateSFTODO1
             AND #&01
             BEQ LAC6C
             LDA #&20								;' '
@@ -7506,8 +7506,11 @@ unitsChar = prv82 + &4F
             RTS
 }
 
-;Separators for Time Display? 
+;Separators for Time Display? SFTODO: seems probable, need to update this comment when it becomes clear
+.dateSeparators ; SFTODO: using "date" for consistency with prvDate* variables, maybe revisit after - all the "time"/"date"/"calendar" stuff has a lot of common code
+{
 .LAC6E		EQUS " ", "/", ".", "-"
+}
 
 {
 .^LAC72		LDA prvDateSFTODO2
@@ -7531,7 +7534,7 @@ unitsChar = prv82 + &4F
             DEX
 .LAC91      LDA prvDateDayOfWeek							;get day of week
             CLC									;Carry Set=Month, Clear=Day of Week
-            JSR emitDayOrMonthName								;Save Day of Week text to buffer XY?xxx
+            JSR emitDayOrMonthName							;Save Day of Week text to buffer XY?xxx
             LDA prvDateSFTODO3
             BNE LACA0
             JMP LAD5A
@@ -7542,12 +7545,12 @@ unitsChar = prv82 + &4F
             CMP #&04
             BCC LACB6
             LDA #','
-            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDA transientDateSFTODO1
             CMP #&08
             BCC LACBB
 .LACB6      LDA #' '
-            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 .^LACBB      LDA prvDateSFTODO3
             AND #&07
             STA transientDateSFTODO1
@@ -7574,8 +7577,8 @@ unitsChar = prv82 + &4F
             LDA prvDateSFTODO1
             AND #&03								;mask lower 3 bits
             TAX
-            LDA LAC6E,X								;get character from look up table
-            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            LDA dateSeparators,X							;get character from look up table
+            JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 .LACF8      LDA prvDateSFTODO3
             LSR A
             LSR A
@@ -7590,7 +7593,7 @@ unitsChar = prv82 + &4F
             BEQ LAD0F
             TAX
 .LAD0F      LDA prvDateMonth								;read month
-            JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+            JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             JMP LAD2A
 }
 
@@ -7610,7 +7613,7 @@ unitsChar = prv82 + &4F
             LDA prvDateSFTODO1
             AND #&03								;mask lower 3 bits
             TAX
-            LDA LAC6E,X								;get character from look up table
+            LDA dateSeparators,X								;get character from look up table
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 .^LAD3D      LDA prvDateSFTODO3
             AND #&C0
