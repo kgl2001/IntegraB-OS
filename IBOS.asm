@@ -4569,22 +4569,23 @@ ramPresenceFlags = &A8
             TYA
             PHA
             JSR testRamUsingVariableMainRamSubroutine
-            BNE L9A59 ; sFTODO: BRANCH IF NOT RAM
+            BNE plyAndSkipBank 							;branch if not RAM
             LDA prvRomTypeTableCopy,X
-            BEQ L9A56 ; SFTODO: BRANCH IF NOT IN USE BY A ROM
-            CMP #&02
-            BNE L9A59
-.L9A56      CLC
-            BCC L9A5A
-.L9A59      SEC
-.L9A5A      PLA
+            BEQ emptyBank
+            CMP #&02								;SFTODO: what does rom type 2 mean? My suspicion is we use this to indicate "already SRDATA, so we can use it", but need to check that in other code
+            BNE plyAndSkipBank
+.emptyBank  CLC
+            BCC skipIffC
+.plyAndSkipBank
+	  SEC
+.skipIffC   PLA
             TAY
             BCS skipBank
             TXA
             STA prvPseudoBankNumbers,Y
             INY
             CPY #&04
-            BCS L9A76
+            BCS done
 .skipBank   INX
             CPX #maxBank + 1
             BNE bankLoop
@@ -4593,7 +4594,7 @@ ramPresenceFlags = &A8
             INY
             CPY #&04
             BCC L9A6E
-.L9A76      JMP PrvDisexitSc
+.done       JMP PrvDisexitSc
 
 .showStatus
             CLC
