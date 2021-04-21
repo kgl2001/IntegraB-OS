@@ -4727,11 +4727,12 @@ romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" l
 
 
 ; SFTODO: This has only one caller
-; SFTODO: Entered with an address in AY
+; Given a sideways RAM pseudo-address in AY, convert it to a relative bank number 0-3 in X and an absolute sideways RAM address in AY.
+.convertPseudoAddressToAbsolute
 {
 pseudoAddressingBankHeaderSize = &10
 pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
-.^L9B2E      LDX #&00
+.L9B2E      LDX #&00
 .loop       STY transientOs4243SFTODO
             STA transientOs4243SFTODO + 1
             SEC
@@ -4740,15 +4741,15 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             TAY
             LDA transientOs4243SFTODO + 1
             SBC #hi(pseudoAddressingBankDataSize)
-            BCC L9B43
+            BCC noBorrow
             INX
             BNE loop
-.L9B43      CLC
+.noBorrow   CLC
             LDA transientOs4243SFTODO
-            ADC #&10
+            ADC #lo(pseudoAddressingBankHeaderSize)
             TAY
             LDA transientOs4243SFTODO + 1
-            ADC #&00
+            ADC #hi(pseudoAddressingBankHeaderSize)
             ORA #&80
             RTS
 }
@@ -5217,7 +5218,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             LDA prvOswordBlockCopy + 9 ; get high byte of sideways address
             BIT prvOswordBlockCopy ; test function
             BVC absoluteAddress
-            JSR L9B2E ; SFTODO: presumably swizzles pseudo address to absolute address, not checked yet
+            JSR convertPseudoAddressToAbsolute
             STX prvOswordBlockCopy + 1
 .absoluteAddress
             STY transientOs4243SwrAddr
