@@ -7272,11 +7272,12 @@ osfileBlock = L02EE
 ;On Day of Week Entry:	Carry Clear, A=01-07 (Sun-Sat)
 ; SFTODO: X on entry is maximum number of characters to print?
 ; SFTODO: Y has some significance on entry
+.emitDayOrMonthName
 {
 endCalOffset = prv82 + &4E
 capitalisationMask = prv82 + &4F
 maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to print"
-.^LAAF5	  BCC indexInA
+.LAAF5	  BCC indexInA
 	  CLC
             ADC #&07								;adjust month index to skip past the day of week entries in calOffsetTable
 .indexInA   STX maxOutputLength
@@ -7514,7 +7515,7 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
             DEX
 .LAC91      LDA prvDateDayOfWeek							;get day of week
             CLC									;Carry Set=Month, Clear=Day of Week
-            JSR LAAF5								;Save Day of Week text to buffer XY?xxx
+            JSR emitDayOrMonthName								;Save Day of Week text to buffer XY?xxx
             LDA prvDateSFTODO3
             BNE LACA0
             JMP LAD5A
@@ -7588,7 +7589,7 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
             TAY
             LDA prvDateMonth								;Get Month
             SEC									;Carry Set=Month, Clear=Day of Week
-            JSR LAAF5								;Save Month text to buffer XY?xxx
+            JSR emitDayOrMonthName								;Save Month text to buffer XY?xxx
 .^LAD2A      LDA prvDateSFTODO3
             AND #&C0
             BEQ LAD5A
@@ -8705,7 +8706,7 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
             LDX #&03
             LDY #&FF
             CLC
-            JSR LAAF5
+            JSR emitDayOrMonthName
             LDA #&00
             STA prv82+&4C
 .LB5D9      LDA #&20								;' '
