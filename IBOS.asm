@@ -7355,13 +7355,13 @@ SFTODOUNITSCHAR = prv82 + &4F
 .^LAB79      PHP									;save carry flag. Used to select capitalisation
             JSR convertAToTensUnitsChars								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
             LDA SFTODOTENSCHAR								;get 10s
-            CMP #&31								;check for '1'
+            CMP #'1'								;check for '1'
             BNE LAB89								;branch if not 1.
 .LAB84      LDX #&00								;if the number is in 10s, then always 'th'
             JMP LAB94
 			
 .LAB89      LDA SFTODOUNITSCHAR								;get 1s
-            CMP #&34								;check if '4'
+            CMP #'4'								;check if '4'
             BCS LAB84								;branch if >='4'
             AND #&0F								;mask lower 4 bits
             ASL A									;x2 - 1 becomes 2, 2 becomes 4, 3 becomes 6
