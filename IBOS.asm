@@ -143,6 +143,9 @@ transientDynamicSyntaxState = &AE ; 1 byte
 ; SFTODO: Named constants for b7 and b6
 transientDynamicSyntaxStateCountMask = %00111111
 
+transientDatePtrSFTODO1 = &A8 ; SFTODO!?
+transientDateSFTODO1 = &AA ; SFTODO!?
+
 vduStatus = &D0
 vduStatusShadow = &10
 negativeVduQueueSize = &026A
@@ -496,7 +499,7 @@ prvDateSFTODO1 = prvOswordBlockCopy + 1
 prvDateSFTODO2 = prvOswordBlockCopy + 2
 prvDateSFTODO3 = prvOswordBlockCopy + 3
 prvDateSFTODO4 = prvOswordBlockCopy + 4
-prvDateSFTODO5 = prvOswordBlockCopy + 5
+prvDateSFTODO5 = prvOswordBlockCopy + 5 ; SFTODO: I think SFTODO4+5 FORM A 16-BIT PTR, SO MAYBE GET RID OF 5 AND USE 4+1?
 prvDateSFTODO6 = prvOswordBlockCopy + 6
 prvDateSFTODO7 = prvOswordBlockCopy + 7
 ; SFTODO: I suspect the following locations are not arbitrary and have some relation to OSWORD &E; if so they may be best renamed to indicate this after, not sure until I've been through all the code
@@ -7400,10 +7403,10 @@ osfileBlock = L02EE
 ;&00A8 stores the address of buffer address
 ;this code saves the contents of A to buffer address + buffer address offset
 {
-.^LABE2      LDY L00AA								;read buffer pointer
-.^LABE4      STA (L00A8),Y								;save contents of A to Buffer Address+Y
+.^LABE2      LDY transientDateSFTODO1								;read buffer pointer
+.^LABE4      STA (transientDatePtrSFTODO1),Y								;save contents of A to Buffer Address+Y
             INY									;increase buffer pointer
-            STY L00AA								;save buffer pointer
+            STY transientDateSFTODO1								;save buffer pointer
             RTS
 }
 
@@ -7607,14 +7610,14 @@ osfileBlock = L02EE
 ;read buffer address from &8224 and store at &A8
 ;set buffer pointer to 0
 {
-.^LAD63      LDA prvOswordBlockCopy + 4								;get OSWORD X register (lookup table LSB)
-            STA L00A8								;and save
-            LDA prvOswordBlockCopy + 5								;get OSWORD Y register (lookup table MSB)
-            STA L00A9								;and save
+.^LAD63      LDA prvDateSFTODO4								;get OSWORD X register (lookup table LSB) SFTODO: not sure this comment is always true, e.g. we can be called via *TIME
+            STA transientDatePtrSFTODO1							;and save
+            LDA prvDateSFTODO5								;get OSWORD Y register (lookup table MSB) SFTODO: ditto
+            STA transientDatePtrSFTODO1 + 1								;and save
             LDA #&00
-            STA L00AA								;set buffer pointer to 0
+            STA transientDateSFTODO1							;set buffer pointer to 0
             JSR LAD7F
-            LDA #&0D
+            LDA #&0D ; SFTODO: vduCr?
             JSR LABE2								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDY L00AA								;get buffer pointer
             STY prvOswordBlockCopy + 1
