@@ -7686,17 +7686,17 @@ ENDIF
             AND #&F0
             CMP #&D0
             BEQ LADBE
-            STA L00AB
+            STA transientDateSFTODO1
             AND #&40
             BNE LADB9
-.LADA5      LDA L00AB
+.LADA5      LDA transientDateSFTODO1
             LDX #&2C
             AND #&20
             BNE LADAF
             LDX #&2E
 .LADAF      TXA
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-            LDA L00AB
+            LDA transientDateSFTODO1
             AND #&10
             BEQ LAD7E
 .LADB9      LDA #&20								;' '
