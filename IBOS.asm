@@ -7329,7 +7329,7 @@ unitsChar = prv82 + &4F
 ; X=1 => "0"   "5"   "25"	Left-aligned with no padding, 1 or 2 characters
 ; X=2 => " 0"  " 5"  "25"	Right-aligned in a two character field with no leading 0s
 ; X=3 => "  "  " 5"  "25"	Right-aligned in a two character field with no leading 0s, 0 shown as blank
-.^emitADecimalFormatted
+.^emitADecimalFormatted ; SFTODO: should have ToDateBuffer in name
 .LAB3C      JSR convertAToTensUnitsChars						;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
             LDY transientDateBufferIndex						;get buffer pointer
 .LAB41      CPX #&00
@@ -7620,7 +7620,7 @@ ENDIF
             LDA dateSeparators,X							;get character from look up table
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
     }
-; 3.
+; 3. Look at b3-5 of prvDateSFTODO3; if they're 0, jump to step 4. Otherwise emit the month with optional
 .SFTODOSTEP3MAYBE
     {
 	  LDA prvDateSFTODO3
@@ -7634,10 +7634,10 @@ ENDIF
             BCS LAD18
             LDX #&00
             CMP #&03
-            BEQ LAD0F
+            BEQ formatInX
             TAX
-.LAD0F      LDA prvDateMonth								;read month
-            JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+.formatInX  LDA prvDateMonth								;read month
+            JSR emitADecimalFormatted							;X controls formatting
             JMP LAD2A
 
 .LAD18      LDX #&03
