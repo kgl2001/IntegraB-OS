@@ -7406,23 +7406,26 @@ unitsChar = prv82 + &4F
 }
 
 {
-.LABC1		EQUS "am", "pm"
+.timeSuffixes
+	  EQUS "am", "pm"
 
-.^LABC5      TAX
+; SFTODO: This only has one caller, could it just be inlined?
+.^emitTimeSuffixForA
+.LABC5      TAX
             CPX #&00								;is it 00 hrs?
-            BNE LABCC								;branch if not 00 hrs
-            LDX #&18								;else set X=24 (hrs)
-.LABCC      LDA #&00
-            CPX #&0D								;carry set if X>=13 (hrs) ('pm')
+            BNE not0Hours								;branch if not 00 hrs
+            LDX #24 								;else set X=24 (hrs)
+.not0Hours  LDA #&00
+            CPX #13 								;carry set if X>=13 (hrs) ('pm')
             ADC #&00								;otherwise ('am')
             ASL A									;x2 - A=0 ('am') or A=2 ('pm')
             TAX
-            LDY transientDateBufferIndex								;get buffer pointer
-            LDA LABC1,X								;get 'a' or 'p'
-            STA (transientDateBufferPtr),Y								;save contents of A to Buffer Address+Y
+            LDY transientDateBufferIndex						;get buffer pointer
+            LDA timeSuffixes,X							;get 'a' or 'p'
+            STA (transientDateBufferPtr),Y						;save contents of A to Buffer Address+Y
             INY									;increase buffer pointer
-            LDA LABC1+1,X								;get 'm'
-            JMP emitAToDateBufferUsingY								;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
+            LDA timeSuffixes + 1,X							;get 'm' SFTODO: So we could just do LDA #'m' - and we could get rid of the "m"s in LABC1 and the ASL A above to double - in fact we might as well rewrite all this to just set A to 'a' or 'p' instead of 0 or 2 in order to use LABC1
+            JMP emitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
 }
 			
 ;&AA stores the buffer address offset
@@ -7501,7 +7504,7 @@ unitsChar = prv82 + &4F
             LDA #' '
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDA prvDateHours								;read hours
-            JSR LABC5								;write am / pm to 
+            JSR emitTimeSuffixForA								;write am / pm to
 .LAC6C      CLC
             RTS
 }
