@@ -6992,19 +6992,19 @@ osfileBlock = L02EE
             LDY #&63
             JSR checkABetweenXAndY
             LDA #&80
-            JSR LA8C9
+            JSR recordCheckResultForA
             LDA prvDateYear
             LDX #&00
             LDY #&63
             JSR checkABetweenXAndY
             LDA #&40
-            JSR LA8C9
+            JSR recordCheckResultForA
             LDA prvDateMonth
             LDX #&01
             LDY #&0C
             JSR checkABetweenXAndY
             LDA #&20
-            JSR LA8C9
+            JSR recordCheckResultForA
             PLP
             BCC LA880
             LDA prvDateMonth
@@ -7023,34 +7023,35 @@ osfileBlock = L02EE
             LDX #&01
             JSR checkABetweenXAndY
             LDA #&10
-            JSR LA8C9
+            JSR recordCheckResultForA
             LDA prvDateDayOfWeek
             LDX #&00
             LDY #&07
             JSR checkABetweenXAndY
             LDA #&08
-            JSR LA8C9
+            JSR recordCheckResultForA
             LDA prvDateHours
             LDX #&00
             LDY #&17
             JSR checkABetweenXAndY
             LDA #&04
-            JSR LA8C9
+            JSR recordCheckResultForA
             LDA prvDateMinutes
             LDX #&00
             LDY #&3B
             JSR checkABetweenXAndY
             LDA #&02
-            JSR LA8C9
+            JSR recordCheckResultForA
             LDA prvDateSeconds
             JSR checkABetweenXAndY
             LDA #&01
-.LA8C9      BCC LA8D2
+; Set the bits set in A in prvOswordBlock if C is set, clear them if C is clear.
+.recordCheckResultForA
+	  BCC recordOk ; SFTODO: could we just BCC rts if we knew prvOswordBlockCopy was 0 to start with? Do we re-use A values?
             ORA prvOswordBlockCopy
             STA prvOswordBlockCopy
             RTS
-
-.LA8D2      EOR #&FF
+.recordOk   EOR #&FF
             AND prvOswordBlockCopy
             STA prvOswordBlockCopy
             RTS
