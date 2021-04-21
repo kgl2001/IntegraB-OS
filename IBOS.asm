@@ -484,10 +484,14 @@ prvOswordBlockCopySize = 16
 prvOswordBlockOrigAddr = prv82 + &30 ; 2 bytes, used for address of original OSWORD &42/&43 parameter block
 
 ; SFTODO: EXPERIMENTAL LABELS USED BY DATE/CALENDAR CODE
-prvDateSFTODO1 = prvOswordBlockCopy
-prvDateSFTODO2 = prvOswordBlockCopy + 1
-prvDateSFTODO3 = prvOswordBlockCopy + 2
-prvDateSFTODO4 = prvOswordBlockCopy + 3
+prvDateSFTODO0 = prvOswordBlockCopy
+prvDateSFTODO1 = prvOswordBlockCopy + 1
+prvDateSFTODO2 = prvOswordBlockCopy + 2
+prvDateSFTODO3 = prvOswordBlockCopy + 3
+prvDateSFTODO4 = prvOswordBlockCopy + 4
+prvDateSFTODO5 = prvOswordBlockCopy + 5
+prvDateSFTODO6 = prvOswordBlockCopy + 6
+prvDateSFTODO7 = prvOswordBlockCopy + 7
 
 prvTmp = prv82 + &52 ; 1 byte, SFTODO: seems to be used as scratch space by some code without relying on value being preserved
 
@@ -6598,13 +6602,13 @@ osfileBlock = L02EE
 .initDateSFTODOS
 {
 .LA5EF      LDA #&05
-            STA prvDateSFTODO1
+            STA prvDateSFTODO0
             LDA #&84
-            STA prvDateSFTODO2
+            STA prvDateSFTODO1
             LDA #&44
-            STA prvDateSFTODO3
+            STA prvDateSFTODO2
             LDA #&EB
-            STA prvDateSFTODO4
+            STA prvDateSFTODO3
             RTS
 }
 
@@ -8551,10 +8555,10 @@ osfileBlock = L02EE
 
 ;*TIME Command
 {
-.^time       JSR PrvEn								;switch in private RAM
-            LDA (L00A8),Y							;read first character of command parameter
-            CMP #&3D								;check for '='
-            BEQ LB50C								;if '=' then set time, else read time
+.^time      JSR PrvEn								;switch in private RAM
+            LDA (transientCmdPtr),Y							;read first character of command parameter
+            CMP #'='								;check for '='
+            BEQ setTime								;if '=' then set time, else read time
             JSR initDateSFTODOS								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
             LDA #&FF
             STA prvOswordBlockCopy + 7							;store #&FF to address &8227
@@ -8569,7 +8573,7 @@ osfileBlock = L02EE
 .LB506      JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call								;
 			
-.LB50C      INY
+.setTime    INY
             JSR LB2B5
             BCC LB515
             JMP LB4CF								;Error with Bad time
