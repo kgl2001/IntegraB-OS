@@ -7519,9 +7519,7 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
             LDA prvDateSFTODO3
             BNE LACA0
             JMP LAD5A
-}
 
-{
 .^LACA0      LDA prvDateSFTODO1
             AND #&0F
             STA transientDateSFTODO1
