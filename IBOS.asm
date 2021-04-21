@@ -7260,7 +7260,7 @@ osfileBlock = L02EE
 		EQUS "december"
 	
 ;Calendar text offset (LAAE0)
-.calOffset	EQUB &00,&05,&0B,&11,&18,&21,&29,&2F
+.calOffsetTable	EQUB &00,&05,&0B,&11,&18,&21,&29,&2F
 		EQUB &37,&3E,&46,&4B,&50,&53,&57,&5B
 		EQUB &61,&6A,&71,&79,&81
 
@@ -7291,10 +7291,10 @@ calOffsetPtr = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to pri
 .capitalisationMaskSet
             TAX
             INX
-            LDA calOffset,X								;get calText pointer for next month / day
+            LDA calOffsetTable,X								;get calText pointer for next month / day
             STA endCalOffset								;save calText pointer for next month / day to &824E
             DEX
-            LDA calOffset,X								;get calText pointer for current month / day
+            LDA calOffsetTable,X								;get calText pointer for current month / day
             TAX									;move calText pointer for current month / day to X
             LDY transientDateBufferIndex						;get buffer pointer
             LDA calText,X								;get first letter
@@ -8232,9 +8232,9 @@ calOffsetPtr = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to pri
 			
 .LB22D      LDX #&00
 .LB22F      STX prv82+&50
-            LDA calOffset+1,X
+            LDA calOffsetTable+1,X
             STA L00AA
-            LDA calOffset,X
+            LDA calOffsetTable,X
             STA prv82+&4F
             TAX
 .LB23E      LDA (L00A8),Y
