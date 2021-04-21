@@ -7274,8 +7274,8 @@ osfileBlock = L02EE
 ;&8250=calOffset pointer
 ;On Month Entry:		Carry Set,   A=01-12 (Jan-Dec)
 ;On Day of Week Entry:	Carry Clear, A=01-07 (Sun-Sat)
-; SFTODO: X on entry is maximum number of characters to print?
-; SFTODO: Y has some significance on entry
+; SFTODO: X on entry is maximum number of characters to print? (0 means 256, i.e. effectively unlimited)
+; SFTODO: Y has some significance on entry (Y=0 => capitalise first letter, otherwise all lower case)
 .emitDayOrMonthName
 {
 endCalOffset = prv82 + &4E
@@ -7531,6 +7531,12 @@ ENDIF
 .LAC6E		EQUS " ", "/", ".", "-"
 }
 
+; SFTODO WIP COMMENTS
+; On entry prvDateSFTODO2 is &ab
+;     a  = 0 => LACBB
+;     a != 0:
+;         Y=(!a) & 1 - this controls capitalisation in emit day name, so b0 of a controls that
+;         emit day name using (roughly) a characters max
 {
 .^LAC72		LDA prvDateSFTODO2
 	; SFTODO: Use lsrA4
@@ -7556,7 +7562,7 @@ ENDIF
             JSR emitDayOrMonthName							;X is maximum number of characters to emit
             LDA prvDateSFTODO3
             BNE LACA0
-            JMP LAD5A
+            JMP LAD5Arts
 
 .LACA0      LDA prvDateSFTODO1
             AND #&0F
@@ -7592,7 +7598,7 @@ ENDIF
             JSR emitOrdinalSuffix							;Convert to text, then save to buffer XY?Y, increment buffer address offset.
 .LACE5      LDA prvDateSFTODO3
             AND #&F8
-            BEQ LAD5A
+            BEQ LAD5Arts
             LDA prvDateSFTODO1
             AND #&03								;mask lower 3 bits
             TAX
@@ -7628,7 +7634,7 @@ ENDIF
             JSR emitDayOrMonthName								;Save Month text to buffer XY?xxx
 .^LAD2A      LDA prvDateSFTODO3
             AND #&C0
-            BEQ LAD5A
+            BEQ LAD5Arts
             LDA prvDateSFTODO1
             AND #&03								;mask lower 3 bits
             TAX
@@ -7636,7 +7642,7 @@ ENDIF
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 .^LAD3D      LDA prvDateSFTODO3
             AND #&C0
-            BEQ LAD5A
+            BEQ LAD5Arts
             CMP #&80
             BCC LAD52
             BEQ LAD5B
@@ -7647,7 +7653,7 @@ ENDIF
             LDA prvDateYear								;read year
             JMP emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 			
-.^LAD5A      RTS
+.^LAD5Arts      RTS
 
 .LAD5B      LDA #'''								;'''
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
