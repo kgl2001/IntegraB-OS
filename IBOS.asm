@@ -6987,19 +6987,19 @@ osfileBlock = L02EE
             BCC LA83C
 .^LA83B      SEC
 .LA83C      PHP
-            LDA prvOswordBlockCopy + 8
+            LDA prvDateCentury
             LDX #&00
             LDY #&63
             JSR LA8DB
             LDA #&80
             JSR LA8C9
-            LDA prvOswordBlockCopy + 9
+            LDA prvDateYear
             LDX #&00
             LDY #&63
             JSR LA8DB
             LDA #&40
             JSR LA8C9
-            LDA prvOswordBlockCopy + 10
+            LDA prvDateMonth
             LDX #&01
             LDY #&0C
             JSR LA8DB
@@ -7007,7 +7007,7 @@ osfileBlock = L02EE
             JSR LA8C9
             PLP
             BCC LA880
-            LDA prvOswordBlockCopy + 10
+            LDA prvDateMonth
             CMP #&FF
             BNE LA878
             LDY #&1F
@@ -7016,7 +7016,7 @@ osfileBlock = L02EE
             BNE LA880
             LDY #&1D
             BNE LA887
-.LA880      LDY prvOswordBlockCopy + 10
+.LA880      LDY prvDateMonth
             JSR LA7DF
             TAY
 .LA887      LDA prvOswordBlockCopy + 11
