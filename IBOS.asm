@@ -7755,40 +7755,50 @@ ENDIF
 .LAD7F      BIT prvDateSFTODO1
             BMI LAD8D								;do the reverse of below
             JSR emitTimeToDateBuffer
-            JSR LAD96
+            JSR emitSeparatorToDateBuffer
             JMP emitDateToDateBuffer
 			
 .LAD8D      JSR emitDateToDateBuffer
-            JSR LAD96
+            JSR emitSeparatorToDateBuffer
             JMP emitTimeToDateBuffer
 }
 
+; SFTODO WIP COMMENT
+; prvDateSFTODO1:
+; b4..7: %1101 => emit just " @ " (i.e. usual b4 set behaviour, but ignoring the other bits) and stop
+;        %x1xx => emit just " " and stop
+;        %xx1x => emit ","
+;        %xx0x => emit "."
+;        %xxx0 => stop
+;        %xxx1 => emit " " and stop
+.emitSeparatorToDateBuffer
 {
-.^LAD96      LDA prvDateSFTODO1
+.LAD96      LDA prvDateSFTODO1
             AND #&F0
             CMP #&D0
-            BEQ LADBE
+            BEQ emitSpaceAtSpace
             STA transientDateSFTODO1
             AND #&40
-            BNE LADB9
+            BNE emitSpace
 .LADA5      LDA transientDateSFTODO1
             LDX #','
             AND #&20
-            BNE LADAF
+            BNE separatorInX
             LDX #'.'
-.LADAF      TXA
+.separatorInX
+            TXA
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDA transientDateSFTODO1
             AND #&10
             BEQ LAD7Erts
-.LADB9      LDA #' '
+.emitSpace      LDA #' '
             JMP emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 			
-.LADBE      LDA #' '
+.emitSpaceAtSpace      LDA #' '
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDA #'@'
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-            JMP LADB9
+            JMP emitSpace
 }
 
 {
