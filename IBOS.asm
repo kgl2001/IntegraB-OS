@@ -8438,14 +8438,14 @@ ENDIF
 
 {
 .^LB2B5      JSR convertIntegerDefaultDecimal
-            BCS LB2F3
+            BCS parseError
             STA prvOswordBlockCopy + 13
             LDA (transientCmdPtr),Y
             INY
             CMP #':'
-            BNE LB2F3
+            BNE parseError
             JSR convertIntegerDefaultDecimal
-            BCS LB2F3
+            BCS parseError
             STA prvOswordBlockCopy + 14
             LDA (transientCmdPtr),Y
             CMP #':'
@@ -8456,7 +8456,7 @@ ENDIF
             BEQ LB2E0
 .LB2DA      INY
             JSR convertIntegerDefaultDecimal
-            BCS LB2F3
+            BCS parseError
 .LB2E0      STA prvOswordBlockCopy + 15
             TYA
             PHA
@@ -8465,11 +8465,11 @@ ENDIF
             TAY
             LDA prvOswordBlockCopy
             AND #&07
-            BNE LB2F3
+            BNE parseError
             CLC
             RTS
 			
-.LB2F3      SEC
+.parseError SEC
             RTS
 }
 
