@@ -7326,7 +7326,8 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
 {
 SFTODOTENSCHAR = prv82 + &4E
 SFTODOUNITSCHAR = prv82 + &4F
-.^LAB3C      JSR convertAToTensUnitsChars								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
+.^emitADecimalFormatted
+.LAB3C      JSR convertAToTensUnitsChars								;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
             LDY transientDateBufferIndex								;get buffer pointer
 .LAB41      CPX #&00
             BEQ printTensChar
@@ -7460,7 +7461,7 @@ SFTODOUNITSCHAR = prv82 + &4F
             SBC #&0C								;if so, subtract 12
             BCS LAC1F
 .LAC1D      LDA #&0C								;get '0C'
-.LAC1F      JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+.LAC1F      JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             LDA #':'								;':'
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 .LAC27      LDX #&00
@@ -7471,7 +7472,7 @@ SFTODOUNITSCHAR = prv82 + &4F
             BEQ LAC34								;branch if =1
             TAX
 .LAC34      LDA prvOswordBlockCopy + 14								;read Minutes
-            JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+            JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             LDA L00AB
             CMP #&08
             BCC LAC48
@@ -7483,7 +7484,7 @@ SFTODOUNITSCHAR = prv82 + &4F
 .LAC4A      JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDX #&00
             LDA prvOswordBlockCopy + 15								;read seconds
-            JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+            JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 .LAC55      LDA L00AB
             CMP #&04
             BCC LAC6C
@@ -7552,7 +7553,7 @@ SFTODOUNITSCHAR = prv82 + &4F
             BEQ LACD0
             TAX
 .LACD0      LDA prvDateDayOfMonth							;read Day of Month
-            JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+            JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             LDA transientDateSFTODO1
             CMP #&04
             BCC LACE5
@@ -7582,7 +7583,7 @@ SFTODOUNITSCHAR = prv82 + &4F
             BEQ LAD0F
             TAX
 .LAD0F      LDA prvDateMonth								;read month
-            JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+            JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             JMP LAD2A
 }
 
@@ -7612,10 +7613,10 @@ SFTODOUNITSCHAR = prv82 + &4F
             BEQ LAD5B
             LDX #&00
             LDA prvDateSFTODO8								;read century
-            JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+            JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 .LAD52      LDX #&00
             LDA prvDateYear								;read year
-            JMP LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+            JMP emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 			
 .^LAD5A      RTS
 
@@ -8720,7 +8721,7 @@ SFTODOUNITSCHAR = prv82 + &4F
             LDX prv82+&4B
             LDA prv80+&C8,X
             LDX #&03
-            JSR LAB3C								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+            JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             INC prv82+&4B
             INC prv82+&4C
             LDA prv82+&4C
