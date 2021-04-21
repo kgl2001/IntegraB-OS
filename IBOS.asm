@@ -7546,6 +7546,7 @@ ENDIF
 {
 .^LAC72
 ; SFTODO: Experimentally using nested scopes here to try to make things clearer, by making it more obvious that some labels have restricted scope - not sure if this is really helpful, let's see
+; SFTODO: Chopping the individual blocks up into macros might make things clearer?
 ; 1. Optionally emit the day of the week, optionally truncated and/or capitalised, and optionally followed by some punctuation. prvDataSFTODO2's high nybble controls most of those options, although prvDataSFTODO3=0 will prevent punctuation and cause an early return.
     {
 	  LDA prvDateSFTODO2
@@ -7620,7 +7621,7 @@ ENDIF
             LDA dateSeparators,X							;get character from look up table
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
     }
-; 3. Look at b3-5 of prvDateSFTODO3; if they're 0, jump to step 4. Otherwise emit the month with optional
+; 3. Look at b3-5 of prvDateSFTODO3; if they're 0, jump to step 4. Otherwise emit the month with optional formatting. Then stop if b5-6 of prvDateSFTODO3 are 0. Otherwise emit a dateSeparator based on low two bits of prvDateSFTODO1.
 .SFTODOSTEP3MAYBE
     {
 	  LDA prvDateSFTODO3
@@ -7659,6 +7660,7 @@ ENDIF
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
     }
 .SFTODOSTEP4MAYBE
+    {
 	  LDA prvDateSFTODO3
             AND #&C0
             BEQ LAD5Arts
@@ -7672,11 +7674,12 @@ ENDIF
             LDA prvDateYear								;read year
             JMP emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 			
-.LAD5Arts      RTS
+.^LAD5Arts      RTS
 
 .LAD5B      LDA #'''								;'''
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             JMP LAD52
+    }
 }
 			
 
