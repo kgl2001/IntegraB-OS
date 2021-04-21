@@ -8561,12 +8561,12 @@ osfileBlock = L02EE
             BEQ setTime								;if '=' then set time, else read time
             JSR initDateSFTODOS								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
             LDA #&FF
-            STA prvOswordBlockCopy + 7							;store #&FF to address &8227
-            STA prvOswordBlockCopy + 6							;store #&FF to address &8226
+            STA prvDateSFTODO7							;store #&FF to address &8227
+            STA prvDateSFTODO6							;store #&FF to address &8226
             LDA #&00
-            STA prvOswordBlockCopy + 4							;store #&00 to address &8224
+            STA prvDateSFTODO4							;store #&00 to address &8224
             LDA #&80
-            STA prvOswordBlockCopy + 5							;store #&80 to address &8225
+            STA prvDateSFTODO5							;store #&80 to address &8225
             JSR LA769								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
             JSR LAD63								;format text for output to screen?
             JSR LA5DE								;output TIME & DATE data from address &8000 to screen
@@ -8589,9 +8589,9 @@ osfileBlock = L02EE
             CMP #'='								;check for '='
             BEQ setDate								;if '=' then set date, else read date
             JSR initDateSFTODOS								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
-            LDA prvOswordBlockCopy + 2
+            LDA prvDateSFTODO2
             AND #&F0
-            STA prvOswordBlockCopy + 2							;store #&40 to address &8222
+            STA prvDateSFTODO2							;store #&40 to address &8222
             JSR LB133
             BCC LB53C
             BVS LB539
@@ -8600,9 +8600,9 @@ osfileBlock = L02EE
 .LB539      JMP LB4BF								;Error with Bad Date
 
 .LB53C      LDA #&00
-            STA prvOswordBlockCopy + 4							;store #&00 to address &8224
+            STA prvDateSFTODO4							;store #&00 to address &8224
             LDA #&80
-            STA prvOswordBlockCopy + 5							;store #&80 to address &8225
+            STA prvDateSFTODO5							;store #&80 to address &8225
             JSR LAD63								;format text for output to screen?
             JSR LA5DE								;output DATE data from address &8000 to screen
 .LB54C      JSR PrvDis								;switch out private RAM
@@ -8628,17 +8628,17 @@ osfileBlock = L02EE
 .LB56E      JMP LB4BF
 
 .LB571      LDA #&C8
-            STA prvOswordBlockCopy + 4
+            STA prvDateSFTODO4
             LDA #&80
-            STA prvOswordBlockCopy + 5
+            STA prvDateSFTODO5
             LDA #&05
             STA prvOswordBlockCopy
             LDA #&40
-            STA prvOswordBlockCopy + 1
+            STA prvDateSFTODO1
             LDA #&00
-            STA prvOswordBlockCopy + 2
+            STA prvDateSFTODO2
             LDA #&F8
-            STA prvOswordBlockCopy + 3
+            STA prvDateSFTODO3
             JSR LAD63
             SEC
             LDA #&17
