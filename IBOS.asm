@@ -5284,7 +5284,7 @@ SFTODOTmp = L00AD ; SFTODO: Use a "proper" label on RHS
             STA romselCopy
             STA romsel
             LDY #&0F
-.L9E62      LDA variableMainRamSubroutine + srData - writeRomHeaderTemplate,Y
+.L9E62      LDA variableMainRamSubroutine + srDataHeader - writeRomHeaderTemplate,Y
             STA &8000,Y    
             DEY
             BPL L9E62
@@ -5294,7 +5294,8 @@ SFTODOTmp = L00AD ; SFTODO: Use a "proper" label on RHS
             RTS
 
 ;ROM Header
-.srData	  EQUB &60
+.srDataHeader
+	  EQUB &60
 .^writeRomHeaderTemplateSFTODO ; SFTODO: Why do we modify this byte of the header?
             EQUB     &00,&00
 	  EQUB &60,&00,&00
