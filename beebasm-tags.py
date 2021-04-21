@@ -112,15 +112,15 @@ def vim_tag(tag):
 
 def emacs_tag(line_number, tag, address, tag_field):
     if tag_field == 'F':
-        return ''
+        return ('', '')
     assert address is not None
     assert address[0] == '^'
     assert address[-1] == '$'
     tag_definition = address[1:-1]
     i = tag_definition.find(tag)
     assert i != -1
-    tag_definition = tag_definition[0:i+len(tag)]
-    return '%s\x7f%s\x01%d,%d\n' % (tag_definition, tag, line_number, i)
+    tag_definition = tag_definition[0:i+len(tag)+1] # +1 to try to avoid problems where one tag is an initial substring of another
+    return (tag, '%s\x7f%s\x01%d,%d\n' % (tag_definition, tag, line_number, i))
 
 
 def process_file(filename):
@@ -182,9 +182,13 @@ if not args.e:
     for line in sorted(vim_tag(tag) for tag in tags):
         tag_file.write(line + '\n')
 else:
-    file_tags = collections.defaultdict(str)
+    file_key_tags = collections.defaultdict(list)
     for filename, line_number, tag, address, tag_field in tags:
-        file_tags[filename] += emacs_tag(line_number, tag, address, tag_field)
+        file_key_tags[filename].append(emacs_tag(line_number, tag, address, tag_field))
+    file_tags = {}
+    # Sorting probably doesn't matter for emacs tags, but I'll leave it in now I've implemented it.
+    for filename, key_tag_list in file_key_tags.items():
+        file_tags[filename] = ''.join(x[1] for x in sorted(key_tag_list))
     for filename, tags in file_tags.items():
         tag_file.write('\x0c\n%s,%d\n%s' % (filename, len(tags), tags))
 
