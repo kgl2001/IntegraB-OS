@@ -525,6 +525,9 @@ prv2DateYear = prv82 + &44
 prv2DateMonth = prv82 + &45
 prv2DateDayOfMonth = prv82 + &46
 prv2DateDayOfWeek = prv82 + &47
+prvA = prv82 + &4A ; SFTODO: tweak name!
+prvB = prv82 + &4B ; SFTODO; tweak name!
+prvResult = prv82 + &4C ; 2 bytes SFTODO: maybe tweak name
 prv3DateCentury = prv82 + &4E
 prv3DateYear = prv82 + &4F
 prv3DateMonth = prv82 + &50
@@ -6654,21 +6657,24 @@ osfileBlock = L02EE
             RTS
 }
 
+; Multiply 8-bit values prvA and prvB to give a 16-bit result at prvResult.
+.mul8
 {
-.^LA604      LDA #&00
-            STA prv82+&4D
+.LA604      LDA #&00
+            STA prvResult + 1
             LDX #&08
-.LA60B      ASL A
-            ROL prv82+&4D
-            ASL prv82+&4B
-            BCC LA61D
+.loop       ASL A
+            ROL prvResult + 1
+            ASL prvB
+            BCC noAdd
             CLC
-            ADC prv82+&4A
-            BCC LA61D
-            INC prv82+&4D
-.LA61D      DEX
-            BNE LA60B
-            STA prv82+&4C
+            ADC prvA
+            BCC noCarry
+            INC prvResult + 1
+.noCarry
+.noAdd      DEX
+            BNE loop
+            STA prvResult
             RTS
 }
 
@@ -7145,7 +7151,7 @@ osfileBlock = L02EE
             STA prv82+&4A
             LDA #&82
             STA prv82+&4B
-            JSR LA604
+            JSR mul8
             ASL prv82+&4C
             ROL prv82+&4D
             SEC
@@ -7260,7 +7266,7 @@ osfileBlock = L02EE
             STA prv82+&4B
             LDA prv82+&4D
             PHA
-            JSR LA604
+            JSR mul8
             PLA
             CLC
             ADC prv82+&4C
@@ -7851,7 +7857,7 @@ ENDIF
             STA prv82+&4A
             LDA #&6D
             STA prv82+&4B
-            JSR LA604
+            JSR mul8
             CLC
             PLA
             PHA
