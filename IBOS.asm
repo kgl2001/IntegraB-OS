@@ -6684,7 +6684,7 @@ osfileBlock = L02EE
             STA prvResult + 1
             LDA prvB
             CMP prvResult
-            BCS LA646
+            BCS rts ; SFTODO: branch if prvB>=prvResult
 .LA634      ROL prvResult + 1
             ROL A
             CMP prvResult
@@ -6693,7 +6693,7 @@ osfileBlock = L02EE
 .LA640      DEX
             BNE LA634
             ROL prvResult + 1
-.LA646      RTS
+.rts        RTS
 }
 
 {
