@@ -8410,30 +8410,32 @@ ENDIF
             BEQ plus
             CMP #'-'
             BNE notMinus
+	  ; SFTODO: Similar chunk of code here and at .plus, could we factor out?
             INY
             JSR convertIntegerDefaultDecimal
-            BCS LB20B
+            BCS LB20B ; SFTODO: Branch if parsing failed
             CMP #&00
             BNE LB20D
 .LB20B      LDA #&01
-.LB20D      CMP #&41
+.LB20D      CMP #63+2 ; SFTODO: user guide says 63 is max value, not sure why +2 instead of +1 (+1 make sense as we bcs == branch-if-greater-or-equal)
             BCS LB229
-            ADC #&5A
+            ADC #&5A ; SFTODO!?
             CLC
             RTS
 			
 .plus       INY
             JSR convertIntegerDefaultDecimal
-            BCS LB21F
+            BCS LB21F ; SFTODO: Branch if parsing failed
             CMP #&00
             BNE LB221
 .LB21F      LDA #&01
-.LB221      CMP #&65
+.LB221      CMP #99+2 ; SFTODO: user gide says 99 is max value, as above not sure why +2 instead of +1
             BCS LB229
-            ADC #&9A
+            ADC #&9A ; SFTODO!?
             CLC
             RTS
-			
+
+; SFTODO: THIS LABEL IS PROBABLY "PARSING FOR THIS FRAGMENT FAILED"
 .LB229      LDA #&FF
             SEC
             RTS
