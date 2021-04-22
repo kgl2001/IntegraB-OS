@@ -1632,7 +1632,7 @@ padFlag = &B1 ; b7 clear iff "0" should be converted into "pad"
 ; Returns with V clear if there is no number to parse; C is not altered.
 ; Otherwise C is set if and only if a number is parsed successfully.
 ; If we parse successfully, the integer is at &B0 (SFTODO: do we use this?
-; probably) and the low byte is in A.
+; probably) and the low byte is in A. SFTODO: Introduce named constants for &B0 in this use
 ; If we fail to parse successfully, we beep and return with A=0.
 ; SFTODO: I guess it's an IBOS thing, but that beep seems a bit odd - I think
 ; this is used for commands implemented on B+/Master like SRLOAD and I don't
@@ -6826,7 +6826,7 @@ osfileBlock = L02EE
             INX:ASSERT rtcRegMonth + 1 == rtcRegYear					;Select 'Year' register on RTC: Register &09
 .LA729      JSR rdRTCRAM								;Read data from RTC memory location X into A
             STA prvDateYear								;Store 'Year' at &8229
-            JMP LB1E4
+            JMP defaultPrvDateCentury
 }
 
 ;Read 'Sec Alarm', 'Min Alarm' & 'Hr Alarm' from RTC and Store in Private RAM (&82xx)
@@ -8380,19 +8380,20 @@ ENDIF
 }
 
 {
-.^LB1CA      LDA L00B0
-            STA prv82+&4A
-            LDA L00B1
-            STA prv82+&4B
-            LDA #&64
-            STA prv82+&4C
+.^LB1CA      LDA L00B0 ; SFTODO: low byte of parsed year from command line
+            STA prvA
+            LDA L00B1 ; SFTODO: high byte of parsed year from command line
+            STA prvB
+            LDA #100
+            STA prvC
             JSR SFTODOPSEUDODIV
-            STA prvOswordBlockCopy + 9
-            LDA prv82+&4D
-            BNE LB1E9
-.^LB1E4      LDX #userRegCentury
+            STA prvDateYear
+            LDA prvD
+            BNE centuryInA
+.^defaultPrvDateCentury
+.LB1E4     LDX #userRegCentury
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-.LB1E9      STA prvOswordBlockCopy + 8
+.centuryInA STA prvDateCentury
             RTS
 }
 
