@@ -8008,17 +8008,17 @@ ENDIF
             INC prvDateYear
             LDA prvDateYear
             CMP #&64
-            BCC LAF3F
+            BCC sevClcRts
             LDA #&00
             STA prvDateYear
 .prvYearIsSet ; SFTODO?
-            LDA #&10
+            LDA #&10 ; SFTODO: test bit indicating prvCenture is &FF
             BIT prv82+&42
-            BEQ LAF3F
+            BEQ sevClcRts
             INC prvOswordBlockCopy + 8
             LDA prvOswordBlockCopy + 8
             CMP #&64
-            BCC LAF3F
+            BCC sevClcRts
             LDA #&00
             STA prvOswordBlockCopy + 8
             SEC
@@ -8028,7 +8028,7 @@ ENDIF
             CLC
             RTS
 			
-.^LAF3F      BIT rts
+.^sevClcRts BIT rts
             CLC
 .rts        RTS
 }
@@ -8048,13 +8048,13 @@ ENDIF
             DEC prvOswordBlockCopy + 9
             LDA prvOswordBlockCopy + 9
             CMP #&FF
-            BNE LAF3F
+            BNE sevClcRts
             LDA #&63
             STA prvOswordBlockCopy + 9
             DEC prvOswordBlockCopy + 8
             LDA prvOswordBlockCopy + 8
             CMP #&FF
-            BNE LAF3F
+            BNE sevClcRts
             SEC
             RTS
 }
