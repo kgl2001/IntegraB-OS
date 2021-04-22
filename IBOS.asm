@@ -8254,7 +8254,9 @@ ENDIF
 
 ;SFTODOWIP
 {
-.^LB133      LDX #&04
+.^LB133
+	  ; Set the prvDate* addresses relating to date (as opposed to time) to &FF.
+	  LDX #&04
             LDA #&FF
 .LB137      STA prvOswordBlockCopy + 8,X
             DEX
@@ -8300,6 +8302,7 @@ ENDIF
 			
 .LB194      JSR LB1CA
 .LB197      JSR validateDateTimeAssumingLeapYear
+	  ; Stash the date validation result (shifted into the low nybble) on the stack.
             LDA prvOswordBlockCopy
 	  ; SFTODO: Use lsrA4
             LSR A
@@ -8307,14 +8310,15 @@ ENDIF
             LSR A
             LSR A
             PHA
+	  ; Set prvOswordBlockCopy so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is &FF.
             LDX #&00
             STX prvOswordBlockCopy
-.LB1A7      LDA prvOswordBlockCopy + 8,X
-            CMP #&FF
-            ROL prvOswordBlockCopy
+.loop       LDA prvOswordBlockCopy + 8,X
+            CMP #&FF								;set carry iff A=&FF
+            ROL prvOswordBlockCopy							;rotate carry into prvOswordBlockCopy
             INX
             CPX #&04
-            BNE LB1A7
+            BNE loop
             LDA prvOswordBlockCopy
             EOR #&0F
             STA prvOswordBlockCopy
