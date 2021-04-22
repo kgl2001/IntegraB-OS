@@ -8276,7 +8276,7 @@ ENDIF
 .LB10A      DEX
             BNE LB102
             JSR SFTODOPROBCALCULATEDAYOFWEEK
-            STA prvOswordBlockCopy + 12
+            STA prvDateDayOfWeek
             JMP LB07B
 			
 .LB116      SEC
@@ -8289,7 +8289,7 @@ ENDIF
 .LB122      DEX
             BNE LB11A
             JSR SFTODOPROBCALCULATEDAYOFWEEK
-            STA prvOswordBlockCopy + 12
+            STA prvDateDayOfWeek
             JMP LB07B
 			
 .^secSevRts      SEC
