@@ -7174,9 +7174,9 @@ osfileBlock = L02EE
             LSR A
             CLC
             ADC prv82+&4A
-            ASL prv82+&4E
+            ASL prv3DateCentury
             SEC
-            SBC prv82+&4E
+            SBC prv3DateCentury
             PHP
             BCS LA9A5
             SEC
