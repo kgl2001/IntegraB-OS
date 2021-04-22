@@ -525,6 +525,8 @@ prv2DateYear = prv82 + &44
 prv2DateMonth = prv82 + &45
 prv2DateDayOfMonth = prv82 + &46
 prv2DateDayOfWeek = prv82 + &47
+prv3DateCentury = prv82 + &4E
+prv3DateYear = prv82 + &4F
 
 prvTmp = prv82 + &52 ; 1 byte, SFTODO: seems to be used as scratch space by some code without relying on value being preserved
 
@@ -7113,9 +7115,9 @@ osfileBlock = L02EE
 .^LA908      SEC
 .LA909      PHP
             LDA prvDateYear
-            STA prv82+&4F
+            STA prv3DateYear
             LDA prvDateCentury
-            STA prv82+&4E
+            STA prv3DateCentury
             SEC
             LDA prvDateMonth
             SBC #&02
