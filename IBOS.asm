@@ -527,6 +527,7 @@ prv2DateDayOfMonth = prv82 + &46
 prv2DateDayOfWeek = prv82 + &47
 prv3DateCentury = prv82 + &4E
 prv3DateYear = prv82 + &4F
+prv3DateMonth = prv82 + &50
 
 prvTmp = prv82 + &52 ; 1 byte, SFTODO: seems to be used as scratch space by some code without relying on value being preserved
 
@@ -7121,14 +7122,14 @@ osfileBlock = L02EE
             SEC
             LDA prvDateMonth
             SBC #&02
-            STA prv82+&50
+            STA prv3DateMonth
             BMI LA925
             CMP #&01
             BCS LA947
 .LA925      CLC
             ADC #&0C
-            STA prv82+&50
-            DEC prv82+&4F
+            STA prv3DateMonth
+            DEC prv3DateYear
             BPL LA947
             CLC
             LDA prv82+&4F
