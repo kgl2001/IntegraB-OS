@@ -6902,24 +6902,26 @@ osfileBlock = L02EE
             ORA #&08
             ORA L00AE
             JSR wrRTCRAM								;Write data from A to RTC memory location X
-.LA7C0      CLC
+.clcRts      CLC
             RTS
 
 .LA7C2      LDX #&0B								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&08
-            BNE LA7C0
+            BNE clcRts
             SEC
             RTS
 
-.^LA7CD      LDA prvDateYear
-            CMP #&00
-            BNE LA7D7
+; Return with C set iff prvDate{Century,Year} is a leap year.
+.^testLeapYear
+.LA7CD      LDA prvDateYear
+            CMP #&00 ; SFTODO: redundant
+            BNE notYear0
             LDA prvDateCentury
-.LA7D7      LSR A
-            BCS LA7C0
+.notYear0   LSR A									;Test divisibility of A by 4
+            BCS clcRts
             LSR A
-            BCS LA7C0
+            BCS clcRts
             SEC
             RTS
 }
@@ -6931,7 +6933,7 @@ osfileBlock = L02EE
             CPY #2									;February
             BNE rts
             PHA
-            JSR LA7CD
+            JSR testLeapYear
             PLA
             BCC rts
             LDA #29
@@ -7877,7 +7879,7 @@ ENDIF
             INC prvOswordBlockCopy + 8
 .LAE4D      LDA #&00
             STA prvOswordBlockCopy + 9
-.LAE52      JSR LA7CD
+.LAE52      JSR testLeapYear
             LDA #&6D
             ADC #&00
             STA prv82+&4A
