@@ -7907,8 +7907,8 @@ ENDIF
 }
 
 {
-.^LAE2C      LDA #&13
-            STA prvOswordBlockCopy + 8
+.^LAE2C     LDA #19
+            STA prvDateCentury
             SEC
             LDA prvOswordBlockCopy + 4
             SBC #&AC
@@ -7919,9 +7919,9 @@ ENDIF
             STA prvOswordBlockCopy + 5
             LDA prv82+&4A
             STA prvOswordBlockCopy + 4
-            INC prvOswordBlockCopy + 8
+            INC prvDateCentury
 .LAE4D      LDA #&00
-            STA prvOswordBlockCopy + 9
+            STA prvDateYear
 .LAE52      JSR testLeapYear
             LDA #&6D
             ADC #&00
@@ -7938,12 +7938,12 @@ ENDIF
             STA prvOswordBlockCopy + 5
             LDA prv82+&4A
             STA prvOswordBlockCopy + 4
-            INC prvOswordBlockCopy + 9
+            INC prvDateYear
             JMP LAE52
 			
 .LAE82      LDA #&01
-            STA prvOswordBlockCopy + 10
-.LAE87      LDY prvOswordBlockCopy + 10
+            STA prvDateMonth
+.LAE87      LDY prvDateMonth
             JSR getDaysInMonthY
             STA prv82+&4A
             SEC
@@ -7956,12 +7956,12 @@ ENDIF
             STA prvOswordBlockCopy + 5
             LDA prv82+&4A
             STA prvOswordBlockCopy + 4
-            INC prvOswordBlockCopy + 10
+            INC prvDateMonth
             JMP LAE87
 			
 .LAEB0      LDX prvOswordBlockCopy + 4
             INX
-            STX prvOswordBlockCopy + 11
+            STX prvDateDayOfMonth
             JMP LA905
 }
 
@@ -7974,10 +7974,10 @@ ENDIF
             JSR getDaysInMonthY
             CMP prvDateDayOfMonth
             BCS LAF3C
-            STA prv82+&4E
+            STA prv3DateCentury
             SEC
             LDA prvDateDayOfMonth
-            SBC prv82+&4E
+            SBC prv3DateCentury
             STA prvDateDayOfMonth
             JMP LAEF8
 			
