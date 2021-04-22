@@ -8089,9 +8089,9 @@ ENDIF
 ; SFTODOWIP
 .LAFAA      JSR getRtcDayMonthYear
             LDA prv2Flags
-            AND #&1E
+            AND #&1E ; test all bits of prv2Flags except DayOfWeek
             CMP #&1E
-            BEQ LAFEC
+            BEQ SFTODOPROBOK
             LDA prv2Flags
             STA prv82+&48
             LDA #&1E
@@ -8115,6 +8115,7 @@ ENDIF
 			
 .LAFE6      LDA prv82+&48
             STA prv2Flags
+.SFTODOPROBOK
 .LAFEC      JSR SFTODOPROBCALCULATEDAYOFWEEK
             STA prvDateDayOfWeek
             LDA #&00
