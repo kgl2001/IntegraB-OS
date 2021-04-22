@@ -7013,7 +7013,7 @@ osfileBlock = L02EE
 {
 ; SFTODO: Both of these return with bits set in prvOswordBlockCopy for errors - does anything actually check this except to see if it's 0/non-0?
 ; SFTODO: This entry point validates days in February based on prvDate{Century,Year}
-; SFTODO: Bits in return A are set to indicate errors: SFTODO: maybe have named constants for these bits
+; SFTODO: Bits in prvOswordBlockCopy are set to indicate errors: SFTODO: maybe have named constants for these bits
 ;    b7: century
 ;    b6: year
 ;    b5: month
