@@ -8308,7 +8308,7 @@ ENDIF
             BEQ LB197
             JSR LB1ED
             BCS secSevRts
-            STA prvOswordBlockCopy + 12
+            STA prvDateDayOfWeek
             CMP #&FF
             BEQ LB15C
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
@@ -8319,7 +8319,7 @@ ENDIF
 .LB15C      JSR convertIntegerDefaultDecimal
             BCC LB163
             LDA #&FF
-.LB163      STA prvOswordBlockCopy + 11
+.LB163      STA prvDateDayOfMonth
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'/'
@@ -8328,7 +8328,7 @@ ENDIF
             JSR convertIntegerDefaultDecimal
             BCC LB177
             LDA #&FF
-.LB177      STA prvOswordBlockCopy + 10
+.LB177      STA prvDateMonth
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'/'
@@ -8337,12 +8337,14 @@ ENDIF
             JSR convertIntegerDefaultDecimal
             BCC LB194
             LDA #&FF
-            STA prvOswordBlockCopy + 9
-            STA prvOswordBlockCopy + 8
+            STA prvDateYear
+            STA prvDateCentury
             JMP LB197
 			
 .LB194      JSR LB1CA
-.LB197      JSR validateDateTimeAssumingLeapYear
+.LB197
+  	  ; SFTODO: I am kind of guessing that at this point the command argument has been parsed and anything "provided" has been filled in over the &FF defaults we put in place at the start. So if we're doing a simple "*DATE", *everything* (date-ish, not time-ish) will be &FF.
+	  JSR validateDateTimeAssumingLeapYear
 	  ; Stash the date validation result (shifted into the low nybble) on the stack.
             LDA prvOswordBlockCopy
 	  ; SFTODO: Use lsrA4
