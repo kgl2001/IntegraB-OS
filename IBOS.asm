@@ -8039,17 +8039,17 @@ ENDIF
             LDY prvDateMonth
             DEY
             BNE LAF51
-            LDY #&0C
+            LDY #12
 .LAF51      JSR getDaysInMonthY
             STA prvDateDayOfMonth
             STY prvDateMonth
-            CPY #&0C
+            CPY #12
             BCC LAF3C
             DEC prvDateYear
             LDA prvDateYear
             CMP #&FF
             BNE sevClcRts
-            LDA #&63
+            LDA #99
             STA prvDateYear
             DEC prvDateCentury
             LDA prvDateCentury
