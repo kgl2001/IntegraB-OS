@@ -6680,19 +6680,19 @@ osfileBlock = L02EE
 
 {
 .^LA624      LDX #&08
-            LDA prv82+&4A
-            STA prv82+&4D
-            LDA prv82+&4B
-            CMP prv82+&4C
+            LDA prvA
+            STA prvResult + 1
+            LDA prvB
+            CMP prvResult
             BCS LA646
-.LA634      ROL prv82+&4D
+.LA634      ROL prvResult + 1
             ROL A
-            CMP prv82+&4C
+            CMP prvResult
             BCC LA640
-            SBC prv82+&4C
+            SBC prvResult
 .LA640      DEX
             BNE LA634
-            ROL prv82+&4D
+            ROL prvResult + 1
 .LA646      RTS
 }
 
