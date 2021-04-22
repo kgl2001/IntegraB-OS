@@ -147,6 +147,7 @@ transientDynamicSyntaxStateCountMask = %00111111
 
 transientDateBufferPtr = &A8 ; SFTODO!?
 transientDateBufferIndex = &AA ; SFTODO!?
+transientDateSFTODO2 = &AA ; SFTODO: prob just temp storage
 transientDateSFTODO1 = &AB ; SFTODO!?
 
 vduStatus = &D0
@@ -8307,7 +8308,7 @@ ENDIF
             CMP #vduCr
             BEQ LB197
             JSR SFTODOProbParsePlusMinusDate
-            BCS secSevRts
+            BCS secSevRts ; SFTODO: branch if parse failed
             STA prvDateDayOfWeek
             CMP #&FF
             BEQ LB15C
@@ -8399,7 +8400,7 @@ ENDIF
             RTS
 }
 
-; SFTODO: This seems to be parsing the "+"/"-" support for *DATE/*CALENDAR and returning with the offset in some form in A (&FF meaning not present/couldn't parse or something like that)
+; SFTODO: This seems to be parsing the "+"/"-" support for *DATE/*CALENDAR and returning with the offset in some form in A (&FF meaning not present/couldn't parse or something like that), probably returns with C clear iff parsed OK.
 ; SFTODO: This has only one caller
 .SFTODOProbParsePlusMinusDate
 {
@@ -8441,34 +8442,35 @@ ENDIF
 .LB229      LDA #&FF
             SEC
             RTS
-			
+
+;
 .notMinus   LDX #&00
-.LB22F      STX prv82+&50
+.LB22F      STX prv3DateMonth
             LDA calOffsetTable+1,X
-            STA L00AA
+            STA transientDateSFTODO2
             LDA calOffsetTable,X
-            STA prv82+&4F
+            STA prv3DateYear
             TAX
-.LB23E      LDA (L00A8),Y
-            ORA #&20
+.LB23E      LDA (transientCmdPtr),Y
+            ORA #&20								;force lower case (imperfectly)
             CMP calText,X
             BNE LB24F
             INY
             INX
-            CPX L00AA
+            CPX transientDateSFTODO2
             BEQ LB26A
             BNE LB23E
 .LB24F      SEC
             TXA
-            SBC prv82+&4F
+            SBC prv3DateYear
             CMP #&02
             BCS LB26A
-            LDY prv82+&4E
-            LDX prv82+&50
+            LDY prv3DateCentury
+            LDX prv3DateMonth
             INX
             CPX #&08
             BCC LB22F
-            LDY prv82+&4E
+            LDY prv3DateCentury
             LDA #&FF
             CLC
             RTS
