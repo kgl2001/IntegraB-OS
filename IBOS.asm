@@ -6679,7 +6679,7 @@ osfileBlock = L02EE
 }
 
 ; SFTODO: speculating - 8-bit division-ish? prvB/prvC with result in A and remainder in prvD? Definitely not quite at least, because prvD starts with prvA
-; SFTODO: speculating - 8-bit division,
+; SFTODO: speculating - 8-bit division, just looking at how it's called I do rather suspect it is prvB/prvC
 {
 ; SFTODO: TEMP NAMES TO HELP ME THINK
 prvC = prvResult
@@ -7161,7 +7161,7 @@ prvD = prvResult + 1
             ROL prvResult + 1
             SEC
             LDA prvResult
-            SBC #&13
+            SBC #19
             STA prvA
             LDA prvResult + 1
             SBC #&00
