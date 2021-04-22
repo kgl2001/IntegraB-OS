@@ -37,9 +37,9 @@
 ;&2A:	RTC &08 - Month (Set at LA6CB)
 ;&2B:	RTC &07 - Day of Month (Set at LA6CB)
 ;&2C:	RTC &06 - Day of Week (Set at LA6CB)
-;&2D:	RTC &04 - Hours (Set at LA676)
-;&2E:	RTC &02 - Minutes (Set at LA676)
-;&2F:	RTC &00 - Seconds (Set at LA676)
+;&2D:	RTC &04 - Hours (Set at writeRtcTime)
+;&2E:	RTC &02 - Minutes (Set at writeRtcTime)
+;&2F:	RTC &00 - Seconds (Set at writeRtcTime)
 ;&52:	
 ;&53:	
 
@@ -73,6 +73,8 @@ rtcRegDayOfWeek = &06
 rtcRegDayOfMonth = &07
 rtcRegMonth = &08
 rtcRegYear = &09
+rtcRegA = &0A ; SFTODO: what's this? Name is probably not ideal but it will do for now.
+rtcRegB = &0B ; SFTODO: what's this? Name is probably not ideal but it will do for now.
 
 rtcUserBase = &0E
 ;RTC User Registers (add &0E to get real RTC user register - registers &00-&0D are for RTC clock registers)
@@ -119,7 +121,7 @@ userRegKeyboardRepeat = &0D ; 0-7: Keyboard repeat
 userRegPrinterIgnore = &0E ; 0-7: Printer ignore
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7L Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
-userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX
+userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX SFTODO: in writeRtcTime we test b4 of this value, so what's that all about? It looks like it has something to do with what we write to b0 of rtcRegB.
 userRegAlarm = &33 ; SFTODO? bits 0-5??
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
@@ -6713,8 +6715,10 @@ osfileBlock = L02EE
 }
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
+; SFTODOWIP
+.writeRtcTime
 {
-.^LA676      LDX #&0A								;Select 'Register A' register on RTC: Register &0A
+.LA676      LDX #&0A								;Select 'Register A' register on RTC: Register &0A
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             ORA #&70
             JSR wrRTCRAM								;Write data from A to RTC memory location X
@@ -6723,16 +6727,16 @@ osfileBlock = L02EE
             AND #&70
             ORA #&86
             JSR wrRTCRAM								;Write data from A to RTC memory location X
-            LDX #&00								;Select 'Seconds' register on RTC: Register &00
-            LDA prvOswordBlockCopy + 15								;Get 'Seconds' from &822F
+            LDX #rtcRegSeconds								;Select 'Seconds' register on RTC: Register &00
+            LDA prvDateSeconds								;Get 'Seconds' from &822F
             JSR wrRTCRAM								;Write data from A to RTC memory location X
-            LDX #&02								;Select 'Minutes' register on RTC: Register &02
-            LDA prvOswordBlockCopy + 14								;Get 'Minutes' from &822E
+            LDX #rtcRegMinutes								;Select 'Minutes' register on RTC: Register &02
+            LDA prvDateMinutes								;Get 'Minutes' from &822E
             JSR wrRTCRAM								;Write data from A to RTC memory location X
-            LDX #&04								;Select 'Hours' register on RTC: Register &04
-            LDA prvOswordBlockCopy + 13								;Get 'Hours' from &822D
+            LDX #rtcRegHours								;Select 'Hours' register on RTC: Register &04
+            LDA prvDateHours								;Get 'Hours' from &822D
             JSR wrRTCRAM								;Write data from A to RTC memory location X
-            LDX #&0A								;Select 'Register A' register on RTC: Register &0A
+            LDX #rtcRegA								;Select 'Register A' register on RTC: Register &0A
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&20
             JSR wrRTCRAM								;Write data from A to RTC memory location X
@@ -6743,7 +6747,7 @@ osfileBlock = L02EE
             BEQ LA6BB
             LDX #&01
 .LA6BB      STX prv82+&4E
-            LDX #&0B								;Select 'Register B' register on RTC: Register &0B
+            LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&7E
             ORA prv82+&4E
@@ -6844,7 +6848,7 @@ osfileBlock = L02EE
 
 ; SFTODO: Following block is dead code
 {
-            JSR LA676								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC						***not used. nothing jumps into this code***
+            JSR writeRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC						***not used. nothing jumps into this code***
             JMP LA6CB								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
 }
 
@@ -8766,7 +8770,7 @@ ENDIF
             JSR parseAndValidateTime
             BCC parseOk
             JMP PrvDisBadTime								;Error with Bad time
-.parseOk    JSR LA676								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
+.parseOk    JSR writeRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
             JMP PrvDisexitSC								;switch out private RAM and exit
 }
 
@@ -9297,7 +9301,7 @@ ENDIF
 			
 ;XY?0=&65
 ;OSWORD &49 (73) - Integra-B calls
-.LB8D8		JSR LA676								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
+.LB8D8		JSR writeRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
             SEC
             RTS
 			
