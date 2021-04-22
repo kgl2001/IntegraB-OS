@@ -7910,15 +7910,15 @@ ENDIF
 .^LAE2C     LDA #19
             STA prvDateCentury
             SEC
-            LDA prvOswordBlockCopy + 4
+            LDA prvDateSFTODO4
             SBC #&AC
             STA prv82+&4A
-            LDA prvOswordBlockCopy + 5
+            LDA prvDateSFTODO4 + 1
             SBC #&8E
             BCC LAE4D
-            STA prvOswordBlockCopy + 5
+            STA prvDateSFTODO4 + 1
             LDA prv82+&4A
-            STA prvOswordBlockCopy + 4
+            STA prvDateSFTODO4
             INC prvDateCentury
 .LAE4D      LDA #&00
             STA prvDateYear
@@ -7929,15 +7929,15 @@ ENDIF
             LDA #&01
             STA prv82+&4B
             SEC
-            LDA prvOswordBlockCopy + 4
+            LDA prvDateSFTODO4
             SBC prv82+&4A
             STA prv82+&4A
-            LDA prvOswordBlockCopy + 5
+            LDA prvDateSFTODO4 + 1
             SBC prv82+&4B
             BCC LAE82
-            STA prvOswordBlockCopy + 5
+            STA prvDateSFTODO4 + 1
             LDA prv82+&4A
-            STA prvOswordBlockCopy + 4
+            STA prvDateSFTODO4
             INC prvDateYear
             JMP LAE52
 			
@@ -7947,19 +7947,19 @@ ENDIF
             JSR getDaysInMonthY
             STA prv82+&4A
             SEC
-            LDA prvOswordBlockCopy + 4
+            LDA prvDateSFTODO4
             SBC prv82+&4A
             STA prv82+&4A
-            LDA prvOswordBlockCopy + 5
+            LDA prvDateSFTODO4 + 1
             SBC #&00
             BCC LAEB0
-            STA prvOswordBlockCopy + 5
+            STA prvDateSFTODO4 + 1
             LDA prv82+&4A
-            STA prvOswordBlockCopy + 4
+            STA prvDateSFTODO4
             INC prvDateMonth
             JMP LAE87
 			
-.LAEB0      LDX prvOswordBlockCopy + 4
+.LAEB0      LDX prvDateSFTODO4
             INX
             STX prvDateDayOfMonth
             JMP LA905
