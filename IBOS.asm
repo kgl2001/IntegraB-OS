@@ -8154,7 +8154,7 @@ ENDIF
             SEC
 .rts        RTS
 
-.haveDayOfWeek
+.haveDayOfWeek ; SFTODO: not sure about this label
             CMP #&07
             BCC LB03E
             CMP #&5B
@@ -8162,13 +8162,14 @@ ENDIF
             JMP LB0F3
 			
 .LB03E      LDA prv2Flags
-            AND #&0E
-            BNE LB04F
+            AND #&0E ; SFTODO: get day of week, hours, minutes flags?
+            BNE errorInDayOfWeekHoursOrMinutes
             JSR validateDateTimeRespectingLeapYears
             LDA prvOswordBlockCopy
             AND #&F0
             BNE LB07E
-.LB04F      INC prv2DateDayOfWeek
+.errorInDayOfWeekHoursOrMinutes ; SFTODO: Not sure about this
+            INC prv2DateDayOfWeek
 .LB052      LDA prv2DateDayOfWeek
             CMP prvDateDayOfWeek
             BEQ LB071
