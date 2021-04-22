@@ -526,6 +526,7 @@ prv2DateYear = prv82 + &44
 prv2DateMonth = prv82 + &45
 prv2DateDayOfMonth = prv82 + &46
 prv2DateDayOfWeek = prv82 + &47
+prvTmp6 = prv82 + &48
 prvA = prv82 + &4A ; SFTODO: tweak name!
 prvB = prv82 + &4B ; SFTODO: tweak name!
 prvC = prv82 + &4C ; SFTODO: tweak name!
@@ -7983,10 +7984,10 @@ ENDIF
             STA prvDateDayOfMonth
             JMP LAEF8
 			
-.^LAEDE      LDA #&02 ; SFTODO: test bit indicating prvDayOfMonth is &FF
+.^LAEDE      LDA #&02 ; SFTODO: test bit indicating prvDateDayOfMonth is &FF
             BIT prv2Flags
             BEQ prvDayOfMonthIsSet
-            INC prvDateDayOfMonth
+            INC prvDateDayOfMonth ; SFTODO: *probably* sets prvDateDayOfMonth to 0
             LDY prvDateMonth
             JSR getDaysInMonthY
             CMP prvDateDayOfMonth
@@ -8007,11 +8008,11 @@ ENDIF
             LDA #&08 ; SFTODO: test bit indicating prvYear is &FF
             BIT prv82+&42
             BEQ prvYearIsSet
-            INC prvDateYear
+            INC prvDateYear ; SFTODO: *probably* sets prvDateYear to 0 - but then why would we do the following, so maybe it doesn't?
             LDA prvDateYear
             CMP #100
             BCC sevClcRts
-            LDA #&00
+            LDA #0
             STA prvDateYear
 .prvYearIsSet ; SFTODO?
             LDA #&10 ; SFTODO: test bit indicating prvCentury is &FF
@@ -8021,7 +8022,7 @@ ENDIF
             LDA prvDateCentury
             CMP #100
             BCC sevClcRts
-            LDA #&00
+            LDA #0
             STA prvDateCentury
             SEC
             RTS
@@ -8071,7 +8072,7 @@ ENDIF
             LDA prv2Flags
             AND #&10
             BEQ haveCentury ; SFTODO: branch if prvDateCentury is not &FF
-            LDA #19
+            LDA #19 ; default century to 19 SFTODO: probably OK, but should we default to whatever the current century is instead, as we do elsewhere??
             STA prvDateCentury
             LDA prv2Flags
             AND #&0F ; clear bit indicating prvDateCentury was &FF
@@ -8097,7 +8098,7 @@ ENDIF
             CMP #&1E
             BEQ SFTODOProbCalculateDayOfWeekClcRts
             LDA prv2Flags
-            STA prv82+&48 ; SFTODO: TEMP STASH ORIGINAL prv2Flags?
+            STA prvTmp6 ; SFTODO: TEMP STASH ORIGINAL prv2Flags?
             LDA #&1E
             STA prv2Flags
 .LAFC1      LDA prv2DateDayOfMonth
@@ -8112,7 +8113,7 @@ ENDIF
             BEQ LAFE6
 .LAFD9      JSR LAEDE
             BCC LAFC1
-            LDA prv82+&48 ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
+            LDA prvTmp6 ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
             STA prv2Flags
             SEC
             RTS
@@ -8152,7 +8153,7 @@ ENDIF
             CMP #&FF
             BNE haveDayOfWeek
             JSR validateDateTimeRespectingLeapYears
-            LDA prvOswordBlockCopy
+            LDA prvDateSFTODO0
             AND #&F0
             BNE sevSecRts
             CLC
