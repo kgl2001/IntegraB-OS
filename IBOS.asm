@@ -8328,10 +8328,11 @@ ENDIF
             PLA
             AND prvOswordBlockCopy
             AND #&0F ; SFTODO: redundant? the value we just pulled with PLA had undergone 4xLSR A so high nybble was already 0
-            BNE LB1C7 ; branch if still some errors after masking off &FF values
+            BNE secSevRtsIndirect ; branch if still some errors after masking off &FF values
             JMP LAFF9
-			
-.LB1C7      JMP secSevRts
+
+.secSevRtsIndirect
+            JMP secSevRts
 }
 
 {
