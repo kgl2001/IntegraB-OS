@@ -6987,9 +6987,14 @@ osfileBlock = L02EE
 }
 
 {
-.^LA838      CLC
+; SFTODO: Both of these return with bits set in provOswordBlockCopy for errors - does anything actually check this except to see if it's 0/non-0?
+; SFTODO: This entry point validates days in February based on prvDate{Century,Year}
+.^validateDateTimeRespectingLeapYears
+.LA838      CLC
             BCC LA83C
-.^LA83B      SEC
+; SFTODO: This entry point always allows 29th February regardless
+.^validateDateTimeAssumingLeapYear ; SFTODO: perhaps not ideal name
+.LA83B      SEC
 .LA83C      PHP
             LDA prvDateCentury
             LDX #0
@@ -8095,7 +8100,7 @@ ENDIF
             LDA prv82+&47
             CMP #&FF
             BNE LB033
-            JSR LA838
+            JSR validateDateTimeRespectingLeapYears
             LDA prvOswordBlockCopy
             AND #&F0
             BNE LB02E
@@ -8119,7 +8124,7 @@ ENDIF
 .LB03E      LDA prv82+&42
             AND #&0E
             BNE LB04F
-            JSR LA838
+            JSR validateDateTimeRespectingLeapYears
             LDA prvOswordBlockCopy
             AND #&F0
             BNE LB07E
@@ -8137,7 +8142,7 @@ ENDIF
             STA prvOswordBlockCopy + 12
             JMP LB052
 			
-.LB071      JSR LA838
+.LB071      JSR validateDateTimeRespectingLeapYears
             LDA prvOswordBlockCopy
             AND #&F0
             BNE LB05A
@@ -8290,7 +8295,7 @@ ENDIF
             JMP LB197
 			
 .LB194      JSR LB1CA
-.LB197      JSR LA83B
+.LB197      JSR validateDateTimeAssumingLeapYear
             LDA prvOswordBlockCopy
 	  ; SFTODO: Use lsrA4
             LSR A
@@ -8470,7 +8475,7 @@ ENDIF
 .secondsInA STA prvDateSeconds
             TYA
             PHA
-            JSR LA83B
+            JSR validateDateTimeAssumingLeapYear
             PLA
             TAY
             LDA prvOswordBlockCopy
@@ -8503,7 +8508,7 @@ ENDIF
             JSR convertIntegerDefaultDecimal
             BCS LB32F
             JSR LB1CA
-            JSR LA83B
+            JSR validateDateTimeAssumingLeapYear
             LDA prvOswordBlockCopy
             AND #&F0
             BNE LB32F
