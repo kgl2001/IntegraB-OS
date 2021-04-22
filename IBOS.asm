@@ -6990,7 +6990,7 @@ osfileBlock = L02EE
 }
 
 {
-; SFTODO: Both of these return with bits set in provOswordBlockCopy for errors - does anything actually check this except to see if it's 0/non-0?
+; SFTODO: Both of these return with bits set in prvOswordBlockCopy for errors - does anything actually check this except to see if it's 0/non-0?
 ; SFTODO: This entry point validates days in February based on prvDate{Century,Year}
 .^validateDateTimeRespectingLeapYears
 .LA838      CLC
@@ -8247,7 +8247,7 @@ ENDIF
             STA prvOswordBlockCopy + 12
             JMP LB07B
 			
-.^LB12E      SEC
+.^secSevRts      SEC
             BIT LB132
 .LB132      RTS
 }
@@ -8266,7 +8266,7 @@ ENDIF
             CMP #vduCr
             BEQ LB197
             JSR LB1ED
-            BCS LB12E
+            BCS secSevRts
             STA prvOswordBlockCopy + 12
             CMP #&FF
             BEQ LB15C
@@ -8319,16 +8319,19 @@ ENDIF
             INX
             CPX #&04
             BNE loop
+	  ; Invert prvOswordBlockCopy b0-3.
             LDA prvOswordBlockCopy
             EOR #&0F
             STA prvOswordBlockCopy
+	  ; AND prvOswordBlockCopy with the date validation mask we stacked earlier; this will ignore validation errors
+	  ; where the corresponding prvDate* address was &FF.
             PLA
             AND prvOswordBlockCopy
-            AND #&0F
-            BNE LB1C7
+            AND #&0F ; SFTODO: redundant? the value we just pulled with PLA had undergone 4xLSR A so high nybble was already 0
+            BNE LB1C7 ; branch if still some errors after masking off &FF values
             JMP LAFF9
 			
-.LB1C7      JMP LB12E
+.LB1C7      JMP secSevRts
 }
 
 {
