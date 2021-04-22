@@ -8036,7 +8036,7 @@ ENDIF
             STA prv82+&42
 .haveCentury
 	  LDX #&00
-.LAF96      LDA prvOswordBlockCopy + 8,X
+.loop       LDA prvOswordBlockCopy + 8,X
             CMP #&FF
             BNE LAF9F
             TXA
@@ -8044,7 +8044,7 @@ ENDIF
 .LAF9F      STA prvOswordBlockCopy + 8,X
             INX
             CPX #&04
-            BNE LAF96
+            BNE loop
             JMP LAFEC
 }
 ;SFTODO: Perhaps merge these two block and reduce exports?
@@ -8078,7 +8078,7 @@ ENDIF
 .LAFE6      LDA prv82+&48
             STA prv82+&42
 .^LAFEC      JSR LA908
-            STA prvOswordBlockCopy + 12
+            STA prvDateDayOfWeek
             LDA #&00
             STA prvOswordBlockCopy
             CLC
