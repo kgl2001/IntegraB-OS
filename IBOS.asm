@@ -7981,18 +7981,19 @@ ENDIF
             STA prvOswordBlockCopy + 11
             JMP LAEF8
 			
-.^LAEDE      LDA #&02
-            BIT prv82+&42
-            BEQ LAEF8
-            INC prvOswordBlockCopy + 11
-            LDY prvOswordBlockCopy + 10
+.^LAEDE      LDA #&02 ; SFTODO: test bit indicating prvDayOfMonth is &FF
+            BIT prv2Flags
+            BEQ prvDayOfMonthIsSet
+            INC prvDateDayOfMonth
+            LDY prvDateMonth
             JSR getDaysInMonthY
-            CMP prvOswordBlockCopy + 11
+            CMP prvDateDayOfMonth
             BCS LAF3C
             LDA #&01
-            STA prvOswordBlockCopy + 11
-.LAEF8      LDA #&04
-            BIT prv82+&42
+            STA prvDateDayOfMonth
+.prvDayOfMonthIsSet ; SFTODO: not sure
+.LAEF8      LDA #&04 ; SFTODO: test bit indicating
+            BIT prv2Flags
             BEQ LAF0E
             INC prvOswordBlockCopy + 10
             LDA prvOswordBlockCopy + 10
@@ -8162,13 +8163,13 @@ ENDIF
             JMP LB0F3
 			
 .LB03E      LDA prv2Flags
-            AND #&0E ; SFTODO: get day of week, hours, minutes flags?
-            BNE errorInDayOfWeekHoursOrMinutes
+            AND #&0E ; SFTODO: get bits indicating if prv{Year,Month,DayOfMonth} are &FF
+            BNE prvYearMonthDayOfMonthNotSet
             JSR validateDateTimeRespectingLeapYears
             LDA prvOswordBlockCopy
             AND #&F0 ; SFTODO: get century, year, month, day of month flags?
             BNE secSevRts2
-.errorInDayOfWeekHoursOrMinutes ; SFTODO: Not sure about this
+.prvYearMonthDayOfMonthNotSet ; SFTODO: Not sure about this
             INC prv2DateDayOfWeek
 .LB052      LDA prv2DateDayOfWeek
             CMP prvDateDayOfWeek
@@ -8191,6 +8192,7 @@ ENDIF
             CLC
             RTS
 
+; SFTODO: As elsewhere, do we really need so many copies of this and similar code fragments? (We might, but check.)
 .secSevRts2 SEC
             BIT rts2
 .rts2       RTS
