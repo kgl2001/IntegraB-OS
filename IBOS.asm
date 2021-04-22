@@ -8051,6 +8051,7 @@ ENDIF
 }
 ;SFTODO: Perhaps merge these two block and reduce exports?
 {
+; SFTODOWIP
 .^LAFAA      JSR getRtcDayMonthYear
             LDA prv82+&42
             AND #&1E
