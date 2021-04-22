@@ -532,10 +532,10 @@ prvC = prv82 + &4C ; SFTODO: tweak name!
 prvD = prv82 + &4D ; SFTODO: tweak name!
 prvDC = prvC ; SFTODO: prvC and prvD together treated as a 16-bit value with high byte in prvD
 ; SFTODO: I suspect the next three are actually just miscellaneous temporary working variables which I misnamed on seeing them used the first time, should probably rename them
-prv3DateCentury = prv82 + &4E
-prv3DateYear = prv82 + &4F
-prv3DateMonth = prv82 + &50
-prv3SFTODO1 = prv82 + &51
+prvTmp2 = prv82 + &4E
+prvTmp3 = prv82 + &4F
+prvTmp4 = prv82 + &50
+prvTmp5 = prv82 + &51
 
 prvTmp = prv82 + &52 ; 1 byte, SFTODO: seems to be used as scratch space by some code without relying on value being preserved
 
@@ -7140,34 +7140,34 @@ osfileBlock = L02EE
 .LA908      SEC
 .LA909      PHP
             LDA prvDateYear
-            STA prv3DateYear
+            STA prvTmp3
             LDA prvDateCentury
-            STA prv3DateCentury
+            STA prvTmp2
 	  ; SFTODO: We seem to be decrementing the date by one month here, there is a general "if this goes negative, borrow from the next highest unit" quality. I'm not entirely clear why we start off with SBC #2, maybe we are decrementing by two months, or maybe we are switching to some kind of start-in-March system, complete guesswork in that respect.
             SEC
             LDA prvDateMonth
             SBC #2
-            STA prv3DateMonth
+            STA prvTmp4
             BMI january ; SFTODO? I think this is right
             CMP #1
             BCS decrementDone ; branch if March or later month?
 .january    CLC
             ADC #12 ; SFTODO: so we now have original month plus 10??
-            STA prv3DateMonth
-            DEC prv3DateYear
+            STA prvTmp4
+            DEC prvTmp3
             BPL decrementDone ; branch if wasn't year 0
             CLC
-            LDA prv3DateYear ; SFTODO: don't we know this is 255 in practice and thus the ADC #100 will always give us A=99?
+            LDA prvTmp3 ; SFTODO: don't we know this is 255 in practice and thus the ADC #100 will always give us A=99?
             ADC #100
-            STA prv3DateYear
-            DEC prv3DateCentury
+            STA prvTmp3
+            DEC prvTmp2
             BPL decrementDone
             CLC
-            LDA prv3DateCentury
+            LDA prvTmp2
             ADC #100
-            STA prv3DateCentury
+            STA prvTmp2
 .decrementDone ; SFTODO: rename to "noBorrow"?
-            LDA prv3DateMonth
+            LDA prvTmp4
             STA prvA
             LDA #130
             STA prvB
@@ -7181,29 +7181,29 @@ osfileBlock = L02EE
             LDA prvDC + 1
             SBC #&00
             STA prvB
-	  ; SFTODO: So BA=prv3DateMonth*130-19??
+	  ; SFTODO: So BA=prvTmp4*130-19??
             LDA #100
             STA prvDC
             JSR SFTODOPSEUDODIV
             CLC
             LDA prvDC + 1
             ADC prvDateDayOfMonth
-            ADC prv3DateYear
+            ADC prvTmp3
 .LA97E      STA prv82+&4A
-            LDA prv3DateYear
+            LDA prvTmp3
             LSR A
             LSR A
             CLC
             ADC prvA
             STA prvA
-            LDA prv3DateCentury
+            LDA prvTmp2
             LSR A
             LSR A
             CLC
             ADC prvA
-            ASL prv3DateCentury
+            ASL prvTmp2
             SEC
-            SBC prv3DateCentury
+            SBC prvTmp2
             PHP
             BCS LA9A5
             SEC
@@ -7977,10 +7977,10 @@ ENDIF
             JSR getDaysInMonthY
             CMP prvDateDayOfMonth
             BCS LAF3C
-            STA prv3DateCentury
+            STA prvTmp2
             SEC
             LDA prvDateDayOfMonth
-            SBC prv3DateCentury
+            SBC prvTmp2
             STA prvDateDayOfMonth
             JMP LAEF8
 			
@@ -8406,7 +8406,7 @@ ENDIF
 ; SFTODO: This has only one caller
 .SFTODOProbParsePlusMinusDate
 {
-.LB1ED      STY prv3DateCentury
+.LB1ED      STY prvTmp2
             LDA #&00
             STA transientDateSFTODO1
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
@@ -8447,11 +8447,11 @@ ENDIF
 
 ; SFTODO: It looks like this is parsing a day name from the command line, returning with A populated and C clear if parsed OK, otherwise returning with A=&FF and C set.
 .notMinus   LDX #&00 ; SFTODO: Rename label "notPlusMinus"?
-.LB22F      STX prv3DateMonth
+.LB22F      STX prvTmp4
             LDA calOffsetTable+1,X
             STA transientDateSFTODO2
             LDA calOffsetTable,X
-            STA prv3DateYear
+            STA prvTmp3
             TAX
 .LB23E      LDA (transientCmdPtr),Y
             ORA #&20								;force lower case (imperfectly)
@@ -8464,25 +8464,25 @@ ENDIF
             BNE LB23E
 .LB24F      SEC
             TXA
-            SBC prv3DateYear
+            SBC prvTmp3
             CMP #&02
             BCS LB26A
-            LDY prv3DateCentury
-            LDX prv3DateMonth
+            LDY prvTmp2
+            LDX prvTmp4
             INX
             CPX #&08
             BCC LB22F
-            LDY prv3DateCentury
+            LDY prvTmp2
             LDA #&FF
             CLC
             RTS
 
 ; SFTODO: This bit looks like it's probably checking for +/- *after* a day name (e.g. "*DATE TU+,23/10/19")
-.LB26A      LDA prv3DateMonth
+.LB26A      LDA prvTmp4
             BNE LB27B
             LDX #&06								;Select 'Day of Week' register on RTC: Register &06
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            STA prv3DateMonth
+            STA prvTmp4
             LDA #&FF
             STA transientDateSFTODO1
 .LB27B      LDX #&00
@@ -8505,16 +8505,16 @@ ENDIF
 .LB29C      CPX #&00
             BEQ LB2A1
             INY
-.LB2A1      DEC prv3DateMonth
-            STX prv3SFTODO1
+.LB2A1      DEC prvTmp4
+            STX prvTmp5
             TXA
             ASL A
             ASL A
             ASL A
             SEC
-            SBC prv3SFTODO1
+            SBC prvTmp5
             CLC
-            ADC prv3DateMonth
+            ADC prvTmp4
             CLC
             RTS
 }
