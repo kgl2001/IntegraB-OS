@@ -531,6 +531,7 @@ prvB = prv82 + &4B ; SFTODO: tweak name!
 prvC = prv82 + &4C ; SFTODO: tweak name!
 prvD = prv82 + &4D ; SFTODO: tweak name!
 prvDC = prvC ; SFTODO: prvC and prvD together treated as a 16-bit value with high byte in prvD
+; SFTODO: I suspect the next three are actually just miscellaneous temporary working variables which I misnamed on seeing them used the first time, should probably rename them
 prv3DateCentury = prv82 + &4E
 prv3DateYear = prv82 + &4F
 prv3DateMonth = prv82 + &50
