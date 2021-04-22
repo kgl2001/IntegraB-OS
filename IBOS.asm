@@ -8409,7 +8409,7 @@ ENDIF
             CMP #'+'
             BEQ plus
             CMP #'-'
-            BNE minus
+            BNE notMinus
             INY
             JSR convertIntegerDefaultDecimal
             BCS LB20B
@@ -8438,7 +8438,7 @@ ENDIF
             SEC
             RTS
 			
-.minus      LDX #&00
+.notMinus   LDX #&00
 .LB22F      STX prv82+&50
             LDA calOffsetTable+1,X
             STA L00AA
