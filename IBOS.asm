@@ -526,7 +526,9 @@ prv2DateMonth = prv82 + &45
 prv2DateDayOfMonth = prv82 + &46
 prv2DateDayOfWeek = prv82 + &47
 prvA = prv82 + &4A ; SFTODO: tweak name!
-prvB = prv82 + &4B ; SFTODO; tweak name!
+prvB = prv82 + &4B ; SFTODO: tweak name!
+prvC = prv82 + &4C ; SFTODO: tweak name!
+prvD = prv82 + &4D ; SFTODO: tweak name!
 prvResult = prv82 + &4C ; 2 bytes SFTODO: maybe tweak name
 prv3DateCentury = prv82 + &4E
 prv3DateYear = prv82 + &4F
@@ -6680,9 +6682,6 @@ osfileBlock = L02EE
 
 ; SFTODO: Ignoring the setup, the loop looks very much to me like division of prvA=prvD by prvC, with the result in prvD and the remainder in A. But the setup code says that if prvB (which is otherwise unused)>=prvC, we return with prvD=result=prvA and "remainder" prvB
 {
-; SFTODO: TEMP NAMES TO HELP ME THINK
-prvC = prvResult
-prvD = prvResult + 1
 .^LA624      LDX #&08
             LDA prvA
             STA prvD
