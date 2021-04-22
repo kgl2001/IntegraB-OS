@@ -7104,12 +7104,12 @@ osfileBlock = L02EE
             BCC LA909
 .^LA908      SEC
 .LA909      PHP
-            LDA prvOswordBlockCopy + 9
+            LDA prvDateYear
             STA prv82+&4F
-            LDA prvOswordBlockCopy + 8
+            LDA prvDateCentury
             STA prv82+&4E
             SEC
-            LDA prvOswordBlockCopy + 10
+            LDA prvDateMonth
             SBC #&02
             STA prv82+&50
             BMI LA925
@@ -7149,7 +7149,7 @@ osfileBlock = L02EE
             JSR LA624
             CLC
             LDA prv82+&4D
-            ADC prvOswordBlockCopy + 11
+            ADC prvDateDayOfMonth
             ADC prv82+&4F
 .LA97E      STA prv82+&4A
             LDA prv82+&4F
@@ -7192,13 +7192,13 @@ osfileBlock = L02EE
             LDA prv82+&4A
             PLP
             BCS LA9E5
-            CMP prvOswordBlockCopy + 12
+            CMP prvDateDayOfWeek
             BEQ LA9DF
             LDA #&08
             ORA prvOswordBlockCopy
             STA prvOswordBlockCopy
 .LA9DF      LDA prv82+&4A
-            STA prvOswordBlockCopy + 12
+            STA prvDateDayOfWeek
 .LA9E5      RTS
 }
 
@@ -8023,6 +8023,7 @@ ENDIF
 }
 
 {
+; SFTODO: This seems (ignoring for the moment the work done when it does JMP LAFEC) to fix up missing parts (&FF) of the date (not time) with the relevant component of 1900/01/01 (ish; I haven't traced the LAFAA branch yet either)
 .^LAF79      LDA prv82+&42
             AND #&08
             BNE LAFAA ; SFTODO: branch if prvDateYear is &FF
@@ -8035,6 +8036,7 @@ ENDIF
             AND #&0F ; clear bit indicating prvDateCentury was &FF
             STA prv82+&42
 .haveCentury
+	  ; SFTODO: Replace &FF values in prv{Century,Year,Month,DayOfMonth} with 0,0,1,1 respectively - so we're sort of defaulting to 1900/01/01, probably, given the defaulting of prvCentury earlier
 	  LDX #&00
 .loop       LDA prvOswordBlockCopy + 8,X
             CMP #&FF
