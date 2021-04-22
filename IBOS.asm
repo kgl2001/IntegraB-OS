@@ -7141,7 +7141,7 @@ osfileBlock = L02EE
             LDA prv3DateCentury
             ADC #100
             STA prv3DateCentury
-.LA947      LDA prv82+&50
+.LA947      LDA prv3DateMonth
             STA prv82+&4A
             LDA #&82
             STA prv82+&4B
@@ -7161,7 +7161,7 @@ osfileBlock = L02EE
             CLC
             LDA prv82+&4D
             ADC prvDateDayOfMonth
-            ADC prv82+&4F
+            ADC prv3DateYear
 .LA97E      STA prv82+&4A
             LDA prv82+&4F
             LSR A
