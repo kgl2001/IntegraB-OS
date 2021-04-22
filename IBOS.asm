@@ -8349,30 +8349,30 @@ ENDIF
   	  ; SFTODO: I am kind of guessing that at this point the command argument has been parsed and anything "provided" has been filled in over the &FF defaults we put in place at the start. So if we're doing a simple "*DATE", *everything* (date-ish, not time-ish) will be &FF.
 	  JSR validateDateTimeAssumingLeapYear
 	  ; Stash the date validation result (shifted into the low nybble) on the stack.
-            LDA prvOswordBlockCopy
+            LDA prvDateSFTODO0
 	  ; SFTODO: Use lsrA4
             LSR A
             LSR A
             LSR A
             LSR A
             PHA
-	  ; Set prvOswordBlockCopy so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is &FF.
+	  ; Set prvDateSFTODO0 so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is &FF.
             LDX #&00
-            STX prvOswordBlockCopy
-.loop       LDA prvOswordBlockCopy + 8,X
+            STX prvDateSFTODO0
+.loop       LDA prvDateCentury,X
             CMP #&FF								;set carry iff A=&FF
-            ROL prvOswordBlockCopy							;rotate carry into prvOswordBlockCopy
+            ROL prvDateSFTODO0							;rotate carry into prvOswordBlockCopy
             INX
             CPX #&04
             BNE loop
-	  ; Invert prvOswordBlockCopy b0-3.
-            LDA prvOswordBlockCopy
+	  ; Invert prvDateSFTODO0 b0-3.
+            LDA prvDateSFTODO0
             EOR #&0F
-            STA prvOswordBlockCopy
-	  ; AND prvOswordBlockCopy with the date validation mask we stacked earlier; this will ignore validation errors
+            STA prvDateSFTODO0
+	  ; AND prvDateSFTODO0 with the date validation mask we stacked earlier; this will ignore validation errors
 	  ; where the corresponding prvDate* address was &FF.
             PLA
-            AND prvOswordBlockCopy
+            AND prvDateSFTODO0
             AND #&0F ; SFTODO: redundant? the value we just pulled with PLA had undergone 4xLSR A so high nybble was already 0
             BNE secSevRtsIndirect ; branch if still some errors after masking off &FF values
             JMP LAFF9
