@@ -8379,7 +8379,7 @@ ENDIF
             JMP secSevRts
 }
 
-; Take the parsed 2-byte binary year at L00B0 and populate prvDate{Year,Century}, defaulting the century to the current century if a two digit year is specified.
+; Take the parsed 2-byte integer year at L00B0 and populate prvDate{Year,Century}, defaulting the century to the current century if a two digit year is specified.
 .interpretParsedYear
 {
 .LB1CA      LDA L00B0 ; SFTODO: low byte of parsed year from command line
