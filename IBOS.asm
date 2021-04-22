@@ -7912,12 +7912,12 @@ ENDIF
             SEC
             LDA prvDateSFTODO4
             SBC #&AC
-            STA prv82+&4A
+            STA prvA
             LDA prvDateSFTODO4 + 1
             SBC #&8E
             BCC LAE4D
             STA prvDateSFTODO4 + 1
-            LDA prv82+&4A
+            LDA prvA
             STA prvDateSFTODO4
             INC prvDateCentury
 .LAE4D      LDA #&00
@@ -7925,18 +7925,18 @@ ENDIF
 .LAE52      JSR testLeapYear
             LDA #&6D
             ADC #&00
-            STA prv82+&4A
+            STA prvA
             LDA #&01
-            STA prv82+&4B
+            STA prvB
             SEC
             LDA prvDateSFTODO4
-            SBC prv82+&4A
-            STA prv82+&4A
+            SBC prvA
+            STA prvA
             LDA prvDateSFTODO4 + 1
-            SBC prv82+&4B
+            SBC prvB
             BCC LAE82
             STA prvDateSFTODO4 + 1
-            LDA prv82+&4A
+            LDA prvA
             STA prvDateSFTODO4
             INC prvDateYear
             JMP LAE52
@@ -7945,16 +7945,16 @@ ENDIF
             STA prvDateMonth
 .LAE87      LDY prvDateMonth
             JSR getDaysInMonthY
-            STA prv82+&4A
+            STA prvA
             SEC
             LDA prvDateSFTODO4
-            SBC prv82+&4A
-            STA prv82+&4A
+            SBC prvA
+            STA prvA
             LDA prvDateSFTODO4 + 1
             SBC #&00
             BCC LAEB0
             STA prvDateSFTODO4 + 1
-            LDA prv82+&4A
+            LDA prvA
             STA prvDateSFTODO4
             INC prvDateMonth
             JMP LAE87
