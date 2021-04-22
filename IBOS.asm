@@ -8342,7 +8342,7 @@ ENDIF
             JMP LB197
 			
 .parsedYearOK
-	  JSR LB1CA
+	  JSR interpretParsedYear
 .LB197
   	  ; SFTODO: I am kind of guessing that at this point the command argument has been parsed and anything "provided" has been filled in over the &FF defaults we put in place at the start. So if we're doing a simple "*DATE", *everything* (date-ish, not time-ish) will be &FF.
 	  JSR validateDateTimeAssumingLeapYear
@@ -8379,8 +8379,10 @@ ENDIF
             JMP secSevRts
 }
 
+; Take the parsed 2-byte binary year at L00B0 and populate prvDate{Year,Century}, defaulting the century to the current century if a two digit year is specified.
+.interpretParsedYear
 {
-.^LB1CA      LDA L00B0 ; SFTODO: low byte of parsed year from command line
+.LB1CA      LDA L00B0 ; SFTODO: low byte of parsed year from command line
             STA prvA
             LDA L00B1 ; SFTODO: high byte of parsed year from command line
             STA prvB
@@ -8391,7 +8393,7 @@ ENDIF
             LDA prvD
             BNE centuryInA
 .^defaultPrvDateCentury
-.LB1E4     LDX #userRegCentury
+            LDX #userRegCentury
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
 .centuryInA STA prvDateCentury
             RTS
@@ -8566,7 +8568,7 @@ ENDIF
             BNE LB32F
             JSR convertIntegerDefaultDecimal
             BCS LB32F
-            JSR LB1CA
+            JSR interpretParsedYear
             JSR validateDateTimeAssumingLeapYear
             LDA prvOswordBlockCopy
             AND #&F0
