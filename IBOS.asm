@@ -535,6 +535,7 @@ prvDC = prvC ; SFTODO: prvC and prvD together treated as a 16-bit value with hig
 prv3DateCentury = prv82 + &4E
 prv3DateYear = prv82 + &4F
 prv3DateMonth = prv82 + &50
+prv3SFTODO1 = prv82 + &51
 
 prvTmp = prv82 + &52 ; 1 byte, SFTODO: seems to be used as scratch space by some code without relying on value being preserved
 
@@ -8444,8 +8445,8 @@ ENDIF
             SEC
             RTS
 
-;
-.notMinus   LDX #&00
+; SFTODO: It looks like this is parsing a day name from the command line, returning with A populated and C clear if parsed OK, otherwise returning with A=&FF and C set.
+.notMinus   LDX #&00 ; SFTODO: Rename label "notPlusMinus"?
 .LB22F      STX prv3DateMonth
             LDA calOffsetTable+1,X
             STA transientDateSFTODO2
@@ -8475,16 +8476,17 @@ ENDIF
             LDA #&FF
             CLC
             RTS
-			
-.LB26A      LDA prv82+&50
+
+; SFTODO: This bit looks like it's probably checking for +/- *after* a day name (e.g. "*DATE TU+,23/10/19")
+.LB26A      LDA prv3DateMonth
             BNE LB27B
             LDX #&06								;Select 'Day of Week' register on RTC: Register &06
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            STA prv82+&50
+            STA prv3DateMonth
             LDA #&FF
-            STA L00AB
+            STA transientDateSFTODO1
 .LB27B      LDX #&00
-            LDA (L00A8),Y
+            LDA (transientCmdPtr),Y
             CMP #'+'
             BNE LB285
             LDX #&0B
@@ -8503,16 +8505,16 @@ ENDIF
 .LB29C      CPX #&00
             BEQ LB2A1
             INY
-.LB2A1      DEC prv82+&50
-            STX prv82+&51
+.LB2A1      DEC prv3DateMonth
+            STX prv3SFTODO1
             TXA
             ASL A
             ASL A
             ASL A
             SEC
-            SBC prv82+&51
+            SBC prv3SFTODO1
             CLC
-            ADC prv82+&50
+            ADC prv3DateMonth
             CLC
             RTS
 }
