@@ -501,7 +501,7 @@ prvDateBuffer = prv80 + 0 ; SFTODO: how big?
 prvDateBuffer2 = prv80 + &C8 ; SFTODO: how big? not a great name either
 
 ; SFTODO: EXPERIMENTAL LABELS USED BY DATE/CALENDAR CODE
-prvDateSFTODO0 = prvOswordBlockCopy
+prvDateSFTODO0 = prvOswordBlockCopy ; SFTODO: sometimes - maybe always? - used as flags regarding validation
 prvDateSFTODO1 = prvOswordBlockCopy + 1 ; SFTODO: Use as a bitfield controlling formatting
 prvDateSFTODO1b = prvOswordBlockCopy + 1 ; SFTODO: Use as a copy of "final" transientDateBufferIndex
 prvDateSFTODO2 = prvOswordBlockCopy + 2
@@ -7013,9 +7013,9 @@ osfileBlock = L02EE
 }
 
 {
-; SFTODO: Both of these return with bits set in prvOswordBlockCopy for errors - does anything actually check this except to see if it's 0/non-0?
+; SFTODO: Both of these return with bits set in prvDateSFTODO0 for errors - does anything actually check this except to see if it's 0/non-0?
 ; SFTODO: This entry point validates days in February based on prvDate{Century,Year}
-; SFTODO: Bits in prvOswordBlockCopy are set to indicate errors: SFTODO: maybe have named constants for these bits
+; SFTODO: Bits in pprvDateSFTODO0 are set to indicate errors: SFTODO: maybe have named constants for these bits
 ;    b7: century
 ;    b6: year
 ;    b5: month
@@ -7093,22 +7093,22 @@ osfileBlock = L02EE
             LDA #&01
 ; Set the bits set in A in prvOswordBlock if C is set, clear them if C is clear.
 .recordCheckResultForA
-	  BCC recordOk ; SFTODO: could we just BCC rts if we knew prvOswordBlockCopy was 0 to start with? Do we re-use A values?
-            ORA prvOswordBlockCopy
-            STA prvOswordBlockCopy
+	  BCC recordOk ; SFTODO: could we just BCC rts if we knew prvDateSFTODO0 was 0 to start with? Do we re-use A values?
+            ORA prvDateSFTODO0
+            STA prvDateSFTODO0
             RTS
 .recordOk   EOR #&FF
-            AND prvOswordBlockCopy
-            STA prvOswordBlockCopy
+            AND prvDateSFTODO0
+            STA prvDateSFTODO0
             RTS
 
 ; Return with C clear iff X<=A<=Y.
 .checkABetweenXAndY
-	  STA prv82+&4E
-            CPY prv82+&4E
+	  STA prvTmp2
+            CPY prvTmp2
             BCC secRts
-            STX prv82+&4E
-            CMP prv82+&4E
+            STX prvTmp2
+            CMP prvTmp2
             BCC secRts ; SFTODO: Any chance of using another copy of these instructions?
             CLC
             RTS
