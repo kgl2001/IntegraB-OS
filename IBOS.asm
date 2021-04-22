@@ -501,7 +501,7 @@ prvDateBuffer = prv80 + 0 ; SFTODO: how big?
 prvDateBuffer2 = prv80 + &C8 ; SFTODO: how big? not a great name either
 
 ; SFTODO: EXPERIMENTAL LABELS USED BY DATE/CALENDAR CODE
-prvDateSFTODO0 = prvOswordBlockCopy ; SFTODO: sometimes - maybe always? - used as flags regarding validation
+prvDateSFTODO0 = prvOswordBlockCopy ; SFTODO: sometimes - maybe always? - used as flags regarding validation - the meaning of the flags is changed (at least) by LB133 so just possibly it would be helpful to give this location a different name depending on which style of flags it contains???
 prvDateSFTODO1 = prvOswordBlockCopy + 1 ; SFTODO: Use as a bitfield controlling formatting
 prvDateSFTODO1b = prvOswordBlockCopy + 1 ; SFTODO: Use as a copy of "final" transientDateBufferIndex
 prvDateSFTODO2 = prvOswordBlockCopy + 2
@@ -8140,13 +8140,13 @@ ENDIF
 	  ; Set prv2Flags so b4-0 are set iff prv{Century,Year,Month,DayOfMonth,DayOfWeek} is &FF.
             LDX #&00
             STX prv2Flags
-.loop       LDA prvOswordBlockCopy + 8,X
+.loop       LDA prvDateCentury,X
             CMP #&FF
             ROL prv2Flags
             INX
             CPX #&05
             BNE loop
-            JSR SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: RETURNS SOMETHING IN C, ALSO PROBABLY IN prvOswordBlockCopy ("OK" EXIT PATH SETS IT TO 0, I THINK)
+            JSR SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: RETURNS SOMETHING IN C, ALSO PROBABLY IN prvDateSFTODO0 ("OK" EXIT PATH SETS IT TO 0, I THINK)
             BCS sevSecRts
             LDA prv2DateDayOfWeek
             CMP #&FF
@@ -8365,7 +8365,7 @@ ENDIF
             INX
             CPX #&04
             BNE loop
-	  ; Invert prvDateSFTODO0 b0-3.
+	  ; Invert prvDateSFTODO0 b0-3, so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is not &FF. SFTODO: I THINK I MAY HAVE HAD THE SENSE OF THIS THE WRONG WAY ROUND IN SOME OF MY CODE ANALYSIS
             LDA prvDateSFTODO0
             EOR #&0F
             STA prvDateSFTODO0
