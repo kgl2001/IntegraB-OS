@@ -8130,20 +8130,19 @@ ENDIF
             CPX #&05
             BNE loop
             JSR LAF79
-            BCS LB02E
+            BCS sevSecRts
             LDA prv2DateDayOfWeek
             CMP #&FF
             BNE LB033
             JSR validateDateTimeRespectingLeapYears
             LDA prvOswordBlockCopy
             AND #&F0
-            BNE LB02E
+            BNE sevSecRts
             CLC
             RTS
-}
 
-{
-.^LB02E      BIT rts
+.sevSecRts
+.LB02E      BIT rts
             SEC
 .rts        RTS
 }
