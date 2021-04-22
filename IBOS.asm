@@ -6681,8 +6681,9 @@ osfileBlock = L02EE
 }
 
 ; SFTODO: Ignoring the setup, the loop looks very much to me like division of prvA=prvD by prvC, with the result in prvD and the remainder in A. But the setup code says that if prvB (which is otherwise unused)>=prvC, we return with prvD=result=prvA and "remainder" prvB
+.SFTODOPSEUDODIV
 {
-.^LA624      LDX #&08
+.LA624      LDX #&08
             LDA prvA
             STA prvD
 	  LDA prvB
@@ -7128,29 +7129,31 @@ osfileBlock = L02EE
             STA prv3DateYear
             LDA prvDateCentury
             STA prv3DateCentury
+	  ; SFTODO: We seem to be decrementing the date by one month here, there is a general "if this goes negative, borrow from the next highest unit" quality. I'm not entirely clear why we start off with SBC #2, maybe we are decrementing by two months, or maybe we are switching to some kind of start-in-March system, complete guesswork in that respect.
             SEC
             LDA prvDateMonth
-            SBC #&02
+            SBC #2
             STA prv3DateMonth
-            BMI LA925
-            CMP #&01
-            BCS LA947
-.LA925      CLC
-            ADC #&0C
+            BMI january ; SFTODO? I think this is right
+            CMP #1
+            BCS decrementDone ; branch if March or later month?
+.january    CLC
+            ADC #12 ; SFTODO: so we now have original month plus 10??
             STA prv3DateMonth
             DEC prv3DateYear
-            BPL LA947
+            BPL decrementDone ; branch if wasn't year 0
             CLC
-            LDA prv3DateYear
+            LDA prv3DateYear ; SFTODO: don't we know this is 255 in practice and thus the ADC #100 will always give us A=99?
             ADC #100
             STA prv3DateYear
             DEC prv3DateCentury
-            BPL LA947
+            BPL decrementDone
             CLC
             LDA prv3DateCentury
             ADC #100
             STA prv3DateCentury
-.LA947      LDA prv3DateMonth
+.decrementDone ; SFTODO: rename to "noBorrow"?
+            LDA prv3DateMonth
             STA prvA
             LDA #&82
             STA prvB
@@ -7166,7 +7169,7 @@ osfileBlock = L02EE
             STA prvB
             LDA #100
             STA prvDC
-            JSR LA624
+            JSR SFTODOPSEUDODIV
             CLC
             LDA prvDC + 1
             ADC prvDateDayOfMonth
@@ -7196,7 +7199,7 @@ osfileBlock = L02EE
             STA prv82+&4B
             LDA #&07
             STA prv82+&4C
-            JSR LA624
+            JSR SFTODOPSEUDODIV
             PLP
             BCS LA9C0
             SEC
@@ -7263,7 +7266,7 @@ osfileBlock = L02EE
             STA prv82+&4B
             LDA #&07
             STA prv82+&4C
-            JSR LA624
+            JSR SFTODOPSEUDODIV
             STA prv82+&4A
             LDA #&06
             STA prv82+&4B
@@ -7776,7 +7779,6 @@ ENDIF
 
 ;read buffer address from &8224 and store at &A8
 ;set buffer pointer to 0
-;SFTODOWIP
 .initDateBufferAndEmitTimeAndDate
 {
 .LAD63      LDA prvDateSFTODO4							;get OSWORD X register (lookup table LSB) SFTODO: not sure this comment is always true, e.g. we can be called via *TIME
@@ -7792,7 +7794,7 @@ ENDIF
             STY prvDateSFTODO1b
 .^LAD7Erts     RTS
 
-; SFTODOWIP: Next line implies b7 of prvDateSFTODO1 "mainly" controls ordering
+; SFTODO: Next line implies b7 of prvDateSFTODO1 "mainly" controls ordering
 .emitTimeAndDateToDateBuffer
 .LAD7F      BIT prvDateSFTODO1							;b7 of prvDateSFTODO1 controls whether time or date comes first
             BMI dateFirst
@@ -8192,7 +8194,7 @@ ENDIF
             STA prv82+&4B
             LDA #&07
             STA prv82+&4C
-            JSR LA624
+            JSR SFTODOPSEUDODIV
             TAX
             INX
             STX prvOswordBlockCopy + 12
@@ -8368,7 +8370,7 @@ ENDIF
             STA prv82+&4B
             LDA #&64
             STA prv82+&4C
-            JSR LA624
+            JSR SFTODOPSEUDODIV
             STA prvOswordBlockCopy + 9
             LDA prv82+&4D
             BNE LB1E9
