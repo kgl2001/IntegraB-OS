@@ -8025,16 +8025,17 @@ ENDIF
 {
 .^LAF79      LDA prv82+&42
             AND #&08
-            BNE LAFAA
+            BNE LAFAA ; SFTODO: branch if prvDateYear is &FF
             LDA prv82+&42
             AND #&10
-            BEQ LAF94
-            LDA #&13
-            STA prvOswordBlockCopy + 8
+            BEQ haveCentury ; SFTODO: branch if prvDateCentury is not &FF
+            LDA #19
+            STA prvDateCentury
             LDA prv82+&42
-            AND #&0F
+            AND #&0F ; clear bit indicating prvDateCentury was &FF
             STA prv82+&42
-.LAF94      LDX #&00
+.haveCentury
+	  LDX #&00
 .LAF96      LDA prvOswordBlockCopy + 8,X
             CMP #&FF
             BNE LAF9F
@@ -8046,7 +8047,7 @@ ENDIF
             BNE LAF96
             JMP LAFEC
 }
-
+;SFTODO: Perhaps merge these two block and reduce exports?
 {
 .^LAFAA      JSR getRtcDayMonthYear
             LDA prv82+&42
