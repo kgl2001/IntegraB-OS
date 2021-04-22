@@ -8151,22 +8151,22 @@ ENDIF
             BCC LB086
             JMP LB0F3
 			
-.LB03E      LDA prv82+&42
+.LB03E      LDA prv2Flags
             AND #&0E
             BNE LB04F
             JSR validateDateTimeRespectingLeapYears
             LDA prvOswordBlockCopy
             AND #&F0
             BNE LB07E
-.LB04F      INC prv82+&47
-.LB052      LDA prv82+&47
+.LB04F      INC prv2DateDayOfWeek
+.LB052      LDA prv2DateDayOfWeek
             CMP prvDateDayOfWeek
             BEQ LB071
 .LB05A      JSR LAEDE
             BCS LB07E
             BVC LB068
             LDA #&08
-            BIT prv82+&42
+            BIT prv2Flags
             BEQ LB083
 .LB068      JSR SFTODOPROBCALCULATEDAYOFWEEK
             STA prvDateDayOfWeek
