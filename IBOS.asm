@@ -6678,7 +6678,8 @@ osfileBlock = L02EE
             RTS
 }
 
-; SFTODO: speculating - 8-bit division-ish?
+; SFTODO: speculating - 8-bit division-ish? prvB/prvC with result in A and remainder in prvD? Definitely not quite at least, because prvD starts with prvA
+; SFTODO: speculating - 8-bit division,
 {
 ; SFTODO: TEMP NAMES TO HELP ME THINK
 prvC = prvResult
@@ -6687,8 +6688,8 @@ prvD = prvResult + 1
             LDA prvA
             STA prvD
             LDA prvB
-            CMP prvResult
-            BCS rts ; SFTODO: branch if prvB>=prvResult
+            CMP prvC
+            BCS rts ; SFTODO: branch if prvB>=prvC
 .LA634      ROL prvD
             ROL A
             CMP prvC
