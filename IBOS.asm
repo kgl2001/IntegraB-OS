@@ -518,6 +518,14 @@ prvDateHours = prvOswordBlockCopy + 13
 prvDateMinutes = prvOswordBlockCopy + 14
 prvDateSeconds = prvOswordBlockCopy + 15
 
+; SFTODO WIP - THERE IS SEEMS TO BE AN EXTRA COPY OF PART OF DATE/TIME "OSWORD" BLOCK MADE HERE - "prv2" PART OF NAME IS REALLY JUST TEMP
+prv2Flags = prv82 + &42
+prv2DateCentury = prv82 + &43
+prv2DateYear = prv82 + &44
+prv2DateMonth = prv82 + &45
+prv2DateDayOfMonth = prv82 + &46
+prv2DateDayOfWeek = prv82 + &47
+
 prvTmp = prv82 + &52 ; 1 byte, SFTODO: seems to be used as scratch space by some code without relying on value being preserved
 
 prvOsMode = prv83 + &3C ; working copy of OSMODE, initialised from relevant bits of userRegOsModeShx in service01
@@ -8089,24 +8097,24 @@ ENDIF
 ;SFTODOWIP
 {
 .^LAFF9
-	  ; Copy prvDate{Century,Year,Month,DayOfMonth,DayOfWeek} to prv82+&43
+	  ; Copy prvDate{Century,Year,Month,DayOfMonth,DayOfWeek} to prv2{...}
 	  LDX #&04
-.LAFFB      LDA prvOswordBlockCopy + 8,X
-            STA prv82+&43,X
+.LAFFB      LDA prvDateCentury,X
+            STA prv2DateCentury,X
             DEX
             BPL LAFFB
-	  ; Set prv82+&42 so b4-0 are set iff prv{Century,Year,Month,DayOfMonth,DayOfWeek} is &FF.
+	  ; Set prv2Flags so b4-0 are set iff prv{Century,Year,Month,DayOfMonth,DayOfWeek} is &FF.
             LDX #&00
-            STX prv82+&42
+            STX prv2Flags
 .loop       LDA prvOswordBlockCopy + 8,X
             CMP #&FF
-            ROL prv82+&42
+            ROL prv2Flags
             INX
             CPX #&05
             BNE loop
             JSR LAF79
             BCS LB02E
-            LDA prv82+&47
+            LDA prv2DateDayOfWeek
             CMP #&FF
             BNE LB033
             JSR validateDateTimeRespectingLeapYears
