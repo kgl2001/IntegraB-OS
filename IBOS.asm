@@ -7013,6 +7013,15 @@ osfileBlock = L02EE
 {
 ; SFTODO: Both of these return with bits set in prvOswordBlockCopy for errors - does anything actually check this except to see if it's 0/non-0?
 ; SFTODO: This entry point validates days in February based on prvDate{Century,Year}
+; SFTODO: Bits in return A are set to indicate errors: SFTODO: maybe have named constants for these bits
+;    b7: century
+;    b6: year
+;    b5: month
+;    b4: day of month
+;    b3: day of week
+;    b2: hours
+;    b1: minutes
+;    b0: seconds
 .^validateDateTimeRespectingLeapYears
 .LA838      CLC
             BCC LA83C
@@ -8133,7 +8142,7 @@ ENDIF
             BCS sevSecRts
             LDA prv2DateDayOfWeek
             CMP #&FF
-            BNE LB033
+            BNE haveDayOfWeek
             JSR validateDateTimeRespectingLeapYears
             LDA prvOswordBlockCopy
             AND #&F0
@@ -8145,7 +8154,8 @@ ENDIF
             SEC
 .rts        RTS
 
-.LB033      CMP #&07
+.haveDayOfWeek
+            CMP #&07
             BCC LB03E
             CMP #&5B
             BCC LB086
