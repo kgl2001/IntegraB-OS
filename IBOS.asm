@@ -8335,13 +8335,14 @@ ENDIF
             BNE LB197
             INY
             JSR convertIntegerDefaultDecimal
-            BCC LB194
+            BCC parsedYearOK
             LDA #&FF
             STA prvDateYear
             STA prvDateCentury
             JMP LB197
 			
-.LB194      JSR LB1CA
+.parsedYearOK
+	  JSR LB1CA
 .LB197
   	  ; SFTODO: I am kind of guessing that at this point the command argument has been parsed and anything "provided" has been filled in over the &FF defaults we put in place at the start. So if we're doing a simple "*DATE", *everything* (date-ish, not time-ish) will be &FF.
 	  JSR validateDateTimeAssumingLeapYear
