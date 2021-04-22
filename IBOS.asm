@@ -8093,7 +8093,7 @@ ENDIF
             CMP #&1E
             BEQ SFTODOPROBOK
             LDA prv2Flags
-            STA prv82+&48
+            STA prv82+&48 ; SFTODO: TEMP STASH ORIGINAL prv2Flags?
             LDA #&1E
             STA prv2Flags
 .LAFC1      LDA prv2DateDayOfMonth
@@ -8101,14 +8101,14 @@ ENDIF
             BEQ LAFCD
             CMP prvDateDayOfMonth
             BNE LAFD9
-.LAFCD      LDA prv82+&45
+.LAFCD      LDA prv2DateMonth
             CMP #&FF
             BEQ LAFE6
             CMP prvDateMonth
             BEQ LAFE6
 .LAFD9      JSR LAEDE
             BCC LAFC1
-            LDA prv82+&48
+            LDA prv82+&48 ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
             STA prv2Flags
             SEC
             RTS
