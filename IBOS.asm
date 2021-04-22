@@ -8167,14 +8167,15 @@ ENDIF
             CMP #&07
             BCC LB03E
             CMP #&5B
-            BCC LB086
-            JMP LB0F3
-			
+            BCC LB086 ; SFTODO: maybe one of the "before/after day of week" type queries???
+            JMP LB0F3 ; SFTODO: ditto???
+
+; SFTODO: *Maybe* the case where we want a specific day of week!? Pure guesswork
 .LB03E      LDA prv2Flags
             AND #&0E ; SFTODO: get bits indicating if prv{Year,Month,DayOfMonth} are &FF
             BNE prvYearMonthDayOfMonthNotSet
             JSR validateDateTimeRespectingLeapYears
-            LDA prvOswordBlockCopy
+            LDA prvDateSFTODO0
             AND #&F0 ; SFTODO: get century, year, month, day of month flags?
             BNE secSevRts2
 .prvYearMonthDayOfMonthNotSet ; SFTODO: Not sure about this
@@ -8190,7 +8191,7 @@ ENDIF
             BEQ LB083
 .LB068      JSR SFTODOPROBCALCULATEDAYOFWEEK
             STA prvDateDayOfWeek
-            JMP LB052
+            JMP LB052 ; SFTODO: Looks like we're looping round, and LAEDE at least sometimes increments day of month, so I wonder if this is implementing one of the "search for date where day of week is X" operations - maybe
 			
 .LB071      JSR validateDateTimeRespectingLeapYears
             LDA prvOswordBlockCopy
@@ -8209,28 +8210,28 @@ ENDIF
             SEC
             RTS
 			
-.LB086      STA prv82+&4A
-            LDA #&00
-            STA prv82+&4B
-            LDA #&07
-            STA prv82+&4C
+.LB086      STA prvA
+            LDA #0
+            STA prvB
+            LDA #7
+            STA prvC
             JSR SFTODOPSEUDODIV
             TAX
             INX
-            STX prvOswordBlockCopy + 12
+            STX prvDateDayOfWeek
             LDA #&1E
-            STA prv82+&42
-            LDX prv82+&4D
-            CPX #&0A
+            STA prv2Flags
+            LDX prvD
+            CPX #10
             BEQ LB0E7
-            CPX #&0B
+            CPX #11
             BEQ LB0CD
-            CPX #&0C
+            CPX #12
             BEQ LB0DA
             TXA
             PHA
 .LB0B1      JSR SFTODOPROBCALCULATEDAYOFWEEK
-            CMP prvOswordBlockCopy + 12
+            CMP prvDateDayOfWeek
             BEQ LB0C1
             JSR LAEDE
             BCC LB0B1
@@ -8247,23 +8248,23 @@ ENDIF
 
 .LB0CD      JSR LAEDE
             JSR SFTODOPROBCALCULATEDAYOFWEEK
-            CMP prvOswordBlockCopy + 12
+            CMP prvDateDayOfWeek
             BNE LB0CD
             BEQ LB07B
 .LB0DA      JSR LAF44
             JSR SFTODOPROBCALCULATEDAYOFWEEK
-            CMP prvOswordBlockCopy + 12
+            CMP prvDateDayOfWeek
             BNE LB0DA
             BEQ LB07B
 .LB0E7      JSR SFTODOPROBCALCULATEDAYOFWEEK
-            CMP prvOswordBlockCopy + 12
+            CMP prvDateDayOfWeek
             BEQ LB07B
             BCS LB0DA
             BCC LB0CD
 
 .LB0F3      LDA #&1E
-            STA prv82+&42
-            LDA prv82+&47
+            STA prv2Flags
+            LDA prv2DateDayOfWeek
             CMP #&9B
             BCC LB116
             SBC #&9A
