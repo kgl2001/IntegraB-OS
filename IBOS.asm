@@ -7155,9 +7155,9 @@ osfileBlock = L02EE
 .decrementDone ; SFTODO: rename to "noBorrow"?
             LDA prv3DateMonth
             STA prvA
-            LDA #&82
+            LDA #130
             STA prvB
-            JSR mul8
+            JSR mul8 ; DC=A*B
             ASL prvDC
             ROL prvDC + 1
             SEC
