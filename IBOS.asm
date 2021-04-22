@@ -8732,7 +8732,8 @@ ENDIF
             EQUB &80
 			EQUS "Bad date", &00
 
-.LB4CF      JSR PrvDis								;switch out private RAM
+.PrvDisBadTime
+	  JSR PrvDis								;switch out private RAM
             JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
             EQUB &80
@@ -8761,7 +8762,7 @@ ENDIF
 .setTime    INY
             JSR parseAndValidateTime
             BCC LB515
-            JMP LB4CF								;Error with Bad time
+            JMP PrvDisBadTime								;Error with Bad time
 			
 .LB515      JSR LA676								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
             JMP LB506								;switch out private RAM and exit
@@ -8897,7 +8898,7 @@ ENDIF
             JSR PrvDis								;switch out private RAM
             JMP syntaxError
 			
-.LB62A      JMP LB4CF
+.LB62A      JMP PrvDisBadTime
 
 .LB62D      PLP
             JSR copyPrvAlarmToRtc
