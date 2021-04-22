@@ -8144,10 +8144,8 @@ ENDIF
 .sevSecRts  BIT rts
             SEC
 .rts        RTS
-}
 
-{
-.^LB033      CMP #&07
+.LB033      CMP #&07
             BCC LB03E
             CMP #&5B
             BCC LB086
@@ -8178,13 +8176,13 @@ ENDIF
             LDA prvOswordBlockCopy
             AND #&F0
             BNE LB05A
-.^LB07B      CLV
+.LB07B      CLV
             CLC
             RTS
 			
-.^LB07E      SEC
-            BIT rts
-.rts        RTS
+.LB07E      SEC
+            BIT rts2
+.rts2        RTS
 
 .LB083      CLV
             SEC
@@ -8225,28 +8223,24 @@ ENDIF
             BCC LB0C3
             CLV
             RTS
-}
 
-{
-.^LB0CD      JSR LAEDE
+.LB0CD      JSR LAEDE
             JSR SFTODOPROBCALCULATEDAYOFWEEK
             CMP prvOswordBlockCopy + 12
             BNE LB0CD
             BEQ LB07B
-.^LB0DA      JSR LAF44
+.LB0DA      JSR LAF44
             JSR SFTODOPROBCALCULATEDAYOFWEEK
             CMP prvOswordBlockCopy + 12
             BNE LB0DA
             BEQ LB07B
-.^LB0E7      JSR SFTODOPROBCALCULATEDAYOFWEEK
+.LB0E7      JSR SFTODOPROBCALCULATEDAYOFWEEK
             CMP prvOswordBlockCopy + 12
             BEQ LB07B
             BCS LB0DA
             BCC LB0CD
-}
 
-{
-.^LB0F3      LDA #&1E
+.LB0F3      LDA #&1E
             STA prv82+&42
             LDA prv82+&47
             CMP #&9B
