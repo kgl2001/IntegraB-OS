@@ -7989,7 +7989,7 @@ ENDIF
             JSR getDaysInMonthY
             CMP prvDateDayOfMonth
             BCS LAF3C
-            LDA #&01
+            LDA #1
             STA prvDateDayOfMonth
 .prvDayOfMonthIsSet ; SFTODO: not sure
 .LAEF8      LDA #&04 ; SFTODO: test bit indicating prvMonth is &FF
@@ -7997,9 +7997,9 @@ ENDIF
             BEQ prvMonthIsSet
             INC prvDateMonth
             LDA prvDateMonth
-            CMP #&0D
+            CMP #13
             BCC LAF3C
-            LDA #&01
+            LDA #1
             STA prvDateMonth
 .prvMonthIsSet ; SFTODO?
             LDA #&08 ; SFTODO: test bit indicating prvYear is &FF
@@ -8007,20 +8007,20 @@ ENDIF
             BEQ prvYearIsSet
             INC prvDateYear
             LDA prvDateYear
-            CMP #&64
+            CMP #100
             BCC sevClcRts
             LDA #&00
             STA prvDateYear
 .prvYearIsSet ; SFTODO?
-            LDA #&10 ; SFTODO: test bit indicating prvCenture is &FF
+            LDA #&10 ; SFTODO: test bit indicating prvCentury is &FF
             BIT prv82+&42
             BEQ sevClcRts
-            INC prvOswordBlockCopy + 8
-            LDA prvOswordBlockCopy + 8
-            CMP #&64
+            INC prvDateCentury
+            LDA prvDateCentury
+            CMP #100
             BCC sevClcRts
             LDA #&00
-            STA prvOswordBlockCopy + 8
+            STA prvDateCentury
             SEC
             RTS
 			
