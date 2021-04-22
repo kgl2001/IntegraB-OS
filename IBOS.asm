@@ -7995,23 +7995,24 @@ ENDIF
 .LAEF8      LDA #&04 ; SFTODO: test bit indicating prvMonth is &FF
             BIT prv2Flags
             BEQ prvMonthIsSet
-            INC prvOswordBlockCopy + 10
-            LDA prvOswordBlockCopy + 10
+            INC prvDateMonth
+            LDA prvDateMonth
             CMP #&0D
             BCC LAF3C
             LDA #&01
-            STA prvOswordBlockCopy + 10
+            STA prvDateMonth
 .prvMonthIsSet ; SFTODO?
-            LDA #&08
+            LDA #&08 ; SFTODO: test bit indicating prvYear is &FF
             BIT prv82+&42
-            BEQ LAF24
+            BEQ prvYearIsSet
             INC prvOswordBlockCopy + 9
             LDA prvOswordBlockCopy + 9
             CMP #&64
             BCC LAF3F
             LDA #&00
             STA prvOswordBlockCopy + 9
-.LAF24      LDA #&10
+.prvYearIsSet ; SFTODO?
+            LDA #&10
             BIT prv82+&42
             BEQ LAF3F
             INC prvOswordBlockCopy + 8
