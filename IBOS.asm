@@ -6715,7 +6715,6 @@ osfileBlock = L02EE
 }
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
-; SFTODOWIP
 .writeRtcTime
 {
 .LA676      LDX #&0A								;Select 'Register A' register on RTC: Register &0A
@@ -8253,6 +8252,7 @@ ENDIF
 .LB132      RTS
 }
 
+;SFTODOWIP
 {
 .^LB133      LDX #&04
             LDA #&FF
@@ -8783,7 +8783,7 @@ ENDIF
             JSR initDateSFTODOS								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
             LDA prvDateSFTODO2
             AND #&F0
-            STA prvDateSFTODO2							;store #&40 to address &8222
+            STA prvDateSFTODO2							;store #&40 to address &8222, updating value set by initDateSFTODOS
             JSR LB133
             BCC LB53C
             BVS LB539
