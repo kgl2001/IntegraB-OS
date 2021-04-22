@@ -8399,16 +8399,17 @@ ENDIF
             RTS
 }
 
+; SFTODO: This seems to be parsing the "+"/"-" support for *DATE/*CALENDAR
 {
-.^LB1ED      STY prv82+&4E
+.^LB1ED      STY prv3DateCentury
             LDA #&00
-            STA L00AB
+            STA transientDateSFTODO1
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'+'
-            BEQ LB215
+            BEQ plus
             CMP #'-'
-            BNE LB22D
+            BNE minus
             INY
             JSR convertIntegerDefaultDecimal
             BCS LB20B
@@ -8421,7 +8422,7 @@ ENDIF
             CLC
             RTS
 			
-.LB215      INY
+.plus       INY
             JSR convertIntegerDefaultDecimal
             BCS LB21F
             CMP #&00
@@ -8437,7 +8438,7 @@ ENDIF
             SEC
             RTS
 			
-.LB22D      LDX #&00
+.minus      LDX #&00
 .LB22F      STX prv82+&50
             LDA calOffsetTable+1,X
             STA L00AA
