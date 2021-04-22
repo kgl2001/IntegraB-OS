@@ -8013,7 +8013,7 @@ ENDIF
             STA prvDateYear
 .prvYearIsSet ; SFTODO?
             LDA #&10 ; SFTODO: test bit indicating prvCentury is &FF
-            BIT prv82+&42
+            BIT prv2Flags
             BEQ sevClcRts
             INC prvDateCentury
             LDA prvDateCentury
@@ -8034,25 +8034,25 @@ ENDIF
 }
 
 {
-.^LAF44      DEC prvOswordBlockCopy + 11
+.^LAF44      DEC prvDateDayOfMonth
             BNE LAF3C
-            LDY prvOswordBlockCopy + 10
+            LDY prvDateMonth
             DEY
             BNE LAF51
             LDY #&0C
 .LAF51      JSR getDaysInMonthY
-            STA prvOswordBlockCopy + 11
-            STY prvOswordBlockCopy + 10
+            STA prvDateDayOfMonth
+            STY prvDateMonth
             CPY #&0C
             BCC LAF3C
-            DEC prvOswordBlockCopy + 9
-            LDA prvOswordBlockCopy + 9
+            DEC prvDateYear
+            LDA prvDateYear
             CMP #&FF
             BNE sevClcRts
             LDA #&63
-            STA prvOswordBlockCopy + 9
-            DEC prvOswordBlockCopy + 8
-            LDA prvOswordBlockCopy + 8
+            STA prvDateYear
+            DEC prvDateCentury
+            LDA prvDateCentury
             CMP #&FF
             BNE sevClcRts
             SEC
