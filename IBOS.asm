@@ -8141,8 +8141,7 @@ ENDIF
             CLC
             RTS
 
-.sevSecRts
-.LB02E      BIT rts
+.sevSecRts  BIT rts
             SEC
 .rts        RTS
 }
