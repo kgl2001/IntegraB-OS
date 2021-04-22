@@ -8720,24 +8720,26 @@ ENDIF
 .LB4AC      JMP exitSC								;Exit Service Call
 }
 
-.LB4AF      JSR PrvDis								;switch out private RAM
+.PrvDisMismatch
+      	  JSR PrvDis								;switch out private RAM
             JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
             EQUB &80
-			EQUS "Mismatch", &00
+  	  EQUS "Mismatch", &00
 
-.LB4BF      JSR PrvDis								;switch out private RAM
+.PrvDisBadDate
+	  JSR PrvDis								;switch out private RAM
             JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
             EQUB &80
-			EQUS "Bad date", &00
+	  EQUS "Bad date", &00
 
 .PrvDisBadTime
 	  JSR PrvDis								;switch out private RAM
             JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
             EQUB &80
-			EQUS "Bad time", &00
+	  EQUS "Bad time", &00
 
 ;*TIME Command
 {
@@ -8781,9 +8783,9 @@ ENDIF
             JSR LB133
             BCC LB53C
             BVS LB539
-            JMP LB4AF								;Error with Mismatch
+            JMP PrvDisMismatch								;Error with Mismatch
 			
-.LB539      JMP LB4BF								;Error with Bad Date
+.LB539      JMP PrvDisBadDate								;Error with Bad Date
 
 .LB53C      LDA #lo(prvDateBuffer)
             STA prvDateSFTODO4							;store #&00 to address &8224
@@ -8797,7 +8799,7 @@ ENDIF
 .setDate    INY
             JSR LB2F5
             BCC LB55B
-            JMP LB4BF								;Error with Bad date
+            JMP PrvDisBadDate								;Error with Bad date
 			
 .LB55B      JSR LA6CB								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
             JMP LB54C								;switch out private RAM and exit
@@ -8809,9 +8811,9 @@ ENDIF
             JSR LB133
             BCC LB571
             BVS LB56E
-            JMP LB4AF
+            JMP PrvDisMismatch
 			
-.LB56E      JMP LB4BF
+.LB56E      JMP PrvDisBadDate
 
 .LB571      LDA #lo(prvDateBuffer2)
             STA prvDateSFTODO4
