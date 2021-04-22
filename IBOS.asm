@@ -8144,7 +8144,7 @@ ENDIF
             INX
             CPX #&05
             BNE loop
-            JSR SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek
+            JSR SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: RETURNS SOMETHING IN C, ALSO PROBABLY IN prvOswordBlockCopy ("OK" EXIT PATH SETS IT TO 0, I THINK)
             BCS sevSecRts
             LDA prv2DateDayOfWeek
             CMP #&FF
@@ -8299,7 +8299,7 @@ ENDIF
 	  ; Set the prvDate* addresses relating to date (as opposed to time) to &FF.
 	  LDX #&04
             LDA #&FF
-.LB137      STA prvOswordBlockCopy + 8,X
+.LB137      STA prvDateCentury,X
             DEX
             BPL LB137
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
