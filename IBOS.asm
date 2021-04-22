@@ -6681,6 +6681,7 @@ osfileBlock = L02EE
 ; SFTODO: speculating - 8-bit division-ish? prvB/prvC with result in A and remainder in prvD? Definitely not quite at least, because prvD starts with prvA
 ; SFTODO: speculating - 8-bit division, just looking at how it's called I do rather suspect it is prvB/prvC
 ; SFTODO: On entry prvA is low byte and prvB is high byte of a 16-bit value, prvC is an 8-bit divisor? Maybe prvC is high byte of an 8-bit divisor whose low byte is implicitly 0?
+; SFTODO: Ignoring the setup, the loop looks very much to me like division of prvD by prvC, with the result in prvD and the remainder in A
 {
 ; SFTODO: TEMP NAMES TO HELP ME THINK
 prvC = prvResult
@@ -6691,13 +6692,13 @@ prvD = prvResult + 1
 	  LDA prvB
             CMP prvC
             BCS rts ; SFTODO: branch if prvB>=prvC
-.LA634      ROL prvD
+.loop       ROL prvD
             ROL A
             CMP prvC
             BCC LA640
             SBC prvC
 .LA640      DEX
-            BNE LA634
+            BNE loop
             ROL prvD
 .rts        RTS
 }
