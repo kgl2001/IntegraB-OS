@@ -7138,9 +7138,9 @@ osfileBlock = L02EE
             DEC prv3DateCentury
             BPL LA947
             CLC
-            LDA prv82+&4E
-            ADC #&64
-            STA prv82+&4E
+            LDA prv3DateCentury
+            ADC #100
+            STA prv3DateCentury
 .LA947      LDA prv82+&50
             STA prv82+&4A
             LDA #&82
