@@ -7148,21 +7148,21 @@ osfileBlock = L02EE
             ADC #100
             STA prv3DateCentury
 .LA947      LDA prv3DateMonth
-            STA prv82+&4A
+            STA prvA
             LDA #&82
-            STA prv82+&4B
+            STA prvB
             JSR mul8
-            ASL prv82+&4C
-            ROL prv82+&4D
+            ASL prvResult
+            ROL prvResult + 1
             SEC
-            LDA prv82+&4C
+            LDA prvResult
             SBC #&13
-            STA prv82+&4A
-            LDA prv82+&4D
+            STA prvA
+            LDA prvResult + 1
             SBC #&00
-            STA prv82+&4B
-            LDA #&64
-            STA prv82+&4C
+            STA prvB
+            LDA #100
+            STA prvResult
             JSR LA624
             CLC
             LDA prv82+&4D
