@@ -8306,7 +8306,7 @@ ENDIF
             LDA (transientCmdPtr),Y
             CMP #vduCr
             BEQ LB197
-            JSR LB1ED
+            JSR SFTODOProbParsePlusMinusDate
             BCS secSevRts
             STA prvDateDayOfWeek
             CMP #&FF
@@ -8399,9 +8399,11 @@ ENDIF
             RTS
 }
 
-; SFTODO: This seems to be parsing the "+"/"-" support for *DATE/*CALENDAR
+; SFTODO: This seems to be parsing the "+"/"-" support for *DATE/*CALENDAR and returning with the offset in some form in A (&FF meaning not present/couldn't parse or something like that)
+; SFTODO: This has only one caller
+.SFTODOProbParsePlusMinusDate
 {
-.^LB1ED      STY prv3DateCentury
+.LB1ED      STY prv3DateCentury
             LDA #&00
             STA transientDateSFTODO1
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
