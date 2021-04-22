@@ -7163,13 +7163,13 @@ osfileBlock = L02EE
             ADC prvDateDayOfMonth
             ADC prv3DateYear
 .LA97E      STA prv82+&4A
-            LDA prv82+&4F
+            LDA prv3DateYear
             LSR A
             LSR A
             CLC
             ADC prv82+&4A
             STA prv82+&4A
-            LDA prv82+&4E
+            LDA prv3DateCentury
             LSR A
             LSR A
             CLC
