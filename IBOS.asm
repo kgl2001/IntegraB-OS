@@ -8084,20 +8084,24 @@ ENDIF
             RTS
 }
 
+;SFTODOWIP
 {
-.^LAFF9      LDX #&04
+.^LAFF9
+	  ; Copy prvDate{Century,Year,Month,DayOfMonth,DayOfWeek} to prv82+&43
+	  LDX #&04
 .LAFFB      LDA prvOswordBlockCopy + 8,X
             STA prv82+&43,X
             DEX
             BPL LAFFB
+	  ; Set prv82+&42 so b4-0 are set iff prv{Century,Year,Month,DayOfMonth,DayOfWeek} is &FF.
             LDX #&00
             STX prv82+&42
-.LB009      LDA prvOswordBlockCopy + 8,X
+.loop       LDA prvOswordBlockCopy + 8,X
             CMP #&FF
             ROL prv82+&42
             INX
             CPX #&05
-            BNE LB009
+            BNE loop
             JSR LAF79
             BCS LB02E
             LDA prv82+&47
