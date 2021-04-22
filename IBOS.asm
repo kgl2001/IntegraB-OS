@@ -8005,12 +8005,12 @@ ENDIF
             LDA #&08 ; SFTODO: test bit indicating prvYear is &FF
             BIT prv82+&42
             BEQ prvYearIsSet
-            INC prvOswordBlockCopy + 9
-            LDA prvOswordBlockCopy + 9
+            INC prvDateYear
+            LDA prvDateYear
             CMP #&64
             BCC LAF3F
             LDA #&00
-            STA prvOswordBlockCopy + 9
+            STA prvDateYear
 .prvYearIsSet ; SFTODO?
             LDA #&10
             BIT prv82+&42
