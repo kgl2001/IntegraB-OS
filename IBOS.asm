@@ -8450,8 +8450,10 @@ ENDIF
             RTS
 }
 
+; Parse a time from the command line, populating prvDate* and returning with C clear iff parsing succeeded.
+.parseAndValidateTime
 {
-.^LB2B5      JSR convertIntegerDefaultDecimal
+.LB2B5      JSR convertIntegerDefaultDecimal
             BCS parseError
             STA prvDateHours
             LDA (transientCmdPtr),Y
@@ -8479,8 +8481,8 @@ ENDIF
             PLA
             TAY
             LDA prvOswordBlockCopy
-            AND #&07
-            BNE parseError
+            AND #&07								;did hour/minutes/second part fail validation?
+            BNE parseError								;branch if fail
             CLC
             RTS
 			
@@ -8757,7 +8759,7 @@ ENDIF
             JMP exitSC								;Exit Service Call								;
 			
 .setTime    INY
-            JSR LB2B5
+            JSR parseAndValidateTime
             BCC LB515
             JMP LB4CF								;Error with Bad time
 			
@@ -8888,7 +8890,7 @@ ENDIF
 {
 .LB61A      INY
 .LB61B      PHP
-            JSR LB2B5
+            JSR parseAndValidateTime
             BCC LB62D
             PLP
             BCC LB62A
