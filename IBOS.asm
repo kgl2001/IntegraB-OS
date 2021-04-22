@@ -8088,33 +8088,33 @@ ENDIF
 
 ; SFTODOWIP
 .LAFAA      JSR getRtcDayMonthYear
-            LDA prv82+&42
+            LDA prv2Flags
             AND #&1E
             CMP #&1E
             BEQ LAFEC
-            LDA prv82+&42
+            LDA prv2Flags
             STA prv82+&48
             LDA #&1E
-            STA prv82+&42
-.LAFC1      LDA prv82+&46
+            STA prv2Flags
+.LAFC1      LDA prv2DateDayOfMonth
             CMP #&FF
             BEQ LAFCD
-            CMP prvOswordBlockCopy + 11
+            CMP prvDateDayOfMonth
             BNE LAFD9
 .LAFCD      LDA prv82+&45
             CMP #&FF
             BEQ LAFE6
-            CMP prvOswordBlockCopy + 10
+            CMP prvDateMonth
             BEQ LAFE6
 .LAFD9      JSR LAEDE
             BCC LAFC1
             LDA prv82+&48
-            STA prv82+&42
+            STA prv2Flags
             SEC
             RTS
 			
 .LAFE6      LDA prv82+&48
-            STA prv82+&42
+            STA prv2Flags
 .LAFEC      JSR SFTODOPROBCALCULATEDAYOFWEEK
             STA prvDateDayOfWeek
             LDA #&00
