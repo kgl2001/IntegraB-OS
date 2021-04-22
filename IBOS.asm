@@ -6678,21 +6678,25 @@ osfileBlock = L02EE
             RTS
 }
 
+; SFTODO: speculating - 8-bit division-ish?
 {
+; SFTODO: TEMP NAMES TO HELP ME THINK
+prvC = prvResult
+prvD = prvResult + 1
 .^LA624      LDX #&08
             LDA prvA
-            STA prvResult + 1
+            STA prvD
             LDA prvB
             CMP prvResult
             BCS rts ; SFTODO: branch if prvB>=prvResult
-.LA634      ROL prvResult + 1
+.LA634      ROL prvD
             ROL A
-            CMP prvResult
+            CMP prvC
             BCC LA640
-            SBC prvResult
+            SBC prvC
 .LA640      DEX
             BNE LA634
-            ROL prvResult + 1
+            ROL prvD
 .rts        RTS
 }
 
