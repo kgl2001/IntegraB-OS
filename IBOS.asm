@@ -7120,6 +7120,7 @@ osfileBlock = L02EE
 .LA904      RTS
 }
 
+; SFTODO: Just looking at the last few lines, I might guess this is calculating prvDateDayOfWeek, i.e. working out what day of the week the given date falls on. But I haven't understood the calculation and/or found a reference to this calculation method online yet.
 {
 .^LA905      CLC
             BCC LA909
@@ -7167,6 +7168,7 @@ osfileBlock = L02EE
             LDA prvDC + 1
             SBC #&00
             STA prvB
+	  ; SFTODO: So BA=prv3DateMonth*130-19??
             LDA #100
             STA prvDC
             JSR SFTODOPSEUDODIV
@@ -7179,13 +7181,13 @@ osfileBlock = L02EE
             LSR A
             LSR A
             CLC
-            ADC prv82+&4A
-            STA prv82+&4A
+            ADC prvA
+            STA prvA
             LDA prv3DateCentury
             LSR A
             LSR A
             CLC
-            ADC prv82+&4A
+            ADC prvA
             ASL prv3DateCentury
             SEC
             SBC prv3DateCentury
@@ -7194,11 +7196,11 @@ osfileBlock = L02EE
             SEC
             SBC #&01
             EOR #&FF
-.LA9A5      STA prv82+&4A
+.LA9A5      STA prvA
             LDA #&00
-            STA prv82+&4B
+            STA prvB
             LDA #&07
-            STA prv82+&4C
+            STA prvC
             JSR SFTODOPSEUDODIV
             PLP
             BCS LA9C0
@@ -7210,9 +7212,9 @@ osfileBlock = L02EE
 .LA9C0      CMP #&07
             BCC LA9C6
             SBC #&07
-.LA9C6      STA prv82+&4A
-            INC prv82+&4A
-            LDA prv82+&4A
+.LA9C6      STA prvA
+            INC prvA
+            LDA prvA
             PLP
             BCS LA9E5
             CMP prvDateDayOfWeek
@@ -7220,7 +7222,7 @@ osfileBlock = L02EE
             LDA #&08
             ORA prvOswordBlockCopy
             STA prvOswordBlockCopy
-.LA9DF      LDA prv82+&4A
+.LA9DF      LDA prvA
             STA prvDateDayOfWeek
 .LA9E5      RTS
 }
