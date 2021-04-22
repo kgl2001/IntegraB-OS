@@ -8048,11 +8048,9 @@ ENDIF
             CPX #&04
             BNE loop
             JMP LAFEC
-}
-;SFTODO: Perhaps merge these two block and reduce exports?
-{
+
 ; SFTODOWIP
-.^LAFAA      JSR getRtcDayMonthYear
+.LAFAA      JSR getRtcDayMonthYear
             LDA prv82+&42
             AND #&1E
             CMP #&1E
@@ -8080,7 +8078,7 @@ ENDIF
 			
 .LAFE6      LDA prv82+&48
             STA prv82+&42
-.^LAFEC      JSR LA908
+.LAFEC      JSR LA908
             STA prvDateDayOfWeek
             LDA #&00
             STA prvOswordBlockCopy
