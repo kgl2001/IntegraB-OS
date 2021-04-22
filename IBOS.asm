@@ -529,7 +529,7 @@ prvA = prv82 + &4A ; SFTODO: tweak name!
 prvB = prv82 + &4B ; SFTODO: tweak name!
 prvC = prv82 + &4C ; SFTODO: tweak name!
 prvD = prv82 + &4D ; SFTODO: tweak name!
-prvResult = prv82 + &4C ; 2 bytes SFTODO: maybe tweak name
+prvDC = prvC ; SFTODO: prvC and prvD together treated as a 16-bit value with high byte in prvD
 prv3DateCentury = prv82 + &4E
 prv3DateYear = prv82 + &4F
 prv3DateMonth = prv82 + &50
@@ -6659,24 +6659,24 @@ osfileBlock = L02EE
             RTS
 }
 
-; Multiply 8-bit values prvA and prvB to give a 16-bit result at prvResult.
+; Multiply 8-bit values prvA and prvB to give a 16-bit result at prvDC.
 .mul8
 {
 .LA604      LDA #&00
-            STA prvResult + 1
+            STA prvDC + 1
             LDX #&08
 .loop       ASL A
-            ROL prvResult + 1
+            ROL prvDC + 1
             ASL prvB
             BCC noAdd
             CLC
             ADC prvA
             BCC noCarry
-            INC prvResult + 1
+            INC prvDC + 1
 .noCarry
 .noAdd      DEX
             BNE loop
-            STA prvResult
+            STA prvDC
             RTS
 }
 
@@ -7155,20 +7155,20 @@ osfileBlock = L02EE
             LDA #&82
             STA prvB
             JSR mul8
-            ASL prvResult
-            ROL prvResult + 1
+            ASL prvDC
+            ROL prvDC + 1
             SEC
-            LDA prvResult
+            LDA prvDC
             SBC #19
             STA prvA
-            LDA prvResult + 1
+            LDA prvDC + 1
             SBC #&00
             STA prvB
             LDA #100
-            STA prvResult
+            STA prvDC
             JSR LA624
             CLC
-            LDA prvResult + 1
+            LDA prvDC + 1
             ADC prvDateDayOfMonth
             ADC prv3DateYear
 .LA97E      STA prv82+&4A
