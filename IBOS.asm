@@ -8061,7 +8061,9 @@ ENDIF
 
 {
 ; SFTODO: This seems (ignoring for the moment the work done when it does JMP SFTODOProbCalculateDayOfWeekClcRts) to fix up missing parts (&FF) of the date (not time) with the relevant component of 1900/01/01 (ish; I haven't traced the LAFAA branch yet either)
-.^LAF79      LDA prv2Flags
+; SFTODO: This has only one caller
+.^SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek
+.LAF79      LDA prv2Flags
             AND #&08
             BNE LAFAA ; SFTODO: branch if prvDateYear is &FF
             LDA prv2Flags
@@ -8142,7 +8144,7 @@ ENDIF
             INX
             CPX #&05
             BNE loop
-            JSR LAF79
+            JSR SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek
             BCS sevSecRts
             LDA prv2DateDayOfWeek
             CMP #&FF
