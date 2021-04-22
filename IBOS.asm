@@ -8166,15 +8166,15 @@ ENDIF
             BNE errorInDayOfWeekHoursOrMinutes
             JSR validateDateTimeRespectingLeapYears
             LDA prvOswordBlockCopy
-            AND #&F0
-            BNE LB07E
+            AND #&F0 ; SFTODO: get century, year, month, day of month flags?
+            BNE secSevRts2
 .errorInDayOfWeekHoursOrMinutes ; SFTODO: Not sure about this
             INC prv2DateDayOfWeek
 .LB052      LDA prv2DateDayOfWeek
             CMP prvDateDayOfWeek
             BEQ LB071
 .LB05A      JSR LAEDE
-            BCS LB07E
+            BCS secSevRts2
             BVC LB068
             LDA #&08
             BIT prv2Flags
@@ -8190,10 +8190,10 @@ ENDIF
 .LB07B      CLV
             CLC
             RTS
-			
-.LB07E      SEC
+
+.secSevRts2 SEC
             BIT rts2
-.rts2        RTS
+.rts2       RTS
 
 .LB083      CLV
             SEC
@@ -8225,7 +8225,7 @@ ENDIF
             JSR LAEDE
             BCC LB0B1
             PLA
-            BCS LB07E
+            BCS secSevRts2
 .LB0C1      PLA
             TAX
 .LB0C3      DEX
@@ -8260,7 +8260,7 @@ ENDIF
             TAX
 .LB102      JSR LAEDE
             BCC LB10A
-            JMP LB07E
+            JMP secSevRts2
 			
 .LB10A      DEX
             BNE LB102
@@ -8273,7 +8273,7 @@ ENDIF
             TAX
 .LB11A      JSR LAF44
             BCC LB122
-            JMP LB07E
+            JMP secSevRts2
 			
 .LB122      DEX
             BNE LB11A
