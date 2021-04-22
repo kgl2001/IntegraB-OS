@@ -531,7 +531,6 @@ prvB = prv82 + &4B ; SFTODO: tweak name!
 prvC = prv82 + &4C ; SFTODO: tweak name!
 prvD = prv82 + &4D ; SFTODO: tweak name!
 prvDC = prvC ; SFTODO: prvC and prvD together treated as a 16-bit value with high byte in prvD
-; SFTODO: I suspect the next three are actually just miscellaneous temporary working variables which I misnamed on seeing them used the first time, should probably rename them
 prvTmp2 = prv82 + &4E
 prvTmp3 = prv82 + &4F
 prvTmp4 = prv82 + &50
@@ -8308,7 +8307,7 @@ ENDIF
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #vduCr
-            BEQ LB197
+            BEQ dateArgumentParsed
             JSR SFTODOProbParsePlusMinusDate
             BCS secSevRts ; SFTODO: branch if parse failed
             STA prvDateDayOfWeek
@@ -8317,7 +8316,7 @@ ENDIF
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #','
-            BNE LB197
+            BNE dateArgumentParsed
             INY
 .LB15C      JSR convertIntegerDefaultDecimal
             BCC LB163
@@ -8326,7 +8325,7 @@ ENDIF
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'/'
-            BNE LB197
+            BNE dateArgumentParsed
             INY
             JSR convertIntegerDefaultDecimal
             BCC LB177
@@ -8335,18 +8334,18 @@ ENDIF
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'/'
-            BNE LB197
+            BNE dateArgumentParsed
             INY
             JSR convertIntegerDefaultDecimal
             BCC parsedYearOK
             LDA #&FF
             STA prvDateYear
             STA prvDateCentury
-            JMP LB197
+            JMP dateArgumentParsed
 			
 .parsedYearOK
 	  JSR interpretParsedYear
-.LB197
+.dateArgumentParsed
   	  ; SFTODO: I am kind of guessing that at this point the command argument has been parsed and anything "provided" has been filled in over the &FF defaults we put in place at the start. So if we're doing a simple "*DATE", *everything* (date-ish, not time-ish) will be &FF.
 	  JSR validateDateTimeAssumingLeapYear
 	  ; Stash the date validation result (shifted into the low nybble) on the stack.
