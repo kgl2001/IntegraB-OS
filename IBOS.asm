@@ -8160,7 +8160,7 @@ ENDIF
             BNE LB07E
 .LB04F      INC prv82+&47
 .LB052      LDA prv82+&47
-            CMP prvOswordBlockCopy + 12
+            CMP prvDateDayOfWeek
             BEQ LB071
 .LB05A      JSR LAEDE
             BCS LB07E
@@ -8169,7 +8169,7 @@ ENDIF
             BIT prv82+&42
             BEQ LB083
 .LB068      JSR SFTODOPROBCALCULATEDAYOFWEEK
-            STA prvOswordBlockCopy + 12
+            STA prvDateDayOfWeek
             JMP LB052
 			
 .LB071      JSR validateDateTimeRespectingLeapYears
@@ -8271,8 +8271,8 @@ ENDIF
             JMP LB07B
 			
 .^secSevRts      SEC
-            BIT LB132
-.LB132      RTS
+            BIT rts3
+.rts3       RTS
 }
 
 ;SFTODOWIP
