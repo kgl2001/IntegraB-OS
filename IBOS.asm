@@ -519,7 +519,7 @@ prvDateMinutes = prvOswordBlockCopy + 14
 prvDateSeconds = prvOswordBlockCopy + 15
 
 ; SFTODO WIP - THERE IS SEEMS TO BE AN EXTRA COPY OF PART OF DATE/TIME "OSWORD" BLOCK MADE HERE - "prv2" PART OF NAME IS REALLY JUST TEMP
-prv2Flags = prv82 + &42
+prv2Flags = prv82 + &42 ; SFTODO: should have "Date" or something in the name
 prv2DateCentury = prv82 + &43
 prv2DateYear = prv82 + &44
 prv2DateMonth = prv82 + &45
@@ -8032,26 +8032,26 @@ ENDIF
 
 {
 ; SFTODO: This seems (ignoring for the moment the work done when it does JMP LAFEC) to fix up missing parts (&FF) of the date (not time) with the relevant component of 1900/01/01 (ish; I haven't traced the LAFAA branch yet either)
-.^LAF79      LDA prv82+&42
+.^LAF79      LDA prv2Flags
             AND #&08
             BNE LAFAA ; SFTODO: branch if prvDateYear is &FF
-            LDA prv82+&42
+            LDA prv2Flags
             AND #&10
             BEQ haveCentury ; SFTODO: branch if prvDateCentury is not &FF
             LDA #19
             STA prvDateCentury
-            LDA prv82+&42
+            LDA prv2Flags
             AND #&0F ; clear bit indicating prvDateCentury was &FF
-            STA prv82+&42
+            STA prv2Flags
 .haveCentury
-	  ; SFTODO: Replace &FF values in prv{Century,Year,Month,DayOfMonth} with 0,0,1,1 respectively - so we're sort of defaulting to 1900/01/01, probably, given the defaulting of prvCentury earlier
+	  ; SFTODO: Replace &FF values in prvDate{Century,Year,Month,DayOfMonth} with 0,0,1,1 respectively - so we're sort of defaulting to 1900/01/01, probably, given the defaulting of prvCentury earlier
 	  LDX #&00
-.loop       LDA prvOswordBlockCopy + 8,X
+.loop       LDA prvDateCentury,X
             CMP #&FF
             BNE LAF9F
             TXA
             LSR A
-.LAF9F      STA prvOswordBlockCopy + 8,X
+.LAF9F      STA prvDateCentury,X
             INX
             CPX #&04
             BNE loop
