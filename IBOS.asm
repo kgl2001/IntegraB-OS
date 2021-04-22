@@ -7967,18 +7967,18 @@ ENDIF
 
 {
 .^LAEBA      CLC
-            LDA prvOswordBlockCopy + 11
+            LDA prvDateDayOfMonth
             ADC #&07
-            STA prvOswordBlockCopy + 11
-            LDY prvOswordBlockCopy + 10
+            STA prvDateDayOfMonth
+            LDY prvDateMonth
             JSR getDaysInMonthY
-            CMP prvOswordBlockCopy + 11
+            CMP prvDateDayOfMonth
             BCS LAF3C
             STA prv82+&4E
             SEC
-            LDA prvOswordBlockCopy + 11
+            LDA prvDateDayOfMonth
             SBC prv82+&4E
-            STA prvOswordBlockCopy + 11
+            STA prvDateDayOfMonth
             JMP LAEF8
 			
 .^LAEDE      LDA #&02 ; SFTODO: test bit indicating prvDayOfMonth is &FF
