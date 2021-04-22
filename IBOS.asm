@@ -6926,8 +6926,9 @@ osfileBlock = L02EE
             RTS
 }
 
+.getDaysInMonthY
 {
-.^LA7DF      DEY ; SFTODO: We could avoid this DEY/INY if we changed next line to LDA monthDaysTable-1,Y
+.LA7DF      DEY ; SFTODO: We could avoid this DEY/INY if we changed next line to LDA monthDaysTable-1,Y
             LDA monthDaysTable,Y
             INY
             CPY #2									;February
@@ -6963,7 +6964,7 @@ osfileBlock = L02EE
 .LA808      INY
             CPY prvOswordBlockCopy + 10
             BEQ LA823
-            JSR LA7DF
+            JSR getDaysInMonthY
             CLC
             ADC prvOswordBlockCopy + 4
             STA prvOswordBlockCopy + 4
@@ -7021,7 +7022,7 @@ osfileBlock = L02EE
             BNE monthDaysInY ; always branch
 .lookupMonthDays
 	  LDY prvDateMonth
-            JSR LA7DF
+            JSR getDaysInMonthY
             TAY
 .monthDaysInY
 	  LDA prvDateDayOfMonth
@@ -7198,7 +7199,7 @@ osfileBlock = L02EE
             STA prvOswordBlockCopy + 11
             JSR LA905
             LDY prvOswordBlockCopy + 10
-            JSR LA7DF
+            JSR getDaysInMonthY
             STA L00AA
 .LA9F6      CLC
             LDA L00AA
@@ -7901,7 +7902,7 @@ ENDIF
 .LAE82      LDA #&01
             STA prvOswordBlockCopy + 10
 .LAE87      LDY prvOswordBlockCopy + 10
-            JSR LA7DF
+            JSR getDaysInMonthY
             STA prv82+&4A
             SEC
             LDA prvOswordBlockCopy + 4
@@ -7928,7 +7929,7 @@ ENDIF
             ADC #&07
             STA prvOswordBlockCopy + 11
             LDY prvOswordBlockCopy + 10
-            JSR LA7DF
+            JSR getDaysInMonthY
             CMP prvOswordBlockCopy + 11
             BCS LAF3C
             STA prv82+&4E
@@ -7943,7 +7944,7 @@ ENDIF
             BEQ LAEF8
             INC prvOswordBlockCopy + 11
             LDY prvOswordBlockCopy + 10
-            JSR LA7DF
+            JSR getDaysInMonthY
             CMP prvOswordBlockCopy + 11
             BCS LAF3C
             LDA #&01
@@ -7994,7 +7995,7 @@ ENDIF
             DEY
             BNE LAF51
             LDY #&0C
-.LAF51      JSR LA7DF
+.LAF51      JSR getDaysInMonthY
             STA prvOswordBlockCopy + 11
             STY prvOswordBlockCopy + 10
             CPY #&0C
