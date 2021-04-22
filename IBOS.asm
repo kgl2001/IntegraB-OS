@@ -7124,7 +7124,8 @@ osfileBlock = L02EE
 {
 .^LA905      CLC
             BCC LA909
-.^LA908      SEC
+.^SFTODOPROBCALCULATEDAYOFWEEK
+.LA908      SEC
 .LA909      PHP
             LDA prvDateYear
             STA prv3DateYear
@@ -8102,7 +8103,7 @@ ENDIF
 			
 .LAFE6      LDA prv82+&48
             STA prv82+&42
-.LAFEC      JSR LA908
+.LAFEC      JSR SFTODOPROBCALCULATEDAYOFWEEK
             STA prvDateDayOfWeek
             LDA #&00
             STA prvOswordBlockCopy
@@ -8171,7 +8172,7 @@ ENDIF
             LDA #&08
             BIT prv82+&42
             BEQ LB083
-.LB068      JSR LA908
+.LB068      JSR SFTODOPROBCALCULATEDAYOFWEEK
             STA prvOswordBlockCopy + 12
             JMP LB052
 			
@@ -8211,7 +8212,7 @@ ENDIF
             BEQ LB0DA
             TXA
             PHA
-.LB0B1      JSR LA908
+.LB0B1      JSR SFTODOPROBCALCULATEDAYOFWEEK
             CMP prvOswordBlockCopy + 12
             BEQ LB0C1
             JSR LAEDE
@@ -8230,16 +8231,16 @@ ENDIF
 
 {
 .^LB0CD      JSR LAEDE
-            JSR LA908
+            JSR SFTODOPROBCALCULATEDAYOFWEEK
             CMP prvOswordBlockCopy + 12
             BNE LB0CD
             BEQ LB07B
 .^LB0DA      JSR LAF44
-            JSR LA908
+            JSR SFTODOPROBCALCULATEDAYOFWEEK
             CMP prvOswordBlockCopy + 12
             BNE LB0DA
             BEQ LB07B
-.^LB0E7      JSR LA908
+.^LB0E7      JSR SFTODOPROBCALCULATEDAYOFWEEK
             CMP prvOswordBlockCopy + 12
             BEQ LB07B
             BCS LB0DA
@@ -8260,7 +8261,7 @@ ENDIF
 			
 .LB10A      DEX
             BNE LB102
-            JSR LA908
+            JSR SFTODOPROBCALCULATEDAYOFWEEK
             STA prvOswordBlockCopy + 12
             JMP LB07B
 			
@@ -8273,7 +8274,7 @@ ENDIF
 			
 .LB122      DEX
             BNE LB11A
-            JSR LA908
+            JSR SFTODOPROBCALCULATEDAYOFWEEK
             STA prvOswordBlockCopy + 12
             JMP LB07B
 			
