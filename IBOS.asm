@@ -8758,16 +8758,16 @@ ENDIF
             JSR getRtcDateTime							;read TIME & DATE information from RTC and store in Private RAM (&82xx)
             JSR initDateBufferAndEmitTimeAndDate								;format text for output to screen?
             JSR printDateBuffer								;output TIME & DATE data from address &8000 to screen
-.LB506      JSR PrvDis								;switch out private RAM
+.PrvDisexitSC
+            JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call								;
 			
 .setTime    INY
             JSR parseAndValidateTime
-            BCC LB515
+            BCC parseOk
             JMP PrvDisBadTime								;Error with Bad time
-			
-.LB515      JSR LA676								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
-            JMP LB506								;switch out private RAM and exit
+.parseOk    JSR LA676								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
+            JMP PrvDisexitSC								;switch out private RAM and exit
 }
 
 ;*DATE Command
