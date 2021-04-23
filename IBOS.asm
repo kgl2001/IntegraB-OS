@@ -8359,7 +8359,7 @@ ENDIF
 	  JSR interpretParsedYear
 .dateArgumentParsed
   	  ; SFTODO: I am kind of guessing that at this point the command argument has been parsed and anything "provided" has been filled in over the &FF defaults we put in place at the start. So if we're doing a simple "*DATE", *everything* (date-ish, not time-ish) will be &FF.
-	  JSR validateDateTimeAssumingLeapYear ; SFTODO: *just possibly* it would be better to validate *respecting* leap year *iff* prvDateYear/prvDateCentury are not &FF (i.e. we have a specific year) - but I could very easily be missing some subtlety here - note that in LAFF9 we redo the validation respecting leap year after filling in the blanks, so this is probably *not* a helpful tweak here
+	  JSR validateDateTimeAssumingLeapYear ; SFTODO: *just possibly* it would be better to validate *respecting* leap year *iff* prvDateYear/prvDateCentury are not &FF (i.e. we have a specific year) - but I could very easily be missing some subtlety here - note that in LAFF9 we redo the validation respecting leap year after filling in the blanks, so this is probably *not* a helpful tweak here - OK, LAFF9 will *sometimes* redo the validation, so just maybe (it's all very unclear right now) this tweak would add a tiny bit of value
 	  ; Stash the date validation result (shifted into the low nybble) on the stack.
             LDA prvDateSFTODO0
 	  ; SFTODO: Use lsrA4
