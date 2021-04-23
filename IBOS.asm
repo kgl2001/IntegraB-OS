@@ -8043,6 +8043,7 @@ ENDIF
 .rts        RTS
 }
 
+; SFTODO: Note that unlike incrementPrvDateRespectingOpenElements, this does *not* respect open elements - I suspect this is correct given how it's called (e.g. - making this up - by the time we get to this point we have "picked" a date and we're just moving it back one day at a time to meet some additional criterion) but it *is* a difference worth noting in final comments.
 ; SFTODO: I think we return with C and V clear if things are OK; we return with C clear and V set if the year gets decremented, or C set (not sure about V, probably clear) if the century gets decremented below 0
 .decrementPrvDateBy1
 {
