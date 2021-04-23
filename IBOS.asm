@@ -7984,12 +7984,13 @@ ENDIF
             LDA prvDateDayOfMonth
             SBC prvTmp2
             STA prvDateDayOfMonth
-            JMP LAEF8
+            JMP LAEF8 ; SFTODO: This is probably "incrementPrvDateMonthBy1"
 
-; SFTODO: From context, I think this might be "incrementPrvDateBy1", but need to read through code with that thought in mind
-.^LAEDE      LDA #&02 ; SFTODO: test bit indicating prvDateDayOfMonth is &FF
+; SFTODO: I am still figuring this code out, but what I think this is doing is incrementing the date part of PrvDate* - it's not a simple increment by 1, because we do *not* change anything the user has explicitly specified, we only change "open" elements the user didn't specify. Note that we need to continue to respect openness (it's really more that we're respecting *non*-openness) as we cascade the change into more significant parts of the date when the increment moves an element out of range.
+.^incrementPrvDateRespectingOpenElements
+.LAEDE      LDA #&02 ; SFTODO: test bit indicating prvDateDayOfMonth is &FF
             BIT prv2Flags
-            BEQ prvDayOfMonthNotOpen
+            BEQ prvDayOfMonthNotOpen ; SFTODO: Not quite sure about this - I think this is saying "it wasn't specified by the user", but *we* may have filled it in the meantime - the fact we go and INC it kind of implies we have
             INC prvDateDayOfMonth
             LDY prvDateMonth
             JSR getDaysInMonthY
@@ -8020,7 +8021,7 @@ ENDIF
 .prvYearNotOpen
             LDA #&10 ; SFTODO: test bit indicating prvCentury is &FF
             BIT prv2Flags
-            BEQ sevClcRts
+            BEQ sevClcRts ; SFTODO: branch if prvCentury not open
             INC prvDateCentury
             LDA prvDateCentury
             CMP #100
@@ -8105,7 +8106,7 @@ ENDIF
             LDA prv2Flags
             STA prvTmp6 ; SFTODO: TEMP STASH ORIGINAL prv2Flags?
             LDA #&1E
-            STA prv2Flags ; SFTODO: We must be doing this for the benefit of LAEDE
+            STA prv2Flags ; SFTODO: We must be doing this for the benefit of incrementPrvDateRespectingOpenElements
 .LAFC1      LDA prv2DateDayOfMonth
             CMP #&FF
             BEQ LAFCD
@@ -8116,7 +8117,7 @@ ENDIF
             BEQ LAFE6
             CMP prvDateMonth
             BEQ LAFE6
-.LAFD9      JSR LAEDE
+.LAFD9      JSR incrementPrvDateRespectingOpenElements
             BCC LAFC1
             LDA prvTmp6 ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
             STA prv2Flags
@@ -8188,7 +8189,7 @@ ENDIF
 .LB052      LDA prv2DateDayOfWeek
             CMP prvDateDayOfWeek
             BEQ LB071
-.LB05A      JSR LAEDE
+.LB05A      JSR incrementPrvDateRespectingOpenElements
             BCS badDate2
             BVC LB068
             LDA #&08
@@ -8196,7 +8197,7 @@ ENDIF
             BEQ LB083
 .LB068      JSR SFTODOPROBCALCULATEDAYOFWEEK
             STA prvDateDayOfWeek
-            JMP LB052 ; SFTODO: Looks like we're looping round, and LAEDE at least sometimes increments day of month, so I wonder if this is implementing one of the "search for date where day of week is X" operations - maybe
+            JMP LB052 ; SFTODO: Looks like we're looping round, and incrementPrvDateRespectingOpenElements at least sometimes increments day of month, so I wonder if this is implementing one of the "search for date where day of week is X" operations - maybe
 			
 .LB071      JSR validateDateTimeRespectingLeapYears
             LDA prvOswordBlockCopy
@@ -8238,7 +8239,7 @@ ENDIF
 .LB0B1      JSR SFTODOPROBCALCULATEDAYOFWEEK
             CMP prvDateDayOfWeek
             BEQ LB0C1
-            JSR LAEDE
+            JSR incrementPrvDateRespectingOpenElements
             BCC LB0B1
             PLA
             BCS badDate2
@@ -8251,7 +8252,7 @@ ENDIF
             CLV
             RTS
 
-.LB0CD      JSR LAEDE
+.LB0CD      JSR incrementPrvDateRespectingOpenElements
             JSR SFTODOPROBCALCULATEDAYOFWEEK
             CMP prvDateDayOfWeek
             BNE LB0CD
@@ -8274,7 +8275,7 @@ ENDIF
             BCC LB116
             SBC #&9A
             TAX
-.LB102      JSR LAEDE
+.LB102      JSR incrementPrvDateRespectingOpenElements
             BCC LB10A
             JMP badDate2
 			
