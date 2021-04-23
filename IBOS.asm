@@ -8975,7 +8975,7 @@ ENDIF
 .LB62D      PLP
             JSR copyPrvAlarmToRtc
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (L00A8),Y
+            LDA (transientCmdPtr),Y
             AND #&DF                                                                                ; convert to upper case (imperfectly)
             CMP #'R'
             PHP
