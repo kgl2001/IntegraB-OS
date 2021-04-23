@@ -8134,7 +8134,7 @@ ENDIF
 .LAFEC      JSR SFTODOPROBCALCULATEDAYOFWEEK
             STA prvDateDayOfWeek
             LDA #&00
-            STA prvOswordBlockCopy
+            STA prvDateSFTODO0
             CLC
             RTS
 }
@@ -8161,7 +8161,7 @@ ENDIF
             BCS badDate3
             LDA prv2DateDayOfWeek
             CMP #&FF
-            BNE userSuppliedDayOfWeek
+            BNE dayOfWeekNotOpen
             JSR validateDateTimeRespectingLeapYears
             LDA prvDateSFTODO0
             AND #&F0
@@ -8169,11 +8169,11 @@ ENDIF
             CLC
             RTS
 
-.badDate3  BIT rts
+.badDate3   BIT rts
             SEC
 .rts        RTS
 
-.userSuppliedDayOfWeek ; SFTODO: I think this code is adjusting the date we've calculated up until now to satisfy user conditions like "last Tuesday in X" or whatever, but I am guessing - however, I chose this label because we come here if the prv2 *copy* of the user's initial inputs lacks the day of week
+.dayOfWeekNotOpen ; SFTODO: I think this code is adjusting the date we've calculated up until now to satisfy user conditions like "last Tuesday in X" or whatever, but I am guessing - however, I chose this label because we come here if the prv2 *copy* of the user's initial inputs lacks the day of week
             CMP #&07
             BCC LB03E
             CMP #&5B
