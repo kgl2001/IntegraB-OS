@@ -8321,7 +8321,7 @@ ENDIF
             STA prvDateDayOfWeek
             CMP #&FF
             BEQ dayOfWeekOpen
-	  ; The user has specified a day of the week; if there's no trailing comma this is the end of the user-specified date.
+	  ; The user has specified a day of the week; if there's no trailing comma this is the end of the user-specified partial date.
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #','
@@ -8333,15 +8333,17 @@ ENDIF
             LDA #&FF
 .dayOfMonthInA
             STA prvDateDayOfMonth
+	  ; After the day of the month there may be a '/' followed by month/year components; if there's no '/' we have finished parsing the user-specified partial date.
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'/'
             BNE dateArgumentParsed
             INY
             JSR convertIntegerDefaultDecimal
-            BCC LB177
+            BCC monthInA
             LDA #&FF
-.LB177      STA prvDateMonth
+.monthInA   STA prvDateMonth
+	  ; After the month there may be a '/' followed by a year component; if there's no '/' we have finished parsing the user-specified partial date.
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'/'
@@ -8353,12 +8355,11 @@ ENDIF
             STA prvDateYear
             STA prvDateCentury
             JMP dateArgumentParsed
-			
 .parsedYearOK
 	  JSR interpretParsedYear
 .dateArgumentParsed
   	  ; SFTODO: I am kind of guessing that at this point the command argument has been parsed and anything "provided" has been filled in over the &FF defaults we put in place at the start. So if we're doing a simple "*DATE", *everything* (date-ish, not time-ish) will be &FF.
-	  JSR validateDateTimeAssumingLeapYear
+	  JSR validateDateTimeAssumingLeapYear ; SFTODO: *just possibly* it would be better to validate *respecting* leap year *iff* prvDateYear/prvDateCentury are not &FF (i.e. we have a specific year) - but I could very easily be missing some subtlety here
 	  ; Stash the date validation result (shifted into the low nybble) on the stack.
             LDA prvDateSFTODO0
 	  ; SFTODO: Use lsrA4
@@ -8385,9 +8386,10 @@ ENDIF
             PLA
             AND prvDateSFTODO0
             AND #&0F ; SFTODO: redundant? the value we just pulled with PLA had undergone 4xLSR A so high nybble was already 0
-            BNE secSevRtsIndirect ; branch if still some errors after masking off &FF values
+            BNE badDateIndirect ; branch if still some errors after masking off &FF values
             JMP LAFF9
 
+.badDateIndirect
 .secSevRtsIndirect
             JMP secSevRts
 }
