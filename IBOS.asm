@@ -8109,19 +8109,21 @@ ENDIF
             BEQ SFTODOProbCalculateDayOfWeekClcRts ; branch if *all* of century/year/month/day-of-month are open
             LDA prv2Flags
             STA prvTmp6 ; SFTODO: TEMP STASH ORIGINAL prv2Flags?
-            LDA #&1E
+            LDA #&1E ; SFTODO: temporarily set prv2Flags so all of century/year/month/day-of-month are open
             STA prv2Flags ; SFTODO: We must be doing this for the benefit of incrementPrvDateRespectingOpenElements
 .LAFC1      LDA prv2DateDayOfMonth
             CMP #&FF
-            BEQ LAFCD
+            BEQ dayOfMonthOpen
             CMP prvDateDayOfMonth
             BNE LAFD9
-.LAFCD      LDA prv2DateMonth
+.dayOfMonthOpen
+            LDA prv2DateMonth
             CMP #&FF
             BEQ LAFE6
             CMP prvDateMonth
             BEQ LAFE6
-.LAFD9      JSR incrementPrvDateRespectingOpenElements
+.LAFD9
+.monthOpen  JSR incrementPrvDateRespectingOpenElements
             BCC LAFC1
             LDA prvTmp6 ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
             STA prv2Flags
