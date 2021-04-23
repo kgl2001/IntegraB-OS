@@ -7977,7 +7977,7 @@ ENDIF
             LDY prvDateMonth
             JSR getDaysInMonthY
             CMP prvDateDayOfMonth
-            BCS LAF3C
+            BCS clvClcRts
             STA prvTmp2
             SEC
             LDA prvDateDayOfMonth
@@ -7987,35 +7987,35 @@ ENDIF
 			
 .^LAEDE      LDA #&02 ; SFTODO: test bit indicating prvDateDayOfMonth is &FF
             BIT prv2Flags
-            BEQ prvDayOfMonthIsSet
-            INC prvDateDayOfMonth ; SFTODO: *probably* sets prvDateDayOfMonth to 0
+            BEQ prvDayOfMonthNotOpen
+            INC prvDateDayOfMonth
             LDY prvDateMonth
             JSR getDaysInMonthY
             CMP prvDateDayOfMonth
-            BCS LAF3C
+            BCS clvClcRts
             LDA #1
             STA prvDateDayOfMonth
-.prvDayOfMonthIsSet ; SFTODO: not sure
+.prvDayOfMonthNotOpen
 .LAEF8      LDA #&04 ; SFTODO: test bit indicating prvMonth is &FF
             BIT prv2Flags
-            BEQ prvMonthIsSet
+            BEQ prvMonthNotOpen
             INC prvDateMonth
             LDA prvDateMonth
             CMP #13
-            BCC LAF3C
+            BCC clvClcRts
             LDA #1
             STA prvDateMonth
-.prvMonthIsSet ; SFTODO?
+.prvMonthNotOpen
             LDA #&08 ; SFTODO: test bit indicating prvYear is &FF
-            BIT prv82+&42
-            BEQ prvYearIsSet
+            BIT prv2Flags
+            BEQ prvYearNotOpen
             INC prvDateYear ; SFTODO: *probably* sets prvDateYear to 0 - but then why would we do the following, so maybe it doesn't?
             LDA prvDateYear
             CMP #100
             BCC sevClcRts
             LDA #0
             STA prvDateYear
-.prvYearIsSet ; SFTODO?
+.prvYearNotOpen
             LDA #&10 ; SFTODO: test bit indicating prvCentury is &FF
             BIT prv2Flags
             BEQ sevClcRts
@@ -8028,7 +8028,7 @@ ENDIF
             SEC
             RTS
 			
-.^LAF3C      CLV
+.^clvClcRts      CLV
             CLC
             RTS
 			
@@ -8039,7 +8039,7 @@ ENDIF
 
 {
 .^LAF44      DEC prvDateDayOfMonth
-            BNE LAF3C
+            BNE clvClcRts
             LDY prvDateMonth
             DEY
             BNE LAF51
@@ -8048,7 +8048,7 @@ ENDIF
             STA prvDateDayOfMonth
             STY prvDateMonth
             CPY #12
-            BCC LAF3C
+            BCC clvClcRts
             DEC prvDateYear
             LDA prvDateYear
             CMP #&FF
