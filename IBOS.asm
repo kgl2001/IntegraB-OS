@@ -9025,21 +9025,21 @@ ENDIF
             JMP LB6E3
 			
 .LB690      LDA #&40
-            STA prvOswordBlockCopy + 1
+            STA prvDateSFTODO1
             LDA #&04
-            STA prvOswordBlockCopy + 2
+            STA prvDateSFTODO2
             LDA #&00
-            STA prvOswordBlockCopy + 3
+            STA prvDateSFTODO3
             LDA #&FF
-            STA prvOswordBlockCopy + 7
-            STA prvOswordBlockCopy + 6
-            LDA #&00
-            STA prvOswordBlockCopy + 4
-            LDA #&80
-            STA prvOswordBlockCopy + 5
+            STA prvDateSFTODO7
+            STA prvDateSFTODO6
+            LDA #lo(prvDateBuffer)
+            STA prvDateSFTODO4
+            LDA #hi(prvDateBuffer)
+            STA prvDateSFTODO4 + 1
             JSR copyRtcAlarmToPrv
             JSR initDateBufferAndEmitTimeAndDate
-            DEC prvOswordBlockCopy + 1
+            DEC prvDateSFTODO1
             JSR printDateBuffer
             LDA #'/'
             JSR OSWRCH								;write to screen
@@ -9053,7 +9053,7 @@ ENDIF
             AND #&80
             BEQ LB6E0
             JSR printSpace								;write ' ' to screen
-            LDA #&52								;'R'
+            LDA #'R'
             JSR OSWRCH								;write to screen
 .LB6E0      JSR OSNEWL								;new line
 .LB6E3      JSR PrvDis								;switch out private RAM
