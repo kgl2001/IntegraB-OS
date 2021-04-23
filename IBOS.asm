@@ -7133,13 +7133,14 @@ osfileBlock = L02EE
 .LA904      RTS
 }
 
+{
+; As calculateDayOfWeekInA, except we also update prvDateDayOfWeek with the calculated day of the week, and set SFTODO:PROBABLY b3 of prvDateSFTODO0 if this changes prvDateDayOfWeek from its previous value.
+.^calculateDayOfWeekInPrvDateDayOfWeek
+.LA905      CLC
+            BCC LA909
 ; SFTODO: Use a magic formula to calculate the day of the week for prvDate{Century,Year,Month,DayOfMonth}; I don't know how this works, but presumably it does.
 ; We return with the calculated day of the week in A.
-; If C is clear on entry, we also update prvDateDayOfWeek with the calculated day of the week, and set SFTODO:PROBABLY b3 of prvDateSFTODO0 if this changes prvDateDayOfWeek from its previous value.
-{
-.^LA905      CLC
-            BCC LA909
-.^SFTODOPROBCALCULATEDAYOFWEEK
+.^calculateDayOfWeekInA
 .LA908      SEC
 .LA909      PHP
             LDA prvDateYear
@@ -7246,7 +7247,7 @@ osfileBlock = L02EE
 {
 .^LA9E6      LDA #&01
             STA prvOswordBlockCopy + 11
-            JSR LA905
+            JSR calculateDayOfWeekInPrvDateDayOfWeek
             LDY prvOswordBlockCopy + 10
             JSR getDaysInMonthY
             STA L00AA
@@ -7968,7 +7969,7 @@ ENDIF
 .LAEB0      LDX prvDateSFTODO4
             INX
             STX prvDateDayOfMonth
-            JMP LA905
+            JMP calculateDayOfWeekInPrvDateDayOfWeek
 }
 
 {
@@ -8136,7 +8137,7 @@ ENDIF
 .monthOpen  LDA prvTmp6 ; RESTORE STASHED prv2Flags FROM ABOVE?
             STA prv2Flags
 .SFTODOProbCalculateDayOfWeekClcRts
-            JSR SFTODOPROBCALCULATEDAYOFWEEK
+            JSR calculateDayOfWeekInA
             STA prvDateDayOfWeek
             LDA #&00
             STA prvDateSFTODO0
@@ -8204,7 +8205,7 @@ ENDIF
             LDA #&08
             BIT prv2Flags
             BEQ LB083
-.LB068      JSR SFTODOPROBCALCULATEDAYOFWEEK
+.LB068      JSR calculateDayOfWeekInA
             STA prvDateDayOfWeek
             JMP LB052 ; SFTODO: Looks like we're looping round, and incrementPrvDateRespectingOpenElements at least sometimes increments day of month, so I wonder if this is implementing one of the "search for date where day of week is X" operations - maybe
 			
@@ -8245,7 +8246,7 @@ ENDIF
             BEQ LB0DA
             TXA
             PHA
-.LB0B1      JSR SFTODOPROBCALCULATEDAYOFWEEK
+.LB0B1      JSR calculateDayOfWeekInA
             CMP prvDateDayOfWeek
             BEQ LB0C1
             JSR incrementPrvDateRespectingOpenElements
@@ -8262,16 +8263,16 @@ ENDIF
             RTS
 
 .LB0CD      JSR incrementPrvDateRespectingOpenElements
-            JSR SFTODOPROBCALCULATEDAYOFWEEK
+            JSR calculateDayOfWeekInA
             CMP prvDateDayOfWeek
             BNE LB0CD
             BEQ LB07B
 .LB0DA      JSR decrementPrvDateBy1
-            JSR SFTODOPROBCALCULATEDAYOFWEEK
+            JSR calculateDayOfWeekInA
             CMP prvDateDayOfWeek
             BNE LB0DA
             BEQ LB07B
-.LB0E7      JSR SFTODOPROBCALCULATEDAYOFWEEK
+.LB0E7      JSR calculateDayOfWeekInA
             CMP prvDateDayOfWeek
             BEQ LB07B
             BCS LB0DA
@@ -8290,7 +8291,7 @@ ENDIF
 			
 .LB10A      DEX
             BNE LB102
-            JSR SFTODOPROBCALCULATEDAYOFWEEK
+            JSR calculateDayOfWeekInA
             STA prvDateDayOfWeek
             JMP LB07B
 			
@@ -8303,7 +8304,7 @@ ENDIF
 			
 .LB122      DEX
             BNE LB11A
-            JSR SFTODOPROBCALCULATEDAYOFWEEK
+            JSR calculateDayOfWeekInA
             STA prvDateDayOfWeek
             JMP LB07B
 
@@ -8609,7 +8610,7 @@ ENDIF
             LDA prvOswordBlockCopy
             AND #&F0
             BNE LB32F
-            JSR LA905
+            JSR calculateDayOfWeekInPrvDateDayOfWeek
             CLC
             RTS
 			
