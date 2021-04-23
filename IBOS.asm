@@ -8152,7 +8152,7 @@ ENDIF
             BCS badDate3
             LDA prv2DateDayOfWeek
             CMP #&FF
-            BNE haveDayOfWeek
+            BNE userSuppliedDayOfWeek
             JSR validateDateTimeRespectingLeapYears
             LDA prvDateSFTODO0
             AND #&F0
@@ -8164,7 +8164,7 @@ ENDIF
             SEC
 .rts        RTS
 
-.haveDayOfWeek ; SFTODO: not sure about this label
+.userSuppliedDayOfWeek ; SFTODO: I think this code is adjusting the date we've calculated up until now to satisfy user conditions like "last Tuesday in X" or whatever, but I am guessing - however, I chose this label because we come here if the prv2 *copy* of the user's initial inputs lacks the day of week
             CMP #&07
             BCC LB03E
             CMP #&5B
