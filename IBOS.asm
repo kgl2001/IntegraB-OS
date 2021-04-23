@@ -7133,6 +7133,7 @@ osfileBlock = L02EE
 .LA904      RTS
 }
 
+; SFTODO: the "in" in the next two exported labels is maybe confusing, "storeTo" might be better but even more longwinded - anyway, just a note for when I finally clean up all the label names
 {
 ; As calculateDayOfWeekInA, except we also update prvDateDayOfWeek with the calculated day of the week, and set SFTODO:PROBABLY b3 of prvDateSFTODO0 if this changes prvDateDayOfWeek from its previous value.
 .^calculateDayOfWeekInPrvDateDayOfWeek
@@ -8607,7 +8608,7 @@ ENDIF
             BCS LB32F
             JSR interpretParsedYear
             JSR validateDateTimeAssumingLeapYear
-            LDA prvOswordBlockCopy
+            LDA prvDateSFTODO0
             AND #&F0
             BNE LB32F
             JSR calculateDayOfWeekInPrvDateDayOfWeek
