@@ -7133,7 +7133,9 @@ osfileBlock = L02EE
 .LA904      RTS
 }
 
-; SFTODO: Just looking at the last few lines, I might guess this is calculating prvDateDayOfWeek, i.e. working out what day of the week the given date falls on. But I haven't understood the calculation and/or found a reference to this calculation method online yet.
+; SFTODO: Use a magic formula to calculate the day of the week for prvDate{Century,Year,Month,DayOfMonth}; I don't know how this works, but presumably it does.
+; We return with the calculated day of the week in A.
+; If C is clear on entry, we also update prvDateDayOfWeek with the calculated day of the week, and set SFTODO:PROBABLY b3 of prvDateSFTODO0 if this changes prvDateDayOfWeek from its previous value.
 {
 .^LA905      CLC
             BCC LA909
@@ -7233,7 +7235,7 @@ osfileBlock = L02EE
             BCS rts
             CMP prvDateDayOfWeek
             BEQ LA9DF
-            LDA #&08
+            LDA #&08 ; SFTODO: This bit is the same one validateDateTimeRespectingLeapYear uses to indicate day of week invalid, but the meaning of SFTODO0 seems to change a bit and I'm not entirely sure I am interpreting this correctly
             ORA prvDateSFTODO0
             STA prvDateSFTODO0
 .LA9DF      LDA prvA
