@@ -8588,17 +8588,17 @@ ENDIF
 {
 ; SFTODO: This has only one caller
 .^LB2F5      LDA #&00
-            STA prvOswordBlockCopy + 12
+            STA prvDateDayOfWeek
             JSR convertIntegerDefaultDecimal
             BCS LB32F
-            STA prvOswordBlockCopy + 11
+            STA prvDateDayOfMonth
             LDA (transientCmdPtr),Y
             INY
             CMP #'/'
             BNE LB32F
             JSR convertIntegerDefaultDecimal
             BCS LB32F
-            STA prvOswordBlockCopy + 10
+            STA prvDateMonth
             LDA (transientCmdPtr),Y
             INY
             CMP #'/'
