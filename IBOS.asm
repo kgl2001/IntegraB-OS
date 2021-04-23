@@ -501,7 +501,7 @@ prvDateBuffer = prv80 + 0 ; SFTODO: how big?
 prvDateBuffer2 = prv80 + &C8 ; SFTODO: how big? not a great name either
 
 ; SFTODO: EXPERIMENTAL LABELS USED BY DATE/CALENDAR CODE
-prvDateSFTODO0 = prvOswordBlockCopy ; SFTODO: sometimes - maybe always? - used as flags regarding validation - the meaning of the flags is changed (at least) by LB133 so just possibly it would be helpful to give this location a different name depending on which style of flags it contains???
+prvDateSFTODO0 = prvOswordBlockCopy ; SFTODO: sometimes - maybe always? - used as flags regarding validation - the meaning of the flags is changed (at least) by dateCalculation so just possibly it would be helpful to give this location a different name depending on which style of flags it contains???
 prvDateSFTODO1 = prvOswordBlockCopy + 1 ; SFTODO: Use as a bitfield controlling formatting
 prvDateSFTODO1b = prvOswordBlockCopy + 1 ; SFTODO: Use as a copy of "final" transientDateBufferIndex
 prvDateSFTODO2 = prvOswordBlockCopy + 2
@@ -8291,39 +8291,48 @@ ENDIF
             JSR SFTODOPROBCALCULATEDAYOFWEEK
             STA prvDateDayOfWeek
             JMP LB07B
-			
+
+.^badDate
 .^secSevRts      SEC
             BIT rts3
 .rts3       RTS
 }
 
 ;SFTODOWIP
+; This subroutine implements the date calculation features of the *DATE and *CALENDAR commands.
+; The calculation to perform is parsed from the command line using (transientCmdPtr),Y.
+; On entry, SFTODO!
+; On exit, C is clear iff the calculation succeeded. If C is set, V set indicates "Bad date", V clear indicates "Mismatch".
+.dateCalculation
 {
-.^LB133
-	  ; Set the prvDate* addresses relating to date (as opposed to time) to &FF.
+.LB133
+	  ; Set the prvDate* addresses relating to date (as opposed to time) to &FF. SFTODO: PROB TRUE BUT CHECK This is used to indicate that the user has not specified any values for them; we fill these in as we parse the command line and the &FF values left over are the ones we need to calculate.
 	  LDX #&04
             LDA #&FF
-.LB137      STA prvDateCentury,X
+.setFFLoop  STA prvDateCentury,X
             DEX
-            BPL LB137
+            BPL setFFLoop
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #vduCr
             BEQ dateArgumentParsed
             JSR SFTODOProbParsePlusMinusDate
-            BCS secSevRts ; SFTODO: branch if parse failed
+            BCS badDate
             STA prvDateDayOfWeek
             CMP #&FF
-            BEQ LB15C
+            BEQ dayOfWeekOpen
+	  ; The user has specified a day of the week; if there's no trailing comma this is the end of the user-specified date.
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #','
             BNE dateArgumentParsed
             INY
-.LB15C      JSR convertIntegerDefaultDecimal
-            BCC LB163
+.dayOfWeekOpen
+            JSR convertIntegerDefaultDecimal
+            BCC dayOfMonthInA
             LDA #&FF
-.LB163      STA prvDateDayOfMonth
+.dayOfMonthInA
+            STA prvDateDayOfMonth
             JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'/'
@@ -8561,6 +8570,7 @@ ENDIF
 }
 
 {
+; SFTODO: This has only one caller
 .^LB2F5      LDA #&00
             STA prvOswordBlockCopy + 12
             JSR convertIntegerDefaultDecimal
@@ -8850,20 +8860,23 @@ ENDIF
             LDA prvDateSFTODO2
             AND #&F0
             STA prvDateSFTODO2							;store #&40 to address &8222, updating value set by initDateSFTODOS
-            JSR LB133
-            BCC LB53C
-            BVS LB539
+            JSR dateCalculation
+            BCC calculationOk
+            BVS PrvDisBadDateIndirect
             JMP PrvDisMismatch								;Error with Mismatch
-			
-.LB539      JMP PrvDisBadDate								;Error with Bad Date
 
-.LB53C      LDA #lo(prvDateBuffer)
+.PrvDisBadDateIndirect
+            JMP PrvDisBadDate								;Error with Bad Date
+
+.calculationOk
+            LDA #lo(prvDateBuffer)
             STA prvDateSFTODO4							;store #&00 to address &8224
             LDA #hi(prvDateBuffer)
             STA prvDateSFTODO4 + 1							;store #&80 to address &8225
             JSR initDateBufferAndEmitTimeAndDate								;format text for output to screen?
             JSR printDateBuffer								;output DATE data from address &8000 to screen
-.LB54C      JSR PrvDis								;switch out private RAM
+.PrvDisexitSc
+            JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call								;
 			
 .setDate    INY
@@ -8872,13 +8885,14 @@ ENDIF
             JMP PrvDisBadDate								;Error with Bad date
 			
 .LB55B      JSR LA6CB								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
-            JMP LB54C								;switch out private RAM and exit
+            JMP PrvDisexitSc								;switch out private RAM and exit
 }
 			
 ;Start of CALENDAR * Command
 {
-.^calend      JSR PrvEn								;switch in private RAM
-            JSR LB133
+.^calend    JSR PrvEn								;switch in private RAM
+	  ; SFTODO: Can we share the next few lines of code with *DATE?
+            JSR dateCalculation
             BCC LB571
             BVS LB56E
             JMP PrvDisMismatch
