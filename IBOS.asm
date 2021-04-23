@@ -8119,7 +8119,7 @@ ENDIF
 .dayOfMonthOpen
             LDA prv2DateMonth
             CMP #&FF
-            BEQ LAFE6
+            BEQ monthOpen
             CMP prvDateMonth
             BEQ LAFE6
 .LAFD9
@@ -8129,8 +8129,9 @@ ENDIF
             STA prv2Flags
             SEC
             RTS
-			
-.LAFE6      LDA prvTmp6 ; RESTORE STASHED prv2Flags FROM ABOVE?
+
+.LAFE6
+.monthOpen  LDA prvTmp6 ; RESTORE STASHED prv2Flags FROM ABOVE?
             STA prv2Flags
 .SFTODOProbCalculateDayOfWeekClcRts
 .LAFEC      JSR SFTODOPROBCALCULATEDAYOFWEEK
