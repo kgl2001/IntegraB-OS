@@ -8121,7 +8121,7 @@ ENDIF
             CMP #&FF
             BEQ monthOpen
             CMP prvDateMonth
-            BEQ LAFE6
+            BEQ prvDateMatchesFixed
 .prvDateDoesntMatchFixed
             JSR incrementPrvDateRespectingOpenElements
             BCC incLoop
@@ -8130,7 +8130,7 @@ ENDIF
             SEC
             RTS
 
-.LAFE6
+.prvDateMatchesFixed
 .monthOpen  LDA prvTmp6 ; RESTORE STASHED prv2Flags FROM ABOVE?
             STA prv2Flags
 .SFTODOProbCalculateDayOfWeekClcRts
