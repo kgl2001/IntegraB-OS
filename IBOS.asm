@@ -8123,7 +8123,7 @@ ENDIF
             CMP prvDateMonth
             BEQ LAFE6
 .LAFD9
-.monthOpen  JSR incrementPrvDateRespectingOpenElements
+            JSR incrementPrvDateRespectingOpenElements
             BCC LAFC1
             LDA prvTmp6 ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
             STA prv2Flags
