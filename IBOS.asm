@@ -8037,14 +8037,16 @@ ENDIF
 .rts        RTS
 }
 
+; SFTODO: I think we return with C and V clear if things are OK; we return with C clear and V set if the year gets decremented, or C set (not sure about V, probably clear) if the century gets decremented below 0
+.decrementPrvDateBy1
 {
-.^LAF44      DEC prvDateDayOfMonth
+.LAF44      DEC prvDateDayOfMonth
             BNE clvClcRts
             LDY prvDateMonth
             DEY
-            BNE LAF51
+            BNE wrapMonth
             LDY #12
-.LAF51      JSR getDaysInMonthY
+.wrapMonth  JSR getDaysInMonthY
             STA prvDateDayOfMonth
             STY prvDateMonth
             CPY #12
@@ -8059,7 +8061,7 @@ ENDIF
             LDA prvDateCentury
             CMP #&FF
             BNE sevClcRts
-            SEC
+            SEC ; SFTODO: redundant?
             RTS
 }
 
@@ -8252,7 +8254,7 @@ ENDIF
             CMP prvDateDayOfWeek
             BNE LB0CD
             BEQ LB07B
-.LB0DA      JSR LAF44
+.LB0DA      JSR decrementPrvDateBy1
             JSR SFTODOPROBCALCULATEDAYOFWEEK
             CMP prvDateDayOfWeek
             BNE LB0DA
@@ -8283,7 +8285,7 @@ ENDIF
 .LB116      SEC
             SBC #&5A
             TAX
-.LB11A      JSR LAF44
+.LB11A      JSR decrementPrvDateBy1
             BCC LB122
             JMP badDate2
 			
