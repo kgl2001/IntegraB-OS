@@ -8111,20 +8111,20 @@ ENDIF
             STA prvTmp6 ; SFTODO: TEMP STASH ORIGINAL prv2Flags?
             LDA #&1E ; SFTODO: temporarily set prv2Flags so all of century/year/month/day-of-month are open
             STA prv2Flags ; SFTODO: We must be doing this for the benefit of incrementPrvDateRespectingOpenElements
-.LAFC1      LDA prv2DateDayOfMonth
+.incLoop    LDA prv2DateDayOfMonth
             CMP #&FF
             BEQ dayOfMonthOpen
             CMP prvDateDayOfMonth
-            BNE LAFD9
+            BNE prvDateDoesntMatchFixed
 .dayOfMonthOpen
             LDA prv2DateMonth
             CMP #&FF
             BEQ monthOpen
             CMP prvDateMonth
             BEQ LAFE6
-.LAFD9
+.prvDateDoesntMatchFixed
             JSR incrementPrvDateRespectingOpenElements
-            BCC LAFC1
+            BCC incLoop
             LDA prvTmp6 ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
             STA prv2Flags
             SEC
