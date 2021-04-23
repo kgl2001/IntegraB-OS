@@ -8183,12 +8183,12 @@ ENDIF
 ; SFTODO: *Maybe* the case where we want a specific day of week!? Pure guesswork
 .LB03E      LDA prv2Flags
             AND #&0E ; SFTODO: get bits indicating if prv{Year,Month,DayOfMonth} are &FF
-            BNE prvYearMonthDayOfMonthNotSet
+            BNE someOfPrvYearMonthDayOfMonthOpen
             JSR validateDateTimeRespectingLeapYears
             LDA prvDateSFTODO0
             AND #&F0 ; SFTODO: get century, year, month, day of month flags?
             BNE badDate2
-.prvYearMonthDayOfMonthNotSet ; SFTODO: Not sure about this
+.someOfPrvYearMonthDayOfMonthOpen
             INC prv2DateDayOfWeek
 .LB052      LDA prv2DateDayOfWeek
             CMP prvDateDayOfWeek
