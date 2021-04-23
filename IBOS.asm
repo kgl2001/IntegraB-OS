@@ -5182,7 +5182,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ; SFTODO: This has only one caller
 {
 .^L9D62     BIT prvOswordBlockCopy                                                                  ;get function
-            BVC sevSecRts                                                                            ;branch if we have an absolute address
+            BVC secSevRts                                                                           ;branch if we have an absolute address
             ; We're dealing with a pseudo-address.
             BIT L00A9
             BVC clcRts
@@ -5198,7 +5198,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             INC prvOswordBlockCopy + 1                                                              ;increment absolute ROM number
             LDA prvOswordBlockCopy + 1                                                              ;get absolute ROM number
             CMP #&04
-            BCS sevSecRts
+            BCS secSevRts
             TAX
             LDA prvSFTODOFOURBANKS,X
             BMI clvSecRts
@@ -5207,7 +5207,8 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 .L9D84      CLC
             RTS
 
-.sevSecRts
+.secSevRts
+.badDate3
 .L9D86      BIT rts ; set V
             SEC
 .rts
@@ -8148,18 +8149,18 @@ ENDIF
             CPX #&05
             BNE loop
             JSR SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: RETURNS SOMETHING IN C, ALSO PROBABLY IN prvDateSFTODO0 ("OK" EXIT PATH SETS IT TO 0, I THINK)
-            BCS sevSecRts
+            BCS badDate3
             LDA prv2DateDayOfWeek
             CMP #&FF
             BNE haveDayOfWeek
             JSR validateDateTimeRespectingLeapYears
             LDA prvDateSFTODO0
             AND #&F0
-            BNE sevSecRts
+            BNE badDate3
             CLC
             RTS
 
-.sevSecRts  BIT rts
+.badDate3  BIT rts
             SEC
 .rts        RTS
 
