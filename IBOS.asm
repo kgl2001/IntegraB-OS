@@ -8069,7 +8069,7 @@ ENDIF
 .^SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek
 .LAF79      LDA prv2Flags
             AND #&08
-            BNE LAFAA ; SFTODO: branch if prvDateYear is &FF
+            BNE yearOpen ; SFTODO: branch if prvDateYear is &FF, i.e. user didn't supply a year
             LDA prv2Flags
             AND #&10
             BEQ haveCentury ; SFTODO: branch if prvDateCentury is not &FF
@@ -8093,15 +8093,15 @@ ENDIF
             JMP SFTODOProbCalculateDayOfWeekClcRts
 
 ; SFTODOWIP
-.LAFAA      JSR getRtcDayMonthYear
+.yearOpen   JSR getRtcDayMonthYear
             LDA prv2Flags
             AND #&1E ; test all bits of prv2Flags except DayOfWeek
             CMP #&1E
-            BEQ SFTODOProbCalculateDayOfWeekClcRts
+            BEQ SFTODOProbCalculateDayOfWeekClcRts ; branch if *all* of century/year/month/day-of-month are open
             LDA prv2Flags
             STA prvTmp6 ; SFTODO: TEMP STASH ORIGINAL prv2Flags?
             LDA #&1E
-            STA prv2Flags
+            STA prv2Flags ; SFTODO: We must be doing this for the benefit of LAEDE
 .LAFC1      LDA prv2DateDayOfMonth
             CMP #&FF
             BEQ LAFCD
@@ -8119,7 +8119,7 @@ ENDIF
             SEC
             RTS
 			
-.LAFE6      LDA prv82+&48
+.LAFE6      LDA prvTmp6 ; RESTORE STASHED prv2Flags FROM ABOVE?
             STA prv2Flags
 .SFTODOProbCalculateDayOfWeekClcRts
 .LAFEC      JSR SFTODOPROBCALCULATEDAYOFWEEK
