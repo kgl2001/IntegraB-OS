@@ -7969,6 +7969,7 @@ ENDIF
             JMP LA905
 }
 
+; SFTODO: This might be "incrementPrvDateBy7" operation, but that is guesswork
 {
 .^LAEBA      CLC
             LDA prvDateDayOfMonth
@@ -7984,9 +7985,7 @@ ENDIF
             SBC prvTmp2
             STA prvDateDayOfMonth
             JMP LAEF8
-}
 
-{
 ; SFTODO: From context, I think this might be "incrementPrvDateBy1", but need to read through code with that thought in mind
 .^LAEDE      LDA #&02 ; SFTODO: test bit indicating prvDateDayOfMonth is &FF
             BIT prv2Flags
@@ -7999,7 +7998,7 @@ ENDIF
             LDA #1
             STA prvDateDayOfMonth
 .prvDayOfMonthNotOpen
-.^LAEF8      LDA #&04 ; SFTODO: test bit indicating prvMonth is &FF
+.LAEF8      LDA #&04 ; SFTODO: test bit indicating prvMonth is &FF
             BIT prv2Flags
             BEQ prvMonthNotOpen
             INC prvDateMonth
