@@ -8386,7 +8386,7 @@ ENDIF
             PLA
             AND prvDateSFTODO0
             AND #&0F ; SFTODO: redundant? the value we just pulled with PLA had undergone 4xLSR A so high nybble was already 0
-            BNE badDateIndirect ; branch if still some errors after masking off &FF values
+            BNE badDateIndirect ; branch if still some validation errors after masking off open (&FF) values
             JMP LAFF9
 
 .badDateIndirect
@@ -9346,10 +9346,10 @@ ENDIF
 
 ;XY?0=&62
 ;OSWORD &49 (73) - Integra-B calls
-.LB89C      LDA #&00
-	  STA prvOswordBlockCopy + 4
-            LDA #&80
-            STA prvOswordBlockCopy + 5							;set buffer address to &8000
+.LB89C      LDA #lo(prvDateBuffer)
+	  STA prvDateSFTODO4
+            LDA #hi(prvDateBuffer)
+            STA prvDateSFTODO4 + 1
             JSR initDateBufferAndEmitTimeAndDate
             JMP LB7BC
 			
