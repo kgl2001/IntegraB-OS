@@ -8177,14 +8177,14 @@ ENDIF
             JSR validateDateTimeRespectingLeapYears
             LDA prvDateSFTODO0
             AND #&F0 ; SFTODO: get century, year, month, day of month flags?
-            BNE secSevRts2
+            BNE badDate2
 .prvYearMonthDayOfMonthNotSet ; SFTODO: Not sure about this
             INC prv2DateDayOfWeek
 .LB052      LDA prv2DateDayOfWeek
             CMP prvDateDayOfWeek
             BEQ LB071
 .LB05A      JSR LAEDE
-            BCS secSevRts2
+            BCS badDate2
             BVC LB068
             LDA #&08
             BIT prv2Flags
@@ -8202,7 +8202,7 @@ ENDIF
             RTS
 
 ; SFTODO: As elsewhere, do we really need so many copies of this and similar code fragments? (We might, but check.)
-.secSevRts2 SEC
+.badDate2   SEC
             BIT rts2
 .rts2       RTS
 
@@ -8236,7 +8236,7 @@ ENDIF
             JSR LAEDE
             BCC LB0B1
             PLA
-            BCS secSevRts2
+            BCS badDate2
 .LB0C1      PLA
             TAX
 .LB0C3      DEX
@@ -8271,7 +8271,7 @@ ENDIF
             TAX
 .LB102      JSR LAEDE
             BCC LB10A
-            JMP secSevRts2
+            JMP badDate2
 			
 .LB10A      DEX
             BNE LB102
@@ -8284,7 +8284,7 @@ ENDIF
             TAX
 .LB11A      JSR LAF44
             BCC LB122
-            JMP secSevRts2
+            JMP badDate2
 			
 .LB122      DEX
             BNE LB11A
@@ -8292,8 +8292,7 @@ ENDIF
             STA prvDateDayOfWeek
             JMP LB07B
 
-.^badDate
-.^secSevRts      SEC
+.^badDate	  SEC
             BIT rts3
 .rts3       RTS
 }
@@ -8390,8 +8389,7 @@ ENDIF
             JMP LAFF9
 
 .badDateIndirect
-.secSevRtsIndirect
-            JMP secSevRts
+            JMP badDate
 }
 
 ; Take the parsed 2-byte integer year at L00B0 and populate prvDate{Year,Century}, defaulting the century to the current century if a two digit year is specified.
