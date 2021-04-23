@@ -7969,11 +7969,13 @@ ENDIF
             JMP LA905
 }
 
-; SFTODO: This might be "incrementPrvDateBy7" operation, but that is guesswork
 {
-.^LAEBA      CLC
+; SFTODO: This is like incrementPrvDateRespectingOpenElements but (presumably) we know the day of month is open and we increment it by a week not the one day incrementPrvDateRespectingOpenElements would do when it's open.
+; SFTODO: This has only one caller
+.^incrementPrvDateByOneWeek
+.LAEBA      CLC
             LDA prvDateDayOfMonth
-            ADC #&07
+            ADC #7
             STA prvDateDayOfMonth
             LDY prvDateMonth
             JSR getDaysInMonthY
@@ -7987,6 +7989,7 @@ ENDIF
             JMP LAEF8 ; SFTODO: This is probably "incrementPrvDateMonthBy1"
 
 ; SFTODO: I am still figuring this code out, but what I think this is doing is incrementing the date part of PrvDate* - it's not a simple increment by 1, because we do *not* change anything the user has explicitly specified, we only change "open" elements the user didn't specify. Note that we need to continue to respect openness (it's really more that we're respecting *non*-openness) as we cascade the change into more significant parts of the date when the increment moves an element out of range.
+; SFTODO: Whether we succeeded or not is indicated by C and V flags - there is probably a common pattern of these across all the date code, once I get a clearer picture
 .^incrementPrvDateRespectingOpenElements
 .LAEDE      LDA #&02 ; SFTODO: test bit indicating prvDateDayOfMonth is &FF
             BIT prv2Flags
@@ -8247,7 +8250,7 @@ ENDIF
             TAX
 .LB0C3      DEX
             BEQ LB07B
-            JSR LAEBA
+            JSR incrementPrvDateByOneWeek
             BCC LB0C3
             CLV
             RTS
