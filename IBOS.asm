@@ -7229,16 +7229,16 @@ osfileBlock = L02EE
 .LA9C6      STA prvA
             INC prvA
             LDA prvA
-            PLP
-            BCS LA9E5
+            PLP ; get stacked flags from entry
+            BCS rts
             CMP prvDateDayOfWeek
             BEQ LA9DF
             LDA #&08
-            ORA prvOswordBlockCopy
-            STA prvOswordBlockCopy
+            ORA prvDateSFTODO0
+            STA prvDateSFTODO0
 .LA9DF      LDA prvA
             STA prvDateDayOfWeek
-.LA9E5      RTS
+.rts        RTS
 }
 
 {
@@ -8075,7 +8075,7 @@ ENDIF
 {
 ; SFTODO: This seems (ignoring for the moment the work done when it does JMP SFTODOProbCalculateDayOfWeekClcRts) to fix up missing parts (&FF) of the date (not time) with the relevant component of 1900/01/01 (ish; I haven't traced the LAFAA branch yet either)
 ; SFTODO: This has only one caller
-.^SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek
+.^SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: I think this is a poor (incomplete) label, because in the yearOpen case we are adjusting the date until we match the fixed parts
 .LAF79      LDA prv2Flags
             AND #&08
             BNE yearOpen ; SFTODO: branch if prvDateYear is &FF, i.e. user didn't supply a year
@@ -8134,7 +8134,7 @@ ENDIF
 .monthOpen  LDA prvTmp6 ; RESTORE STASHED prv2Flags FROM ABOVE?
             STA prv2Flags
 .SFTODOProbCalculateDayOfWeekClcRts
-.LAFEC      JSR SFTODOPROBCALCULATEDAYOFWEEK
+            JSR SFTODOPROBCALCULATEDAYOFWEEK
             STA prvDateDayOfWeek
             LDA #&00
             STA prvDateSFTODO0
