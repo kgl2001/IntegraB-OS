@@ -7297,9 +7297,9 @@ osfileBlock = L02EE
             CLC
             ADC prvC
             TAY
-            LDA prvOswordBlockCopy + 11
-            STA (L00AB),Y
-            INC prvOswordBlockCopy + 11
+            LDA prvDateDayOfMonth
+            STA (transientDateSFTODO1),Y
+            INC prvDateDayOfMonth
             JMP LAA21
 }
 
