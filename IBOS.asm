@@ -7251,15 +7251,15 @@ osfileBlock = L02EE
             JSR calculateDayOfWeekInPrvDateDayOfWeek
             LDY prvDateMonth
             JSR getDaysInMonthY
-            STA L00AA
+            STA transientDateBufferIndex
 .LA9F6      CLC
-            LDA L00AA
+            LDA transientDateBufferIndex
             ADC prvDateDayOfWeek
             CMP #&25
             BCS LAA0C
             CLC
             LDA prvDateDayOfWeek
-            ADC #&07
+            ADC #7
             STA prvDateDayOfWeek
             JMP LA9F6
 
