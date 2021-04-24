@@ -7259,19 +7259,19 @@ daysInMonth = transientDateSFTODO2
             LDA daysInMonth
             ADC prvDateDayOfWeek
             CMP #37
-            BCS LAA0C
+            BCS prvDateDayOfWeekGe37
             CLC
             LDA prvDateDayOfWeek
             ADC #7
             STA prvDateDayOfWeek
             JMP makePrvDateDayOfWeekGe37Loop
-
-.LAA0C      LDA prvDateSFTODO4
+.prvDateDayOfWeekGe37
+            LDA prvDateSFTODO4
             STA transientDateSFTODO1
             LDA prvDateSFTODO4 + 1
             STA transientDateSFTODO1 + 1
             LDA #&00
-            LDY #&2A
+            LDY #42
 .LAA1A      DEY
             STA (transientDateSFTODO1),Y
             BNE LAA1A
