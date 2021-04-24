@@ -8971,22 +8971,22 @@ ENDIF
             LDA prvDateBuffer2,X
             LDX #&03
             JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
-            INC prv82+&4B
-            INC prv82+&4C
-            LDA prv82+&4C
+            INC prvB
+            INC prvC
+            LDA prvC
             CMP #&06
             BCC LB5D9
-            LDA #&0D
+            LDA #vduCr
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDX #&00
-.LB5FD      LDA prv80+&00,X
+.LB5FD      LDA prvDateBuffer,X
             JSR OSASCI
             CMP #vduCr
             BEQ LB60A
             INX
             BNE LB5FD
-.LB60A      INC prv82+&4A
-            LDA prv82+&4A
+.LB60A      INC prvA
+            LDA prvA
             CMP #&08
             BCC LB5BD
             JSR PrvDis								;switch out private RAM
