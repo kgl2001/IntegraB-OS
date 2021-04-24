@@ -8918,36 +8918,39 @@ ENDIF
             JMP PrvDisBadDate
 
 .calculationOk
+	  ; Output the month name and year centred (with respect to the calendar width as a whole, not the string).
             LDA #lo(prvDateBuffer2)
             STA prvDateSFTODO4
             LDA #hi(prvDateBuffer2)
             STA prvDateSFTODO4 + 1
             LDA #&05
             STA prvDateSFTODO0
-            LDA #&40
+            LDA #&40 ; SFTODO: use just a single space as separator between (empty) time and the date?
             STA prvDateSFTODO1
-            LDA #&00
+            LDA #&00 ; SFTODO: don't emit time?
             STA prvDateSFTODO2
-            LDA #&F8
+            LDA #&F8 ; SFTODO: just emit month name (capitalised) and 4-digit year?
             STA prvDateSFTODO3
             JSR initDateBufferAndEmitTimeAndDate
             SEC
             LDA #23
             SBC transientDateBufferIndex
-            LSR A
+            LSR A ; divide by two to get the number of spaces on left hand side
             TAX
             LDA #' '
 .spaceLoop  JSR OSWRCH
             DEX
             BNE spaceLoop
             LDX #&00
-.LB5A3      LDA prvDateBuffer2,X
+.monthNamePrintLoop
+            LDA prvDateBuffer2,X
             JSR OSASCI
             CMP #vduCr
-            BEQ LB5B0
+            BEQ monthNamePrinted
             INX
-            BNE LB5A3
-.LB5B0      JSR LA9E6
+            BNE monthNamePrintLoop
+.monthNamePrinted
+            JSR LA9E6
             LDA #&01
             STA prvA
             LDA #&00
