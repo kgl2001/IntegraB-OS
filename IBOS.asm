@@ -7246,9 +7246,13 @@ osfileBlock = L02EE
 }
 
 ; SFTODOWIP
+; SFTODO: This description is a bit of a guess, but I think it's a fairly good one
+; We output month calendars with 7 rows for Sun-Sat and up to 6 columns; to see 6 columns may be needed, consider a 31-day month where 1st is a Saturday. Populate the buffer pointed to by prvDateSFTODO4 so elements 0-6 are the day numbers to display in row 0 (the day numbers of the Sundays), elements 7-13 are the day numbers to dispay in row 1, etc, for a total of 6*7=42 elements. Blank cells have day number 0.
+.generateInternalCalendar
 {
+; SFTODO: 7 ROWS, 6 COLUMNS ARE KEY NUMBERS HERE AND WE SHOULD PROBABLY BE CALCULATING SOME NAMED CONSTANTS (EG 42) FROM OTHER NAMED CONSTANTS WHICH ARE 6 AND 7
 daysInMonth = transientDateSFTODO2
-.^LA9E6      LDA #1
+.LA9E6      LDA #1
             STA prvDateDayOfMonth
             JSR calculateDayOfWeekInPrvDateDayOfWeek
             LDY prvDateMonth
@@ -7302,7 +7306,7 @@ daysInMonth = transientDateSFTODO2
             ADC prvC ; SFTODO: add the stashed pseudo-division result to the low byte of the multiplication we just did (we *probably* know the high byte in prvD is zero and can be ignored)
             TAY
             LDA prvDateDayOfMonth
-            STA (transientDateSFTODO1),Y
+            STA (transientDateSFTODO1),Y ; SFTODO: I think what we're doing here is putting the day-of-month numbers into the order we need to output them a line at a time (although the exact nature of how we're doing that via the above calculations isn't completely clear yet)
             INC prvDateDayOfMonth
             JMP dayOfMonthLoop
 }
@@ -8954,7 +8958,7 @@ ENDIF
             INX
             BNE monthNamePrintLoop
 .monthNamePrinted
-            JSR LA9E6
+            JSR generateInternalCalendar
             LDA #&01
             STA prvA
             LDA #&00
@@ -9385,11 +9389,11 @@ ENDIF
 			
 ;XY?0=&69
 ;OSWORD &49 (73) - Integra-B calls
-.LB8B1		LDA #&00
+.LB8B1	  LDA #lo(prvDateBuffer)
             STA prvOswordBlockCopy + 4
-            LDA #&80
+            LDA #hi(prvDateBuffer)
             STA prvOswordBlockCopy + 5
-            JSR LA9E6
+            JSR generateInternalCalendar
             LDA #&2A
             STA prvOswordBlockCopy + 1
             JMP LB7BC
