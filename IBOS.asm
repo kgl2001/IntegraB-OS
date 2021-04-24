@@ -8949,23 +8949,23 @@ ENDIF
             BNE LB5A3
 .LB5B0      JSR LA9E6
             LDA #&01
-            STA prv82+&4A
+            STA prvA
             LDA #&00
-            STA prv82+&4B
+            STA prvB
 .LB5BD      LDY #&00
-            STY L00AA								;set buffer pointer
-            LDA #&00
-            STA L00A8
-            LDA #&80
-            STA L00A9								;set buffer @ &8000
-            LDA prv82+&4A
+            STY transientDateBufferIndex
+            LDA #lo(prvDateBuffer)
+            STA transientDateBufferPtr
+            LDA #hi(prvDateBuffer)
+            STA transientDateBufferPtr + 1
+            LDA prvA
             LDX #&03
             LDY #&FF
             CLC
             JSR emitDayOrMonthName
             LDA #&00
-            STA prv82+&4C
-.LB5D9      LDA #&20								;' '
+            STA prvC
+.LB5D9      LDA #' '
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDX prv82+&4B
             LDA prv80+&C8,X
