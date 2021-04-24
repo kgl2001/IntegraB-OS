@@ -148,7 +148,7 @@ transientDynamicSyntaxStateCountMask = %00111111
 transientDateBufferPtr = &A8 ; SFTODO!?
 transientDateBufferIndex = &AA ; SFTODO!?
 transientDateSFTODO2 = &AA ; SFTODO: prob just temp storage
-transientDateSFTODO1 = &AB ; SFTODO!?
+transientDateSFTODO1 = &AB ; SFTODO!? 2 bytes?
 
 vduStatus = &D0
 vduStatusShadow = &10
@@ -7246,31 +7246,31 @@ osfileBlock = L02EE
 }
 
 {
-.^LA9E6      LDA #&01
-            STA prvOswordBlockCopy + 11
+.^LA9E6      LDA #1
+            STA prvDateDayOfMonth
             JSR calculateDayOfWeekInPrvDateDayOfWeek
-            LDY prvOswordBlockCopy + 10
+            LDY prvDateMonth
             JSR getDaysInMonthY
             STA L00AA
 .LA9F6      CLC
             LDA L00AA
-            ADC prvOswordBlockCopy + 12
+            ADC prvDateDayOfWeek
             CMP #&25
             BCS LAA0C
             CLC
-            LDA prvOswordBlockCopy + 12
+            LDA prvDateDayOfWeek
             ADC #&07
-            STA prvOswordBlockCopy + 12
+            STA prvDateDayOfWeek
             JMP LA9F6
 
-.LAA0C      LDA prvOswordBlockCopy + 4
-            STA L00AB
-            LDA prvOswordBlockCopy + 5
-            STA L00AC
+.LAA0C      LDA prvDateSFTODO4
+            STA transientDateSFTODO1
+            LDA prvDateSFTODO4 + 1
+            STA transientDateSFTODO1 + 1
             LDA #&00
             LDY #&2A
 .LAA1A      DEY
-            STA (L00AB),Y
+            STA (transientDateSFTODO1),Y
             BNE LAA1A
             INC L00AA
 .LAA21      LDA prvOswordBlockCopy + 11
