@@ -8923,7 +8923,7 @@ ENDIF
             LDA #hi(prvDateBuffer2)
             STA prvDateSFTODO4 + 1
             LDA #&05
-            STA prvOswordBlockCopy
+            STA prvDateSFTODO0
             LDA #&40
             STA prvDateSFTODO1
             LDA #&00
@@ -8932,16 +8932,16 @@ ENDIF
             STA prvDateSFTODO3
             JSR initDateBufferAndEmitTimeAndDate
             SEC
-            LDA #&17
-            SBC L00AA
+            LDA #23
+            SBC transientDateBufferIndex
             LSR A
             TAX
             LDA #' '
-.LB59B      JSR OSWRCH
+.spaceLoop  JSR OSWRCH
             DEX
-            BNE LB59B
+            BNE spaceLoop
             LDX #&00
-.LB5A3      LDA prv80+&C8,X
+.LB5A3      LDA prvDateBuffer2,X
             JSR OSASCI
             CMP #vduCr
             BEQ LB5B0
