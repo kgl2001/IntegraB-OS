@@ -8967,8 +8967,8 @@ ENDIF
             STA prvC
 .LB5D9      LDA #' '
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-            LDX prv82+&4B
-            LDA prv80+&C8,X
+            LDX prvB
+            LDA prvDateBuffer2,X
             LDX #&03
             JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
             INC prv82+&4B
