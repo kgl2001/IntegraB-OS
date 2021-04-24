@@ -7254,7 +7254,8 @@ daysInMonth = transientDateSFTODO2
             LDY prvDateMonth
             JSR getDaysInMonthY
             STA daysInMonth
-.LA9F6      CLC
+.makePrvDateDayOfWeekGe37Loop
+            CLC
             LDA daysInMonth
             ADC prvDateDayOfWeek
             CMP #37
@@ -7263,7 +7264,7 @@ daysInMonth = transientDateSFTODO2
             LDA prvDateDayOfWeek
             ADC #7
             STA prvDateDayOfWeek
-            JMP LA9F6
+            JMP makePrvDateDayOfWeekGe37Loop
 
 .LAA0C      LDA prvDateSFTODO4
             STA transientDateSFTODO1
