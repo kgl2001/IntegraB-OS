@@ -7272,30 +7272,30 @@ osfileBlock = L02EE
 .LAA1A      DEY
             STA (transientDateSFTODO1),Y
             BNE LAA1A
-            INC L00AA
-.LAA21      LDA prvOswordBlockCopy + 11
-            CMP L00AA
+            INC transientDateBufferIndex
+.LAA21      LDA prvDateDayOfMonth
+            CMP transientDateBufferIndex
             BCC LAA29
             RTS
 
-.LAA29      ADC prvOswordBlockCopy + 12
+.LAA29      ADC prvDateDayOfWeek
             SEC
             SBC #&02
-            STA prv82+&4A
+            STA prvA
             LDA #&00
-            STA prv82+&4B
+            STA prvB
             LDA #&07
-            STA prv82+&4C
+            STA prvC
             JSR SFTODOPSEUDODIV
-            STA prv82+&4A
+            STA prvA
             LDA #&06
-            STA prv82+&4B
-            LDA prv82+&4D
+            STA prvB
+            LDA prvD
             PHA
             JSR mul8
             PLA
             CLC
-            ADC prv82+&4C
+            ADC prvC
             TAY
             LDA prvOswordBlockCopy + 11
             STA (L00AB),Y
