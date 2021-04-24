@@ -7245,17 +7245,19 @@ osfileBlock = L02EE
 .rts        RTS
 }
 
+; SFTODOWIP
 {
+daysInMonth = transientDateSFTODO2
 .^LA9E6      LDA #1
             STA prvDateDayOfMonth
             JSR calculateDayOfWeekInPrvDateDayOfWeek
             LDY prvDateMonth
             JSR getDaysInMonthY
-            STA transientDateBufferIndex
+            STA daysInMonth
 .LA9F6      CLC
-            LDA transientDateBufferIndex
+            LDA daysInMonth
             ADC prvDateDayOfWeek
-            CMP #&25
+            CMP #37
             BCS LAA0C
             CLC
             LDA prvDateDayOfWeek
@@ -7272,9 +7274,9 @@ osfileBlock = L02EE
 .LAA1A      DEY
             STA (transientDateSFTODO1),Y
             BNE LAA1A
-            INC transientDateBufferIndex
+            INC daysInMonth
 .LAA21      LDA prvDateDayOfMonth
-            CMP transientDateBufferIndex
+            CMP daysInMonth
             BCC LAA29
             RTS
 
