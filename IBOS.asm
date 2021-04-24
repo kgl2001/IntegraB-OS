@@ -7270,18 +7270,19 @@ daysInMonth = transientDateSFTODO2
             STA transientDateSFTODO1
             LDA prvDateSFTODO4 + 1
             STA transientDateSFTODO1 + 1
-            LDA #&00
+            LDA #0
             LDY #42
-.LAA1A      DEY
+.zeroBufferLoop
+	  DEY
             STA (transientDateSFTODO1),Y
-            BNE LAA1A
-            INC daysInMonth
-.LAA21      LDA prvDateDayOfMonth
+            BNE zeroBufferLoop
+            INC daysInMonth ; bump daysInMonth so the following loop can use a strictly less than comparison
+.dayOfMonthLoop
+            LDA prvDateDayOfMonth
             CMP daysInMonth
-            BCC LAA29
+            BCC notDone ; SFTODO: Could we BCS to a nearby RTS (there's one just above) to save a byte
             RTS
-
-.LAA29      ADC prvDateDayOfWeek
+.notDone    ADC prvDateDayOfWeek
             SEC
             SBC #&02
             STA prvA
@@ -7290,20 +7291,20 @@ daysInMonth = transientDateSFTODO2
             LDA #&07
             STA prvC
             JSR SFTODOPSEUDODIV
-            STA prvA
+            STA prvA ; SFTODO: Ignoring SFTODOPSEUDODIV quirk with prvB, we are setting A = (prvDateDayOfWeek + 2) MOD 7 - though remember we adjusted prvDateDayOfWeek above for currently unclear reasons (I suspect they're something to do with blanks in the first column of dates, ish)
             LDA #&06
             STA prvB
-            LDA prvD
+            LDA prvD ; SFTODO: stash result of pseudo-division as mul8 will corrupt prvD
             PHA
-            JSR mul8
+            JSR mul8 ; SFTODO: prvDC = 6 * the A we calculated above
             PLA
             CLC
-            ADC prvC
+            ADC prvC ; SFTODO: add the stashed pseudo-division result to the low byte of the multiplication we just did (we *probably* know the high byte in prvD is zero and can be ignored)
             TAY
             LDA prvDateDayOfMonth
             STA (transientDateSFTODO1),Y
             INC prvDateDayOfMonth
-            JMP LAA21
+            JMP dayOfMonthLoop
 }
 
 ;Calendar text (LAA5F)
