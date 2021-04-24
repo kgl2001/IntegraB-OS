@@ -8874,7 +8874,7 @@ ENDIF
             CMP #'='								;check for '='
             BEQ setDate								;if '=' then set date, else read date
             JSR initDateSFTODOS								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
-            LDA prvDateSFTODO2
+            LDA prvDateSFTODO2 ; SFTODO: It would be shorter just to do LDA #xx:STA prvDateSFTODO2
             AND #&F0
             STA prvDateSFTODO2							;store #&40 to address &8222, updating value set by initDateSFTODOS
             JSR dateCalculation
@@ -8910,13 +8910,15 @@ ENDIF
 .^calend    JSR PrvEn								;switch in private RAM
 	  ; SFTODO: Can we share the next few lines of code with *DATE?
             JSR dateCalculation
-            BCC LB571
-            BVS LB56E
+            BCC calculationOk
+            BVS PrvDisBadDateIndirect
             JMP PrvDisMismatch
-			
-.LB56E      JMP PrvDisBadDate
 
-.LB571      LDA #lo(prvDateBuffer2)
+.PrvDisBadDateIndirect
+            JMP PrvDisBadDate
+
+.calculationOk
+            LDA #lo(prvDateBuffer2)
             STA prvDateSFTODO4
             LDA #hi(prvDateBuffer2)
             STA prvDateSFTODO4 + 1
