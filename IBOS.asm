@@ -9011,7 +9011,7 @@ column = prvC
 }
 
 {
-.LB61A      INY
+.setAlarm   INY
 .LB61B      PHP
             JSR parseAndValidateTime
             BCC LB62D
@@ -9045,7 +9045,7 @@ column = prvC
             LDA (L00A8),Y
             CMP #'='
             CLC
-            BEQ LB61A
+            BEQ setAlarm
             CMP #'?'
             BEQ LB690
             CMP #vduCr
