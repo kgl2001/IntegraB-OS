@@ -9041,15 +9041,15 @@ column = prvC
             JMP LB67C
 			
 ;*ALARM Command
-.^alarm      JSR PrvEn								;switch in private RAM
-            LDA (L00A8),Y
+.^alarm     JSR PrvEn								;switch in private RAM
+            LDA (transientCmdPtr),Y
             CMP #'='
             CLC
             BEQ setAlarm
             CMP #'?'
-            BEQ LB690
+            BEQ showAlarm
             CMP #vduCr
-            BEQ LB690
+            BEQ showAlarm
             JSR parseOnOff
             BCS LB61B
             PHP
@@ -9058,23 +9058,23 @@ column = prvC
             PLP
             BNE LB67C
             AND #&BF
-            JSR writeUserReg							;Write to RTC clock User area. X=Addr, A=Data
-            LDX #&0B								;Select 'Register B' register on RTC: Register &0B
+            JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
+            LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&9F
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             JMP LB6E3
 			
 .LB67C      ORA #&40
-            JSR writeUserReg							;Write to RTC clock User area. X=Addr, A=Data
-            LDX #&0B								;Select 'Register B' register on RTC: Register &0B
+            JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
+            LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&9F
             ORA #&20
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             JMP LB6E3
 			
-.LB690      LDA #&40
+.showAlarm  LDA #&40
             STA prvDateSFTODO1
             LDA #&04
             STA prvDateSFTODO2
@@ -9094,7 +9094,7 @@ column = prvC
             LDA #'/'
             JSR OSWRCH								;write to screen
             JSR printSpace								;write ' ' to screen
-            LDX #&0B								;Select 'Register B' register on RTC: Register &0B
+            LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&20
             JSR printOnOff
