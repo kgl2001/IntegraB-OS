@@ -7912,7 +7912,7 @@ ENDIF
             PHA
             ADC prvDC + 1
             STA prvDC + 1
-	  ; We now have prvDC += yearsSince1900*256 SFTODO: note this may overflow, e.g. if yearsSince1900=199 prvDC + 1 "should" be 84+199=283
+	  ; We now have prvDC += yearsSince1900*256 SFTODO: note this may overflow, e.g. if yearsSince1900=199 prvDC + 1 "should" be 84+199=283, but we don't check
             PLA
             LSR A
             LSR A
