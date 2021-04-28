@@ -6786,13 +6786,13 @@ osfileBlock = L02EE
 ;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
 {
 .^LA6CB      JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
-            LDX #&06								;Select 'Day of Week' register on RTC: Register &06
-            LDA prvOswordBlockCopy + 12								;Get 'Day of Week' from &822C
+            LDX #rtcRegDayOfWeek							;Select 'Day of Week' register on RTC: Register &06
+            LDA prvDateDayOfWeek							;Get 'Day of Week' from &822C
             JSR wrRTCRAM								;Write data from A to RTC memory location X
-            INX									;Select 'Day of Month' register on RTC: Register &07
+            INX:ASSERT rtcRegDayOfWeek + 1 == rtcRegDayOfMonth		 		;Select 'Day of Month' register on RTC: Register &07
             LDA prvOswordBlockCopy + 11								;Get 'Day of Month' from &822B
             JSR wrRTCRAM								;Write data from A to RTC memory location X
-            INX									;Select 'Month' register on RTC: Register &08
+            INX:ASSERT rtcRegDayOfMonth + 1 == rtcRegMonth					;Select 'Month' register on RTC: Register &08
             LDA prvOswordBlockCopy + 10								;Get 'Month' from &822A
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             INX									;Select 'Year' register on RTC: Register &09
@@ -9420,13 +9420,13 @@ column = prvC
 			
 ;XY?0=&65
 ;OSWORD &49 (73) - Integra-B calls
-.LB8D8		JSR writeRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
+.LB8D8	  JSR writeRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
             SEC
             RTS
 			
 ;XY?0=&66
 ;OSWORD &49 (73) - Integra-B calls
-.LB8DD		JSR LA6CB								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
+.LB8DD	  JSR LA6CB								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
             SEC
             RTS
 			
