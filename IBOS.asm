@@ -7880,7 +7880,7 @@ ENDIF
 
 {
 ; SFTODO: This has only one caller
-.^LADCB      LDA #&00
+.^LADCB      LDA #0
             STA prvDateSFTODO0
             SEC
             LDA prvDateCentury
@@ -7909,22 +7909,22 @@ ENDIF
             ADC prvDC
             STA prvDC
             LDA prvDC + 1
-            ADC #&00
+            ADC #0
             STA prvDC + 1
             BCS LAE26
             JSR LA7FE
             CLC
-            LDA prvOswordBlockCopy + 4
-            ADC prv82+&4C
-            STA prvOswordBlockCopy + 4
-            LDA prvOswordBlockCopy + 5
-            ADC prv82+&4D
-            STA prvOswordBlockCopy + 5
+            LDA prvDateSFTODO4
+            ADC prvDC
+            STA prvDateSFTODO4
+            LDA prvDateSFTODO4 + 1
+            ADC prvDC + 1
+            STA prvDateSFTODO4 + 1
             BCS LAE26
             RTS
 			
 .LAE26      LDA #&FF
-            STA prvOswordBlockCopy
+            STA prvDateSFTODO0
             RTS
 }
 
