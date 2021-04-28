@@ -33,10 +33,10 @@
 ;&26:
 ;&27:
 ;&28:	RTC &35 - Century
-;&29:	RTC &09 - Year (Set at setRtcDate)
-;&2A:	RTC &08 - Month (Set at setRtcDate)
-;&2B:	RTC &07 - Day of Month (Set at setRtcDate)
-;&2C:	RTC &06 - Day of Week (Set at setRtcDate)
+;&29:	RTC &09 - Year (Set at writeRtcDate)
+;&2A:	RTC &08 - Month (Set at writeRtcDate)
+;&2B:	RTC &07 - Day of Month (Set at writeRtcDate)
+;&2C:	RTC &06 - Day of Week (Set at writeRtcDate)
 ;&2D:	RTC &04 - Hours (Set at writeRtcTime)
 ;&2E:	RTC &02 - Minutes (Set at writeRtcTime)
 ;&2F:	RTC &00 - Seconds (Set at writeRtcTime)
@@ -6784,7 +6784,7 @@ osfileBlock = L02EE
 }
 			
 ;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
-.setRtcDate ; SFTODO: as in "not time" - maybe rename all this later?
+.writeRtcDate ; SFTODO: as in "not time" - maybe rename all this later?
 {
 .LA6CB      JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
             LDX #rtcRegDayOfWeek							;Select 'Day of Week' register on RTC: Register &06
@@ -6879,7 +6879,7 @@ osfileBlock = L02EE
 ; SFTODO: Following block is dead code
 {
             JSR writeRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC						***not used. nothing jumps into this code***
-            JMP setRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
+            JMP writeRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
 }
 
 ;Wait until RTC Update in Progress	is complete
@@ -8915,7 +8915,7 @@ ENDIF
             BCC LB55B
             JMP PrvDisBadDate								;Error with Bad date
 			
-.LB55B      JSR setRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
+.LB55B      JSR writeRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
             JMP PrvDisexitSc								;switch out private RAM and exit
 }
 			
@@ -9427,7 +9427,7 @@ column = prvC
 			
 ;XY?0=&66
 ;OSWORD &49 (73) - Integra-B calls
-.LB8DD	  JSR setRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
+.LB8DD	  JSR writeRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
             SEC
             RTS
 			
