@@ -6994,7 +6994,7 @@ osfileBlock = L02EE
 ; SFTODO: This seems to want to calculate "prvDate - 1st January in same year" in days, so result (in prvDateSFTODO4, 16 bit word) will be 0 for 1st January, 1 for 2nd January, etc. However, see the comment below about TYA vs TXA - what it actually seems to do is return the number of days up to the end of prvMonth in prvDateSFTODO4 and prvDateDayOfMonth-1 in X. Maybe this *is* what it really wants to do and I'm misinterpreting things - would need to look at caller in more detail
 .calculateDaysBetween1stJanAndPrvDateSFTODOIsh
 {
-.^LA7FE      LDA #&00
+.LA7FE      LDA #&00
             STA prvDateSFTODO4
             STA prvDateSFTODO4 + 1
             LDY #0
@@ -7917,7 +7917,7 @@ ENDIF
             ADC #0
             STA prvDC + 1
             BCS LAE26
-            JSR LA7FE
+            JSR calculateDaysBetween1stJanAndPrvDateSFTODOIsh
             CLC
             LDA prvDateSFTODO4
             ADC prvDC
