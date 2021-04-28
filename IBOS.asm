@@ -7943,27 +7943,33 @@ ENDIF
             RTS
 }
 
+; SFTODO: This has only one caller
+; SFTODO: I suspect this subroutine is (intended to be) the inverse of JSR calculateDaysBetween1stJan1900AndPrvDateSFTODOIsh - yes, I haven't followed the logic through step by step but it looks very much like it
+.convertDaysSince1stJan1900ToDate
 {
-.^LAE2C     LDA #19
+daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
+.LAE2C      LDA #19
             STA prvDateCentury
             SEC
             LDA prvDateSFTODO4
-            SBC #&AC
+            SBC #lo(daysBetween1stJan1900And2000)
             STA prvA
             LDA prvDateSFTODO4 + 1
-            SBC #&8E
-            BCC LAE4D
+            SBC #hi(daysBetween1stJan1900And2000)
+            BCC prvDateCenturyOK
             STA prvDateSFTODO4 + 1
             LDA prvA
             STA prvDateSFTODO4
             INC prvDateCentury
-.LAE4D      LDA #&00
+.prvDateCenturyOK
+	  ; By this point we've adjusted prvDateSFTODO4 and prvDateCentury so we now SFTODO: GUESSING want to calculate the number of days between prvDate and 1st January (prvCentury 00)
+	  LDA #0
             STA prvDateYear
-.LAE52      JSR testLeapYear
-            LDA #&6D
-            ADC #&00
+.LAE52      JSR testLeapYear ; set C iff prvDateYear is a leap year
+            LDA #109
+            ADC #0
             STA prvA
-            LDA #&01
+            LDA #1
             STA prvB
             SEC
             LDA prvDateSFTODO4
@@ -9469,7 +9475,7 @@ column = prvC
 			
 ;XY?0=&6B
 ;OSWORD &49 (73) - Integra-B calls
-.LB901		JSR LAE2C
+.LB901	  JSR convertDaysSince1stJan1900ToDate
             CLC
             RTS
 
