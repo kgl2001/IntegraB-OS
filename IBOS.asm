@@ -7893,24 +7893,24 @@ ENDIF
 .LADE0      CLC
             ADC prvDateYear
             PHA
-            STA prv82+&4A
-            LDA #&6D
-            STA prv82+&4B
+            STA prvA
+            LDA #109
+            STA prvB
             JSR mul8
             CLC
             PLA
             PHA
-            ADC prv82+&4D
-            STA prv82+&4D
+            ADC prvD
+            STA prvD
             PLA
             LSR A
             LSR A
             CLC
-            ADC prv82+&4C
-            STA prv82+&4C
-            LDA prv82+&4D
+            ADC prvC
+            STA prvC
+            LDA prvD
             ADC #&00
-            STA prv82+&4D
+            STA prvD
             BCS LAE26
             JSR LA7FE
             CLC
