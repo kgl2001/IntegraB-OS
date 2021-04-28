@@ -7890,13 +7890,15 @@ ENDIF
             SEC
             LDA prvDateCentury
             SBC #19
-            BCC LAE26
-            BEQ LADE0
-            CMP #&01
+            BCC LAE26 ; SFTODO: branch if error? (branch if prvDateCentury<19, but LAE26 is used below too)
+            BEQ centuryAdjustInA
+            CMP #1
             BNE LAE26
             LDA #100
-.LADE0      CLC
+.centuryAdjustInA
+            CLC
             ADC prvDateYear
+	  ; A now contains four digit year-1900.
             PHA
             STA prvA
             LDA #109
