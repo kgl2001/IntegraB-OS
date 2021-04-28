@@ -6838,16 +6838,16 @@ osfileBlock = L02EE
 ;Read 'Sec Alarm', 'Min Alarm' & 'Hr Alarm' from RTC and Store in Private RAM (&82xx)
 .copyRtcAlarmToPrv
 {
-.LA732      JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
+.LA732      JSR waitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
             LDX #&01								;Select 'Sec Alarm' register on RTC: Register &01
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            STA prvOswordBlockCopy + 15								;Store 'Sec Alarm' at &822F
+            STA prvDateSeconds							;Store 'Sec Alarm' at &822F
             LDX #&03								;Select 'Min Alarm' register on RTC: Register &03
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            STA prvOswordBlockCopy + 14								;Store 'Min Alarm' at &822E
+            STA prvDateMinutes							;Store 'Min Alarm' at &822E
             LDX #&05								;Select 'Hr Alarm' register on RTC: Register &05
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            STA prvOswordBlockCopy + 13								;Store 'Hr Alarm' at &822D
+            STA prvDateHours								;Store 'Hr Alarm' at &822D
             RTS
 }
 
@@ -9429,11 +9429,11 @@ column = prvC
 			
 ;XY?0=&67
 ;OSWORD &49 (73) - Integra-B calls
-.LB8E2		JSR copyPrvAlarmToRtc
+.LB8E2	  JSR copyPrvAlarmToRtc
             LDA prvOswordBlockCopy + 1
             AND #&60
             STA prvOswordBlockCopy + 1
-            LDX #&0B								;Select 'Register B' register on RTC: Register &0B
+            LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&9F
             ORA prvOswordBlockCopy + 1
@@ -9443,7 +9443,7 @@ column = prvC
 			
 ;XY?0=&6A
 ;OSWORD &49 (73) - Integra-B calls
-.LB8FC		JSR LADCB
+.LB8FC	  JSR LADCB
             CLC
             RTS
 			
