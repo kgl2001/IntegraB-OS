@@ -7883,9 +7883,11 @@ ENDIF
             JMP emitSpace
 }
 
+; SFTODO: "Ish" in name because I think this will be affected by the bug in calculateDaysBetween1stJanAndPrvDateSFTODOIsh
+.calculateDaysBetween1stJan1900AndPrvDateSFTODOIsh
 {
 ; SFTODO: This has only one caller
-.^LADCB      LDA #0
+.LADCB      LDA #0
             STA prvDateSFTODO0
             SEC
             LDA prvDateCentury
@@ -7898,27 +7900,32 @@ ENDIF
 .centuryAdjustInA
             CLC
             ADC prvDateYear
-	  ; A now contains four digit year-1900.
+	  ; A now contains yearsSince1900=four digit year-1900.
             PHA
             STA prvA
             LDA #109
             STA prvB
             JSR mul8
+	  ; We now have prvDC = yearsSince1900*109; prvDC+1 might be as high as 84 if yearsSince1900=199
             CLC
             PLA
             PHA
             ADC prvDC + 1
             STA prvDC + 1
+	  ; We now have prvDC += yearsSince1900*256 SFTODO: note this may overflow, e.g. if yearsSince1900=199 prvDC + 1 "should" be 84+199=283
             PLA
             LSR A
             LSR A
             CLC
             ADC prvDC
             STA prvDC
+	  ; SFTODO: Could save a few bytes with BCC:INC trick
             LDA prvDC + 1
             ADC #0
             STA prvDC + 1
-            BCS LAE26
+	  ; prvDC += yearsSince1900 DIV 4
+            BCS LAE26 ; branch if we've overflowed SFTODO: seems a little pointless, we didn't check for overflow above so why only here? Just maybe this works out correctly, but I'm a little dubious.
+	  ; We have prvDC = yearsSince1900*(109+256) + yearsSince1900 DIV 4 = days since January 1st 1900.
             JSR calculateDaysBetween1stJanAndPrvDateSFTODOIsh
             CLC
             LDA prvDateSFTODO4
@@ -7927,7 +7934,8 @@ ENDIF
             LDA prvDateSFTODO4 + 1
             ADC prvDC + 1
             STA prvDateSFTODO4 + 1
-            BCS LAE26
+	  ; We have now (SFTODO: ignoring possible bug in calculateDaysBetween1stJanAndPrvDateSFTODOIsh) calculated the number of days from January 1st 1900 to prvDate.
+            BCS LAE26 ; branch if we've overflowed SFTODO: pointless? well, at least inconsistent/incomplete?
             RTS
 			
 .LAE26      LDA #&FF
@@ -9454,7 +9462,7 @@ column = prvC
 			
 ;XY?0=&6A
 ;OSWORD &49 (73) - Integra-B calls
-.LB8FC	  JSR LADCB
+.LB8FC	  JSR calculateDaysBetween1stJan1900AndPrvDateSFTODOIsh
             CLC
             RTS
 			
