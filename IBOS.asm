@@ -67,8 +67,11 @@
 ;Register &0C
 ;Register &0D
 rtcRegSeconds = &00
+rtcRegAlarmSeconds = &01
 rtcRegMinutes = &02
+rtcRegAlarmMinutes = &03
 rtcRegHours = &04
+rtcRegAlarmHours = &05
 rtcRegDayOfWeek = &06
 rtcRegDayOfMonth = &07
 rtcRegMonth = &08
@@ -6839,13 +6842,13 @@ osfileBlock = L02EE
 .copyRtcAlarmToPrv
 {
 .LA732      JSR waitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
-            LDX #&01								;Select 'Sec Alarm' register on RTC: Register &01
+            LDX #rtcRegAlarmSeconds							;Select 'Sec Alarm' register on RTC: Register &01
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             STA prvDateSeconds							;Store 'Sec Alarm' at &822F
-            LDX #&03								;Select 'Min Alarm' register on RTC: Register &03
+            LDX #rtcRegAlarmMinutes							;Select 'Min Alarm' register on RTC: Register &03
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             STA prvDateMinutes							;Store 'Min Alarm' at &822E
-            LDX #&05								;Select 'Hr Alarm' register on RTC: Register &05
+            LDX #rtcRegAlarmHours							;Select 'Hr Alarm' register on RTC: Register &05
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             STA prvDateHours								;Store 'Hr Alarm' at &822D
             RTS
