@@ -6790,16 +6790,16 @@ osfileBlock = L02EE
             LDA prvDateDayOfWeek							;Get 'Day of Week' from &822C
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             INX:ASSERT rtcRegDayOfWeek + 1 == rtcRegDayOfMonth		 		;Select 'Day of Month' register on RTC: Register &07
-            LDA prvOswordBlockCopy + 11								;Get 'Day of Month' from &822B
+            LDA prvDateDayOfMonth							;Get 'Day of Month' from &822B
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             INX:ASSERT rtcRegDayOfMonth + 1 == rtcRegMonth					;Select 'Month' register on RTC: Register &08
-            LDA prvOswordBlockCopy + 10								;Get 'Month' from &822A
+            LDA prvDateMonth								;Get 'Month' from &822A
             JSR wrRTCRAM								;Write data from A to RTC memory location X
-            INX									;Select 'Year' register on RTC: Register &09
-            LDA prvOswordBlockCopy + 9								;Get 'Year' from &8229
+            INX:ASSERT rtcRegMonth + 1 == rtcRegYear					;Select 'Year' register on RTC: Register &09
+            LDA prvDateYear								;Get 'Year' from &8229
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             LDX #userRegCentury
-            LDA prvOswordBlockCopy + 8
+            LDA prvDateCentury
             JMP writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
 }
 
