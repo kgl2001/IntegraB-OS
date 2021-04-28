@@ -7881,17 +7881,17 @@ ENDIF
 {
 ; SFTODO: This has only one caller
 .^LADCB      LDA #&00
-            STA prvOswordBlockCopy
+            STA prvDateSFTODO0
             SEC
-            LDA prvOswordBlockCopy + 8
-            SBC #&13
+            LDA prvDateCentury
+            SBC #19
             BCC LAE26
             BEQ LADE0
             CMP #&01
             BNE LAE26
-            LDA #&64
+            LDA #100
 .LADE0      CLC
-            ADC prvOswordBlockCopy + 9
+            ADC prvDateYear
             PHA
             STA prv82+&4A
             LDA #&6D
