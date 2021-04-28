@@ -9433,7 +9433,8 @@ column = prvC
             STA prvOswordBlockCopy + 1
             CLC
             RTS
-			
+
+; SFTODO: Don't these next two calls contain most of the logic we'd need to implement OSWORD &F?
 ;XY?0=&65
 ;OSWORD &49 (73) - Integra-B calls
 .LB8D8	  JSR writeRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
