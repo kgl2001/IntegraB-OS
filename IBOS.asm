@@ -6992,31 +6992,31 @@ osfileBlock = L02EE
 
 {
 .^LA7FE      LDA #&00
-            STA prvOswordBlockCopy + 4
-            STA prvOswordBlockCopy + 5
+            STA prvDateSFTODO4
+            STA prvDateSFTODO4 + 1
             LDY #&00
 .LA808      INY
-            CPY prvOswordBlockCopy + 10
+            CPY prvDateMonth
             BEQ LA823
             JSR getDaysInMonthY
             CLC
-            ADC prvOswordBlockCopy + 4
-            STA prvOswordBlockCopy + 4
-            LDA prvOswordBlockCopy + 5
+            ADC prvDateSFTODO4
+            STA prvDateSFTODO4
+            LDA prvDateSFTODO4 + 1
             ADC #&00
-            STA prvOswordBlockCopy + 5
+            STA prvDateSFTODO4 + 1
             BCC LA808
             RTS
 
-.LA823      LDX prvOswordBlockCopy + 11
+.LA823      LDX prvDateDayOfMonth
             DEX
             TYA
             CLC
-            ADC prvOswordBlockCopy + 4
-            STA prvOswordBlockCopy + 4
-            LDA prvOswordBlockCopy + 5
-            ADC #&00
-            STA prvOswordBlockCopy + 5
+            ADC prvDateSFTODO4
+            STA prvDateSFTODO4
+            LDA prvDateSFTODO4 + 1
+            ADC #0
+            STA prvDateSFTODO4 + 1
             RTS
 }
 
