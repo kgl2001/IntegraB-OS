@@ -7904,16 +7904,16 @@ ENDIF
 	  ; A now contains yearsSince1900=four digit year-1900.
             PHA
             STA prvA
-            LDA #109
+            LDA #lo(daysPerYear)
             STA prvB
             JSR mul8
-	  ; We now have prvDC = yearsSince1900*109; prvDC+1 might be as high as 84 if yearsSince1900=199
+	  ; We now have prvDC = yearsSince1900*lo(daysPerYear); prvDC+1 might be as high as 84 if yearsSince1900=199
             CLC
             PLA
             PHA
             ADC prvDC + 1
             STA prvDC + 1
-	  ; We now have prvDC += yearsSince1900*256 SFTODO: note this may overflow, e.g. if yearsSince1900=199 prvDC + 1 "should" be 84+199=283, but we don't check
+	  ; We now have prvDC += yearsSince1900*hi(daysPerYear)*256, since hi(daysPerYear) == 1 SFTODO: note this may overflow, e.g. if yearsSince1900=199 prvDC + 1 "should" be 84+199=283, but we don't check
             PLA
             LSR A
             LSR A
@@ -7926,7 +7926,7 @@ ENDIF
             STA prvDC + 1
 	  ; prvDC += yearsSince1900 DIV 4
             BCS LAE26 ; branch if we've overflowed SFTODO: seems a little pointless, we didn't check for overflow above so why only here? Just maybe this works out correctly, but I'm a little dubious.
-	  ; We have prvDC = yearsSince1900*(109+256) + yearsSince1900 DIV 4 = days since January 1st 1900.
+	  ; We have prvDC = yearsSince1900*daysPerYear + yearsSince1900 DIV 4 = days since January 1st 1900.
             JSR calculateDaysBetween1stJanAndPrvDateSFTODOIsh
             CLC
             LDA prvDateSFTODO4
@@ -9467,7 +9467,8 @@ column = prvC
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             SEC
             RTS
-			
+
+; SFTODO: Perhaps be interesting to write a little test program for the following two calls; we could pre-compute some correct answers and check those (which I suspect would reveal bugs, as per SFTODOs elsewhere), and we could also loop over all dates from 1900/01/01 and round-trip via both of these calls to check that we get the same answer back for each date (and in fact we could also check that the day number was one larger each time - that would in fact remove any need to pre-compute some correct answers)
 ;XY?0=&6A
 ;OSWORD &49 (73) - Integra-B calls
 .LB8FC	  JSR calculateDaysBetween1stJan1900AndPrvDateSFTODOIsh
