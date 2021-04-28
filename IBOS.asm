@@ -571,6 +571,7 @@ opcodeLdaAbs = &AD
 opcodeStaAbs = &8D
 
 daysPerWeek = 7
+daysPerYear = 365
 
 ; SFTODO: Define romselCopy = &F4, romsel = &FE30, ramselCopy = &37F, ramsel =
 ; &FE34 and use those everywhere instead of the raw hex or SHEILA+&xx we have
@@ -7966,10 +7967,10 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 	  LDA #0
             STA prvDateYear
 .LAE52      JSR testLeapYear ; set C iff prvDateYear is a leap year
-            LDA #109
+            LDA #lo(daysPerYear)
             ADC #0
             STA prvA
-            LDA #1
+            LDA #hi(daysPerYear)
             STA prvB
             SEC
             LDA prvDateSFTODO4
