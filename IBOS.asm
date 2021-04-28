@@ -7900,17 +7900,17 @@ ENDIF
             CLC
             PLA
             PHA
-            ADC prvD
-            STA prvD
+            ADC prvDC + 1
+            STA prvDC + 1
             PLA
             LSR A
             LSR A
             CLC
-            ADC prvC
-            STA prvC
-            LDA prvD
+            ADC prvDC
+            STA prvDC
+            LDA prvDC + 1
             ADC #&00
-            STA prvD
+            STA prvDC + 1
             BCS LAE26
             JSR LA7FE
             CLC
