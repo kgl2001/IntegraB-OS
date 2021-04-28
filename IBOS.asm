@@ -6990,6 +6990,7 @@ osfileBlock = L02EE
 	  EQUB 31 ; December
 }
 
+; SFTODO: This has only one caller
 {
 .^LA7FE      LDA #&00
             STA prvDateSFTODO4
