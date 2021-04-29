@@ -7015,7 +7015,7 @@ osfileBlock = L02EE
 
 .LA823      LDX prvDateDayOfMonth
             DEX
-            TYA ; SFTODO: should this be TXA??
+            TYA ; SFTODO: should this be TXA?? Pretty sure it should, see test/date.bas
             CLC
             ADC prvDateSFTODO4
             STA prvDateSFTODO4
