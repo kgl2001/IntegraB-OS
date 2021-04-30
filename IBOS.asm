@@ -2833,10 +2833,11 @@ ptr = &00 ; 2 bytes
 }
 
 ;*OSMODE Command
-.osmode      JSR convertIntegerDefaultDecimal
+{
+.^osmode      JSR convertIntegerDefaultDecimal
             BCC L8ED0
-            LDA (L00A8),Y
-            CMP #&3F
+            LDA (transientCmdPtr),Y
+            CMP #'?'
             BEQ L8ED6
             JMP syntaxError
 			
@@ -2846,11 +2847,11 @@ ptr = &00 ; 2 bytes
 .L8ED6      JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDX #prvOsMode - prv83								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-.L8EDE      SEC
+.^L8EDE      SEC
             JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
             JMP L8E07								;new line, exit out of private RAM and exit service call
 			
-.L8EE5      CMP #&00
+.^L8EE5      CMP #&00
             BEQ L8F01
             CMP #&06
             BCS L8EFE
@@ -2880,6 +2881,7 @@ ptr = &00 ; 2 bytes
             STA prvOsMode								;write OSMODE
             JSR LBC98
             JMP L8EFA
+}
 			
 ;*SHADOW Command
 .shadow
