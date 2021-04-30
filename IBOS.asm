@@ -892,6 +892,8 @@ ENDIF
 .SearchCmdTbl
 {
 KeywordLength = L00AC
+MinimumAbbreviationLength = 3
+
     PHA
     ; Add A to transientCmdPtr so we can index from 0 in the following code.
     CLC
@@ -921,49 +923,52 @@ KeywordLength = L00AC
     BCS NoBorrow
     DEC transientCmdPtr + 1
 .NoBorrow
-    LDX #&00								;set pointer to first command
-    LDY #&00								;set pointer to first byte of command
-    LDA (transientTblPtr),Y							;get first byte from lookup table address. This is the length of the command string
+    LDX #&00 ; index of current entry in keyword sub-table
+    LDY #&00 ; index of current character in command line
+    LDA (transientTblPtr),Y ; get length of first keyword
 .KeywordLoop
-    STA KeywordLength							;and save at &AC
+    STA KeywordLength
     INY
 .CharacterMatchLoop
-    LDA (transientCmdPtr),Y							;get character from input buffer
-    ; SFTODO: Any chance of simultaneously optimising-and-improving by having a subroutine to convert A to upper case and JSRing to it everywhere we want to do that?
-    CMP #&60								;'£'
-    BCC NotLowerCase
-    AND #&DF								;capitalise
+    LDA (transientCmdPtr),Y
+    ; Capitalise A; &60 is '£' but we're really trying to avoid mangling
+    ; non-alphabetic characters with the AND here.
+    ; SFTODO: Any chance of simultaneously optimising-and-improving by having a
+    ; subroutine to convert A to upper case and JSRing to it everywhere we want
+    ; to do that?
+    CMP #&60:BCC NotLowerCase
+    AND #&DF
 .NotLowerCase
-    CMP (transientTblPtr),Y							;compare with character from lookup table
-    BNE NotSimpleMatch								;if not equal do further checks (check for short command '.')
-    INY									;next character
-    CPY KeywordLength								;until end of command string
-    BEQ Match								;reached the end of the check. All good, so process.
+    CMP (transientTblPtr),Y:BNE NotSimpleMatch
+    INY:CPY KeywordLength:BEQ Match
     JMP CharacterMatchLoop
 .NotSimpleMatch
-    CMP #'.'
-    BNE NotMatch								;command not matched. Check next command.
-    CPY #&03								;check length of command.
-    BCC NotMatch								;If less than 3, then too short, even if initial characters match, so check next command
-    INY									;next character
+    CMP #'.':BNE NotMatch
+    CPY #MinimumAbbreviationLength:BCC NotMatch
+    INY
 .Match
-    ; SFTODO: Note that we don't check for a space or CR following the command, so IBOS will (arguably incorrectly) recognise things like "*STATUSFILE" as "*STATUS FILE" instead of not claiming them and allowing lower priority ROMs to match against them. To be fair this is probably OK, it looks like a Master 128 does the same at least with *SRLOAD, and I think "*SHADOW1" is relatively conventional.
-    ; SFTODO: Possibly related and possibly not - doing "*CREATEME" on (emulated) IBOS 1.20 seems to sometimes do nothing and sometimes generate a pseudo-error, as if the parsing is going wrong. Changing "ME" for other strings can make a difference.
-    JSR findNextCharAfterSpace							;Command recognised. find first command parameter after ' '. offset stored in Y.
+    ; SFTODO: Note that we don't check for a space or CR following the command,
+    ; so IBOS will (arguably incorrectly) recognise things like "*STATUSFILE" as
+    ; "*STATUS FILE" instead of not claiming them and allowing lower priority
+    ; ROMs to match against them. To be fair this is probably OK, it looks like
+    ; a Master 128 does the same at least with *SRLOAD, and I think "*SHADOW1"
+    ; is relatively conventional.
+    ; SFTODO: Possibly related and possibly not - doing "*CREATEME" on
+    ; (emulated) IBOS 1.20 seems to sometimes do nothing and sometimes generate
+    ; a pseudo-error, as if the parsing is going wrong. Changing "ME" for other
+    ; strings can make a difference.
+    JSR findNextCharAfterSpace
     CLC:BCC CleanUpAndReturn
 .NotMatch
-    INX									;next command
-    CLC
-    LDA transientTblPtr
-    ADC KeywordLength							;get length of command string for previous command
-    STA transientTblPtr
+    INX ; increment keyword index
+    ; Add KeywordLength to transientTblPtr to skip to the next keyword.
+    CLC:LDA transientTblPtr:ADC KeywordLength:STA transientTblPtr
     BCC NoCarry2
-    INC transientTblPtr + 1							;and update lookup table address to point at start of next command
+    INC transientTblPtr + 1
 .NoCarry2
-    LDY #0								;set pointer to first byte of command
-    LDA (transientTblPtr),Y							;check for end of table
-    BNE KeywordLoop								;if not end of table, then loop
-    SEC									;set carry - ??? SFTODO: FAILED TO MATCH?
+    ; SQUASH: Could we just JMP to LDY #0 before KeywordLoop here, and do the BNE test there too?
+    LDY #0:LDA (transientTblPtr),Y:BNE KeywordLoop ; get length of next keyword; 0 => no more
+    SEC
 .CleanUpAndReturn
     DEY									;get back to last character
     INC transientCmdPtr							;
