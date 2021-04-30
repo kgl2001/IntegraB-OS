@@ -8713,6 +8713,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             CLC
             JMP (KEYVL)
 
+; SFTODO: Mostly un-decoded
 {
 ;OSBYTE &07 buffer data
 ;Equivalent to SOUND 3,-15,210,5
@@ -9321,6 +9322,7 @@ column = prvC
 		EQUW LB901-1							;XY?0=&6B: Function TBC
 }
 
+; SFTODO: Mostly un-decoded
 {
 .^LB7BC	  BIT prvOswordBlockCopy + 7
             BMI LB7F9
@@ -9377,7 +9379,7 @@ column = prvC
 ;XY&0=0: Read time and date in string format
 .^oswd0eReadString
 .LB81E      JSR getRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
-.LB821      JSR initDateSFTODOS								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
+.^LB821      JSR initDateSFTODOS								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
             LDA prvOswordBlockOrigAddr							;get OSWORD X register (lookup table LSB)
             STA prvOswordBlockCopy + 4							;save OSWORD X register (lookup table LSB)
             LDA prvOswordBlockOrigAddr + 1						;get OSWORD Y register (lookup table MSB)
@@ -9385,7 +9387,9 @@ column = prvC
             JSR initDateBufferAndEmitTimeAndDate
             SEC
             RTS
+}
 
+{
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=1: Read time and date in binary coded decimal (BCD) format
 .^oswd0eReadBCD
