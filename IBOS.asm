@@ -2850,7 +2850,9 @@ ptr = &00 ; 2 bytes
 .^L8EDE      SEC
             JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
             JMP L8E07								;new line, exit out of private RAM and exit service call
-			
+}
+
+{
 .^L8EE5      CMP #&00
             BEQ L8F01
             CMP #&06
