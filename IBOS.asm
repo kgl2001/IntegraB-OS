@@ -936,27 +936,29 @@ KeywordLength = L00AC
     JMP CharacterMatchLoop
 .NotSimpleMatch
     CMP #'.'
-    BNE L838D								;command not matched. Check next command.
+    BNE NotMatch								;command not matched. Check next command.
     CPY #&03								;check length of command.
-    BCC L838D								;If less than 3, then too short, even if initial characters match, so check next command
+    BCC NotMatch								;If less than 3, then too short, even if initial characters match, so check next command
     INY									;next character
 .Match
-	  ; SFTODO: Note that we don't check for a space or CR following the command, so IBOS will (arguably incorrectly) recognise things like "*STATUSFILE" as "*STATUS FILE" instead of not claiming them and allowing lower priority ROMs to match against them. To be fair this is probably OK, it looks like a Master 128 does the same at least with *SRLOAD, and I think "*SHADOW1" is relatively conventional.
-	  ; SFTODO: Possibly related and possibly not - doing "*CREATEME" on (emulated) IBOS 1.20 seems to sometimes do nothing and sometimes generate a pseudo-error, as if the parsing is going wrong. Changing "ME" for other strings can make a difference.
-	  JSR findNextCharAfterSpace							;Command recognised. find first command parameter after ' '. offset stored in Y.
-            CLC									;clear carry - ??? ; SFTODO: SUCCEEDED IN MATCHING?
-            BCC foundCmd								;and jump
-.L838D      INX									;next command
-            CLC
-            LDA transientTblPtr
-            ADC KeywordLength							;get length of command string for previous command
-            STA transientTblPtr								
-            BCC L8399
-            INC transientTblPtr + 1							;and update lookup table address to point at start of next command
-.L8399      LDY #&00								;set pointer to first byte of command
-            LDA (transientTblPtr),Y							;check for end of table
-            BNE L8367								;if not end of table, then loop
-            SEC									;set carry - ??? SFTODO: FAILED TO MATCH?
+    ; SFTODO: Note that we don't check for a space or CR following the command, so IBOS will (arguably incorrectly) recognise things like "*STATUSFILE" as "*STATUS FILE" instead of not claiming them and allowing lower priority ROMs to match against them. To be fair this is probably OK, it looks like a Master 128 does the same at least with *SRLOAD, and I think "*SHADOW1" is relatively conventional.
+    ; SFTODO: Possibly related and possibly not - doing "*CREATEME" on (emulated) IBOS 1.20 seems to sometimes do nothing and sometimes generate a pseudo-error, as if the parsing is going wrong. Changing "ME" for other strings can make a difference.
+    JSR findNextCharAfterSpace							;Command recognised. find first command parameter after ' '. offset stored in Y.
+    CLC									;clear carry - ??? ; SFTODO: SUCCEEDED IN MATCHING?
+    BCC foundCmd								;and jump
+.NotMatch
+    INX									;next command
+    CLC
+    LDA transientTblPtr
+    ADC KeywordLength							;get length of command string for previous command
+    STA transientTblPtr
+    BCC L8399
+    INC transientTblPtr + 1							;and update lookup table address to point at start of next command
+.L8399
+    LDY #0								;set pointer to first byte of command
+    LDA (transientTblPtr),Y							;check for end of table
+    BNE L8367								;if not end of table, then loop
+    SEC									;set carry - ??? SFTODO: FAILED TO MATCH?
 
 			
 .foundCmd   DEY									;get back to last character
