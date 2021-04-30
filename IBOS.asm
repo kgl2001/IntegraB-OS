@@ -2284,9 +2284,10 @@ ptr = &00 ; 2 bytes
             BNE osbyte6C								;Branch if OSMODE 1-5
             LDA oswdbtA								;get OSBYTE command
             JMP osbyteA1								;Branch if OSMODE 0 - skip OSBYTE &6C / &72
-			
+
+{
 ;Test for OSBYTE &6C - Select Shadow/Screen memory for direct access
-.osbyte6C	  LDA oswdbtA								;get OSBYTE command
+.^osbyte6C	  LDA oswdbtA								;get OSBYTE command
             CMP #&6C								;OSBYTE &6C - Select Shadow/Screen memory for direct access
             BNE osbyte72
             LDA oswdbtX
@@ -2309,6 +2310,7 @@ ptr = &00 ; 2 bytes
             STA oswdbtX
             PLP
             JMP exitSC								;Exit Service Call
+}
 			
 ;Test for OSBYTE &72 - Specify video memory to use on next MODE change (http://beebwiki.mdfs.net/OSBYTE_%2672)
 {
