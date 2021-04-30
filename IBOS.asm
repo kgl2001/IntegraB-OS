@@ -5136,14 +5136,15 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             STA prvOswordBlockCopy + 7
             RTS
 }
-			
+
+{
 ;*SRREAD Command
-.srread	  JSR PrvEn								;switch in private RAM
+.^srread	  JSR PrvEn								;switch in private RAM
             LDA #&00
             JMP L9CDF
 			
 ;*SRWRITE Command
-.srwrite	  JSR PrvEn								;switch in private RAM
+.^srwrite	  JSR PrvEn								;switch in private RAM
             LDA #&80
 .L9CDF      STA prvOswordBlockCopy
             LDA #&00
@@ -5153,6 +5154,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             JSR L9C42
             JSR parseBankNumberIfPresent
             JMP LA0A6
+}
 
 ; SFTODO: slightly poor name based on quick scan of code below, I don't know
 ; exactly how much data this is transferring and be good to document where
