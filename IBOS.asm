@@ -921,7 +921,7 @@ KeywordLength = L00AC
 .L8367
     STA KeywordLength							;and save at &AC
     INY
-.L836A
+.CharacterMatchLoop
     LDA (transientCmdPtr),Y							;get character from input buffer
     ; SFTODO: Any chance of simultaneously optimising-and-improving by having a subroutine to convert A to upper case and JSRing to it everywhere we want to do that?
     CMP #&60								;'£'
@@ -929,18 +929,18 @@ KeywordLength = L00AC
     AND #&DF								;capitalise
 .NotLowerCase
     CMP (transientTblPtr),Y							;compare with character from lookup table
-    BNE L837E								;if not equal do further checks (check for short command '.')
+    BNE NotSimpleMatch								;if not equal do further checks (check for short command '.')
     INY									;next character
     CPY KeywordLength								;until end of command string
-    BEQ cmdMatchesTbl								;reached the end of the check. All good, so process.
-    JMP L836A								;loop
-			
-.L837E      CMP #'.'
-            BNE L838D								;command not matched. Check next command.
-            CPY #&03								;check length of command.
-            BCC L838D								;If less than 3, then too short, even if initial characters match, so check next command
-            INY									;next character
-.cmdMatchesTbl
+    BEQ Match								;reached the end of the check. All good, so process.
+    JMP CharacterMatchLoop
+.NotSimpleMatch
+    CMP #'.'
+    BNE L838D								;command not matched. Check next command.
+    CPY #&03								;check length of command.
+    BCC L838D								;If less than 3, then too short, even if initial characters match, so check next command
+    INY									;next character
+.Match
 	  ; SFTODO: Note that we don't check for a space or CR following the command, so IBOS will (arguably incorrectly) recognise things like "*STATUSFILE" as "*STATUS FILE" instead of not claiming them and allowing lower priority ROMs to match against them. To be fair this is probably OK, it looks like a Master 128 does the same at least with *SRLOAD, and I think "*SHADOW1" is relatively conventional.
 	  ; SFTODO: Possibly related and possibly not - doing "*CREATEME" on (emulated) IBOS 1.20 seems to sometimes do nothing and sometimes generate a pseudo-error, as if the parsing is going wrong. Changing "ME" for other strings can make a difference.
 	  JSR findNextCharAfterSpace							;Command recognised. find first command parameter after ' '. offset stored in Y.
