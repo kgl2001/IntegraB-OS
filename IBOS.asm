@@ -1998,10 +1998,8 @@ firstDigitCmdPtrY = &BB
             LDA lastBreakType								;Read current language ROM number
             BNE L88F2
             JMP cmdLoop
-}
 
-{
-.^L88F2     LDA #osbyteKeyboardScanFrom10
+.L88F2      LDA #osbyteKeyboardScanFrom10
             JSR OSBYTE								;Perform key scan
             CPX #keycodeAt								;Is the @ key being pressed?
             BEQ atPressed
