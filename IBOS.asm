@@ -3193,10 +3193,10 @@ ptr = &00 ; 2 bytes
             BNE L9110
             INY
 .L9110      JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            LDA #&4C
+            LDA #'L'
             PLP
             BNE L911A
-            LDA #&6C
+            LDA #'l'
 .L911A      STA L00AF
             CLC
             TYA
