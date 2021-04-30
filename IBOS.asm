@@ -1800,8 +1800,8 @@ firstDigitCmdPtrY = &BB
 {
 .L8809      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
-		EQUB &D6
-		EQUS "Not found", &00
+	  EQUB &D6
+	  EQUS "Not found", &00
 }
 
 {
@@ -1971,7 +1971,7 @@ firstDigitCmdPtrY = &BB
 						
 ;Unconfirmed language entry point
 .language   CMP #&01								;Check if valid language entry
-            BEQ L88E2								;Jump to confirmed language entry
+            BEQ languageEntry								;Jump to confirmed language entry
             RTS										;Not a valid language entry
 
 			
@@ -1986,7 +1986,8 @@ firstDigitCmdPtrY = &BB
 {
 ;Confirmed language entry point
 ; SFTODO: Start of this code is same as L8969 - could we save a few bytes by (e.g.) setting osErrorPtr to &8000 here and testing for that in BRKV handler and skipping the error printing code in that case?
-.^L88E2     CLI
+.^languageEntry
+.L88E2      CLI
             CLD
             LDX #&FF
             TXS
