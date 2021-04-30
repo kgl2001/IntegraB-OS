@@ -79,9 +79,9 @@ rtcRegDayOfWeek = &06
 rtcRegDayOfMonth = &07
 rtcRegMonth = &08
 rtcRegYear = &09
-rtcRegA = &0A ; SFTODO: what's this? Name is probably not ideal but it will do for now.
+rtcRegA = &0A
 	rtcRegADV1 = 1<<5
-rtcRegB = &0B ; SFTODO: what's this? Name is probably not ideal but it will do for now.
+rtcRegB = &0B
 	rtcRegBDSE = 1<<0
 	rtcRegBAIE = 1<<5
 	rtcRegBPIE = 1<<6
@@ -9466,7 +9466,7 @@ column = prvC
 ;OSWORD &49 (73) - Integra-B calls
 .LB8E2	  JSR copyPrvAlarmToRtc
             LDA prvOswordBlockCopy + 1
-            AND #&60
+            AND #rtcRegBPIE OR rtcRegBAIE
             STA prvOswordBlockCopy + 1
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
