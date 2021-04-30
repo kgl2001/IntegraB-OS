@@ -132,7 +132,7 @@ userRegKeyboardRepeat = &0D ; 0-7: Keyboard repeat
 userRegPrinterIgnore = &0E ; 0-7: Printer ignore
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7L Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
-userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX SFTODO: in writeRtcTime we test b4 of this value, so what's that all about? It looks like it has something to do with what we write to b0 of rtcRegB.
+userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX SFTODO: in writeRtcTime we test b4 of this value, so what's that all about? It looks like it has something to do with what we write to b0 of rtcRegB (rtcRegBDSE - if this is 1, automatic adjustments are made for daylight savings time).
 userRegAlarm = &33 ; SFTODO? bits 0-5??
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
@@ -9091,7 +9091,7 @@ column = prvC
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PLP
             BNE LB67C
-            AND #&BF
+            AND #&BF ; SFTODO: Can probably convert this into more meaningful constant using datasheet
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
@@ -9099,7 +9099,7 @@ column = prvC
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             JMP LB6E3
 			
-.LB67C      ORA #&40
+.LB67C      ORA #&40 ; SFTODO: Can prob convert into meaningful constant using datasheet
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
@@ -9134,7 +9134,7 @@ column = prvC
             JSR printOnOff
             LDX #userRegAlarm
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            AND #&80
+            AND #&80 ; SFTODO: Interpret this using datasheet
             BEQ LB6E0
             JSR printSpace								;write ' ' to screen
             LDA #'R'
