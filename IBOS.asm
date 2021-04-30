@@ -225,7 +225,7 @@ oswdbtX = &F0
 oswdbtY = &F1
 
 ; SFTODO: These may need renaming, or they may not be as general as I am assuming
-CmdTblOffset = 6
+KeywordTableOffset = 6
 CmdTblParOffset = 8
 CmdTblPtrOffset = 10
 
@@ -646,8 +646,8 @@ GUARD	&C000
 		LDY #CmdRef DIV &100
 		RTS
 		
-		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used SFTODO: I'm not sure this is entirely true - the code at searchCmdTbl seems to use the 0 byte at the end of CmdTbl to know when to stop, and if I type "*SRWE" on an emulated IBOS 1.20 machine I get a "Bad id" error, suggesting the command is recognised (if not necessarily useful). It is possible some *other* code does use this, I'm *guessing* the *HELP display code uses this in order to keep SRWE and SRWP "secret" (but I haven't looked yet).
-		ASSERT P% = CmdRef + CmdTblOffset
+		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used SFTODO: I'm not sure this is entirely true - the code at SearchCmdTbl seems to use the 0 byte at the end of CmdTbl to know when to stop, and if I type "*SRWE" on an emulated IBOS 1.20 machine I get a "Bad id" error, suggesting the command is recognised (if not necessarily useful). It is possible some *other* code does use this, I'm *guessing* the *HELP display code uses this in order to keep SRWE and SRWP "secret" (but I haven't looked yet).
+		ASSERT P% = CmdRef + KeywordTableOffset
 		EQUW CmdTbl							;Start of * command table
 		ASSERT P% = CmdRef + CmdTblParOffset
 		EQUW CmdParTbl							;Start of * command parameter table
@@ -787,7 +787,7 @@ GUARD	&C000
 	RTS
 
 .ConfTbla		EQUB &11								;Number of *CONFIGURE commands
-		ASSERT P% = ConfRef + CmdTblOffset ; SFTODO: Or is this not as common-with-CmdRef parsing as I imagine?
+		ASSERT P% = ConfRef + KeywordTableOffset ; SFTODO: Or is this not as common-with-CmdRef parsing as I imagine?
 		EQUW ConfTbl							;Start of *CONFIGURE commands lookup table
 		ASSERT P% = ConfRef + CmdTblParOffset
 		EQUW ConfParTbl							;Start of *CONFIGURE commands parameter lookup table
@@ -842,7 +842,7 @@ GUARD	&C000
             RTS
 
 		EQUB &04								;Number of IBOS options
-		ASSERT P% - ibosRef = CmdTblOffset
+		ASSERT P% - ibosRef = KeywordTableOffset
 		EQUW ibosTbl							;Start of IBOS options lookup table
 		EQUW ibosParTbl							;Start of IBOS options parameters lookup table (there are no parameters!)
 		ASSERT P% - ibosRef = CmdTblPtrOffset
@@ -873,23 +873,28 @@ ibosSubTblConfigureList = 5
 		EQUB &00,&03							;&04 x IBOS Options - from offset &00
 		EQUW ConfRef
 		EQUB &00,&10							;&11 x CONFIGURE Parameters - from offset &00
-	
+
+IF FALSE
 ;Test for valid command
 ;On entry, X & Y contain lookup table address. A=0 SFTODO: I don't think A is always 0 on entry, e.g. see code just above notNoSh (and if A was always 0 on entry, it would be redundant to add it to transientCmdPtr) - SFTODO: I think A is the offset from transientCmdPtr, ie the value we would normally have in Y - sometimes we presumably know Y is 0 (thanks to the normalising done in setTransientCmdPtr) and it's just more convenient to call with A=0
 ;&A8 / &A9 contain end of command parameter address in buffer
 ; SFTODO: Among other things, returns with carry clear and X containing index if we found a match, otherwise with carry set
-.searchCmdTbl
+ENDIF
+; Search the keyword sub-table of the reference table pointed to by YX
+; (typically initialised by calling JSR {CmdRef,ibosRef,ConfRef}) for an entry
+; matching the string starting at (transientCmdPtr),A.
+.SearchCmdTbl
 {
 transientTblCmdLength = L00AC
-.L833C	  PHA									;save A
+        	  PHA
             CLC
 	  ADC transientCmdPtr
 	  STA transientCmdPtr	
-	  BCC L8346
+	  BCC NoCarry
             INC transientCmdPtr + 1
-.L8346      STX transientTblPtr							;look up table address at &AA / &AB
+.NoCarry    STX transientTblPtr							;look up table address at &AA / &AB
             STY transientTblPtr + 1
-            LDY #CmdTblOffset								;lookup table initial offset to get first address 
+            LDY #KeywordTableOffset								;lookup table initial offset to get first address
             LDA (transientTblPtr),Y
             TAX
             INY									;Y=&07
@@ -1050,7 +1055,7 @@ transientTblCmdLength = L00AC
             TSX									;get stack pointer
             LDA L0103,X								;get A saved at DynamicSyntaxGenerationForAUsingYX from stack
             PHA									;and save
-            LDY #CmdTblOffset								;offset for address *command lookup table
+            LDY #KeywordTableOffset								;offset for address *command lookup table
             LDA (transientTblPtr),Y
             TAX
             INY
@@ -1311,7 +1316,7 @@ tabColumn = 12
 {
 	  JSR setTransientCmdPtr
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
-            JSR searchCmdTbl								;test for valid * command
+            JSR SearchCmdTbl								;test for valid * command
             BCC runCmd								;branch if found a valid * command
             TAY
             LDA (transientCmdPtr),Y
@@ -1321,7 +1326,7 @@ tabColumn = 12
             INY										
             TYA									;so try again, with A=1 and Y=1
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
-            JSR searchCmdTbl								;test for valid * command
+            JSR SearchCmdTbl								;test for valid * command
             BCC runCmd								;branch if found a valid * command
 
 .L8579      LDA #&04 ; SFTODO: redundant? exitSCa immediately does PLA
@@ -1403,7 +1408,7 @@ tabColumn = 12
 	  ; See if the *HELP argument is one of the ones we recognise and show it if it is.
             JSR ibosRef
             LDA #&00
-            JSR searchCmdTbl ; SFTODO: maybe rename this to indicate we're not always searching "commands"?
+            JSR SearchCmdTbl ; SFTODO: maybe rename this to indicate we're not always searching "commands"?
             BCC showHelpX
 .exitSCaIndirect
             JMP exitSCa								;restore service call parameters and exit
@@ -3728,14 +3733,14 @@ ENDIF
             LDA #&00
             STA transientConfigPrefix
             JSR ConfRef
-            JSR searchCmdTbl
+            JSR SearchCmdTbl
             BCC optionRecognised
             TAY
             JSR parseNoSh
             BCS notNoSh
             TYA
             JSR ConfRef
-            JSR searchCmdTbl
+            JSR SearchCmdTbl
             BCC optionRecognised
 .notNoSh    PLP
             JMP exitSCa								;restore service call parameters and exit
