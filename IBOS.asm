@@ -2714,11 +2714,11 @@ ptr = &00 ; 2 bytes
             CMP #&40
             BNE L8DE8
             LDX #&00
-            JSR L8E8C								;write 'k in Private RAM'
+            JSR printKInPrivateOrSidewaysRAM						;write 'k in Private RAM'
             JMP L8E07								;and finish
 			
 .L8DE8      LDX #&01								;starting with the first RAM bank
-            JSR L8E8C								;write 'k in Sideways RAM '
+            JSR printKInPrivateOrSidewaysRAM						;write 'k in Sideways RAM '
             LDY #&00
 .L8DEF      LDA prvPrintBufferBankList,Y								;get RAM bank number from Private memory
             BMI L8E02								;if nothing in private memory then finish, otherwise
@@ -2813,8 +2813,10 @@ ptr = &00 ; 2 bytes
 	  EQUS "Printing!", &00
 }
 
+; SFTODO: Since this only has two callers, wouldn't it be easier for them just to do LDX #0 or LDX #kInSidewaysRamString - kInPrivateRamString themselves instead of needing to faff with the CPX# stuff?
+.printKInPrivateOrSidewaysRAM
 {
-.^L8E8C      CPX #&00								;If X=0 then
+.L8E8C      CPX #&00								;If X=0 then
             BEQ L8E92								;select Private RAM message
             LDX #kInSidewaysRamString - kInPrivateRamString								;else select Sideways RAM message
 .L8E92      LDA kInPrivateRamString,X								;Get Character from lookup table
