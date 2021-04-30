@@ -2230,7 +2230,6 @@ ptr = &00 ; 2 bytes
 }
 
 
-; SFTODO LINEAR REVIEW UP TO HERE
 ; SFTODO: THIS IS APPROXIMATELY OSBYTE &6F Aries/Watford Shadow RAM Access
 {
 .^L8A7B	  PHP
@@ -2929,7 +2928,7 @@ ptr = &00 ; 2 bytes
 ;*CSAVE Command
 .csave
 {
-            LDA #&80								;open file for output
+            LDA #osfindOpenOutput							;open file for output
             JSR L922B								;get address of file name and open file
             TAY									;move file handle to Y
             LDX #&00								;start at RTC clock User area 0
@@ -2940,9 +2939,10 @@ ptr = &00 ; 2 bytes
             BMI L8F8C								;close file and exit
 }
 
+; SFTODO LINEAR REVIEW UP TO HERE
 ;*CLOAD Command
 {
-.^cload      LDA #&40								;open file for input
+.^cload      LDA #osfindOpenInput							;open file for input
             JSR L922B								;get address of file name and open file
             TAY									;move file handle to Y
             LDX #&00								;start at RTC clock User area 0
