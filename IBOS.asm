@@ -615,12 +615,24 @@ MACRO NOT_AND n
              AND #NOT(n) AND &FF
 ENDMACRO
 
+; The following convenience macros only save a couple of lines of code each time
+; they're used, but they avoid having extra labels cluttering up the code by
+; hiding their internal branches.
+
 ; "INCrement if Carry Set" - convenience macro for use when adding an 8-bit
 ; value to a 16-bit value.
 MACRO INCCS x
     BCC NoCarry
     INC x
 .NoCarry
+ENDMACRO
+
+; "DECrement if Carry Clear" - convenient macro for use when subtracting an
+; 8-bit value from a 16-bit value.
+MACRO DECCC x
+    BCS NoBorrow
+    DEC x
+.NoBorrow
 ENDMACRO
 
 MACRO INCWORD x
@@ -919,26 +931,18 @@ MinimumAbbreviationLength = 3
     INCCS transientCmdPtr + 1
     ; Set transientTblPtr=YX[KeywordtableOffset], i.e. make transientTblPtr
     ; point to the keyword sub-table.
-    STX transientTblPtr
-    STY transientTblPtr + 1
-    LDY #KeywordTableOffset
-    LDA (transientTblPtr),Y
-    TAX
-    INY
-    LDA (transientTblPtr),Y
-    STX transientTblPtr
+    STX transientTblPtr:STY transientTblPtr + 1
+    LDY #KeywordTableOffset:LDA (transientTblPtr),Y:TAX
+    INY:LDA (transientTblPtr),Y
+    STX transientTblPtr ; SQUASH: could just have stored A above instead of TAX
     STA transientTblPtr + 1
     ; Decrement transientCmdPtr by 1.
     ; SQUASH: Use decrement-by-one technique from
     ; http://www.obelisk.me.uk/6502/algorithms.html
-    SEC
-    LDA transientCmdPtr
-    SBC #&01
-    STA transientCmdPtr
-    BCS NoBorrow
-    DEC transientCmdPtr + 1
-.NoBorrow
-    LDX #0 ; index of current entry in keyword sub-table
+    SEC:LDA transientCmdPtr:SBC #1:STA transientCmdPtr
+    DECCC transientCmdPtr + 1
+    ; Loop over the keyword sub-table comparing each entry with the ne entry in keyword sub-table
+    LDX #0 ; index of current keyword in keyword sub-table
     LDY #0 ; index of current character in command line
     LDA (transientTblPtr),Y ; get length of first keyword
 .KeywordLoop
