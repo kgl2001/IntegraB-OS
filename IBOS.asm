@@ -2809,7 +2809,9 @@ ptr = &00 ; 2 bytes
 
 		EQUB &80
 		EQUS "Printing!", &00
+}
 
+{
 .^L8E8C      CPX #&00								;If X=0 then
             BEQ L8E92								;select Private RAM message
             LDX #&11								;else select Sideways RAM message
