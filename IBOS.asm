@@ -2929,7 +2929,7 @@ ptr = &00 ; 2 bytes
 .csave
 {
             LDA #osfindOpenOutput							;open file for output
-            JSR L922B								;get address of file name and open file
+            JSR parseFilenameAndOpen								;get address of file name and open file
             TAY									;move file handle to Y
             LDX #&00								;start at RTC clock User area 0
 .L8F70      JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
@@ -2943,7 +2943,7 @@ ptr = &00 ; 2 bytes
 ;*CLOAD Command
 {
 .^cload      LDA #osfindOpenInput							;open file for input
-            JSR L922B								;get address of file name and open file
+            JSR parseFilenameAndOpen								;get address of file name and open file
             TAY									;move file handle to Y
             LDX #&00								;start at RTC clock User area 0
 .L8F83      JSR OSBGET								;read data from file handle Y into A
@@ -3212,7 +3212,7 @@ ptr = &00 ; 2 bytes
 ;*APPEND Command
 {
 .^append	  LDA #&C0								;open file for update
-            JSR L922B								;get address of file name and open file
+            JSR parseFilenameAndOpen								;get address of file name and open file
             LDA #&00
             STA L00AA
             JSR PrvEn								;switch in private RAM
@@ -3287,7 +3287,7 @@ ptr = &00 ; 2 bytes
 			
 ;*PRINT Command
 .print      LDA #osfindOpenInput							;open file for input
-            JSR L922B								;get address of file name and open file
+            JSR parseFilenameAndOpen								;get address of file name and open file
             LDA #&EC
             LDX #&00
             LDY #&FF
@@ -3325,7 +3325,7 @@ ptr = &00 ; 2 bytes
 			
 ;*SPOOLON Command
 .spool      LDA #&C0								;open file for update
-            JSR L922B								;get address of file name and open file
+            JSR parseFilenameAndOpen								;get address of file name and open file
             TAY
             LDX L00AB
             LDA #&02
@@ -3342,6 +3342,8 @@ ptr = &00 ; 2 bytes
 ;get start and end offset of file name, store at Y & X
 ;convert file name offset to address of file name and store at location defined by X & Y
 ;then open file with file name at location defined by X & Y
+.parseFilenameAndOpen
+{
 .L922B      PHA									;save file mode: input (&40) / output (&80) / update (&C0)
             JSR L9247								;get start and end of file name offset and store in Y & X
             CLC
@@ -3362,16 +3364,16 @@ ptr = &00 ; 2 bytes
 			
 			
 ;get start and end of file name offset and store in Y & X
-.L9247      JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (L00A8),Y								;read character
+.^L9247      JSR findNextCharAfterSpace							;find next character. offset stored in Y
+            LDA (transientCmdPtr),Y							;read character
             CMP #vduCr								;CR?
             BNE L9253								;not CR, so jump
-.L9250      JMP syntaxError								;no file name, so error with 'Syntax:'
+.^L9250      JMP syntaxError								;no file name, so error with 'Syntax:'
 
 .L9253      TYA
             PHA
-.L9255      LDA (L00A8),Y								;read character
-            CMP #&20								;check for ' '
+.L9255      LDA (transientCmdPtr),Y							;read character
+            CMP #' '
             BEQ L9262								;ok. end of file name
             CMP #vduCr								;check for CR
             BEQ L9262								;ok. end of file name
@@ -3383,6 +3385,7 @@ ptr = &00 ; 2 bytes
             PLA
             TAY									;start of file name offset
             RTS
+}
 			
 			
 ;Close file with file handle at &A8
