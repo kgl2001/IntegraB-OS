@@ -2952,7 +2952,7 @@ ptr = &00 ; 2 bytes
             INX									;get next byte
             BPL L8F83								;for 128 bytes
 
-.^L8F8C      JSR L9268								;close file with file handle at &A8
+.^L8F8C      JSR closeHandle								;close file with file handle at &A8
             JMP exitSC								;exit Service Call
 }
 
@@ -3262,7 +3262,7 @@ ptr = &00 ; 2 bytes
 .L9196      LDA #osbyteAcknowledgeEscape
             JSR OSBYTE
             JSR PrvDis								;switch out private RAM
-            JSR L9268								;close file with file handle at &A8
+            JSR closeHandle								;close file with file handle at &A8
             JSR OSNEWL
             JMP L8E07
 }
@@ -3326,11 +3326,12 @@ ptr = &00 ; 2 bytes
             LDX L00A9
             LDY #&00
             JSR OSBYTE
-            JMP L9268								;close file with file handle at &A8
+            JMP closeHandle								;close file with file handle at &A8
 }
 			
 ;*SPOOLON Command
-.spool      LDA #osfindOpenUpdate								;open file for update
+{
+.^spool      LDA #osfindOpenUpdate								;open file for update
             JSR parseFilenameAndOpen								;get address of file name and open file
             TAY
             LDX L00AB
@@ -3343,6 +3344,7 @@ ptr = &00 ; 2 bytes
             LDY #&00
             JSR OSBYTE
             JMP exitSC								;Exit Service Call
+}
 			
 			
 ;get start and end offset of file name, store at Y & X
@@ -3395,9 +3397,12 @@ ptr = &00 ; 2 bytes
 			
 			
 ;Close file with file handle at &A8
+.closeHandle
+{
 .L9268      LDA #osfindClose
             LDY L00A8
             JMP OSFIND
+}
 			
 ;*CREATE Command
 .create		JSR L9247
