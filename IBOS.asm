@@ -3179,8 +3179,8 @@ ptr = &00 ; 2 bytes
 			
 ;*GOIO Command
 {
-.^goio	  LDA (L00A8),Y
-            CMP #&28
+.^goio	  LDA (transientCmdPtr),Y
+            CMP #'('
             PHP
             BNE L9101
             INY
@@ -3188,8 +3188,8 @@ ptr = &00 ; 2 bytes
             BCC L9109
             JMP syntaxError
 			
-.L9109      LDA (L00A8),Y
-            CMP #&29
+.L9109      LDA (transientCmdPtr),Y
+            CMP #')'
             BNE L9110
             INY
 .L9110      JSR findNextCharAfterSpace								;find next character. offset stored in Y
