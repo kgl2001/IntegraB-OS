@@ -84,6 +84,8 @@ rtcRegB = &0B
 	rtcRegBAIE = 1<<5
 	rtcRegBPIE = 1<<6
 	rtcRegBSET = 1<<7
+rtcRegC = &0C
+	rtcRegCIRQF = 1<<7
 
 rtcUserBase = &0E
 ;RTC User Registers (add &0E to get real RTC user register - registers &00-&0D are for RTC clock registers)
@@ -1445,9 +1447,9 @@ tabColumn = 12
             BNE L8635								;Process lookup table if not equal to &05
             ; We're handling service call 5 - unrecognised interrupt.
             ; SFTODO: I'm guessing this is something to do with the RTC generating an interrupt when alarm time occurs.
-            LDX #&0C								;Select 'Register C' register on RTC: Register &0C
+            LDX #rtcRegC								;Select 'Register C' register on RTC: Register &0C
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            CMP #&80								;Interrupt Request Flag
+            CMP #rtcRegCIRQF								;Interrupt Request Flag
             BCC exitSCa								;restore service call parameters and exit
             JMP LB46E								;
 
