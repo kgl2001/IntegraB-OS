@@ -3538,14 +3538,14 @@ ptr = &00 ; 2 bytes
 
 .L933C      CMP #&02								;If &02 then write 'SH' otherwise write 'NO' in front of CAPS
             BEQ L934A
-            LDA #&4E								;N
+            LDA #'N'
             JSR OSWRCH
-            LDA #&4F								;O
+            LDA #'O'
             JMP OSWRCH
 			
-.L934A      LDA #&53								;S
+.L934A      LDA #'S'
             JSR OSWRCH
-            LDA #&48								;H
+            LDA #'H'
             JMP OSWRCH
 }
 
