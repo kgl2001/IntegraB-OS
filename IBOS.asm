@@ -9104,7 +9104,7 @@ column = prvC
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             NOT_AND rtcRegBPIE OR rtcRegBAIE
-            ORA #&20
+            ORA #rtcRegBAIE
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             JMP LB6E3
 			
