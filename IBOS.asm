@@ -9130,7 +9130,7 @@ column = prvC
             JSR printSpace								;write ' ' to screen
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            AND #&20
+            AND #rtcRegBAIE
             JSR printOnOff
             LDX #userRegAlarm
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
