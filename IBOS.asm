@@ -2816,15 +2816,17 @@ ptr = &00 ; 2 bytes
 {
 .^L8E8C      CPX #&00								;If X=0 then
             BEQ L8E92								;select Private RAM message
-            LDX #&11								;else select Sideways RAM message
-.L8E92      LDA L8E9E,X								;Get Character from lookup table
-            BEQ L8E9D								;Exit if 0
+            LDX #kInSidewaysRamString - kInPrivateRamString								;else select Sideways RAM message
+.L8E92      LDA kInPrivateRamString,X								;Get Character from lookup table
+            BEQ rts								;Exit if 0
             JSR OSWRCH								;Print Character
             INX									;Next Character
             BNE L8E92								;Loop
-.L8E9D      RTS
+.rts        RTS
 
+.kInPrivateRamString
 .L8E9E		EQUS "k in Private RAM", &00
+.kInSidewaysRamString
 		EQUS "k in Sideways RAM ", &00
 }
 
