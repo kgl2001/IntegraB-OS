@@ -82,6 +82,8 @@ rtcRegYear = &09
 rtcRegA = &0A ; SFTODO: what's this? Name is probably not ideal but it will do for now.
 	rtcRegADV1 = 1<<5
 rtcRegB = &0B ; SFTODO: what's this? Name is probably not ideal but it will do for now.
+	rtcRegBDSE = 1<<0
+	rtcRegBSET = 1<<7
 
 rtcUserBase = &0E
 ;RTC User Registers (add &0E to get real RTC user register - registers &00-&0D are for RTC clock registers)
@@ -6783,7 +6785,7 @@ osfileBlock = L02EE
 .LA6BB      STX prv82+&4E
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            AND #&7E
+            NOT_AND rtcRegBSET OR rtcRegBDSE
             ORA prv82+&4E
             JMP wrRTCRAM								;Write data from A to RTC memory location X
 }
