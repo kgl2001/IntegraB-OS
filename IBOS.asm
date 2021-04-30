@@ -9401,7 +9401,9 @@ column = prvC
             BPL LB83A
             SEC
             RTS
+}
 
+{
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=2: Convert BCD values into string format
 .^oswd0eConvertBCD
@@ -9415,7 +9417,7 @@ column = prvC
             STA prvOswordBlockCopy + 8
             JMP LB821
 
-.LB85A      LDA prvOswordBlockCopy + 9,Y
+.^LB85A      LDA prvOswordBlockCopy + 9,Y
             SEC
             SBC #&64
             BCS LB85A
