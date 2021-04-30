@@ -83,6 +83,8 @@ rtcRegA = &0A ; SFTODO: what's this? Name is probably not ideal but it will do f
 	rtcRegADV1 = 1<<5
 rtcRegB = &0B ; SFTODO: what's this? Name is probably not ideal but it will do for now.
 	rtcRegBDSE = 1<<0
+	rtcRegBAIE = 1<<5
+	rtcRegBPIE = 1<<6
 	rtcRegBSET = 1<<7
 
 rtcUserBase = &0E
@@ -6786,7 +6788,7 @@ osfileBlock = L02EE
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             NOT_AND rtcRegBSET OR rtcRegBDSE
-            ORA prv82+&4E
+            ORA prv82+&4E ; SFTODO: WE NOW HAVE A CLUE WHAT THIS LOCATION IS FOR
             JMP wrRTCRAM								;Write data from A to RTC memory location X
 }
 			
@@ -9093,7 +9095,7 @@ column = prvC
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            AND #&9F
+            NOT_AND rtcRegBPIE OR rtcRegBAIE
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             JMP LB6E3
 			
