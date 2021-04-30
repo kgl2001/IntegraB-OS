@@ -930,7 +930,8 @@ MinimumAbbreviationLength = 3
     INY:LDA (transientTblPtr),Y
     STX transientTblPtr ; SQUASH: could just have stored A above instead of TAX
     STA transientTblPtr + 1
-    ; Decrement transientCmdPtr by 1.
+    ; Decrement transientCmdPtr by 1 to compensate for using 1-based Y in the
+    ; following loop.
     ; SQUASH: Use decrement-by-one technique from
     ; http://www.obelisk.me.uk/6502/algorithms.html
     SEC:LDA transientCmdPtr:SBC #1:STA transientCmdPtr
@@ -952,8 +953,8 @@ MinimumAbbreviationLength = 3
 .NotLowerCase
     CMP (transientTblPtr),Y:BNE NotSimpleMatch
     INY:CPY KeywordLength:BEQ Match
-    JMP CharacterMatchLoop ; SQUASH: Use BNE
-.NotSimpleMatch
+    JMP CharacterMatchLoop ; SQUASH: Use BNE ; always branch
+.NotSimpleMatch ; but it might be an abbreviation
     CMP #'.':BNE NotMatch
     CPY #MinimumAbbreviationLength:BCC NotMatch
     INY
@@ -969,7 +970,8 @@ MinimumAbbreviationLength = 3
     ; a pseudo-error, as if the parsing is going wrong. Changing "ME" for other
     ; strings can make a difference.
     JSR findNextCharAfterSpace
-    CLC:BCC CleanUpAndReturn
+    CLC ; indicate "match found" to caller
+    BCC CleanUpAndReturn ; always branch
 .NotMatch
     INX ; increment keyword index
     ; Add KeywordLength to transientTblPtr to skip to the next keyword.
@@ -980,7 +982,7 @@ MinimumAbbreviationLength = 3
     ; SQUASH: Could we just JMP to LDY #0 before KeywordLoop here, and do the
     ; BNE test there too?
     LDY #0:LDA (transientTblPtr),Y:BNE KeywordLoop
-    SEC
+    SEC ; indicate "no match found" to caller
 .CleanUpAndReturn
     ; Decrement Y and increment transientCmdPtr to compensate. SFTODO: Why bother?
     DEY:INCWORD transientCmdPtr
