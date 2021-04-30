@@ -5241,7 +5241,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 .SFTODOsetVandCBasedOnSomethingAndMaybeSwizzleStuff
 ; SFTODO: This has only one caller
 {
-.^L9D62     BIT prvOswordBlockCopy                                                                  ;get function
+.L9D62      BIT prvOswordBlockCopy                                                                  ;get function
             BVC secSevRts                                                                           ;branch if we have an absolute address
             ; We're dealing with a pseudo-address.
             BIT L00A9
