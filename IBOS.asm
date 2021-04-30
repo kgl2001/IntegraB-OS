@@ -635,13 +635,13 @@ MACRO DECCC x
 .NoBorrow
 ENDMACRO
 
+; Convenience macro to increment a 16-bit word.
 MACRO INCWORD x
     INC x
     BNE NoCarry
     INC x + 1
 .NoCarry
 ENDMACRO
-
 
 ; This macro asserts that the given label immediately follows the macro call.
 ; This makes fall-through more explicit and guards against accidentally breaking
