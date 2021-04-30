@@ -3397,7 +3397,7 @@ ptr = &00 ; 2 bytes
 			
 			
 ;Close file with file handle at &A8
-.closeHandle
+.closeHandle ; SFTODO: Rename to indicate &A8?
 {
 .L9268      LDA #osfindClose
             LDY L00A8
@@ -3405,7 +3405,8 @@ ptr = &00 ; 2 bytes
 }
 			
 ;*CREATE Command
-.create		JSR L9247
+{
+.^create		JSR L9247
             CLC
             TYA
             ADC L00A8
@@ -3435,6 +3436,7 @@ ptr = &00 ; 2 bytes
             LDY #&02
             JSR OSFILE
             JMP exitSC								;Exit Service Call
+}
 
 ; *CONFIGURE and *STATUS simply issue the corresponding service calls, so the
 ; bulk of their implementation is in the service call handlers. This means that
@@ -3525,7 +3527,8 @@ ptr = &00 ; 2 bytes
             RTS
 }
 
-.L932E      JSR L9337
+{
+.^L932E      JSR L9337
             JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
             JMP OSNEWL
 			
@@ -3544,6 +3547,7 @@ ptr = &00 ; 2 bytes
             JSR OSWRCH
             LDA #&48								;H
             JMP OSWRCH
+}
 
 ;*Configure paramters are stored using the following format
 ;EQUB Register,Start Bit,Number of Bits
