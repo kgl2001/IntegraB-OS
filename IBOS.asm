@@ -181,6 +181,7 @@ osRdRmPtr = &F6
 osfindClose = &00
 osfindOpenInput = &40
 osfindOpenOutput = &80
+osfindOpenUpdate = &C0
 osgbpbReadCurPtr = &04
 osfileReadInformation = &05
 osfileReadInformationLengthOffset = &0A
@@ -3211,7 +3212,7 @@ ptr = &00 ; 2 bytes
 			
 ;*APPEND Command
 {
-.^append	  LDA #&C0								;open file for update
+.^append	  LDA #osfindOpenUpdate								;open file for update
             JSR parseFilenameAndOpen								;get address of file name and open file
             LDA #&00
             STA L00AA
@@ -3324,7 +3325,7 @@ ptr = &00 ; 2 bytes
             JMP L9268								;close file with file handle at &A8
 			
 ;*SPOOLON Command
-.spool      LDA #&C0								;open file for update
+.spool      LDA #osfindOpenUpdate								;open file for update
             JSR parseFilenameAndOpen								;get address of file name and open file
             TAY
             LDX L00AB
