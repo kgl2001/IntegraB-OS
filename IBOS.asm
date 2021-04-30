@@ -905,14 +905,15 @@ ibosSubTblConfigureList = 5
 		EQUW ConfRef
 		EQUB &00,&10							;&11 x CONFIGURE Parameters - from offset &00
 
+
 ; Search the keyword sub-table of the reference table pointed to by YX (typically initialised
-; by calling JSR {CmdRef,ibosRef,ConfRef}) for an entry matching the string starting at
+; by calling JSR {CmdRef,ibosRef,ConfRef}) for an entry matching the word starting at
 ; (transientCmdPtr),A.
 ;
 ; On exit:
 ;     A is preserved
 ;     C clear => keyword sub-table entry X matched
-;                (transientCmdPtr),Y is first non-space after keyword
+;                (transientCmdPtr),Y is the first non-space after the matched word
 ;     C set => no match found
 .SearchCmdTbl
 {
@@ -923,7 +924,7 @@ MinimumAbbreviationLength = 3
     ; Add A to transientCmdPtr so we can index from 0 in the following code.
     CLC:ADC transientCmdPtr:STA transientCmdPtr
     INCCS transientCmdPtr + 1
-    ; Set transientTblPtr=YX[KeywordtableOffset], i.e. make transientTblPtr point to the
+    ; Set transientTblPtr=YX[KeywordTableOffset], i.e. make transientTblPtr point to the
     ; keyword sub-table.
     STX transientTblPtr:STY transientTblPtr + 1
     LDY #KeywordTableOffset:LDA (transientTblPtr),Y:TAX
@@ -934,8 +935,7 @@ MinimumAbbreviationLength = 3
     ; SQUASH: Use decrement-by-one technique from http://www.obelisk.me.uk/6502/algorithms.html
     SEC:LDA transientCmdPtr:SBC #1:STA transientCmdPtr
     DECCC transientCmdPtr + 1
-    ; Loop over the keyword sub-table comparing each entry with the next word on the command
-    ; line.
+    ; Loop over the keyword sub-table comparing each entry with the word on the command line.
     LDX #0 ; index of current keyword in keyword sub-table
     LDY #0 ; index of current character in command line
     LDA (transientTblPtr),Y ; get length of first keyword
@@ -951,7 +951,7 @@ MinimumAbbreviationLength = 3
 .NotLowerCase
     CMP (transientTblPtr),Y:BNE NotSimpleMatch
     INY:CPY KeywordLength:BEQ Match
-    JMP CharacterMatchLoop ; SQUASH: Use BNE ; always branch
+    JMP CharacterMatchLoop ; SQUASH: Use "BNE ; always branch"
 .NotSimpleMatch ; but it might be an abbreviation
     CMP #'.':BNE NotMatch
     CPY #MinimumAbbreviationLength:BCC NotMatch
