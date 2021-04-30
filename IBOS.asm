@@ -1290,10 +1290,12 @@ tabColumn = 12
 .L854B      SEC
             RTS
 
-.^L854D      JSR findNextCharAfterSpace								;find next character. offset stored in Y
+; SFTODO: This skips a single comma if present
+.^findNextCharAfterSpaceSkippingComma
+.L854D      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             BCS L854B
             LDA (transientCmdPtr),Y
-            CMP #&2C								;','
+            CMP #','
             BNE L8559
             INY
 .L8559      CLC
@@ -3918,7 +3920,7 @@ ENDIF
             AND #&07
             ASL A
             PHA
-            JSR L854D
+            JSR findNextCharAfterSpaceSkippingComma
             JSR convertIntegerDefaultDecimalChecked
             AND #&01
             STA L00AE
@@ -3943,7 +3945,7 @@ ENDIF
 			
             ASL L00AE								;Missing address label?
             ASL L00AE
-            JSR L854D
+            JSR findNextCharAfterSpaceSkippingComma
             JSR convertIntegerDefaultDecimalChecked
             AND #&03
             ORA L00AE
