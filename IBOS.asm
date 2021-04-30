@@ -1515,11 +1515,11 @@ tabColumn = 12
 {
 .L867E      JSR PrvDis								;switch out private RAM
             PLA
-            STA L00FD
+            STA osErrorPtr
             PLA
-            STA L00FE
-            LDY #&01
-.L8689      LDA (L00FD),Y
+            STA osErrorPtr + 1
+            LDY #1
+.L8689      LDA (osErrorPtr),Y
             STA L0100,Y								;relocate error text
             BEQ L8693
             INY
