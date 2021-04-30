@@ -2642,8 +2642,7 @@ ptr = &00 ; 2 bytes
             STA prv83+&1A
             STA prv83+&1B
             RTS
-}
-			
+
 .L8D46      LDA romselCopy
             AND #maxBank
             ORA #romselPrvEn
@@ -2731,10 +2730,11 @@ ptr = &00 ; 2 bytes
             BNE L8DEF
 .L8E02      LDA #vduDel								;delete the last ',' that was just printed
             JSR OSWRCH								;write to screen
-.L8E07      JSR OSNEWL
-.PrvDisExitSC
+.^L8E07      JSR OSNEWL
+.^PrvDisExitSC
             JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call
+}
 
 ;Test for SWRAM			
 .L8E10      TXA
