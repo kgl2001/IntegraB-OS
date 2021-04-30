@@ -883,6 +883,12 @@ ENDIF
 ; Search the keyword sub-table of the reference table pointed to by YX
 ; (typically initialised by calling JSR {CmdRef,ibosRef,ConfRef}) for an entry
 ; matching the string starting at (transientCmdPtr),A.
+;
+; On exit:
+;     A is preserved
+;     C clear => keyword sub-table entry X matched
+;                (transientCmdPtr),Y is first non-space after keyword
+;     C set => no match found
 .SearchCmdTbl
 {
 KeywordLength = L00AC
@@ -944,8 +950,7 @@ KeywordLength = L00AC
     ; SFTODO: Note that we don't check for a space or CR following the command, so IBOS will (arguably incorrectly) recognise things like "*STATUSFILE" as "*STATUS FILE" instead of not claiming them and allowing lower priority ROMs to match against them. To be fair this is probably OK, it looks like a Master 128 does the same at least with *SRLOAD, and I think "*SHADOW1" is relatively conventional.
     ; SFTODO: Possibly related and possibly not - doing "*CREATEME" on (emulated) IBOS 1.20 seems to sometimes do nothing and sometimes generate a pseudo-error, as if the parsing is going wrong. Changing "ME" for other strings can make a difference.
     JSR findNextCharAfterSpace							;Command recognised. find first command parameter after ' '. offset stored in Y.
-    CLC									;clear carry - ??? ; SFTODO: SUCCEEDED IN MATCHING?
-    BCC CleanUpAndReturn								;and jump
+    CLC:BCC CleanUpAndReturn
 .NotMatch
     INX									;next command
     CLC
@@ -962,11 +967,11 @@ KeywordLength = L00AC
 .CleanUpAndReturn
     DEY									;get back to last character
     INC transientCmdPtr							;
-    BNE noCarry3
+    BNE NoCarry3
     INC transientCmdPtr + 1							;and increment lookup table address instead SFTODO: why do we bother doing this though?
-.noCarry3
-    PLA									;restore A
-    RTS									;and finish
+.NoCarry3
+    PLA
+    RTS
 }
 			
 
