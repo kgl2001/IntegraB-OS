@@ -945,7 +945,7 @@ MinimumAbbreviationLength = 3
 .CharacterMatchLoop
     LDA (transientCmdPtr),Y
     ; Capitalise A; &60 is '£' but we're really trying to avoid mangling non-alphabetic
-    ; characters with the AND here.
+    ; characters with the AND here. (In particular, '.' AND &DF is &0E.)
     CMP #&60:BCC NotLowerCase
     AND #&DF
 .NotLowerCase
