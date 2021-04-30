@@ -612,6 +612,15 @@ MACRO NOT_AND n
              AND #NOT(n) AND &FF
 ENDMACRO
 
+; "INCrement if Carry Set" - convenience macro for use when adding an 8-bit
+; value to a 16-bit value.
+MACRO INCCS x
+    BCC NoCarry
+    INC x
+.NoCarry
+ENDMACRO
+
+
 ; This macro asserts that the given label immediately follows the macro call.
 ; This makes fall-through more explicit and guards against accidentally breaking
 ; things when rearranging blocks of code.
@@ -896,12 +905,8 @@ MinimumAbbreviationLength = 3
 
     PHA
     ; Add A to transientCmdPtr so we can index from 0 in the following code.
-    CLC
-    ADC transientCmdPtr
-    STA transientCmdPtr
-    BCC NoCarry1
-    INC transientCmdPtr + 1
-.NoCarry1
+    CLC:ADC transientCmdPtr:STA transientCmdPtr
+    INCCS transientCmdPtr + 1
     ; Set transientTblPtr=YX[KeywordtableOffset], i.e. make transientTblPtr
     ; point to the keyword sub-table.
     STX transientTblPtr
@@ -923,8 +928,8 @@ MinimumAbbreviationLength = 3
     BCS NoBorrow
     DEC transientCmdPtr + 1
 .NoBorrow
-    LDX #&00 ; index of current entry in keyword sub-table
-    LDY #&00 ; index of current character in command line
+    LDX #0 ; index of current entry in keyword sub-table
+    LDY #0 ; index of current character in command line
     LDA (transientTblPtr),Y ; get length of first keyword
 .KeywordLoop
     STA KeywordLength
