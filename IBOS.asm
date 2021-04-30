@@ -3139,7 +3139,7 @@ ptr = &00 ; 2 bytes
             LDX #&3D								;select SHX register
             LDA #&FF								;store &FF to &833D (&08: SHX On, &FF: SHX Off)
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
-            LDA #&16								;change screen mode
+            LDA #vduSetMode								;change screen mode
             JSR OSWRCH
             LDA currentMode								;current screen mode
             JSR OSWRCH
