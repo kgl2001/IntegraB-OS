@@ -968,9 +968,7 @@ MinimumAbbreviationLength = 3
     INX ; increment keyword index
     ; Add KeywordLength to transientTblPtr to skip to the next keyword.
     CLC:LDA transientTblPtr:ADC KeywordLength:STA transientTblPtr
-    BCC NoCarry2
-    INC transientTblPtr + 1
-.NoCarry2
+    INCCS transientTblPtr + 1
     ; SQUASH: Could we just JMP to LDY #0 before KeywordLoop here, and do the BNE test there too?
     LDY #0:LDA (transientTblPtr),Y:BNE KeywordLoop ; get length of next keyword; 0 => no more
     SEC
