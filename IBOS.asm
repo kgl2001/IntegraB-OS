@@ -945,7 +945,7 @@ KeywordLength = L00AC
     ; SFTODO: Possibly related and possibly not - doing "*CREATEME" on (emulated) IBOS 1.20 seems to sometimes do nothing and sometimes generate a pseudo-error, as if the parsing is going wrong. Changing "ME" for other strings can make a difference.
     JSR findNextCharAfterSpace							;Command recognised. find first command parameter after ' '. offset stored in Y.
     CLC									;clear carry - ??? ; SFTODO: SUCCEEDED IN MATCHING?
-    BCC foundCmd								;and jump
+    BCC CleanUpAndReturn								;and jump
 .NotMatch
     INX									;next command
     CLC
@@ -959,7 +959,7 @@ KeywordLength = L00AC
     LDA (transientTblPtr),Y							;check for end of table
     BNE KeywordLoop								;if not end of table, then loop
     SEC									;set carry - ??? SFTODO: FAILED TO MATCH?
-.foundCmd
+.CleanUpAndReturn
     DEY									;get back to last character
     INC transientCmdPtr							;
     BNE noCarry3
