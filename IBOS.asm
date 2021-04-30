@@ -2405,7 +2405,9 @@ ptr = &00 ; 2 bytes
             JMP exitSC								;Exit Service Call
 }
 
-            LDA vduStatus								;get VDU status   ***missing reference address*** SFTODO: more dead code which can be removed
+; SFTODO: Dead code
+{
+            LDA vduStatus								;get VDU status   ***missing reference address***
             AND #&EF								;clear bit 4
             STA vduStatus								;store VDU status
             LDA ramselCopy								;get RAMID
@@ -2416,6 +2418,7 @@ ptr = &00 ; 2 bytes
             ORA vduStatus								;combine with &00D0
             STA vduStatus								;and store VDU status
             RTS
+}
 
 ;Unrecognised OSWORD call - Service call &08
 {
