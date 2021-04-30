@@ -10314,7 +10314,8 @@ ptr = &A8
 .LBC97      RTS
 }
 
-.LBC98      LDA #&00
+{
+.^LBC98      LDA #&00
             STA ramselCopy
             STA ramsel
             LDX #prvOsMode - prv83								;select OSMODE
@@ -10328,7 +10329,6 @@ ptr = &A8
             ; n=0 for BYTEV, 1 for WORDV, etc.
             LDX #&00
             LDY #lo(osPrintBuf)
-{
 .LBCB0      LDA BYTEVL,X
             STA parentVectorTbl1,X
             TYA
@@ -10344,7 +10344,6 @@ ptr = &A8
             INX
             CPX #&08
             BNE LBCB0
-}
             PLP
             JSR initPrintBuffer
             LDA lastBreakType
@@ -10361,8 +10360,10 @@ ptr = &A8
             LDA #modeChangeStateNone
             STA modeChangeState
             RTS
-			
-.LBCF2      LDA #&00								;clear Shadow RAM enable bit
+}
+
+{
+.^LBCF2      LDA #&00								;clear Shadow RAM enable bit
             STA ramselCopy								;store at RAMID
             STA ramsel			          				;store at RAMSEL
             LDA vduStatus								;get VDU status
@@ -10379,6 +10380,7 @@ ptr = &A8
             AND #&7F
             STA prvSFTODOMODE
             JMP PrvDis								;switch out private RAM
+}
 
 ; SFTODO: This has only one caller
 .SFTODOZZ
