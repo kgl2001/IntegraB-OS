@@ -1976,11 +1976,14 @@ firstDigitCmdPtrY = &BB
 
 			
 ;Set BRK Vector
+.setBrkv
+{
 .L88D7      LDA #brkvHandler MOD &100
             STA BRKVL
             LDA #brkvHandler DIV &100
             STA BRKVH
             RTS
+}
 
 
 {
@@ -1991,7 +1994,7 @@ firstDigitCmdPtrY = &BB
             CLD
             LDX #&FF
             TXS
-            JSR L88D7								;Set BRK Vector to &8969
+            JSR setBrkv								;Set BRK Vector to &8969
             LDA lastBreakType								;Read current language ROM number
             BNE L88F2
             JMP cmdLoop
@@ -3131,7 +3134,7 @@ ptr = &00 ; 2 bytes
             LDA romselCopy
             AND #maxBank
             STA currentLanguageRom
-            JSR L88D7
+            JSR setBrkv
 .L90DE      PLA
             TAY
             PLA
