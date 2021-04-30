@@ -2230,35 +2230,40 @@ ptr = &00 ; 2 bytes
 
 
 ; SFTODO LINEAR REVIEW UP TO HERE
+; SFTODO: THIS IS APPROXIMATELY OSBYTE &6F Aries/Watford Shadow RAM Access
 {
 .^L8A7B	  PHP
 	  SEI
 	  JSR PrvEn								;switch in private RAM
-            TXA
+            TXA ; SFTODO: Just do STX in next line and avoid this? *Or* maybe rely on the fact we have this value in X to avoid needing to load this later
             STA prv82+&53
             LDA ramselCopy
-            ROL A
+	  ASSERT ramselShen == &80
+            ROL A ; get ramselShen in C
             PHP
             LDA prv82+&53
-            AND #&C0
+            AND #%11000000 ; mask off b7 (stack yes/no) and b6 (read/write)
             CMP #&80
-            BNE L8A9F
+            BNE L8A9F ; branch if we're not saving the current RAM state
             PLP
             PHP
-            ROR prv83+&3E
+            ROR prv83+&3E ; put ramselShen in b7 of prv83+&3E; I suspect the lower bits form the stack (max depth 8, therefore) used by OSBYTE &6F
             LDA prv82+&53
-            AND #&41
+            AND #&41 ; clear b7 (stack=yes) of saved original X now we've deal with pushing to the stack
             STA prv82+&53
 .L8A9F      PLP
             LDA #&00
-            ROL A
+            ROL A ; get ramselShen in low bit of A
             STA prvTmp
             BIT prv82+&53
-            BVC L8AB3
-            BPL L8AC1
-            ASL prv83+&3E
-            ROL prv82+&53
-.L8AB3      LDA ramselCopy
+            BVC L8AB3 ; branch if writing state
+            BPL L8AC1 ; branch if no stack operation
+	  ; So this is a stack pull operation
+            ASL prv83+&3E ; pop stack bit and...
+            ROL prv82+&53 ; move it into low bit of our "X"
+.L8AB3
+	  ; Effectively copy the low bit of "our X" into ramselShen
+	  LDA ramselCopy
             ROL A
             ROR prv82+&53
             ROR A
