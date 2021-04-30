@@ -1974,19 +1974,16 @@ firstDigitCmdPtrY = &BB
             BEQ languageEntry								;Jump to confirmed language entry
             RTS										;Not a valid language entry
 
-			
-;Set BRK Vector
-.setBrkv
+
 {
+;Set BRK Vector
+.^setBrkv
 .L88D7      LDA #brkvHandler MOD &100
             STA BRKVL
             LDA #brkvHandler DIV &100
             STA BRKVH
             RTS
-}
 
-
-{
 ;Confirmed language entry point
 ; SFTODO: Start of this code is same as L8969 - could we save a few bytes by (e.g.) setting osErrorPtr to &8000 here and testing for that in BRKV handler and skipping the error printing code in that case?
 .^languageEntry
@@ -2048,11 +2045,9 @@ firstDigitCmdPtrY = &BB
 .yesStringEnd
 .resetPrompt
 	  EQUS "System Reset", &0D, &0D, "Go (Y/N) ? ", &00
-}
 
 ;BRK vector entry point
 .brkvHandler
-{
 ; SFTODO: Use of L0700 in next line is potentially iffy, but I suspect this is used only when we're in NLE when IBOS *is* current language, so that would be fine
 inputBuf = &700
 .L8969	  LDX #&FF								;Break Vector routine
