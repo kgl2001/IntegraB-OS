@@ -886,29 +886,35 @@ ENDIF
 .SearchCmdTbl
 {
 transientTblCmdLength = L00AC
-        	  PHA
-            CLC
-	  ADC transientCmdPtr
-	  STA transientCmdPtr	
-	  BCC NoCarry
-            INC transientCmdPtr + 1
-.NoCarry    STX transientTblPtr							;look up table address at &AA / &AB
-            STY transientTblPtr + 1
-            LDY #KeywordTableOffset								;lookup table initial offset to get first address
-            LDA (transientTblPtr),Y
-            TAX
-            INY									;Y=&07
-            LDA (transientTblPtr),Y
-            STX transientTblPtr
-            STA transientTblPtr + 1							;store first address from lookup table in &AA / &AB
-	  ; SFTODO: Can we shorten the following decrement-by-one using http://www.obelisk.me.uk/6502/algorithms.html technique?
-            SEC
-            LDA transientCmdPtr
-            SBC #&01
-            STA transientCmdPtr
-            BCS L8361
-            DEC transientCmdPtr + 1							;and reduce end of command parameter address by 1
-.L8361      LDX #&00								;set pointer to first command
+    PHA
+    ; Add A to transientCmdPtr so we can index from 0 in the following code.
+    CLC
+    ADC transientCmdPtr
+    STA transientCmdPtr
+    BCC NoCarry
+    INC transientCmdPtr + 1
+.NoCarry
+    ; Set transientTblPtr=YX[KeywordtableOffset], i.e. make transientTblPtr
+    ; point to the keyword sub-table.
+    STX transientTblPtr
+    STY transientTblPtr + 1
+    LDY #KeywordTableOffset
+    LDA (transientTblPtr),Y
+    TAX
+    INY
+    LDA (transientTblPtr),Y
+    STX transientTblPtr
+    STA transientTblPtr + 1
+    ; Decrement transientCmdPtr by 1.
+    ; SQUASH: Use decrement-by-one technique from http://www.obelisk.me.uk/6502/algorithms.html technique
+    SEC
+    LDA transientCmdPtr
+    SBC #&01
+    STA transientCmdPtr
+    BCS NoBorrow
+    DEC transientCmdPtr + 1							;and reduce end of command parameter address by 1
+.NoBorrow
+    LDX #&00								;set pointer to first command
             LDY #&00								;set pointer to first byte of command
             LDA (transientTblPtr),Y							;get first byte from lookup table address. This is the length of the command string
 .L8367      STA transientTblCmdLength							;and save at &AC
