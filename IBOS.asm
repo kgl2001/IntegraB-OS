@@ -3281,13 +3281,17 @@ ptr = &00 ; 2 bytes
             JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
             LDA #':'
             JSR OSWRCH								;write to screen
+}
+
+{
 .^printSpace
 .L91B9      LDA #' '
             JMP OSWRCH								;write to screen
 }
 			
 ;*PRINT Command
-.print      LDA #osfindOpenInput							;open file for input
+{
+.^print      LDA #osfindOpenInput							;open file for input
             JSR parseFilenameAndOpen								;get address of file name and open file
             LDA #&EC
             LDX #&00
@@ -3310,7 +3314,7 @@ ptr = &00 ; 2 bytes
             JMP exitSC								;Exit Service Call
 			
 .L91EE      JSR L9201
-.acknowledgeEscapeAndGenerateError
+.^acknowledgeEscapeAndGenerateError
 .L91F1      LDA #osbyteAcknowledgeEscape
             JSR OSBYTE
             JSR raiseError								;Goto error handling, where calling address is pulled from stack
@@ -3323,6 +3327,7 @@ ptr = &00 ; 2 bytes
             LDY #&00
             JSR OSBYTE
             JMP L9268								;close file with file handle at &A8
+}
 			
 ;*SPOOLON Command
 .spool      LDA #osfindOpenUpdate								;open file for update
