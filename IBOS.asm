@@ -5061,8 +5061,9 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             LDA L00B1
             STA prvOswordBlockCopy + 9
             RTS
-			
-.L9C52      JSR findNextCharAfterSpace								;find next character. offset stored in Y
+
+{
+.^L9C52      JSR findNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'@'
             BNE parseOsword4243BufferAddress
@@ -5078,7 +5079,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             LDY #&FF
             JSR OSBYTE								;execute read/write OSHWM
             TYA
-.L9C71:     STA prvOswordBlockCopy + 3
+.L9C71      STA prvOswordBlockCopy + 3
             LDA #&00
             STA prvOswordBlockCopy + 2
             STA prvOswordBlockCopy + 4
@@ -5086,6 +5087,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             PLA
             TAY
             RTS
+}
 			
 ; Parse a 32-bit hex-default value from the command line and store it in the "buffer address" part of prvOswordBlockCopy. (Some callers will move it from there to where they really want it afterwards.)
 .parseOsword4243BufferAddress
