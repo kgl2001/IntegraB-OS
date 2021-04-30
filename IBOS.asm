@@ -4,6 +4,9 @@
 ; - "shadow RAM" is the 20K of RAM which can be paged in via SHEN+MEMSEL in the
 ;   &3000-&7FFF region
 
+; Some all-caps keywords are used in comments to make it easier to find them later:
+; SQUASH: There's a potential code squashing opportunity here.
+
 ; SFTODO: The following constants and associated comments are a bit randomly ordered, this should be tidied up eventually.
 ; For example, it might help to move the comments about RTC register use nearer to the private memory allocations, as
 ; some of those are copies of each other.
@@ -620,6 +623,13 @@ MACRO INCCS x
 .NoCarry
 ENDMACRO
 
+MACRO INCWORD x
+    INC x
+    BNE NoCarry
+    INC x + 1
+.NoCarry
+ENDMACRO
+
 
 ; This macro asserts that the given label immediately follows the macro call.
 ; This makes fall-through more explicit and guards against accidentally breaking
@@ -974,10 +984,7 @@ MinimumAbbreviationLength = 3
     SEC
 .CleanUpAndReturn
     DEY									;get back to last character
-    INC transientCmdPtr							;
-    BNE NoCarry3
-    INC transientCmdPtr + 1							;and increment lookup table address instead SFTODO: why do we bother doing this though?
-.NoCarry3
+    INCWORD transientCmdPtr
     PLA
     RTS
 }
