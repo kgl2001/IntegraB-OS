@@ -905,12 +905,6 @@ ibosSubTblConfigureList = 5
 		EQUW ConfRef
 		EQUB &00,&10							;&11 x CONFIGURE Parameters - from offset &00
 
-IF FALSE
-;Test for valid command
-;On entry, X & Y contain lookup table address. A=0 SFTODO: I don't think A is always 0 on entry, e.g. see code just above notNoSh (and if A was always 0 on entry, it would be redundant to add it to transientCmdPtr) - SFTODO: I think A is the offset from transientCmdPtr, ie the value we would normally have in Y - sometimes we presumably know Y is 0 (thanks to the normalising done in setTransientCmdPtr) and it's just more convenient to call with A=0
-;&A8 / &A9 contain end of command parameter address in buffer
-; SFTODO: Among other things, returns with carry clear and X containing index if we found a match, otherwise with carry set
-ENDIF
 ; Search the keyword sub-table of the reference table pointed to by YX
 ; (typically initialised by calling JSR {CmdRef,ibosRef,ConfRef}) for an entry
 ; matching the string starting at (transientCmdPtr),A.
@@ -941,7 +935,8 @@ MinimumAbbreviationLength = 3
     ; http://www.obelisk.me.uk/6502/algorithms.html
     SEC:LDA transientCmdPtr:SBC #1:STA transientCmdPtr
     DECCC transientCmdPtr + 1
-    ; Loop over the keyword sub-table comparing each entry with the ne entry in keyword sub-table
+    ; Loop over the keyword sub-table comparing each entry with the next word on
+    ; the command line.
     LDX #0 ; index of current keyword in keyword sub-table
     LDY #0 ; index of current character in command line
     LDA (transientTblPtr),Y ; get length of first keyword
@@ -952,15 +947,12 @@ MinimumAbbreviationLength = 3
     LDA (transientCmdPtr),Y
     ; Capitalise A; &60 is '£' but we're really trying to avoid mangling
     ; non-alphabetic characters with the AND here.
-    ; SFTODO: Any chance of simultaneously optimising-and-improving by having a
-    ; subroutine to convert A to upper case and JSRing to it everywhere we want
-    ; to do that?
     CMP #&60:BCC NotLowerCase
     AND #&DF
 .NotLowerCase
     CMP (transientTblPtr),Y:BNE NotSimpleMatch
     INY:CPY KeywordLength:BEQ Match
-    JMP CharacterMatchLoop
+    JMP CharacterMatchLoop ; SQUASH: Use BNE
 .NotSimpleMatch
     CMP #'.':BNE NotMatch
     CPY #MinimumAbbreviationLength:BCC NotMatch
@@ -983,12 +975,15 @@ MinimumAbbreviationLength = 3
     ; Add KeywordLength to transientTblPtr to skip to the next keyword.
     CLC:LDA transientTblPtr:ADC KeywordLength:STA transientTblPtr
     INCCS transientTblPtr + 1
-    ; SQUASH: Could we just JMP to LDY #0 before KeywordLoop here, and do the BNE test there too?
-    LDY #0:LDA (transientTblPtr),Y:BNE KeywordLoop ; get length of next keyword; 0 => no more
+    ; Get the length of the next keyword in A; if this is 0 we've hit the end of
+    ; the keyword sub-table, otherwise loop round.
+    ; SQUASH: Could we just JMP to LDY #0 before KeywordLoop here, and do the
+    ; BNE test there too?
+    LDY #0:LDA (transientTblPtr),Y:BNE KeywordLoop
     SEC
 .CleanUpAndReturn
-    DEY									;get back to last character
-    INCWORD transientCmdPtr
+    ; Decrement Y and increment transientCmdPtr to compensate. SFTODO: Why bother?
+    DEY:INCWORD transientCmdPtr
     PLA
     RTS
 }
