@@ -2584,7 +2584,7 @@ ptr = &00 ; 2 bytes
             JMP badParameter
 			
 .L8CCD      PHA
-            JSR L8E6C								;check if print buffer is empty, and error if something is already in the buffer.
+            JSR checkPrinterBufferEmpty								;check if print buffer is empty, and error if something is already in the buffer.
             JSR L8D37								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
             LDX #&00
             LDY #&00								;starting at SWRAM bank 0
@@ -2613,7 +2613,7 @@ ptr = &00 ; 2 bytes
 .L8D01      JSR L8D5A
             JMP L8DCA
 			
-.L8D07      JSR L8E6C
+.L8D07      JSR checkPrinterBufferEmpty
             JSR L8D37								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
             INY
             LDX #&00
@@ -2792,8 +2792,9 @@ ptr = &00 ; 2 bytes
 }
 
 ;Check if printer buffer is empty
+.checkPrinterBufferEmpty
 {
-.^L8E6C      PHA
+.L8E6C      PHA
             TYA
             PHA
             LDA #osbyteExamineBufferStatus
@@ -2803,13 +2804,13 @@ ptr = &00 ; 2 bytes
             PLA
             TAY
             PLA
-            BCC L8E7E								;Buffer not empty: error
+            BCC bufferNotEmpty
             RTS
-			
-.L8E7E      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
-		EQUB &80
-		EQUS "Printing!", &00
+.bufferNotEmpty
+	  JSR raiseError								;Goto error handling, where calling address is pulled from stack
+	  EQUB &80
+	  EQUS "Printing!", &00
 }
 
 {
@@ -2864,13 +2865,13 @@ ptr = &00 ; 2 bytes
 .L8F01      JSR PrvEn								;switch in private RAM
             LDA prvOsMode								;read OSMODE
             BEQ L8EFA
-            JSR L8E6C
+            JSR checkPrinterBufferEmpty
             LDA #&00
             STA prvOsMode								;write OSMODE
             JSR SFTODOZZ
             JMP L8EFA
 			
-.L8F17      JSR L8E6C
+.L8F17      JSR checkPrinterBufferEmpty
             PLA
             STA prvOsMode								;write OSMODE
             JSR LBC98
