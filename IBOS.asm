@@ -4,9 +4,6 @@
 ; - "shadow RAM" is the 20K of RAM which can be paged in via SHEN+MEMSEL in the
 ;   &3000-&7FFF region
 
-; SFTODO: Permanent comment with link to RTC datasheet: https://datasheetspdf.com/pdf-file/546796/HarrisSemiconductor/CDP6818/1
-; SFTODO: That datasheet describes what reg A/B/C/D do, so can add some named constants for the values we're poking into them.
-
 ; SFTODO: The following constants and associated comments are a bit randomly ordered, this should be tidied up eventually.
 ; For example, it might help to move the comments about RTC register use nearer to the private memory allocations, as
 ; some of those are copies of each other.
@@ -55,6 +52,7 @@
 
 
 ;RTC Clock Registers
+;The RTC is a Harris CDP6818; the datasheet can be downloaded from https://datasheetspdf.com/pdf-file/546796/HarrisSemiconductor/CDP6818/1
 ;Register &00 - Seconds:	 	00
 ;Register &01 - Sec Alarm:	 	00
 ;Register &02 - Minutes:	 	00
@@ -9091,7 +9089,7 @@ column = prvC
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PLP
             BNE LB67C
-            AND #&BF ; SFTODO: Can probably convert this into more meaningful constant using datasheet
+            AND #&BF
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
@@ -9099,7 +9097,7 @@ column = prvC
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             JMP LB6E3
 			
-.LB67C      ORA #&40 ; SFTODO: Can prob convert into meaningful constant using datasheet
+.LB67C      ORA #&40
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
@@ -9134,7 +9132,7 @@ column = prvC
             JSR printOnOff
             LDX #userRegAlarm
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            AND #&80 ; SFTODO: Interpret this using datasheet
+            AND #&80
             BEQ LB6E0
             JSR printSpace								;write ' ' to screen
             LDA #'R'
