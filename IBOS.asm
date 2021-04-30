@@ -891,9 +891,9 @@ KeywordLength = L00AC
     CLC
     ADC transientCmdPtr
     STA transientCmdPtr
-    BCC NoCarry
+    BCC NoCarry1
     INC transientCmdPtr + 1
-.NoCarry
+.NoCarry1
     ; Set transientTblPtr=YX[KeywordtableOffset], i.e. make transientTblPtr
     ; point to the keyword sub-table.
     STX transientTblPtr
@@ -918,7 +918,7 @@ KeywordLength = L00AC
     LDX #&00								;set pointer to first command
     LDY #&00								;set pointer to first byte of command
     LDA (transientTblPtr),Y							;get first byte from lookup table address. This is the length of the command string
-.L8367
+.KeywordLoop
     STA KeywordLength							;and save at &AC
     INY
 .CharacterMatchLoop
@@ -952,22 +952,21 @@ KeywordLength = L00AC
     LDA transientTblPtr
     ADC KeywordLength							;get length of command string for previous command
     STA transientTblPtr
-    BCC L8399
+    BCC NoCarry2
     INC transientTblPtr + 1							;and update lookup table address to point at start of next command
-.L8399
+.NoCarry2
     LDY #0								;set pointer to first byte of command
     LDA (transientTblPtr),Y							;check for end of table
-    BNE L8367								;if not end of table, then loop
+    BNE KeywordLoop								;if not end of table, then loop
     SEC									;set carry - ??? SFTODO: FAILED TO MATCH?
-
-			
-.foundCmd   DEY									;get back to last character
-            INC transientCmdPtr							;
-            BNE L83A7
-            INC transientCmdPtr + 1							;and increment lookup table address instead SFTODO: why do we bother doing this though?
-.L83A7      PLA									;restore A
-            RTS									;and finish
-;End of test for valid commands
+.foundCmd
+    DEY									;get back to last character
+    INC transientCmdPtr							;
+    BNE noCarry3
+    INC transientCmdPtr + 1							;and increment lookup table address instead SFTODO: why do we bother doing this though?
+.noCarry3
+    PLA									;restore A
+    RTS									;and finish
 }
 			
 
