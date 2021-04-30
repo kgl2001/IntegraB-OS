@@ -5129,13 +5129,13 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             SBC prvOswordBlockCopy + 3
             STA prvOswordBlockCopy + 7
             RTS
-}
-			
+
 .L9CC7      LDA L00B0
             STA prvOswordBlockCopy + 6
             LDA L00B1
             STA prvOswordBlockCopy + 7
             RTS
+}
 			
 ;*SRREAD Command
 .srread	  JSR PrvEn								;switch in private RAM
