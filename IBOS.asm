@@ -80,6 +80,7 @@ rtcRegDayOfMonth = &07
 rtcRegMonth = &08
 rtcRegYear = &09
 rtcRegA = &0A ; SFTODO: what's this? Name is probably not ideal but it will do for now.
+	rtcRegADV1 = 1<<5
 rtcRegB = &0B ; SFTODO: what's this? Name is probably not ideal but it will do for now.
 
 rtcUserBase = &0E
@@ -6771,7 +6772,7 @@ osfileBlock = L02EE
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             LDX #rtcRegA								;Select 'Register A' register on RTC: Register &0A
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            AND #&20
+            AND #rtcRegADV1
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             LDX #userRegOsModeShx
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
