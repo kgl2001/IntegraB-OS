@@ -207,6 +207,7 @@ osbyteIssueServiceRequest = &8F
 osbyteTV = &90
 osbyteReadWriteOshwm = &B4
 osbyteWriteSheila = &97
+osbyteExamineBufferStatus = &98
 osbyteReadWriteAciaRegister = &9C
 osbyteReadWriteBreakEscapeEffect = &C8
 osbyteReadWriteKeyboardStatus = &CA
@@ -2795,8 +2796,8 @@ ptr = &00 ; 2 bytes
 .^L8E6C      PHA
             TYA
             PHA
-            LDA #&98								;Examine Buffer status
-            LDX #&03								;Select buffer 3: Printer buffer
+            LDA #osbyteExamineBufferStatus
+            LDX #bufNumPrinter
             LDY #&00
             JSR OSBYTE								;Examine Buffer 3
             PLA
