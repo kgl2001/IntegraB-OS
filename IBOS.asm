@@ -2734,7 +2734,6 @@ ptr = &00 ; 2 bytes
 .^PrvDisExitSC
             JSR PrvDis								;switch out private RAM
             JMP exitSC								;Exit Service Call
-}
 
 ;Test for SWRAM			
 .L8E10      TXA
@@ -2789,6 +2788,7 @@ ptr = &00 ; 2 bytes
 .L8E69      PLA
             TAX
             RTS
+}
 
 ;Check if printer buffer is empty			
 .L8E6C      PHA
