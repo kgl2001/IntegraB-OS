@@ -9470,7 +9470,7 @@ column = prvC
             STA prvOswordBlockCopy + 1
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            AND #&9F
+            NOT_AND rtcRegBPIE OR rtcRegBAIE
             ORA prvOswordBlockCopy + 1
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             SEC
