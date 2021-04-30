@@ -2070,7 +2070,7 @@ inputBuf = &700
             INY
             BNE L8981
 .L898B      JSR OSNEWL
-.^cmdLoop   JSR printStar
+.cmdLoop    JSR printStar
             JSR readLine
             LDX #lo(inputBuf)
             LDY #hi(inputBuf)
