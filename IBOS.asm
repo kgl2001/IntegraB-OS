@@ -905,9 +905,9 @@ ibosSubTblConfigureList = 5
 		EQUW ConfRef
 		EQUB &00,&10							;&11 x CONFIGURE Parameters - from offset &00
 
-; Search the keyword sub-table of the reference table pointed to by YX
-; (typically initialised by calling JSR {CmdRef,ibosRef,ConfRef}) for an entry
-; matching the string starting at (transientCmdPtr),A.
+; Search the keyword sub-table of the reference table pointed to by YX (typically initialised
+; by calling JSR {CmdRef,ibosRef,ConfRef}) for an entry matching the string starting at
+; (transientCmdPtr),A.
 ;
 ; On exit:
 ;     A is preserved
@@ -923,21 +923,19 @@ MinimumAbbreviationLength = 3
     ; Add A to transientCmdPtr so we can index from 0 in the following code.
     CLC:ADC transientCmdPtr:STA transientCmdPtr
     INCCS transientCmdPtr + 1
-    ; Set transientTblPtr=YX[KeywordtableOffset], i.e. make transientTblPtr
-    ; point to the keyword sub-table.
+    ; Set transientTblPtr=YX[KeywordtableOffset], i.e. make transientTblPtr point to the
+    ; keyword sub-table.
     STX transientTblPtr:STY transientTblPtr + 1
     LDY #KeywordTableOffset:LDA (transientTblPtr),Y:TAX
     INY:LDA (transientTblPtr),Y
     STX transientTblPtr ; SQUASH: could just have stored A above instead of TAX
     STA transientTblPtr + 1
-    ; Decrement transientCmdPtr by 1 to compensate for using 1-based Y in the
-    ; following loop.
-    ; SQUASH: Use decrement-by-one technique from
-    ; http://www.obelisk.me.uk/6502/algorithms.html
+    ; Decrement transientCmdPtr by 1 to compensate for using 1-based Y in the following loop.
+    ; SQUASH: Use decrement-by-one technique from http://www.obelisk.me.uk/6502/algorithms.html
     SEC:LDA transientCmdPtr:SBC #1:STA transientCmdPtr
     DECCC transientCmdPtr + 1
-    ; Loop over the keyword sub-table comparing each entry with the next word on
-    ; the command line.
+    ; Loop over the keyword sub-table comparing each entry with the next word on the command
+    ; line.
     LDX #0 ; index of current keyword in keyword sub-table
     LDY #0 ; index of current character in command line
     LDA (transientTblPtr),Y ; get length of first keyword
@@ -946,8 +944,8 @@ MinimumAbbreviationLength = 3
     INY
 .CharacterMatchLoop
     LDA (transientCmdPtr),Y
-    ; Capitalise A; &60 is '£' but we're really trying to avoid mangling
-    ; non-alphabetic characters with the AND here.
+    ; Capitalise A; &60 is '£' but we're really trying to avoid mangling non-alphabetic
+    ; characters with the AND here.
     CMP #&60:BCC NotLowerCase
     AND #&DF
 .NotLowerCase
@@ -959,16 +957,14 @@ MinimumAbbreviationLength = 3
     CPY #MinimumAbbreviationLength:BCC NotMatch
     INY
 .Match
-    ; SFTODO: Note that we don't check for a space or CR following the command,
-    ; so IBOS will (arguably incorrectly) recognise things like "*STATUSFILE" as
-    ; "*STATUS FILE" instead of not claiming them and allowing lower priority
-    ; ROMs to match against them. To be fair this is probably OK, it looks like
-    ; a Master 128 does the same at least with *SRLOAD, and I think "*SHADOW1"
-    ; is relatively conventional.
-    ; SFTODO: Possibly related and possibly not - doing "*CREATEME" on
-    ; (emulated) IBOS 1.20 seems to sometimes do nothing and sometimes generate
-    ; a pseudo-error, as if the parsing is going wrong. Changing "ME" for other
-    ; strings can make a difference.
+    ; SFTODO: Note that we don't check for a space or CR following the command, so IBOS will
+    ; (arguably incorrectly) recognise things like "*STATUSFILE" as "*STATUS FILE" instead of
+    ; not claiming them and allowing lower priority ROMs to match against them. To be fair this
+    ; is probably OK, it looks like a Master 128 does the same at least with *SRLOAD, and I
+    ; think "*SHADOW1" is relatively conventional.
+    ; SFTODO: Possibly related and possibly not - doing "*CREATEME" on (emulated) IBOS 1.20
+    ; seems to sometimes do nothing and sometimes generate a pseudo-error, as if the parsing is
+    ; going wrong. Changing "ME" for other strings can make a difference.
     JSR findNextCharAfterSpace
     CLC ; indicate "match found" to caller
     BCC CleanUpAndReturn ; always branch
@@ -977,10 +973,9 @@ MinimumAbbreviationLength = 3
     ; Add KeywordLength to transientTblPtr to skip to the next keyword.
     CLC:LDA transientTblPtr:ADC KeywordLength:STA transientTblPtr
     INCCS transientTblPtr + 1
-    ; Get the length of the next keyword in A; if this is 0 we've hit the end of
-    ; the keyword sub-table, otherwise loop round.
-    ; SQUASH: Could we just JMP to LDY #0 before KeywordLoop here, and do the
-    ; BNE test there too?
+    ; Get the length of the next keyword in A; if this is 0 we've hit the end of the keyword
+    ; sub-table, otherwise loop round.
+    ; SQUASH: Could we just JMP to LDY #0 before KeywordLoop and do the BNE test there too?
     LDY #0:LDA (transientTblPtr),Y:BNE KeywordLoop
     SEC ; indicate "no match found" to caller
 .CleanUpAndReturn
