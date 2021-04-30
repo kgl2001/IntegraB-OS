@@ -2790,8 +2790,9 @@ ptr = &00 ; 2 bytes
             RTS
 }
 
-;Check if printer buffer is empty			
-.L8E6C      PHA
+;Check if printer buffer is empty
+{
+.^L8E6C      PHA
             TYA
             PHA
             LDA #&98								;Examine Buffer status
@@ -2809,7 +2810,7 @@ ptr = &00 ; 2 bytes
 		EQUB &80
 		EQUS "Printing!", &00
 
-.L8E8C      CPX #&00								;If X=0 then
+.^L8E8C      CPX #&00								;If X=0 then
             BEQ L8E92								;select Private RAM message
             LDX #&11								;else select Sideways RAM message
 .L8E92      LDA L8E9E,X								;Get Character from lookup table
@@ -2821,6 +2822,7 @@ ptr = &00 ; 2 bytes
 
 .L8E9E		EQUS "k in Private RAM", &00
 		EQUS "k in Sideways RAM ", &00
+}
 
 ;*OSMODE Command
 .osmode      JSR convertIntegerDefaultDecimal
