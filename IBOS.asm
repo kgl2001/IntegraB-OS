@@ -141,7 +141,7 @@ userRegPrinterIgnore = &0E ; 0-7: Printer ignore
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7: Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX / b4: automatic daylight saving time adjust
-; SFTODO: b4 of userRegOsModeShx doesn't seem to be exposed via *CONFIGURE/*STATUS - should it be? Might be interesting to try setting this bit manually and seeing if it works.
+; SFTODO: b4 of userRegOsModeShx doesn't seem to be exposed via *CONFIGURE/*STATUS - should it be? Might be interesting to try setting this bit manually and seeing if it works. If it's not going to be exposed we could save some code by deleting the support for it.
 userRegAlarm = &33 ; SFTODO? bits 0-5??
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
