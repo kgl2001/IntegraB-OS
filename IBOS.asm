@@ -960,7 +960,7 @@ ibosSubTblConfigureList = 5
 KeywordLength = L00AC
 ; SFTODO: There's more than meets the eye to MinimumAbbreviationLength; at least on b-em, IBOS
 ; 1.20 *does* allow "*ST." for *STATUS and "*BU.?" for "*BUFFER ?", but it doesn't allow
-; "*CON." for *CONFIGURE.
+; "*CO." for *CONFIGURE.
 MinimumAbbreviationLength = 3
 
     PHA
