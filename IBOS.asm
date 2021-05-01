@@ -2989,11 +2989,11 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 {
             JSR parseOnOff
             BCC L8F60
-            LDA (L00A8),Y
+            LDA (transientCmdPtr),Y
             CMP #'?'
             BNE L8F47
             JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
-            LDX #&3D								;select SHX register (&08: On, &FF: Off)
+            LDX #prvShx - prv83
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             JMP printOnOffOSNEWLExitSC
 			
