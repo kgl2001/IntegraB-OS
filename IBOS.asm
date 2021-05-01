@@ -2927,11 +2927,11 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 
 .SetOsmodeA
 {
-    CMP #0:BEQ setOsmode0
+    CMP #0:BEQ SetOsmode0
     CMP #6:BCS GenerateBadParameterIndirect
     PHA
     JSR PrvEn								;switch in private RAM
-    LDA prvOsMode:BEQ L8F17
+    LDA prvOsMode:BEQ CurrentlyInOsmode0
     PLA:STA prvOsMode
 .CommonEnd
     ; SQUASH: Couldn't we JMP PrvDis?
@@ -2941,7 +2941,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .GenerateBadParameterIndirect
     JMP GenerateBadParameter
 
-.setOsmode0
+.SetOsmode0
     JSR PrvEn								;switch in private RAM
     LDA prvOsMode								;read OSMODE
     BEQ CommonEnd
@@ -2951,7 +2951,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JSR SFTODOZZ
     JMP CommonEnd
 			
-.L8F17
+.CurrentlyInOsmode0
     JSR checkPrinterBufferEmpty
     PLA:STA prvOsMode
     JSR LBC98
