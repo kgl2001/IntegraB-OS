@@ -2790,11 +2790,11 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             CMP #&40
             BNE L8DE8
             LDX #&00
-            JSR printKInPrivateOrSidewaysRAM						;write 'k in Private RAM'
+            JSR PrintKInPrivateOrSidewaysRAM						;write 'k in Private RAM'
             JMP OSNEWLPrvDisExitAndClaimServiceCall								;and finish
 			
 .L8DE8      LDX #&01								;starting with the first RAM bank
-            JSR printKInPrivateOrSidewaysRAM						;write 'k in Sideways RAM '
+            JSR PrintKInPrivateOrSidewaysRAM						;write 'k in Sideways RAM '
             LDY #&00
 .L8DEF      LDA prvPrintBufferBankList,Y								;get RAM bank number from Private memory
             BMI L8E02								;if nothing in private memory then finish, otherwise
@@ -2885,7 +2885,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 ; SQUASH: Since this only has two callers, wouldn't it be easier for them just to do LDX #0 or
 ; LDX #KInSidewaysRamString - KInPrivateRamString themselves instead of needing to faff with
 ; the CPX# stuff?
-.printKInPrivateOrSidewaysRAM
+.PrintKInPrivateOrSidewaysRAM
 {
     CPX #0:BEQ PrintOffsetXLoop
     LDX #KInSidewaysRamString - KInPrivateRamString
