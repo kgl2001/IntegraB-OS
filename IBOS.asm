@@ -3007,18 +3007,17 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 
 ; SFTODO LINEAR REVIEW UP TO HERE
 ;*CLOAD Command
+.cload
 {
-.^cload      LDA #osfindOpenInput							;open file for input
-            JSR parseFilenameAndOpen								;get address of file name and open file
-            TAY									;move file handle to Y
-            LDX #&00								;start at RTC clock User area 0
-.L8F83      JSR OSBGET								;read data from file handle Y into A
-            JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
-            INX									;get next byte
-            BPL L8F83								;for 128 bytes
+    LDA #osfindOpenInput:JSR parseFilenameAndOpen:TAY
+    LDX #0
+.loop
+    JSR OSBGET:JSR writeUserReg
+    INX:BPL loop ; read 128 bytes
 
-.^L8F8C      JSR closeHandle								;close file with file handle at &A8
-            JMP exitSC								;exit Service Call
+.^L8F8C
+    JSR closeHandleL00A8
+    JMP exitSC
 }
 
 ;*TUBE Command
@@ -3327,7 +3326,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .L9196      LDA #osbyteAcknowledgeEscape
             JSR OSBYTE
             JSR PrvDis								;switch out private RAM
-            JSR closeHandle								;close file with file handle at &A8
+            JSR closeHandleL00A8								;close file with file handle at &A8
             JSR OSNEWL
             JMP L8E07
 }
@@ -3391,7 +3390,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             LDX L00A9
             LDY #&00
             JSR OSBYTE
-            JMP closeHandle								;close file with file handle at &A8
+            JMP closeHandleL00A8								;close file with file handle at &A8
 }
 			
 ;*SPOOLON Command
@@ -3462,7 +3461,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 			
 			
 ;Close file with file handle at &A8
-.closeHandle ; SFTODO: Rename to indicate &A8?
+.closeHandleL00A8
 {
 .L9268      LDA #osfindClose
             LDY L00A8
