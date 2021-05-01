@@ -3333,8 +3333,6 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JSR CloseTransientFileHandle
     JSR OSNEWL
     JMP OSNEWLPrvDisExitAndClaimServiceCall
-}
-			
 
 ;OSWORD A=&0, Read line from input - Parameter block
 .L91A7	  EQUW prv80								;buffer address
@@ -3342,8 +3340,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 	  EQUB &20								;minimum acceptable ASCII value
 	  EQUB &7E								;maximum acceptable ASCII value
 	
-{
-.^L91AC      INC L00AA
+.L91AC      INC L00AA
             LDA L00AA
             CLC
             JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
