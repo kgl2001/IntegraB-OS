@@ -161,6 +161,7 @@ userRegRamPresenceFlags = &7F ; b0 set=RAM in banks 0-1, b1 set=RAM in banks 2-3
 ; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
 ; SFTODO: I am thinking these names - maybe now, and probably also in "final" vsn - should have the actual address as part of the name - because different bits of code use the same location for different things, this will help to make it a bit more obvious if two bits of code are trying to use the same location for two different purposes at once (mainly important when we come to modify the code, but just might be relevant if there are bugs in the existing code)
 transientOs4243SwrAddr = &A8 ; 2 bytes
+transientFileHandle = &A8 ; 1 byte
 transientOs4243MainAddr = &AA ; 2 bytes
 transientOs4243SFTODO = &AC ; 2 bytes
 ; SFTODO: &AC/&AD IS USED FOR ANOTHER 16-BIT WORD, SEE adjustTransferParameters
@@ -3010,7 +3011,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JSR OSBPUT								;write data in A to file handle Y
             INX									;next byte
             BPL L8F70								;for 128 bytes
-            BMI CloseHandleL00A8ExitAndClaimServiceCall								;close file and exit
+            BMI CloseTransientFileHandleExitAndClaimServiceCall								;close file and exit
 }
 
 ;*CLOAD Command
@@ -3022,8 +3023,8 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JSR OSBGET:JSR writeUserReg
     INX:BPL loop ; read 128 bytes
 
-.^CloseHandleL00A8ExitAndClaimServiceCall
-    JSR CloseHandleL00A8
+.^CloseTransientFileHandleExitAndClaimServiceCall
+    JSR CloseTransientFileHandle
     JMP ExitAndClaimServiceCall
 }
 
@@ -3288,14 +3289,11 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JSR PrvEn
 .L913A
     JSR OSNEWL
-    LDA #osbyteCheckEOF
-    LDX L00A8
-    JSR OSBYTE
-    CPX #&00
-    BNE L9165
+    LDA #osbyteCheckEOF:LDX transientFileHandle:JSR OSBYTE
+    CPX #&00:BNE L9165
     JSR L91AC
 .L914B
-    LDY L00A8
+    LDY transientFileHandle
     JSR OSBGET
     BCS L9165
     CMP #vduCr
@@ -3325,7 +3323,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     LDX #&00
 .L9183
     LDA prv80+&00,X
-    LDY L00A8
+    LDY transientFileHandle
     JSR OSBPUT
     CMP #vduCr
     BEQ L9165
@@ -3337,7 +3335,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     LDA #osbyteAcknowledgeEscape
     JSR OSBYTE
     JSR PrvDis								;switch out private RAM
-    JSR CloseHandleL00A8								;close file with file handle at &A8
+    JSR CloseTransientFileHandle								;close file with file handle at &A8
     JSR OSNEWL
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 }
@@ -3401,7 +3399,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             LDX L00A9
             LDY #&00
             JSR OSBYTE
-            JMP CloseHandleL00A8								;close file with file handle at &A8
+            JMP CloseTransientFileHandle								;close file with file handle at &A8
 }
 			
 ;*SPOOLON Command
@@ -3442,7 +3440,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             BNE L9244								;no error, so save file handle and exit
             JMP errorNotFound								;otherwise error.
 			
-.L9244      STA L00A8								;save file handle to &A8
+.L9244      STA transientFileHandle								;save file handle to &A8
             RTS									;and return
 			
 			
@@ -3472,7 +3470,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 			
 			
 ;Close file with file handle at &A8
-.CloseHandleL00A8
+.CloseTransientFileHandle
 {
 .L9268      LDA #osfindClose
             LDY L00A8
