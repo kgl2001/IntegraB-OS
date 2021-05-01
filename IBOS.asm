@@ -3010,7 +3010,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .SaveLoop
     JSR readUserReg:JSR OSBPUT
     INX:BPL SaveLoop ; write 128 bytes
-    BMI CloseTransientFileHandleExitAndClaimServiceCall ; always branch
+    BMI CloseAndExit ; always branch
 
 ;*CLOAD Command
 .^cload
@@ -3019,8 +3019,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .LoadLoop
     JSR OSBGET:JSR writeUserReg
     INX:BPL LoadLoop ; read 128 bytes
-
-.CloseTransientFileHandleExitAndClaimServiceCall
+.CloseAndExit
     JSR CloseTransientFileHandle
     JMP ExitAndClaimServiceCall
 }
