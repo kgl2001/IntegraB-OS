@@ -2400,10 +2400,11 @@ ptr = &00 ; 2 bytes
 ;Test for OSBYTE &49 (73) - Integra-B calls
 {
 .^osbyte49  CMP #&49								;OSBYTE &49 (73) - Integra-B calls
-            BEQ L8B50
+            BEQ osbyte49Internal
             JMP exitSCa								;restore service call parameters and exit
-			
-.L8B50      LDA oswdbtX
+
+.osbyte49Internal
+            LDA oswdbtX
             CMP #&FF								;test X for &FF
             BNE L8B63								;if not, branch
             LDA #&49								;otherwise yes, and return &49
