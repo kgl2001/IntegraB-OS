@@ -1493,7 +1493,7 @@ tabColumn = 12
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             CMP #rtcRegCIRQF								;Interrupt Request Flag
             BCC exitSCa								;restore service call parameters and exit
-            JMP LB46E								;
+            JMP rtcInterruptHandler								;
 
 .L8635      LDX #&0B
 .L8637      CMP srvCallLU,X
@@ -8915,9 +8915,10 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             RTS
 }
 
-; SFTODO: This has only one caller (via JMP) - could we just move it inline? We know X=rtcRegC at this point.
+.rtcInterruptHandler
 {
-.^LB46E      DEX									;Select 'Register B' register on RTC: Register &0B
+	  ; X=rtcRegC on entry
+	  DEX:ASSERT rtcRegB == rtcRegC - 1
             JSR Nop3								;3 x NOP delay
             STX SHEILA+&38						          	;Strobe in address
             JSR Nop3								;3 x NOP delay
