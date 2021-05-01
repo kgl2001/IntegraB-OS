@@ -3312,7 +3312,8 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
     BEQ ShowLineLoop ; always branch
 .Eof
 
-    ; Now accept lines of input from the keyboard and append them to the file.
+    ; Now accept lines of input from the keyboard and append them to the file until Escape is
+    ; pressed.
 .AppendLoop
     JSR IncrementAndPrintLineNumber
     ; Copy OswordInputLineBlock into OswordInputLineBlockCopy in main RAM for use.
@@ -3324,16 +3325,15 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
     LDX #lo(OswordInputLineBlockCopy):LDY #hi(OswordInputLineBlockCopy)
     LDA #oswordInputLine:JSR OSWORD:BCS Escape
     INY:STY LineLengthIncludingCr
-    LDX #&00
-.L9183
+    LDX #0
+.AppendCharacterLoop
     LDA prvInputBuffer,X:LDY transientFileHandle:JSR OSBPUT
     CMP #vduCr:BEQ AppendLoop
-    INX
-    CPX LineLengthIncludingCr:BNE L9183
+    INX:CPX LineLengthIncludingCr:BNE AppendCharacterLoop
     BEQ AppendLoop ; always branch
+
 .Escape
-    LDA #osbyteAcknowledgeEscape
-    JSR OSBYTE
+    LDA #osbyteAcknowledgeEscape:JSR OSBYTE
     JSR PrvDis
     JSR CloseTransientFileHandle
     JSR OSNEWL
