@@ -611,7 +611,7 @@ ramselShen   = &80
 ramselPrvs81 = ramselPrvs8 OR ramselPrvs1
 ramselPrvs841 = ramselPrvs81 OR ramselPrvs4
 
-; bits in the 6502 flags registers (as stacked via PHP)
+; bits in the 6502 flags register (as stacked via PHP)
 flagC = &01
 flagZ = &02
 flagV = &40
@@ -683,7 +683,7 @@ GUARD	&C000
 		LDY #CmdRef DIV &100
 		RTS
 		
-		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used SFTODO: I'm not sure this is entirely true - the code at SearchCmdTbl seems to use the 0 byte at the end of CmdTbl to know when to stop, and if I type "*SRWE" on an emulated IBOS 1.20 machine I get a "Bad id" error, suggesting the command is recognised (if not necessarily useful). It is possible some *other* code does use this, I'm *guessing* the *HELP display code uses this in order to keep SRWE and SRWP "secret" (but I haven't looked yet).
+		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used SFTODO: I'm not sure this is entirely true - the code at SearchKeywordTable seems to use the 0 byte at the end of CmdTbl to know when to stop, and if I type "*SRWE" on an emulated IBOS 1.20 machine I get a "Bad id" error, suggesting the command is recognised (if not necessarily useful). It is possible some *other* code does use this, I'm *guessing* the *HELP display code uses this in order to keep SRWE and SRWP "secret" (but I haven't looked yet).
 		ASSERT P% = CmdRef + KeywordTableOffset
 		EQUW CmdTbl							;Start of * command table
 		ASSERT P% = CmdRef + CmdTblParOffset
@@ -912,6 +912,7 @@ ibosSubTblConfigureList = 5
 		EQUB &00,&10							;&11 x CONFIGURE Parameters - from offset &00
 
 
+; SFTODO: Get rid of the "sub-" prefix here?
 ; Search the keyword sub-table of the reference table pointed to by YX (typically initialised
 ; by calling JSR {CmdRef,ibosRef,ConfRef}) for an entry matching the word starting at
 ; (transientCmdPtr),A.
@@ -921,7 +922,7 @@ ibosSubTblConfigureList = 5
 ;     C clear => keyword sub-table entry X matched
 ;                (transientCmdPtr),Y is the first non-space after the matched word
 ;     C set => no match found
-.SearchCmdTbl
+.SearchKeywordTable
 {
 KeywordLength = L00AC
 MinimumAbbreviationLength = 3
@@ -1349,7 +1350,7 @@ tabColumn = 12
 {
 	  JSR setTransientCmdPtr
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
-            JSR SearchCmdTbl								;test for valid * command
+            JSR SearchKeywordTable								;test for valid * command
             BCC runCmd								;branch if found a valid * command
             TAY
             LDA (transientCmdPtr),Y
@@ -1359,7 +1360,7 @@ tabColumn = 12
             INY										
             TYA									;so try again, with A=1 and Y=1
             JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
-            JSR SearchCmdTbl								;test for valid * command
+            JSR SearchKeywordTable								;test for valid * command
             BCC runCmd								;branch if found a valid * command
 
 .L8579      LDA #&04 ; SFTODO: redundant? exitSCa immediately does PLA
@@ -1441,7 +1442,7 @@ tabColumn = 12
 	  ; See if the *HELP argument is one of the ones we recognise and show it if it is.
             JSR ibosRef
             LDA #&00
-            JSR SearchCmdTbl ; SFTODO: maybe rename this to indicate we're not always searching "commands"?
+            JSR SearchKeywordTable ; SFTODO: maybe rename this to indicate we're not always searching "commands"?
             BCC showHelpX
 .exitSCaIndirect
             JMP exitSCa								;restore service call parameters and exit
@@ -3766,14 +3767,14 @@ ENDIF
             LDA #&00
             STA transientConfigPrefix
             JSR ConfRef
-            JSR SearchCmdTbl
+            JSR SearchKeywordTable
             BCC optionRecognised
             TAY
             JSR parseNoSh
             BCS notNoSh
             TYA
             JSR ConfRef
-            JSR SearchCmdTbl
+            JSR SearchKeywordTable
             BCC optionRecognised
 .notNoSh    PLP
             JMP exitSCa								;restore service call parameters and exit
