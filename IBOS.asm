@@ -539,6 +539,8 @@ prvOswordBlockCopySize = 16
 ; SFTODO: Split prvOswordBlockOrigAddr into two addresses prvOswordX and prvOswordY? Might better reflect how code uses it, not sure yet.
 prvOswordBlockOrigAddr = prv82 + &30 ; 2 bytes, used for address of original OSWORD &42/&43 parameter block
 
+prvInputBuffer = prv80 + 0
+prvInputBufferSize = 256
 prvDateBuffer = prv80 + 0 ; SFTODO: how big?
 prvDateBuffer2 = prv80 + &C8 ; SFTODO: how big? not a great name either
 
@@ -3286,6 +3288,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 {
 ; SFTODO: Express these as transientWorkspace + n, to document what area of memory they live in?
 LineNumber = &AA
+OswordInputLineBlockCopy = &AB ; 5 bytes
 
     LDA #osfindOpenUpdate:JSR parseFilenameAndOpen
     LDA #0:STA LineNumber
@@ -3304,14 +3307,15 @@ LineNumber = &AA
     BEQ L913A
 .Eof
     JSR IncrementAndPrintLineNumber
-    LDY #&04
-.L916A
-    LDA L91A7,Y
-    STA L00AB,Y
+    ; Copy OswordInputLineBlock into OswordInputLineBlockCopy in main RAM for use.
+    ; SQUASH: I don't believe this is necessary, we can just use OswordInputLineBlock directly.
+    LDY #(OswordInputLineBlockEnd - OswordInputLineBlock) - 1
+.CopyLoop
+    LDA OswordInputLineBlock,Y
+    STA OswordInputLineBlockCopy,Y
     DEY
-    BPL L916A
-    LDX #&AB
-    LDY #&00
+    BPL CopyLoop
+    LDX #lo(OswordInputLineBlockCopy):LDY #hi(OswordInputLineBlockCopy)
     LDA #oswordInputLine:JSR OSWORD
     BCS L9196
     INY
@@ -3335,11 +3339,12 @@ LineNumber = &AA
     JSR OSNEWL
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 
-;OSWORD A=&0, Read line from input - Parameter block
-.L91A7	  EQUW prv80								;buffer address
-	  EQUB &FF								;maximum line length
-	  EQUB &20								;minimum acceptable ASCII value
-	  EQUB &7E								;maximum acceptable ASCII value
+.OswordInputLineBlock
+    EQUW prvInputBuffer
+    EQUB prvInputBufferSize - 1
+    EQUB ' ' ; minimum acceptable ASCII value
+    EQUB '~' ; maximum acceptable ASCII value
+.OswordInputLineBlockEnd
 
 .IncrementAndPrintLineNumber
     INC LineNumber
