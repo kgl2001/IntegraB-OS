@@ -3311,6 +3311,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
     BEQ ShowLineLoop ; always branch
 .Eof
 
+.AppendLoop
     JSR IncrementAndPrintLineNumber
     ; Copy OswordInputLineBlock into OswordInputLineBlockCopy in main RAM for use.
     ; SQUASH: I don't believe this is necessary, we can just use OswordInputLineBlock directly.
@@ -3326,10 +3327,10 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
     LDX #&00
 .L9183
     LDA prvInputBuffer,X:LDY transientFileHandle:JSR OSBPUT
-    CMP #vduCr:BEQ Eof ; SFTODO: MISUSED LABEL NAME?
+    CMP #vduCr:BEQ AppendLoop
     INX
     CPX L00A9:BNE L9183
-    BEQ Eof ; always branch SFTODO: MISUSED LABEL NAME?
+    BEQ AppendLoop ; always branch
 .L9196
     LDA #osbyteAcknowledgeEscape
     JSR OSBYTE
