@@ -1382,8 +1382,8 @@ tabColumn = 12
             JSR SearchKeywordTable								;test for valid * command
             BCC runCmd								;branch if found a valid * command
 
-.L8579      LDA #&04 ; SFTODO: redundant? exitSCa immediately does PLA
-            JMP exitSCa								;restore service call parameters and exit
+.L8579      LDA #&04 ; SFTODO: redundant? ExitServiceCall immediately does PLA
+            JMP ExitServiceCall								;restore service call parameters and exit
 			
 .L857E      INY									;
             LDA (transientCmdPtr),Y							;read second character
@@ -1455,7 +1455,7 @@ tabColumn = 12
             PLA
             JSR ibosRef ; SFTODO: redundant? DynamicSyntaxGenerationForIbosSubTblA does this itself
             JSR DynamicSyntaxGenerationForIbosSubTblA
-            JMP exitSCaIndirect
+            JMP ExitServiceCallIndirect
 
 .checkArgument
 	  ; See if the *HELP argument is one of the ones we recognise and show it if it is.
@@ -1463,8 +1463,8 @@ tabColumn = 12
             LDA #&00
             JSR SearchKeywordTable ; SFTODO: maybe rename this to indicate we're not always searching "commands"?
             BCC showHelpX
-.exitSCaIndirect
-            JMP exitSCa								;restore service call parameters and exit
+.ExitServiceCallIndirect
+            JMP ExitServiceCall								;restore service call parameters and exit
 }
 
 ; Return with A=Y=0 and (transientCmdPtr),Y accessing the same byte as (osCmdPtr),Y on entry.
@@ -1502,13 +1502,13 @@ tabColumn = 12
             PHA										;save ROM parameter
             TSX
             LDA L0103,X								;get original A we stacked just above
-            BEQ exitSCa								;restore service call parameters and exit
+            BEQ ExitServiceCall								;restore service call parameters and exit
             CMP #&05
             BNE L8635								;Process lookup table if not equal to &05
             ; We're handling service call 5 - unrecognised interrupt; see if the RTC has raised
             ; an interrupt.
             LDX #rtcRegC:JSR ReadRtcRam
-            CMP #rtcRegCIRQF:BCC exitSCa
+            CMP #rtcRegCIRQF:BCC ExitServiceCall
             JMP RtcInterruptHandler
 
 .L8635      LDX #&0B
@@ -1518,16 +1518,17 @@ tabColumn = 12
             BPL L8637
 
 ;restore service call parameters and exit
-.^exitSCa   PLA										;restore ROM parameter
+.^ExitServiceCall   PLA										;restore ROM parameter
             TAY
             PLA										;restore ROM number
             TAX
             PLA										;restore service type
             RTS
 
-.^ExitAndClaimServiceCall    TSX
-            LDA #0:STA L0103,X ; set A=0 when returning to caller
-            JMP exitSCa ; SQUASH: BEQ ; always branch
+.^ExitAndClaimServiceCall
+    TSX
+    LDA #0:STA L0103,X ; set A=0 when returning to caller
+    JMP ExitServiceCall ; SQUASH: BEQ ; always branch
 
 .L864E      TXA
             ASL A
@@ -2420,7 +2421,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 
 .^osbyte49
     CMP #&49:BEQ osbyte49Internal
-    JMP exitSCa
+    JMP ExitServiceCall
 .osbyte49Internal
     ; SQUASH: Could we use X instead of A here? Then we'd already have &49 in A and could avoid
     ; LDA #&49.
@@ -2519,7 +2520,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             BCS service08d
             JMP osword49
 			
-.service08d JMP exitSCa								;restore service call parameters and exit
+.service08d JMP ExitServiceCall								;restore service call parameters and exit
 }
 
 ;*BOOT Command
@@ -3786,7 +3787,7 @@ ENDIF
             LDA #ibosSubTblConfigureList
             JSR ibosRef ; SFTODO: Redundant? DynamicSyntaxGenerationForIbosSubTblA does JSR ibosRef itself...
             JSR DynamicSyntaxGenerationForIbosSubTblA
-            JMP exitSCa								;restore service call parameters and exit
+            JMP ExitServiceCall								;restore service call parameters and exit
 			
 .optionSpecified
             LDA #&00
@@ -3802,7 +3803,7 @@ ENDIF
             JSR SearchKeywordTable
             BCC optionRecognised
 .notNoSh    PLP
-            JMP exitSCa								;restore service call parameters and exit
+            JMP ExitServiceCall								;restore service call parameters and exit
 			
 .optionRecognised
 	  JSR findNextCharAfterSpace							;find next character. offset stored in Y
@@ -3839,7 +3840,7 @@ ENDIF
             INX
             CPX ConfTbla								;number of *CONFIGURE options
             BNE L948D
-            JMP exitSCa								;restore service call parameters and exit
+            JMP ExitServiceCall								;restore service call parameters and exit
 }
 
 ;Read / Write *CONF. FILE parameters
@@ -4223,7 +4224,7 @@ tmp = &A8
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             BIT L03A4								;?
             BPL L96EE
-            JMP exitSCaIndirect
+            JMP ExitServiceCallIndirect
 			
 .L96EE      LDX #userRegPrvPrintBufferStart
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
@@ -4386,8 +4387,8 @@ tmp = &A8
             LDY #&E3
             LDA #osbyteReadWriteAciaRegister
             JSR OSBYTE
-.exitSCaIndirect
-            JMP exitSCa								;restore service call parameters and exit
+.ExitServiceCallIndirect
+            JMP ExitServiceCall								;restore service call parameters and exit
 }
 
 ; SFTODO: lsrA4 has only one caller (but there are places where it should be used and isn't)
@@ -4418,7 +4419,7 @@ tmp = &A8
 	  BPL L983D
 .L9836      PLA
             JSR PrvDisStaRamsel
-            JMP exitSCa								;restore service call parameters and exit
+            JMP ExitServiceCall								;restore service call parameters and exit
 			
 .L983D      PLA
             JSR PrvDisStaRamsel
@@ -4477,7 +4478,7 @@ tmp = &A8
 .L9896      LDX #&43
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             PLA
-            JMP exitSCa								;restore service call parameters and exit
+            JMP ExitServiceCall								;restore service call parameters and exit
 }
 
 ; SFTODO: This has only one caller
@@ -6757,7 +6758,7 @@ osfileBlock = L02EE
             AND #&10
             TSX
             STA L0103,X								;modify stacked A, i.e. A we will return from service call with
-            JMP exitSCa								;restore service call parameters and exit
+            JMP ExitServiceCall								;restore service call parameters and exit
 }
 			
 ;Write contents from Private memory address &8000 to screen
@@ -9617,7 +9618,7 @@ column = prvC
             CLC
             RTS
 
-.LB906      JMP exitSCa								;restore service call parameters and exit
+.LB906      JMP ExitServiceCall								;restore service call parameters and exit
 
 ;Error (BRK) occurred - Service call &06
 {
