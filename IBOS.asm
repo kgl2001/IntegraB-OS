@@ -3341,7 +3341,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 
 .OswordInputLineBlock
     EQUW prvInputBuffer
-    EQUB prvInputBufferSize - 1
+    EQUB prvInputBufferSize - 1 ; maximum length excluding CR
     EQUB ' ' ; minimum acceptable ASCII value
     EQUB '~' ; maximum acceptable ASCII value
 .OswordInputLineBlockEnd
