@@ -5,7 +5,13 @@
 ;   &3000-&7FFF region
 
 ; Some all-caps keywords are used in comments to make it easier to find them later:
-; SQUASH: There's a potential code squashing opportunity here.
+;
+; SQUASH: There's a potential code squashing opportunity here, i.e. an opportunity to shrink
+; the code without affecting its functionality.
+;
+; DELETE: Code which does something but not necessarily something all that useful, which might
+; be a candidate for removal if we're desperate for space later. Some such code might
+; alternatively be expanded into a more complete feature instead of deleting it.
 
 ; SFTODO: The following constants and associated comments are a bit randomly ordered, this should be tidied up eventually.
 ; For example, it might help to move the comments about RTC register use nearer to the private memory allocations, as
@@ -8959,6 +8965,9 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     PLA
 .NoAlarmInterrupt
     ASL A:BCC NoUpdateEndedInterrupt
+    ; DELETE: Is the support for notifying user code of update ended interrupts really useful?
+    ; Access to the RTC via OSBYTE calls will automatically wait for updates to pass, and any
+    ; code dealing directly with the RTC chip could just wait for updates to pass itself.
     LDX #prvRtcUpdateEndedOptions - prv83:JSR readPrivateRam8300X
     PHA
     AND #prvRtcUpdateEndedOptionsGenerateUserEvent
@@ -10253,12 +10262,11 @@ ibosCNPVIndex = 6
             ORA #vduStatusShadow
             STA vduStatus
 .adjustCrtcHorz
-            ; SFTODO: There seems to be an undocumented feature of IBOS which
-            ; will perform a horizontal screen shift (analogous to the vertical
-            ; shift controlled by *TV/*CONFIGURE TV) based on userRegHorzTV.
-            ; This is not exposed in *CONFIGURE/*STATUS, but it does seem to
-            ; work if you use *FX162,54 to write directly to the RTC register.
-            ; In a modified IBOS this should probably either be removed to save
+            ; DELETE: There seems to be an undocumented feature of IBOS which will perform a
+            ; horizontal screen shift (analogous to the vertical shift controlled by *TV/
+            ; *CONFIGURE TV) based on userRegHorzTV. This is not exposed in *CONFIGURE/
+            ; *STATUS, but it does seem to work if you use *FX162,54 to write directly to the
+            ; RTC register. In a modified IBOS this should probably either be removed to save
             ; space or exposed via *CONFIGURE/*STATUS.
 .LBC05      LDX #userRegHorzTV
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
