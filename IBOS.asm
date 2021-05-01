@@ -6669,7 +6669,7 @@ osfileBlock = L02EE
             LSR A
             ORA #&40
             STA rtcAddress
-            JSR LA664
+            JSR SeiSelectRtcAddressXVariant
             PLP
             RTS
 }
@@ -6816,7 +6816,7 @@ osfileBlock = L02EE
             SEI
             JSR SeiSelectRtcAddressX								;Set RTC address according to X
             LDA rtcData								;Strobe out data
-            JSR LA664
+            JSR SeiSelectRtcAddressXVariant
             PLP
             RTS
 			
@@ -6824,7 +6824,7 @@ osfileBlock = L02EE
 .^wrRTCRAM   PHP
             JSR SeiSelectRtcAddressX								;Set RTC address according to X
             STA rtcData								;Strobe in data
-            JSR LA664
+            JSR SeiSelectRtcAddressXVariant
             PLP
             RTS
 
@@ -6835,17 +6835,18 @@ osfileBlock = L02EE
     NOP
     RTS
 
-.^LA664      PHA
-            LDA #&0D ; SFTODO: except for burning two CPU cycles, this seems redundant - note we PHA/PLA and SeiSelectRtcAddressX does not use A - SQUASH: so could we just use NOP and save a byte?
-            JSR SeiSelectRtcAddressX
-            PLA
-            RTS
+.^SeiSelectRtcAddressXVariant ; SFTODO: Be good to clarify why we need this "Variant" - it does leave flags reflecting A, and it is a bit slower, is either of those they key factor?
+    PHA
+    LDA #&0D ; SFTODO: except for burning two CPU cycles, this seems redundant - note we PHA/PLA and SeiSelectRtcAddressX does not use A - SQUASH: so could we just use NOP and save a byte? Or even get rid of this, given we have other NOPs for (we might hope) delay?
+    JSR SeiSelectRtcAddressX
+    PLA
+    RTS
 			
 .SeiSelectRtcAddressX
     SEI
     JSR Nop2
     STX rtcAddress
-    JMP Nop3
+    JMP Nop3 ; SQUASH: could we just move Nop3 here and fall through? But this is hardware and maybe the delay is very precisely calibrated...
 }
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
@@ -8929,7 +8930,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 	  DEX:ASSERT rtcRegB == rtcRegC - 1
             JSR Nop3:STX rtcAddress
             JSR Nop3:AND rtcData
-            JSR LA664
+            JSR SeiSelectRtcAddressXVariant
             ASL A
             ASL A
             BCC LB488
