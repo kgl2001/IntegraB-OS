@@ -6814,7 +6814,7 @@ osfileBlock = L02EE
 ;read from RTC RAM (Addr = X, Data = A)
 .^rdRTCRAM   PHP
             SEI
-            JSR LA66C								;Set RTC address according to X
+            JSR SeiSelectRtcAddressX								;Set RTC address according to X
             LDA rtcData								;Strobe out data
             JSR LA664
             PLP
@@ -6822,28 +6822,30 @@ osfileBlock = L02EE
 			
 ;write to RTC RAM (Addr = X, Data = A)
 .^wrRTCRAM   PHP
-            JSR LA66C								;Set RTC address according to X
+            JSR SeiSelectRtcAddressX								;Set RTC address according to X
             STA rtcData								;Strobe in data
             JSR LA664
             PLP
             RTS
 
 .^Nop3
-.LA660      NOP
-.LA661      NOP
-            NOP
-            RTS
+    NOP
+.Nop2
+    NOP
+    NOP
+    RTS
 
 .^LA664      PHA
-            LDA #&0D ; SFTODO: except for burning two CPU cycles, this seems redundant - note we PHA/PLA and LA66C does not use A
-            JSR LA66C
+            LDA #&0D ; SFTODO: except for burning two CPU cycles, this seems redundant - note we PHA/PLA and SeiSelectRtcAddressX does not use A - SQUASH: so could we just use NOP and save a byte?
+            JSR SeiSelectRtcAddressX
             PLA
             RTS
 			
-.LA66C      SEI
-            JSR LA661								;2 x NOP delay
-            STX rtcAddress								;Strobe in address
-            JMP Nop3								;3 x NOP delay
+.SeiSelectRtcAddressX
+    SEI
+    JSR Nop2
+    STX rtcAddress
+    JMP Nop3
 }
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
