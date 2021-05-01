@@ -283,6 +283,7 @@ serviceSelectFilingSystem = &12
 serviceConfigure = &28
 serviceStatus = &29
 serviceAboutToEnterLanguage = &2A
+serviceAlarm = &49 ; New IBOS service call to tell sideways ROMs about RTC alarms
 
 INSVH       = &022B
 INSVL       = &022A
@@ -585,6 +586,7 @@ prvSFTODOMODE = prv83 + &3F ; SFTODO: this is a screen mode (including a shadow 
 LDBE6       = &DBE6
 LDC16       = &DC16
 LF168       = &F168
+osEntryOsbyteIssueServiceRequest = &F168 ; start of OSBYTE 143 in OS 1.20
 LF16E       = &F16E
 
 bufNumKeyboard = 0
@@ -8957,8 +8959,8 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     PLA
     AND #&02 ; SFTODO: So it like b1 of prvSFTODORTCISH has something to do with enabling a service call to be issued when the RTC alarm goes off
     BEQ noUpdateEndedInterrupt ; SFTODO: Change label name given this call?
-    LDX #&49
-    JSR LF168 ;OSBYTE 143 - Pass service commands to sideways ROM (http://mdfs.net/Docs/Comp/BBC/OS1-20/F135) SFTODO: BE GOOD TO CHECK DISASSEMBLY AND SEE EXACTLTY WHAT THIS DOES, WE ENTER ELSEWHERE IN THIS ROUTINE SOMEWHERE ELSE IN IBOS
+    LDX #serviceAlarm
+    JSR osEntryOsbyteIssueServiceRequest
 .noUpdateEndedInterrupt
     JMP exitSC
 }
