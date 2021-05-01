@@ -2399,51 +2399,52 @@ ptr = &00 ; 2 bytes
 			
 ;Test for OSBYTE &49 (73) - Integra-B calls
 {
-.^osbyte49  CMP #&49								;OSBYTE &49 (73) - Integra-B calls
-            BEQ osbyte49Internal
-            JMP exitSCa								;restore service call parameters and exit
-
+.^osbyte49
+    CMP #&49:BEQ osbyte49Internal
+    JMP exitSCa
 .osbyte49Internal
-            LDA oswdbtX
-            CMP #&FF								;test X for &FF
-            BNE L8B63								;if not, branch
-            LDA #&49								;otherwise yes, and return &49
-            STA oswdbtX
-            PLA
-            LDA romselCopy
-            AND #maxBank
-            PHA
-            JMP exitSC								;Exit Service Call
+    ; SQUASH: Could we use X instead of A here? Then we'd already have &49 in A and could avoid
+    ; LDA #&49.
+    LDA oswdbtX:CMP #&FF:BNE L8B63								;if not, branch
+    LDA #&49								;otherwise yes, and return &49
+    STA oswdbtX
+    PLA
+    LDA romselCopy
+    AND #maxBank
+    PHA
+    JMP exitSC								;Exit Service Call
 			
 .L8B63      CMP #&FE								;test X for &FE
-            BNE L8B6D								;if not, branch
-            JSR LB35E								;otherwise yes, and JSR???
-            JMP exitSC								;Exit Service Call
+    BNE L8B6D								;if not, branch
+    JSR LB35E								;otherwise yes, and JSR???
+    JMP exitSC								;Exit Service Call
 			
 .L8B6D      LDX #&44								;read data from &8344???
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            PHA
-            STA oswdbtY
-            LDA oswdbtX
-            LSR A
-            LSR A
-            AND oswdbtY
-            EOR oswdbtX
-            AND #&03
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
-            LDX #&0B
-            CMP #&00
-            BNE L8B90
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
-            AND #&EF
-            JMP L8B95
+    JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
+    PHA
+    STA oswdbtY
+    LDA oswdbtX
+    LSR A
+    LSR A
+    AND oswdbtY
+    EOR oswdbtX
+    AND #&03
+    JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+    LDX #&0B
+    CMP #&00
+    BNE L8B90
+    JSR rdRTCRAM								;Read data from RTC memory location X into A
+    AND #&EF
+    JMP L8B95
 			
-.L8B90      JSR rdRTCRAM								;Read data from RTC memory location X into A
-            ORA #&10
-.L8B95      JSR wrRTCRAM								;Write data from A to RTC memory location X
-            PLA
-            STA oswdbtX
-            JMP exitSC								;Exit Service Call
+.L8B90
+    JSR rdRTCRAM								;Read data from RTC memory location X into A
+    ORA #&10
+.L8B95
+    JSR wrRTCRAM								;Write data from A to RTC memory location X
+    PLA
+    STA oswdbtX
+    JMP exitSC								;Exit Service Call
 }
 
 ; SFTODO: Dead code
