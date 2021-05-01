@@ -2923,7 +2923,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .L8ED6      JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDX #prvOsMode - prv83								;select OSMODE
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-.^L8EDE      SEC
+.^SecPrintADecimalOSNEWLPrvDisExitAndClaimServiceCall      SEC
             JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
             JMP OSNEWLPrvDisExitAndClaimServiceCall								;new line, exit out of private RAM and exit service call
 }
@@ -2972,7 +2972,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .ShowShadow
     JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
     LDA osShadowRamFlag
-    JMP L8EDE								;print shadow number and exit service call
+    JMP SecPrintADecimalOSNEWLPrvDisExitAndClaimServiceCall
 .ParsedOK
     STA osShadowRamFlag
     JMP ExitAndClaimServiceCall
