@@ -2398,6 +2398,7 @@ ptr = &00 ; 2 bytes
             JMP osbyte45Internal
 			
 ;Test for OSBYTE &49 (73) - Integra-B calls
+; SFTODO: Rename these labels so we have something like "CheckOsbyte49" for the test and "Osbyte49" for the actual "yes, now do it"? (Not just 49, all of them.)
 {
 .^osbyte49
     CMP #&49:BEQ osbyte49Internal
@@ -2405,22 +2406,19 @@ ptr = &00 ; 2 bytes
 .osbyte49Internal
     ; SQUASH: Could we use X instead of A here? Then we'd already have &49 in A and could avoid
     ; LDA #&49.
-    LDA oswdbtX:CMP #&FF:BNE L8B63								;if not, branch
-    LDA #&49								;otherwise yes, and return &49
-    STA oswdbtX
-    PLA
-    LDA romselCopy
-    AND #maxBank
-    PHA
-    JMP exitSC								;Exit Service Call
-			
-.L8B63      CMP #&FE								;test X for &FE
-    BNE L8B6D								;if not, branch
-    JSR LB35E								;otherwise yes, and JSR???
-    JMP exitSC								;Exit Service Call
-			
-.L8B6D      LDX #&44								;read data from &8344???
-    JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
+    LDA oswdbtX:CMP #&FF:BNE XNeFF
+    ; It's X=&FF; test for presence of Integra-B. Return with X=&49 to indicate present.
+    LDA #&49:STA oswdbtX
+    PLA:LDA romselCopy:AND #maxBank:PHA ; SFTODO: DOCUMENT
+    JMP exitSC
+.XNeFF
+.L8B63
+    CMP #&FE:BNE XNeFE
+    ; It's X=&FE; SFTODO: WHICH IS?
+    JSR LB35E
+    JMP exitSC
+.XNeFE
+    LDX #&44:JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
     PHA
     STA oswdbtY
     LDA oswdbtX
