@@ -2660,7 +2660,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JMP GenerateBadParameter
 			
 .L8CCD      PHA
-            JSR checkPrinterBufferEmpty								;check if print buffer is empty, and error if something is already in the buffer.
+            JSR GenerateErrorIfPrinterBufferNotEmpty								;check if print buffer is empty, and error if something is already in the buffer.
             JSR L8D37								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
             LDX #&00
             LDY #&00								;starting at SWRAM bank 0
@@ -2689,7 +2689,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .L8D01      JSR L8D5A
             JMP L8DCA
 			
-.L8D07      JSR checkPrinterBufferEmpty
+.L8D07      JSR GenerateErrorIfPrinterBufferNotEmpty
             JSR L8D37								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
             INY
             LDX #&00
@@ -2868,7 +2868,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 }
 
 ;Check if printer buffer is empty
-.checkPrinterBufferEmpty
+.GenerateErrorIfPrinterBufferNotEmpty
 {
 .L8E6C      PHA
             TYA
@@ -2930,7 +2930,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     CMP #0:BEQ SetOsmode0
     CMP #6:BCS GenerateBadParameterIndirect
     PHA
-    JSR PrvEn								;switch in private RAM
+    JSR PrvEn
     LDA prvOsMode:BEQ CurrentlyInOsmode0
     PLA:STA prvOsMode
 .CommonEnd
@@ -2942,17 +2942,15 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JMP GenerateBadParameter
 
 .SetOsmode0
-    JSR PrvEn								;switch in private RAM
-    LDA prvOsMode								;read OSMODE
-    BEQ CommonEnd
-    JSR checkPrinterBufferEmpty
-    LDA #&00
-    STA prvOsMode								;write OSMODE
+    JSR PrvEn
+    LDA prvOsMode:BEQ CommonEnd ; nothing to do as we're already in OSMODE 0
+    JSR GenerateErrorIfPrinterBufferNotEmpty
+    LDA #0:STA prvOsMode
     JSR SFTODOZZ
     JMP CommonEnd
 			
 .CurrentlyInOsmode0
-    JSR checkPrinterBufferEmpty
+    JSR GenerateErrorIfPrinterBufferNotEmpty
     PLA:STA prvOsMode
     JSR LBC98
     JMP CommonEnd
