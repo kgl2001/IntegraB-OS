@@ -8952,15 +8952,15 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             LDX #prvSFTODORTCISH - prv83
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             PHA
-            AND #&01
+            AND #&01 ; SFTODO: So b0 of prvSFTODORTCISH has something to do with triggering an OS event when the RTC alarm goes off?
             BEQ LB4A2
             LDY #&09
             JSR OSEVEN
 .LB4A2      PLA
-            AND #&02
+            AND #&02 ; SFTODO: So it like b1 of prvSFTODORTCISH has something to do with enabling a service call to be issued when the RTC alarm goes off
             BEQ notUpdateEndedInterrupt ; SFTODO: Change label name given this call?
             LDX #&49
-            JSR LF168								;OSBYTE 143 - Pass service commands to sideways ROM (http://mdfs.net/Docs/Comp/BBC/OS1-20/F135)
+            JSR LF168								;OSBYTE 143 - Pass service commands to sideways ROM (http://mdfs.net/Docs/Comp/BBC/OS1-20/F135) SFTODO: BE GOOD TO CHECK DISASSEMBLY AND SEE EXACTLTY WHAT THIS DOES, WE ENTER ELSEWHERE IN THIS ROUTINE SOMEWHERE ELSE IN IBOS
 .notUpdateEndedInterrupt
             JMP exitSC
 }
