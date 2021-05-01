@@ -84,6 +84,7 @@ rtcRegA = &0A
 	rtcRegADV0 = 1<<4
 	rtcRegADV1 = 1<<5
 	rtcRegADV2 = 1<<6
+	rtcRegAUIP = 1<<7
 rtcRegB = &0B
 	rtcRegBDSE = 1<<0
 	rtcRegB2412 = 1<<1
@@ -6983,13 +6984,15 @@ osfileBlock = L02EE
 ;Wait until RTC Update in Progress	is complete
 .waitOutRTCUpdate
 {
-.LA775      LDX #&0A								;Select 'Register A' register on RTC: Register &0A
-.LA777      JSR Nop3								;3 x NOP delay
-            STX SHEILA+&38								;Strobe in address
-            JSR Nop3								;3 x NOP delay
-            LDA SHEILA+&3C								;Strobe out data
-            BMI LA777								;Loop if Update in Progress (if MSB set)
-            RTS
+    LDX #rtcRegA
+.loop
+    JSR Nop3								;3 x NOP delay
+    STX SHEILA+&38								;Strobe in address
+    JSR Nop3								;3 x NOP delay
+    ASSERT rtcRegAUIP == &80
+    LDA SHEILA+&3C
+    BMI loop ; try again if update in progress
+    RTS
 }
 
 {
@@ -8915,9 +8918,9 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             RTS
 }
 
+; On entry, X=rtcRegC and A is the value read from rtcRegC.
 .rtcInterruptHandler
 {
-	  ; X=rtcRegC on entry
 	  DEX:ASSERT rtcRegB == rtcRegC - 1
             JSR Nop3								;3 x NOP delay
             STX SHEILA+&38						          	;Strobe in address
