@@ -2420,37 +2420,41 @@ ptr = &00 ; 2 bytes
 .XNeFF
 .L8B63
     CMP #&FE:BNE XNeFE
-    ; It's X=&FE; SFTODO: WHICH IS?
+    ; It's X=&FE; SFTODO: WHICH MEANS DO WHAT?
     JSR LB35E
     JMP exitSC
 .XNeFE
-    ; SFTODO: I think this is returning the original value of &8344 and doing something to alter something related to that - we seem to be setting or clearing the low two bits of prv83+&44 based on the X and Y values for this call, and setting or clearing rtcRegBUIE according to this (although that's only one bit, of course)
-    LDX #prvSFTODORTCISH - prv83
-    JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
+    ; For reference, the "standard" pattern for OSBYTE calls which modify a subset of bits at a
+    ; location is to set the location to (<old value> AND Y) EOR X and return the old value in
+    ; X.
+    ;
+    ; This code does prvSFTODORTCISH = (((X >> 2) AND prvSFTODORTCISH) EOR X) AND %11 and
+    ; returns the original value of prvSFTODORTCISH in both X and Y. This effectively means
+    ; that if X=%abcd, %ab masks off the bits of prvSFTODORTCISH of interest and %cd toggles
+    ; them, so if %ab == 0 we set prvSFTODORTCISH to %cd.
+    LDX #prvSFTODORTCISH - prv83:JSR readPrivateRam8300X
     PHA
     STA oswdbtY
-    LDA oswdbtX
-    LSR A
-    LSR A
+    LDA oswdbtX:LSR A:LSR A
     AND oswdbtY
     EOR oswdbtX
     AND #&03
-    JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+    JSR writePrivateRam8300X
     LDX #rtcRegB
-    CMP #&00
+    CMP #0
     BNE L8B90
-    JSR ReadRtcRam								;Read data from RTC memory location X into A
+    JSR ReadRtcRam
     NOT_AND rtcRegBUIE
     JMP L8B95
 			
 .L8B90
-    JSR ReadRtcRam								;Read data from RTC memory location X into A
+    JSR ReadRtcRam
     ORA #rtcRegBUIE
 .L8B95
-    JSR WriteRtcRam								;Write data from A to RTC memory location X
+    JSR WriteRtcRam
     PLA
     STA oswdbtX
-    JMP exitSC								;Exit Service Call
+    JMP exitSC
 }
 
 ; SFTODO: Dead code
