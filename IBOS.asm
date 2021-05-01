@@ -1516,9 +1516,8 @@ tabColumn = 12
             RTS
 
 .^exitSC    TSX
-            LDA #&00
-            STA L0103,X
-            JMP exitSCa
+            LDA #0:STA L0103,X ; set A=0 when returning to caller
+            JMP exitSCa ; SQUASH: BEQ ; always branch
 
 .L864E      TXA
             ASL A
@@ -8936,7 +8935,9 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     ; We now have A = (RTC register B) AND (RTC register C); this means we have bits set in A
     ; for interrupts which have triggered and are not masked off. We shift A left and test the
     ; bits as they fall off into the carry.
-    JSR SeiSelectRtcAddressXVariant ; SFTODO: Does this leave interrupts disabled??? I can't see a CLI or PLP, although there might be one somewhere...
+    ; SFTODO: As far as I can see, SeiSelectRtcAddressXVariant will disable interrupts and
+    ; nothing will re-enable them. Am I missing something? Is this correct behaviour?
+    JSR SeiSelectRtcAddressXVariant
     ASL A:ASL A:BCC NoPeriodicInterrupt
     PHA
     CLC:JSR LB35F
