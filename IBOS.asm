@@ -575,6 +575,8 @@ prvTubeReleasePending = prv83 + &42 ; used during OSWORD 42; &FF means we have c
 ; prvOsMode and not bother with the copy in the low bits of userRegOsModeShx?
 ; That would save some code.
 prvSFTODORTCISH = prv83 + &44
+	prvSFTODORTCISHGenerateUserEvent = 1<<0
+	prvSFTODORTCISHGenerateServiceCall = 1<<1
 
 prvIbosBankNumber = prv83 + &00 ; SFTODO: not sure about this, but service01 seems to set this
 prvPseudoBankNumbers = prv83 + &08 ; 4 bytes, absolute RAM bank number for the Pseudo RAM banks W, X, Y, Z; SFTODO: may be &FF indicating "no such bank" if SRSET is used?
@@ -2426,19 +2428,22 @@ ptr = &00 ; 2 bytes
 .XNeFE
     ; For reference, the "standard" pattern for OSBYTE calls which modify a subset of bits at a
     ; location is to set the location to (<old value> AND Y) EOR X and return the old value in
-    ; X.
+    ; X. This code *doesn't* follow this pattern.
     ;
     ; This code does prvSFTODORTCISH = (((X >> 2) AND prvSFTODORTCISH) EOR X) AND %11 and
     ; returns the original value of prvSFTODORTCISH in both X and Y. This effectively means
     ; that if X=%abcd, %ab masks off the bits of prvSFTODORTCISH of interest and %cd toggles
     ; them, so if %ab == 0 we set prvSFTODORTCISH to %cd.
+    ;
+    ; We then set rtcRegBUIE iff prvSFTODORTCISH is non-0; this enables the RTC update ended
+    ; interrupt iff RtcInterruptHandler has something to do when it triggers.
     LDX #prvSFTODORTCISH - prv83:JSR readPrivateRam8300X
     PHA
     STA oswdbtY
     LDA oswdbtX:LSR A:LSR A
     AND oswdbtY
     EOR oswdbtX
-    AND #&03
+    AND #%11
     JSR writePrivateRam8300X
     LDX #rtcRegB
     CMP #0
@@ -8955,12 +8960,12 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     ASL A:BCC NoUpdateEndedInterrupt
     LDX #prvSFTODORTCISH - prv83:JSR readPrivateRam8300X
     PHA
-    AND #&01 ; SFTODO: So b0 of prvSFTODORTCISH has something to do with triggering an OS event when the RTC alarm goes off?
+    AND #prvSFTODORTCISHGenerateUserEvent
     BEQ DontGenerateUserEvent
     LDY #eventNumUser:JSR OSEVEN
 .DontGenerateUserEvent
     PLA
-    AND #&02 ; SFTODO: So it like b1 of prvSFTODORTCISH has something to do with enabling a service call to be issued when the RTC alarm goes off
+    AND #prvSFTODORTCISHGenerateServiceCall
     BEQ DontGenerateServiceCall
     LDX #serviceUpdateEnded:JSR osEntryOsbyteIssueServiceRequest
 .DontGenerateServiceCall
