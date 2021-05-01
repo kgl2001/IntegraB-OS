@@ -9845,7 +9845,7 @@ ibosCNPVIndex = 6
             ;   &107,S  A stacked by romCodeStubCallIBOS
             ;   &108,S  return address from "JSR ramCodeStubCallIBOS" (low)
             ;   &109,S  return address from "JSR ramCodeStubCallIBOS" (high)
-            ;   &10A,S  x (caller's data; nothing to do with us)
+            ;   &10A,S  xxx (caller's data; nothing to do with us)
             ; The low byte of the return address at &108,S will be the address
             ; of the JSR ramCodeStubCallIBOS plus 2. We mask off the low bits
             ; (which are sufficient to distinguish the 7 different callers) and
@@ -9871,22 +9871,14 @@ ibosCNPVIndex = 6
 ; SQUASH: This is really just shuffling the stack down to remove the return address from "JSR
 ; ramCodeStubCallIBOS"; can we rewrite it more compactly using a loop?
 .LB9E9      TSX
-            LDA L0107,X
-            STA L0109,X
-            LDA L0106,X
-            STA L0108,X
-            LDA L0105,X
-            STA L0107,X
-            LDA L0104,X
-            STA L0106,X
-            LDA L0103,X
-            STA L0105,X
-            LDA L0102,X
-            STA L0104,X
-            LDA L0101,X
-            STA L0103,X
-            PLA
-            PLA
+            LDA L0107,X:STA L0109,X
+            LDA L0106,X:STA L0108,X
+            LDA L0105,X:STA L0107,X
+            LDA L0104,X:STA L0106,X
+            LDA L0103,X:STA L0105,X
+            LDA L0102,X:STA L0104,X
+            LDA L0101,X:STA L0103,X
+            PLA:PLA
             ; At this point the stack looks like this:
             ;   &101,S  Y stacked by vectorEntry
             ;   &102,S  X stacked by vectorEntry
@@ -9895,7 +9887,7 @@ ibosCNPVIndex = 6
             ;   &105,S  previously paged in ROM bank stacked by romCodeStubCallIBOS
             ;   &106,S  flags stacked by romCodeStubCallIBOS
             ;   &107,S  A stacked by romCodeStubCallIBOS
-            ;   &108,S  x (caller's data; nothing to do with us)
+            ;   &108,S  xxx (caller's data; nothing to do with us)
             ; We now restore Y and X and RTS from "JSR vectorEntry" in ramCodeStub,
             ; which will restore the previously paged in ROM, the flags and then A,
             ; so the vector's caller will see the Z/N flags reflecting A, but
