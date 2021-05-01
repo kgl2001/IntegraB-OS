@@ -9822,7 +9822,7 @@ ibosCNPVIndex = 6
 		EQUB &10
 		EQUW InsvHandler-1
 		EQUB &2A
-		EQUW remvHandler-1
+		EQUW RemvHandler-1
 		EQUB &2C
 		EQUW cnpvHandler-1
 		EQUB &2E
@@ -10514,52 +10514,50 @@ ptr = &A8
 }
 
 ; SQUASH: Would it be possible to factor out the common-ish code at the start of
-; InsvHandler/remvHandler/cnpvHandler to save space?
-.remvHandler
+; InsvHandler/RemvHandler/cnpvHandler to save space?
+.RemvHandler
 {
-.LBD96	  TSX
-            LDA L0102,X
-            CMP #bufNumPrinter
-            BEQ LBDA3
-            LDA #ibosREMVIndex
-            JMP forwardToParentVectorTblEntry
+    TSX:LDA L0102,X ; get original X=buffernumber
+    CMP #bufNumPrinter:BEQ IsPrinterBuffer
+    LDA #ibosREMVIndex:JMP forwardToParentVectorTblEntry
 			
-.LBDA3      JSR pageInPrvs81
-            PHA
-            TSX
-            JSR checkPrintBufferEmpty
-            BCC LBDB8
-            ; SFTODO: Some similarity with InsvHandler here, could we factor out common code?
-            LDA L0107,X ; get original flags
-            ORA #flagC
-            STA L0107,X ; modify original flags so C is set
-            JMP restoreRamselClearPrvenReturnFromVectorHandler
+.IsPrinterBuffer
+    JSR pageInPrvs81
+    PHA
+    TSX
+    JSR checkPrintBufferEmpty:BCC PrintBufferNotEmpty
+    ; SFTODO: Some similarity with InsvHandler here, could we factor out common code?
+    LDA L0107,X ; get original flags
+    ORA #flagC
+    STA L0107,X ; modify original flags so C is set
+    JMP restoreRamselClearPrvenReturnFromVectorHandler
 
 ; SFTODO: The following code doesn't make sense, we seem to be returning in Y
 ; for examine and A for remove, which is the wrong way round. What am I missing?
-.LBDB8      LDA L0107,X ; get original flags
-            AND_NOT flagC
-            STA L0107,X ; modify original flags so C is clear
-            JSR ldaPrintBufferReadPtr
-            TSX
-            PHA ; note this doesn't affect X so our L01xx,X references stay the same
-            LDA L0107,X ; get original flags
-            AND #flagV
-            BNE examineBuffer
-            ; V was cleared by the caller, so we're removing a character from
-            ; the buffer.
-            PLA
-            STA L0108,X ; overwrite original A with character read from our buffer
-            JSR advancePrintBufferWritePtr
-            JSR incrementPrintBufferFree
-            JMP restoreRamselClearPrvenReturnFromVectorHandler
+.PrintBufferNotEmpty
+    LDA L0107,X ; get original flags
+    AND_NOT flagC
+    STA L0107,X ; modify original flags so C is clear
+    JSR ldaPrintBufferReadPtr
+    TSX
+    PHA ; note this doesn't affect X so our L01xx,X references stay the same
+    LDA L0107,X ; get original flags
+    AND #flagV
+    BNE examineBuffer
+    ; V was cleared by the caller, so we're removing a character from
+    ; the buffer.
+    PLA
+    STA L0108,X ; overwrite original A with character read from our buffer
+    JSR advancePrintBufferWritePtr
+    JSR incrementPrintBufferFree
+    JMP restoreRamselClearPrvenReturnFromVectorHandler
 
 .examineBuffer
-            ; V was set by the caller, so we're just examining the buffer
-            ; without removing anything.
-.LBDD9      PLA
-            STA L0102,X ; overwrite original Y with character peeked from our buffer
-            FALLTHROUGH_TO restoreRamselClearPrvenReturnFromVectorHandler
+    ; V was set by the caller, so we're just examining the buffer
+    ; without removing anything.
+    PLA
+    STA L0102,X ; overwrite original Y with character peeked from our buffer
+    FALLTHROUGH_TO restoreRamselClearPrvenReturnFromVectorHandler
 }
 
 ; Restore RAMSEL to the stacked value, clear PRVEN, then return from the vector
