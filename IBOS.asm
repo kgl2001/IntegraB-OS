@@ -2418,6 +2418,7 @@ ptr = &00 ; 2 bytes
     JSR LB35E
     JMP exitSC
 .XNeFE
+    ; SFTODO: I think this is returning the original value of &8344 and doing something to alter something related to that
     LDX #&44
     JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
     PHA
@@ -2433,7 +2434,7 @@ ptr = &00 ; 2 bytes
     CMP #&00
     BNE L8B90
     JSR rdRTCRAM								;Read data from RTC memory location X into A
-    AND #&EF
+    NOT_AND rtcRegBUIE
     JMP L8B95
 			
 .L8B90
