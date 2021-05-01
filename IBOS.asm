@@ -10526,37 +10526,27 @@ ptr = &A8
     PHA
     TSX
     JSR checkPrintBufferEmpty:BCC PrintBufferNotEmpty
-    ; SFTODO: Some similarity with InsvHandler here, could we factor out common code?
-    LDA L0107,X ; get original flags
-    ORA #flagC
-    STA L0107,X ; modify original flags so C is set
+    ; SQUASH: Some similarity with InsvHandler here, could we factor out common code?
+    LDA L0107,X:ORA #flagC:STA L0107,X ; modify stacked flags so C is set
     JMP restoreRamselClearPrvenReturnFromVectorHandler
 
-; SFTODO: The following code doesn't make sense, we seem to be returning in Y
-; for examine and A for remove, which is the wrong way round. What am I missing?
+; SFTODO: The following code doesn't make sense, we seem to be returning in Y for examine and A
+; for remove, which is the wrong way round. What am I missing?
 .PrintBufferNotEmpty
-    LDA L0107,X ; get original flags
-    AND_NOT flagC
-    STA L0107,X ; modify original flags so C is clear
+    LDA L0107,X:AND_NOT flagC:STA L0107,X ; modify stacked flags so C is clear
     JSR ldaPrintBufferReadPtr
     TSX
     PHA ; note this doesn't affect X so our L01xx,X references stay the same
-    LDA L0107,X ; get original flags
-    AND #flagV
-    BNE examineBuffer
-    ; V was cleared by the caller, so we're removing a character from
-    ; the buffer.
-    PLA
-    STA L0108,X ; overwrite original A with character read from our buffer
+    LDA L0107,X:AND #flagV:BNE examineBuffer ; test V in stacked flags from caller
+    ; V was cleared by the caller, so we're removing a character from the buffer.
+    PLA:STA L0108,X ; overwrite stacked A with character read from our buffer
     JSR advancePrintBufferWritePtr
     JSR incrementPrintBufferFree
     JMP restoreRamselClearPrvenReturnFromVectorHandler
 
 .examineBuffer
-    ; V was set by the caller, so we're just examining the buffer
-    ; without removing anything.
-    PLA
-    STA L0102,X ; overwrite original Y with character peeked from our buffer
+    ; V was set by the caller, so we're just examining the buffer without removing anything.
+    PLA:STA L0102,X ; overwrite stacked Y with character peeked from our buffer
     FALLTHROUGH_TO restoreRamselClearPrvenReturnFromVectorHandler
 }
 
