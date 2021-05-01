@@ -2932,7 +2932,6 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     PHA
     JSR PrvEn								;switch in private RAM
     LDA prvOsMode:BEQ L8F17
-.L8EF6
     PLA:STA prvOsMode
 .CommonEnd
     ; SQUASH: Couldn't we JMP PrvDis?
