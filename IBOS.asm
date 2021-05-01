@@ -2950,6 +2950,9 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JMP CommonEnd
 			
 .CurrentlyInOsmode0
+    ; SFTODO: I *assume* we have to check the printer buffer isn't empty here because we're
+    ; using the OS printer buffer in OSMODE 0, and entering a non-0 OSMODE will overwrite that
+    ; with our main RAM stub, but I haven't checked the code yet.
     JSR GenerateErrorIfPrinterBufferNotEmpty
     PLA:STA prvOsMode
     JSR LBC98
