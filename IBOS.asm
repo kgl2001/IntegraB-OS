@@ -10499,7 +10499,7 @@ ptr = &A8
     JSR checkPrintBufferFull:BCC PrintBufferNotFull
     ; Return to caller with carry set to indicate insertion failed.
     LDA L0107,X:ORA #flagC:STA L0107,X ; modify stacked flags so C is set
-    JMP restoreRamselClearPrvenReturnFromVectorHandler
+    JMP RestoreRamselClearPrvenReturnFromVectorHandler
 
 .PrintBufferNotFull
     LDA L0108,X ; get original A=character to insert
@@ -10508,7 +10508,7 @@ ptr = &A8
     JSR decrementPrintBufferFree
     ; Return to caller with carry clear to indicate insertion succeeded.
     TSX:LDA L0107,X:AND_NOT flagC:STA L0107,X ; modify stacked flags so C is clear
-    JMP restoreRamselClearPrvenReturnFromVectorHandler
+    JMP RestoreRamselClearPrvenReturnFromVectorHandler
 }
 
 ; SQUASH: Would it be possible to factor out the common-ish code at the start of
@@ -10526,7 +10526,7 @@ ptr = &A8
     JSR checkPrintBufferEmpty:BCC PrintBufferNotEmpty
     ; SQUASH: Some similarity with InsvHandler here, could we factor out common code?
     LDA L0107,X:ORA #flagC:STA L0107,X ; modify stacked flags so C is set
-    JMP restoreRamselClearPrvenReturnFromVectorHandler ; SQUASH: BNE ; always branch
+    JMP RestoreRamselClearPrvenReturnFromVectorHandler ; SQUASH: BNE ; always branch
 
 ; SFTODO: The following code doesn't make sense, we seem to be returning in Y for examine and A
 ; for remove, which is the wrong way round. What am I missing?
@@ -10540,20 +10540,20 @@ ptr = &A8
     PLA:STA L0108,X ; overwrite stacked A with character read from our buffer
     JSR advancePrintBufferWritePtr
     JSR incrementPrintBufferFree
-    JMP restoreRamselClearPrvenReturnFromVectorHandler
+    JMP RestoreRamselClearPrvenReturnFromVectorHandler
 
 .ExamineBuffer
     ; V was set by the caller, so we're just examining the buffer without removing anything.
     PLA:STA L0102,X ; overwrite stacked Y with character peeked from our buffer
-    FALLTHROUGH_TO restoreRamselClearPrvenReturnFromVectorHandler
+    FALLTHROUGH_TO RestoreRamselClearPrvenReturnFromVectorHandler
 }
 
 ; Restore RAMSEL to the stacked value, clear PRVEN, then return from the vector
 ; handler.
 ; SFTODO: Perhaps not the catchiest label name ever...
-.restoreRamselClearPrvenReturnFromVectorHandler
+.RestoreRamselClearPrvenReturnFromVectorHandler
 {
-.LBDDD      PLA
+            PLA
             STA ramselCopy
             STA ramsel
             LDA romselCopy
@@ -10584,7 +10584,7 @@ ptr = &A8
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ purgeOff
             JSR purgePrintBuffer
-.purgeOff   JMP restoreRamselClearPrvenReturnFromVectorHandler
+.purgeOff   JMP RestoreRamselClearPrvenReturnFromVectorHandler
 
 .cnpvCount
 .LBE19      LDA L0107,X ; get original flags
@@ -10597,7 +10597,7 @@ ptr = &A8
             STA L0103,X ; overwrite stacked X, so we return A to caller in X
             TYA
             STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
-            JMP restoreRamselClearPrvenReturnFromVectorHandler
+            JMP RestoreRamselClearPrvenReturnFromVectorHandler
 }
 
 .cnpvCountSpaceLeft
@@ -10611,7 +10611,7 @@ ptr = &A8
             STA L0103,X ; overwrite stacked X, so we return A to caller in X
             TYA
             STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
-            JMP restoreRamselClearPrvenReturnFromVectorHandler
+            JMP RestoreRamselClearPrvenReturnFromVectorHandler
 }
 
 ; SFTODO: This only has one caller
