@@ -2915,7 +2915,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     LDA (transientCmdPtr),Y:CMP #'?':BEQ ShowOsmode
     JMP GenerateSyntaxError
 .ParsedOK
-    JSR L8EE5
+    JSR setOsmodeA
     JMP ExitAndClaimServiceCall
 .ShowOsmode
     JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
@@ -2925,37 +2925,43 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 }
 
+.setOsmodeA
 {
-.^L8EE5      CMP #&00
-            BEQ L8F01
-            CMP #&06
-            BCS L8EFE
-            PHA
-            JSR PrvEn								;switch in private RAM
-            LDA prvOsMode								;read OSMODE
-            BEQ L8F17
-.L8EF6      PLA
-            STA prvOsMode								;write OSMODE
-.L8EFA      JSR PrvDis								;switch out private RAM
-            RTS
+    CMP #&00
+    BEQ L8F01
+    CMP #&06
+    BCS L8EFE
+    PHA
+    JSR PrvEn								;switch in private RAM
+    LDA prvOsMode								;read OSMODE
+    BEQ L8F17
+.L8EF6
+    PLA
+    STA prvOsMode								;write OSMODE
+.L8EFA
+    JSR PrvDis								;switch out private RAM
+    RTS
 			
 			
-.L8EFE      JMP badParameter
+.L8EFE
+    JMP badParameter
 
-.L8F01      JSR PrvEn								;switch in private RAM
-            LDA prvOsMode								;read OSMODE
-            BEQ L8EFA
-            JSR checkPrinterBufferEmpty
-            LDA #&00
-            STA prvOsMode								;write OSMODE
-            JSR SFTODOZZ
-            JMP L8EFA
+.L8F01
+    JSR PrvEn								;switch in private RAM
+    LDA prvOsMode								;read OSMODE
+    BEQ L8EFA
+    JSR checkPrinterBufferEmpty
+    LDA #&00
+    STA prvOsMode								;write OSMODE
+    JSR SFTODOZZ
+    JMP L8EFA
 			
-.L8F17      JSR checkPrinterBufferEmpty
-            PLA
-            STA prvOsMode								;write OSMODE
-            JSR LBC98
-            JMP L8EFA
+.L8F17
+    JSR checkPrinterBufferEmpty
+    PLA
+    STA prvOsMode								;write OSMODE
+    JSR LBC98
+    JMP L8EFA
 }
 			
 ;*SHADOW Command
@@ -3191,7 +3197,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JMP L90DE
 			
 .L90A7      LDA #&04
-            JSR L8EE5
+            JSR setOsmodeA
             LDA #&00
             STA osShadowRamFlag
             LDX #&3D								;select SHX register
