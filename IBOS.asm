@@ -3290,22 +3290,17 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .L913A
     JSR OSNEWL
     LDA #osbyteCheckEOF:LDX transientFileHandle:JSR OSBYTE
-    CPX #&00:BNE L9165
+    CPX #0:BNE Eof
     JSR L91AC
 .L914B
-    LDY transientFileHandle
-    JSR OSBGET
-    BCS L9165
-    CMP #vduCr
-    BEQ L913A
-    CMP #' '
-    BCC L914B
-    CMP #vduDel
-    BCS L914B
+    LDY transientFileHandle:JSR OSBGET:BCS Eof
+    CMP #vduCr:BEQ L913A
+    CMP #' ':BCC L914B
+    CMP #vduDel:BCS L914B
     JSR OSWRCH
     BNE L914B
     BEQ L913A
-.L9165
+.Eof
     JSR L91AC
     LDY #&04
 .L916A
@@ -3326,11 +3321,11 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     LDY transientFileHandle
     JSR OSBPUT
     CMP #vduCr
-    BEQ L9165
+    BEQ Eof ; SFTODO: MISUSED LABEL NAME?
     INX
     CPX L00A9
     BNE L9183
-    BEQ L9165
+    BEQ Eof ; SFTODO: MISUSED LABEL NAME?
 .L9196
     LDA #osbyteAcknowledgeEscape
     JSR OSBYTE
