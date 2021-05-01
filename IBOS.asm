@@ -2909,23 +2909,20 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 }
 
 ;*OSMODE Command
+.osmode
 {
-.^osmode      JSR convertIntegerDefaultDecimal
-            BCC L8ED0
-            LDA (transientCmdPtr),Y
-            CMP #'?'
-            BEQ L8ED6
-            JMP GenerateSyntaxError
-			
-.L8ED0      JSR L8EE5
-            JMP ExitAndClaimServiceCall								;Exit Service Call
-			
-.L8ED6      JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
-            LDX #prvOsMode - prv83								;select OSMODE
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-.^SecPrintADecimalOSNEWLPrvDisExitAndClaimServiceCall      SEC
-            JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
-            JMP OSNEWLPrvDisExitAndClaimServiceCall								;new line, exit out of private RAM and exit service call
+    JSR convertIntegerDefaultDecimal:BCC ParsedOK
+    LDA (transientCmdPtr),Y:CMP #'?':BEQ ShowOsmode
+    JMP GenerateSyntaxError
+.ParsedOK
+    JSR L8EE5
+    JMP ExitAndClaimServiceCall
+.ShowOsmode
+    JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
+    LDX #prvOsMode - prv83:JSR readPrivateRam8300X
+.^SecPrintADecimalOSNEWLPrvDisExitAndClaimServiceCall
+    SEC:JSR printADecimal
+    JMP OSNEWLPrvDisExitAndClaimServiceCall
 }
 
 {
