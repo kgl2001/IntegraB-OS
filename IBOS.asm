@@ -2438,7 +2438,7 @@ ptr = &00 ; 2 bytes
 			
 .L8B90
     JSR rdRTCRAM								;Read data from RTC memory location X into A
-    ORA #&10
+    ORA #rtcRegBUIE
 .L8B95
     JSR wrRTCRAM								;Write data from A to RTC memory location X
     PLA
