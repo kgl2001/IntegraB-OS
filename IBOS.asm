@@ -3001,31 +3001,26 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             JMP ExitAndClaimServiceCall								;Exit Service Call
 }
-			
-;*CSAVE Command
-.csave
+
 {
-            LDA #osfindOpenOutput							;open file for output
-            JSR parseFilenameAndOpen								;get address of file name and open file
-            TAY									;move file handle to Y
-            LDX #&00								;start at RTC clock User area 0
-.L8F70      JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            JSR OSBPUT								;write data in A to file handle Y
-            INX									;next byte
-            BPL L8F70								;for 128 bytes
-            BMI CloseTransientFileHandleExitAndClaimServiceCall								;close file and exit
-}
+;*CSAVE Command
+.^csave
+    LDA #osfindOpenOutput:JSR parseFilenameAndOpen:TAY
+    LDX #0
+.SaveLoop
+    JSR readUserReg:JSR OSBPUT
+    INX:BPL SaveLoop ; write 128 bytes
+    BMI CloseTransientFileHandleExitAndClaimServiceCall ; always branch
 
 ;*CLOAD Command
-.cload
-{
+.^cload
     LDA #osfindOpenInput:JSR parseFilenameAndOpen:TAY
     LDX #0
-.loop
+.LoadLoop
     JSR OSBGET:JSR writeUserReg
-    INX:BPL loop ; read 128 bytes
+    INX:BPL LoadLoop ; read 128 bytes
 
-.^CloseTransientFileHandleExitAndClaimServiceCall
+.CloseTransientFileHandleExitAndClaimServiceCall
     JSR CloseTransientFileHandle
     JMP ExitAndClaimServiceCall
 }
