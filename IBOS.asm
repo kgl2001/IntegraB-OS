@@ -1485,7 +1485,7 @@ tabColumn = 12
 }
 			
 ; SFTODO: I haven't traced through this code yet, but I infer that it's reponsible for printing "Syntax: " followed by the *HELP definition of the command.
-.syntaxError
+.GenerateSyntaxError
 {
 .L860E      JSR PrvDis								;switch out private RAM
             LDA L00AA
@@ -2645,7 +2645,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JMP L8DCA								;report number of banks set
 			
 .L8CC0      JSR PrvDis								;switch out private RAM
-            JMP syntaxError
+            JMP GenerateSyntaxError
 			
 .L8CC6      CMP #&05
             BCC L8CCD
@@ -2907,7 +2907,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             LDA (transientCmdPtr),Y
             CMP #'?'
             BEQ L8ED6
-            JMP syntaxError
+            JMP GenerateSyntaxError
 			
 .L8ED0      JSR L8EE5
             JMP ExitAndClaimServiceCall								;Exit Service Call
@@ -2974,7 +2974,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
-.L8F47      JMP syntaxError
+.L8F47      JMP GenerateSyntaxError
 
 ;*SHX Command
 .shx
@@ -3008,7 +3008,6 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             BMI CloseHandleL00A8ExitAndClaimServiceCall								;close file and exit
 }
 
-; SFTODO LINEAR REVIEW UP TO HERE
 ;*CLOAD Command
 .cload
 {
@@ -3023,13 +3022,14 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JMP ExitAndClaimServiceCall
 }
 
+; SFTODO LINEAR REVIEW UP TO HERE
 ;*TUBE Command
 {
 .^tube      JSR parseOnOff
             BCC turnTubeOnOrOff
             LDA (transientCmdPtr),Y
             CMP #'?'
-            BNE syntaxErrorIndirect
+            BNE GenerateSyntaxErrorIndirect
             JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDA tubePresenceFlag
 .^printOnOffOSNEWLExitSC
@@ -3038,8 +3038,8 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .exitSCIndirect
             JMP ExitAndClaimServiceCall								;Exit Service Call
 
-.syntaxErrorIndirect
-            JMP syntaxError
+.GenerateSyntaxErrorIndirect
+            JMP GenerateSyntaxError
 
 .turnTubeOnOrOff
             BNE turnTubeOn
@@ -3253,7 +3253,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             INY
 .L9101      JSR convertIntegerDefaultHex
             BCC L9109
-            JMP syntaxError
+            JMP GenerateSyntaxError
 			
 .L9109      LDA (transientCmdPtr),Y
             CMP #')'
@@ -3443,7 +3443,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             LDA (transientCmdPtr),Y							;read character
             CMP #vduCr								;CR?
             BNE L9253								;not CR, so jump
-.^L9250      JMP syntaxError								;no file name, so error with 'Syntax:'
+.^L9250      JMP GenerateSyntaxError								;no file name, so error with 'Syntax:'
 
 .L9253      TYA
             PHA
@@ -5111,18 +5111,18 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             CMP #' '
             BEQ L9C3D
             CMP #vduCr
-            BEQ syntaxErrorIndirect
+            BEQ GenerateSyntaxErrorIndirect
             INY
             BNE L9C30
 .L9C3D      INY
             RTS
 }
 			
-.syntaxErrorIndirect
-	  JMP syntaxError
+.GenerateSyntaxErrorIndirect
+	  JMP GenerateSyntaxError
 
 .L9C42      JSR convertIntegerDefaultHex
-            BCS syntaxErrorIndirect
+            BCS GenerateSyntaxErrorIndirect
             LDA L00B0
             STA prvOswordBlockCopy + 8
             LDA L00B1
@@ -5160,7 +5160,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 .parseOsword4243BufferAddress
 {
 .L9C82      JSR convertIntegerDefaultHex
-            BCS syntaxErrorIndirect
+            BCS GenerateSyntaxErrorIndirect
             LDA L00B0
             STA prvOswordBlockCopy + 2
             LDA L00B1
@@ -5181,7 +5181,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             BNE L9CA7
             INY
 .L9CA7      JSR convertIntegerDefaultHex
-            BCS syntaxErrorIndirect
+            BCS GenerateSyntaxErrorIndirect
             PLP
             BEQ L9CC7
 	  ; SFTODO: I think the next three lines give the Integra-B style "exclusive" end address on *SRSAVE - do they have a similarly "incompatible-with-Master" effect on other commands calling this code, or is this adjustment required to be compatible on those other cases?
@@ -6279,15 +6279,15 @@ osfileBlock = L02EE
 {
 .LA2E4      JSR parseRomBankList
             BCC rts
-            BVC syntaxErrorIndirect
+            BVC GenerateSyntaxErrorIndirect
 .^badId
 .LA2EB      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
 	  EQUB &80
 	  EQUS "Bad id", &00
 
-.syntaxErrorIndirect
-            JMP syntaxError
+.GenerateSyntaxErrorIndirect
+            JMP GenerateSyntaxError
 
 	  ; SFTODO: Can we repurpose another nearby RTS and get rid of this?
 .rts        RTS
@@ -9178,7 +9178,7 @@ column = prvC
             PLP
             BCC LB62A
             JSR PrvDis								;switch out private RAM
-            JMP syntaxError
+            JMP GenerateSyntaxError
 			
 .LB62A      JMP PrvDisBadTime
 
