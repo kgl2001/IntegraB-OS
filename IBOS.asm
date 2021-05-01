@@ -3293,6 +3293,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
     LDA #osfindOpenUpdate:JSR parseFilenameAndOpen
     LDA #0:STA LineNumber
     JSR PrvEn
+
     ; Start by showing the existing contents of the file we're *APPENDing to.
 .ShowLineLoop
     JSR OSNEWL
@@ -3301,12 +3302,15 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 .ShowCharacterLoop
     LDY transientFileHandle:JSR OSBGET:BCS Eof
     CMP #vduCr:BEQ ShowLineLoop
+    ; Don't show control characters.
     CMP #' ':BCC ShowCharacterLoop
     CMP #vduDel:BCS ShowCharacterLoop
-    JSR OSWRCH
+    JSR OSWRCH ; flags reflect A on exit
+    ; For some reason we treat NUL as starting a new line.
     BNE ShowCharacterLoop
     BEQ ShowLineLoop ; always branch
 .Eof
+
     JSR IncrementAndPrintLineNumber
     ; Copy OswordInputLineBlock into OswordInputLineBlockCopy in main RAM for use.
     ; SQUASH: I don't believe this is necessary, we can just use OswordInputLineBlock directly.
