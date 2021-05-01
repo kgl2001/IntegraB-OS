@@ -574,9 +574,9 @@ prvTubeReleasePending = prv83 + &42 ; used during OSWORD 42; &FF means we have c
 ; SFTODO: If private RAM is battery backed, could we just keep OSMODE in
 ; prvOsMode and not bother with the copy in the low bits of userRegOsModeShx?
 ; That would save some code.
-prvSFTODORTCISH = prv83 + &44
-	prvSFTODORTCISHGenerateUserEvent = 1<<0
-	prvSFTODORTCISHGenerateServiceCall = 1<<1
+prvRtcUpdateEndedOptions = prv83 + &44
+	prvRtcUpdateEndedOptionsGenerateUserEvent = 1<<0
+	prvRtcUpdateEndedOptionsGenerateServiceCall = 1<<1
 
 prvIbosBankNumber = prv83 + &00 ; SFTODO: not sure about this, but service01 seems to set this
 prvPseudoBankNumbers = prv83 + &08 ; 4 bytes, absolute RAM bank number for the Pseudo RAM banks W, X, Y, Z; SFTODO: may be &FF indicating "no such bank" if SRSET is used?
@@ -2408,7 +2408,7 @@ ptr = &00 ; 2 bytes
 ;Test for OSBYTE &49 (73) - Integra-B calls
 ; SFTODO: Rename these labels so we have something like "CheckOsbyte49" for the test and "Osbyte49" for the actual "yes, now do it"? (Not just 49, all of them.)
 {
-prvSFTODORTCISHMask = prvSFTODORTCISHGenerateUserEvent OR prvSFTODORTCISHGenerateServiceCall
+prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvRtcUpdateEndedOptionsGenerateServiceCall
 
 .^osbyte49
     CMP #&49:BEQ osbyte49Internal
@@ -2432,20 +2432,20 @@ prvSFTODORTCISHMask = prvSFTODORTCISHGenerateUserEvent OR prvSFTODORTCISHGenerat
     ; location is to set the location to (<old value> AND Y) EOR X and return the old value in
     ; X. This code *doesn't* follow this pattern.
     ;
-    ; This code does prvSFTODORTCISH = (((X >> 2) AND prvSFTODORTCISH) EOR X) AND %11 and
-    ; returns the original value of prvSFTODORTCISH in both X and Y. This effectively means
-    ; that if X=%abcd, %ab masks off the bits of prvSFTODORTCISH of interest and %cd toggles
-    ; them, so if %ab == 0 we set prvSFTODORTCISH to %cd.
+    ; This code does prvRtcUpdateEndedOptions = (((X >> 2) AND prvRtcUpdateEndedOptions) EOR X) AND %11 and
+    ; returns the original value of prvRtcUpdateEndedOptions in both X and Y. This effectively means
+    ; that if X=%abcd, %ab masks off the bits of prvRtcUpdateEndedOptions of interest and %cd toggles
+    ; them, so if %ab == 0 we set prvRtcUpdateEndedOptions to %cd.
     ;
-    ; We then set rtcRegBUIE iff prvSFTODORTCISH is non-0; this enables the RTC update ended
+    ; We then set rtcRegBUIE iff prvRtcUpdateEndedOptions is non-0; this enables the RTC update ended
     ; interrupt iff RtcInterruptHandler has something to do when it triggers.
-    LDX #prvSFTODORTCISH - prv83:JSR readPrivateRam8300X
+    LDX #prvRtcUpdateEndedOptions - prv83:JSR readPrivateRam8300X
     PHA
     STA oswdbtY
     LDA oswdbtX:LSR A:LSR A
     AND oswdbtY
     EOR oswdbtX
-    AND #prvSFTODORTCISHMask
+    AND #prvRtcUpdateEndedOptionsMask
     JSR writePrivateRam8300X
     LDX #rtcRegB
     CMP #0
@@ -8960,14 +8960,14 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     PLA
 .NoAlarmInterrupt
     ASL A:BCC NoUpdateEndedInterrupt
-    LDX #prvSFTODORTCISH - prv83:JSR readPrivateRam8300X
+    LDX #prvRtcUpdateEndedOptions - prv83:JSR readPrivateRam8300X
     PHA
-    AND #prvSFTODORTCISHGenerateUserEvent
+    AND #prvRtcUpdateEndedOptionsGenerateUserEvent
     BEQ DontGenerateUserEvent
     LDY #eventNumUser:JSR OSEVEN
 .DontGenerateUserEvent
     PLA
-    AND #prvSFTODORTCISHGenerateServiceCall
+    AND #prvRtcUpdateEndedOptionsGenerateServiceCall
     BEQ DontGenerateServiceCall
     LDX #serviceUpdateEnded:JSR osEntryOsbyteIssueServiceRequest
 .DontGenerateServiceCall
