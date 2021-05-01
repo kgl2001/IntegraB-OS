@@ -9862,16 +9862,14 @@ ibosCNPVIndex = 6
             RTS
 }
 
-; Clean up and return from a vector handler; we have dealt with the call and
-; we're not going to call the parent handler. At this point the stack should be
-; exactly as described in the big comment in vectorEntry; note that this code is
-; reached via JMP so there's no extra return address on the stack as there is in
-; restoreOrigVectorRegs.
+; Clean up and return from a vector handler; we have dealt with the call and we're not going to
+; call the parent handler. At this point the stack should be exactly as described in the big
+; comment in vectorEntry; note that this code is reached via JMP so there's no extra return
+; address on the stack as there is in restoreOrigVectorRegs.
 .returnFromVectorHandler
 {
-; SFTODO: This is really just shuffling the stack down to remove the return
-; address from "JSR ramCodeStubCallIBOS"; can we rewrite it more compactly using
-; a loop?
+; SQUASH: This is really just shuffling the stack down to remove the return address from "JSR
+; ramCodeStubCallIBOS"; can we rewrite it more compactly using a loop?
 .LB9E9      TSX
             LDA L0107,X
             STA L0109,X
@@ -10688,6 +10686,7 @@ ptr = &A8
 }
 
 {
+; SFTODO: Do I have ...ReadPtr and ...WritePtr the wrong way round???
 ; Advance prvPrintBufferWritePtr by one, wrapping round at the end of each bank
 ; and wrapping round at the end of the bank list.
 ; SFTODO: This has only one caller
