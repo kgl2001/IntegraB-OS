@@ -140,7 +140,8 @@ userRegKeyboardRepeat = &0D ; 0-7: Keyboard repeat
 userRegPrinterIgnore = &0E ; 0-7: Printer ignore
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7: Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
-userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX SFTODO: in writeRtcTime we test b4 of this value, so what's that all about? It looks like it has something to do with what we write to b0 of rtcRegB (rtcRegBDSE - if this is 1, automatic adjustments are made for daylight savings time).
+userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX / b4: automatic daylight saving time adjust
+; SFTODO: b4 of userRegOsModeShx doesn't seem to be exposed via *CONFIGURE/*STATUS - should it be?
 userRegAlarm = &33 ; SFTODO? bits 0-5??
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
@@ -6864,9 +6865,9 @@ osfileBlock = L02EE
             LDX #userRegOsModeShx
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LDX #&00
-            AND #&10
+            AND #&10 ; mask off DST bit of userRegOsModeShx SFTODO: named constant?
             BEQ LA6BB
-            LDX #&01 ; SQUASH: Just do INX
+            LDX #rtcRegBDSE ; SQUASH: Just do ASSERT rtcRegBDSE == 1:INX
 .LA6BB      STX prvTmp2
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
