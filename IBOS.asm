@@ -1861,7 +1861,7 @@ firstDigitCmdPtrY = &BB
             BIT rts									;set V
 .rts        RTS
 
-.L8806      JMP badParameter
+.L8806      JMP GenerateBadParameter
 }
 
 .errorNotFound
@@ -2657,7 +2657,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 			
 .L8CC6      CMP #&05
             BCC L8CCD
-            JMP badParameter
+            JMP GenerateBadParameter
 			
 .L8CCD      PHA
             JSR checkPrinterBufferEmpty								;check if print buffer is empty, and error if something is already in the buffer.
@@ -2927,10 +2927,8 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 
 .setOsmodeA
 {
-    CMP #&00
-    BEQ L8F01
-    CMP #&06
-    BCS L8EFE
+    CMP #0:BEQ setOsmode0
+    CMP #6:BCS GenerateBadParameterIndirect
     PHA
     JSR PrvEn								;switch in private RAM
     LDA prvOsMode								;read OSMODE
@@ -2942,11 +2940,10 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JSR PrvDis								;switch out private RAM
     RTS
 			
-			
-.L8EFE
-    JMP badParameter
+.GenerateBadParameterIndirect
+    JMP GenerateBadParameter
 
-.L8F01
+.setOsmode0
     JSR PrvEn								;switch in private RAM
     LDA prvOsMode								;read OSMODE
     BEQ L8EFA
@@ -3527,7 +3524,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 	  ; SFTODO: Can X be modified by the service call? beebwiki suggests not, but maybe we're extending the protocol or I'm missing something? Documentation on these service calls seems a bit thin on the ground.
             CPX #&00
             BEQ exitSCIndirect
-.^badParameter
+.^GenerateBadParameter
 .L92E3      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
 	  EQUB &FE
@@ -3908,11 +3905,11 @@ ENDIF
 .convertIntegerDefaultDecimalChecked
 {
 .L9502      JSR convertIntegerDefaultDecimal
-            BCS badParameterIndirect
+            BCS GenerateBadParameterIndirect
             RTS
 			
-.badParameterIndirect
-            JMP badParameter
+.GenerateBadParameterIndirect
+            JMP GenerateBadParameter
 }
 
 
