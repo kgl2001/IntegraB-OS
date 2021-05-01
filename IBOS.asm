@@ -9826,7 +9826,7 @@ ibosCNPVIndex = 6
 		EQUB &2A
 		EQUW RemvHandler-1
 		EQUB &2C
-		EQUW cnpvHandler-1
+		EQUW CnpvHandler-1
 		EQUB &2E
 
 ; Control arrives here via ramCodeStub when one of the vectors we've claimed is
@@ -10504,7 +10504,7 @@ ptr = &A8
 }
 
 ; SQUASH: Would it be possible to factor out the common-ish code at the start of
-; InsvHandler/RemvHandler/cnpvHandler to save space?
+; InsvHandler/RemvHandler/CnpvHandler to save space?
 .RemvHandler
 {
     TSX:LDA L0102,X ; get original X=buffernumber
@@ -10550,55 +10550,38 @@ ptr = &A8
     JMP returnFromVectorHandler
 }
 
-.cnpvHandler
+.CnpvHandler
 {
-.LBDF0	  TSX
-            LDA L0102,X ; get original X=buffer number
-            CMP #bufNumPrinter
-            BEQ LBDFD
-            LDA #ibosCNPVIndex
-            JMP forwardToParentVectorTblEntry
+    TSX:LDA L0102,X ; get original X=buffer number
+    CMP #bufNumPrinter:BEQ IsPrinterBuffer
+    LDA #ibosCNPVIndex:JMP forwardToParentVectorTblEntry
 
-.LBDFD      LDA ramselCopy
-            PHA
-            JSR PrvEn								;switch in private RAM
-            TSX
-            LDA L0107,X ; get original flags
-            AND #flagV
-            BEQ cnpvCount
-            ; We're purging the buffer.
-            LDX #prvPrintBufferPurgeOption - prv83
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            BEQ purgeOff
-            JSR purgePrintBuffer
-.purgeOff   JMP RestoreRamselClearPrvenReturnFromVectorHandler
+.IsPrinterBuffer
+    LDA ramselCopy:PHA
+    JSR PrvEn
+    TSX:LDA L0107,X:AND #flagV:BEQ Count ; test V in stacked flags from caller
+    ; We're purging the buffer.
+    LDX #prvPrintBufferPurgeOption - prv83:JSR readPrivateRam8300X:BEQ PurgeOff
+    JSR purgePrintBuffer
+.PurgeOff
+    JMP RestoreRamselClearPrvenReturnFromVectorHandler
 
-.cnpvCount
-.LBE19      LDA L0107,X ; get original flags
-            AND #flagC
-            BNE cnpvCountSpaceLeft
-            ; We're counting the entries in the buffer; return them as 16-bit value YX.
-            JSR getPrintBufferUsed
-            TXA
-            TSX
-            STA L0103,X ; overwrite stacked X, so we return A to caller in X
-            TYA
-            STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
-            JMP RestoreRamselClearPrvenReturnFromVectorHandler
-}
+.Count
+    LDA L0107,X:AND #flagC:BNE CountSpaceLeft ; test C in stacked flags from caller
+    ; We're counting the entries in the buffer; return them as 16-bit value YX.
+    JSR getPrintBufferUsed
+    TXA:TSX:STA L0103,X ; overwrite stacked X, so we return A to caller in X
+    TYA:STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
+    JMP RestoreRamselClearPrvenReturnFromVectorHandler
 
-.cnpvCountSpaceLeft
-{
-            ; We're counting the space left in the buffer; return that as 16-bit value YX.
-.LBE2F      JSR getPrintBufferFree
-            ; SFTODO: Following code is identical to fragment just above, we
-            ; could JMP to it to avoid this duplication.
-            TXA
-            TSX
-            STA L0103,X ; overwrite stacked X, so we return A to caller in X
-            TYA
-            STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
-            JMP RestoreRamselClearPrvenReturnFromVectorHandler
+.CountSpaceLeft
+    ; We're counting the space left in the buffer; return that as 16-bit value YX.
+    JSR getPrintBufferFree
+    ; SQUASH: Following code is identical to fragment just above, we could JMP to it to avoid
+    ; this duplication.
+    TXA:TSX:STA L0103,X ; overwrite stacked X, so we return A to caller in X
+    TYA:STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
+    JMP RestoreRamselClearPrvenReturnFromVectorHandler
 }
 
 ; SFTODO: This only has one caller
@@ -10927,6 +10910,8 @@ SAVE "IBOS-01.rom", start, end
 
 ; SFTODO: Enhancement idea - allow "*CO." as an abbreviation for *CONFIGURE. The Master accepts
 ; this, and it does trip me up when using IBOS.
+
+; SFTODO: Minor inconsistency between "PrintBuffer" and "PrinterBuffer" in various labels
 
 ;; Local Variables:
 ;; fill-column: 95
