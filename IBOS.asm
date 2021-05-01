@@ -10528,7 +10528,7 @@ ptr = &A8
     JSR checkPrintBufferEmpty:BCC PrintBufferNotEmpty
     ; SQUASH: Some similarity with InsvHandler here, could we factor out common code?
     LDA L0107,X:ORA #flagC:STA L0107,X ; modify stacked flags so C is set
-    JMP restoreRamselClearPrvenReturnFromVectorHandler
+    JMP restoreRamselClearPrvenReturnFromVectorHandler ; SQUASH: BNE ; always branch
 
 ; SFTODO: The following code doesn't make sense, we seem to be returning in Y for examine and A
 ; for remove, which is the wrong way round. What am I missing?
