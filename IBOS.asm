@@ -2432,13 +2432,13 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     ; location is to set the location to (<old value> AND Y) EOR X and return the old value in
     ; X. This code *doesn't* follow this pattern.
     ;
-    ; This code does prvRtcUpdateEndedOptions = (((X >> 2) AND prvRtcUpdateEndedOptions) EOR X) AND %11 and
-    ; returns the original value of prvRtcUpdateEndedOptions in both X and Y. This effectively means
-    ; that if X=%abcd, %ab masks off the bits of prvRtcUpdateEndedOptions of interest and %cd toggles
-    ; them, so if %ab == 0 we set prvRtcUpdateEndedOptions to %cd.
+    ; This code does prvRtcUpdateEndedOptions = (((X >> 2) AND prvRtcUpdateEndedOptions) EOR X)
+    ; AND %11 and returns the original value of prvRtcUpdateEndedOptions in both X and Y. This
+    ; effectively means that if X=%abcd, %ab masks off the bits of prvRtcUpdateEndedOptions of
+    ; interest and %cd toggles them, so if %ab == 0 we set prvRtcUpdateEndedOptions to %cd.
     ;
-    ; We then set rtcRegBUIE iff prvRtcUpdateEndedOptions is non-0; this enables the RTC update ended
-    ; interrupt iff RtcInterruptHandler has something to do when it triggers.
+    ; We then set rtcRegBUIE iff prvRtcUpdateEndedOptions is non-0; this enables the RTC update
+    ; ended interrupt iff RtcInterruptHandler has something to do when it triggers.
     LDX #prvRtcUpdateEndedOptions - prv83:JSR readPrivateRam8300X
     PHA
     STA oswdbtY
@@ -2449,15 +2449,14 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JSR writePrivateRam8300X
     LDX #rtcRegB
     CMP #0
-    BNE L8B90
+    BNE EnableUpdateEndedInterrupt
     JSR ReadRtcRam
     NOT_AND rtcRegBUIE
-    JMP L8B95
-			
-.L8B90
+    JMP Common
+.EnableUpdateEndedInterrupt
     JSR ReadRtcRam
     ORA #rtcRegBUIE
-.L8B95
+.Common
     JSR WriteRtcRam
     PLA
     STA oswdbtX
