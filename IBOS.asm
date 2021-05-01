@@ -2408,6 +2408,8 @@ ptr = &00 ; 2 bytes
 ;Test for OSBYTE &49 (73) - Integra-B calls
 ; SFTODO: Rename these labels so we have something like "CheckOsbyte49" for the test and "Osbyte49" for the actual "yes, now do it"? (Not just 49, all of them.)
 {
+prvSFTODORTCISHMask = prvSFTODORTCISHGenerateUserEvent OR prvSFTODORTCISHGenerateServiceCall
+
 .^osbyte49
     CMP #&49:BEQ osbyte49Internal
     JMP exitSCa
@@ -2443,7 +2445,7 @@ ptr = &00 ; 2 bytes
     LDA oswdbtX:LSR A:LSR A
     AND oswdbtY
     EOR oswdbtX
-    AND #%11
+    AND #prvSFTODORTCISHMask
     JSR writePrivateRam8300X
     LDX #rtcRegB
     CMP #0
