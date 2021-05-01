@@ -648,7 +648,7 @@ flagZ = &02
 flagV = &40
 
 ; Convenience macro to avoid the annoyance of writing this out every time.
-MACRO NOT_AND n
+MACRO ANDNOT n
              AND #NOT(n) AND &FF
 ENDMACRO
 
@@ -2471,7 +2471,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     CMP #0
     BNE EnableUpdateEndedInterrupt
     JSR ReadRtcRam
-    NOT_AND rtcRegBUIE
+    ANDNOT rtcRegBUIE
     JMP Common
 .EnableUpdateEndedInterrupt
     JSR ReadRtcRam
@@ -3144,11 +3144,11 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .pageOutPrv1
 .PrvDis	  PHA
             LDA romselCopy
-            NOT_AND romselPrvEn                                                                     ;Clear PrvEn
+            ANDNOT romselPrvEn                                                                     ;Clear PrvEn
             STA romselCopy
             STA romsel
             LDA ramselCopy
-            NOT_AND ramselPrvs1							;Clear PRVS1
+            ANDNOT ramselPrvs1							;Clear PRVS1
             STA ramselCopy
             STA ramsel
             PLA
@@ -6857,7 +6857,7 @@ osfileBlock = L02EE
     ; Force SET (set mode), DM (binary mode) and 2412 (24 hour mode) on in register B ad
     ; force SQWE (square wave enable) and DSE (auto daylight savings adjust) off.
     LDX #rtcRegB:JSR ReadRtcRam
-    NOT_AND rtcRegBSET OR rtcRegBSQWE OR rtcRegBDM OR rtcRegB2412 OR rtcRegBDSE
+    ANDNOT rtcRegBSET OR rtcRegBSQWE OR rtcRegBDM OR rtcRegB2412 OR rtcRegBDSE
     ORA #rtcRegBSET OR rtcRegBDM OR rtcRegB2412
     JSR WriteRtcRam
     ; Actually set the time.
@@ -6875,7 +6875,7 @@ osfileBlock = L02EE
 .NoAutoDSTAdjust
     STX prvTmp2
     LDX #rtcRegB:JSR ReadRtcRam
-    NOT_AND rtcRegBSET OR rtcRegBDSE
+    ANDNOT rtcRegBSET OR rtcRegBDSE
     ORA prvTmp2
     JMP WriteRtcRam
 }
@@ -9191,7 +9191,7 @@ column = prvC
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR ReadRtcRam								;Read data from RTC memory location X into A
-            NOT_AND rtcRegBPIE OR rtcRegBAIE
+            ANDNOT rtcRegBPIE OR rtcRegBAIE
             JSR WriteRtcRam								;Write data from A to RTC memory location X
             JMP LB6E3
 			
@@ -9199,7 +9199,7 @@ column = prvC
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR ReadRtcRam								;Read data from RTC memory location X into A
-            NOT_AND rtcRegBPIE OR rtcRegBAIE
+            ANDNOT rtcRegBPIE OR rtcRegBAIE
             ORA #rtcRegBAIE
             JSR WriteRtcRam								;Write data from A to RTC memory location X
             JMP LB6E3
@@ -9571,7 +9571,7 @@ column = prvC
             STA prvOswordBlockCopy + 1
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR ReadRtcRam								;Read data from RTC memory location X into A
-            NOT_AND rtcRegBPIE OR rtcRegBAIE
+            ANDNOT rtcRegBPIE OR rtcRegBAIE
             ORA prvOswordBlockCopy + 1
             JSR WriteRtcRam								;Write data from A to RTC memory location X
             SEC
@@ -10195,12 +10195,12 @@ ibosCNPVIndex = 6
             PHA                                                                                     ;save it again
             JSR maybeSwapShadow2
             LDA ramselCopy								;get RAM copy of RAMSEL
-            NOT_AND ramselShen							;clear Shadow RAM enable bit
+            ANDNOT ramselShen							;clear Shadow RAM enable bit
             STA ramselCopy								;and save RAM copy of RAMSEL
             STA ramsel							          ;save RAMSEL
             PLA                                                                                     ;get original OSWRCH A=new mode
             PHA                                                                                     ;save it again
-            NOT_AND shadowModeOffset							;clear Shadow RAM enable bit SFTODO: isn't this redundant? We'd have done "BCS enteringShadowMode" above if top bit was set, wouldn't we?
+            ANDNOT shadowModeOffset							;clear Shadow RAM enable bit SFTODO: isn't this redundant? We'd have done "BCS enteringShadowMode" above if top bit was set, wouldn't we?
             LDX #prvSFTODOMODE - prv83
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #modeChangeStateEnteringNonShadowMode
@@ -10353,7 +10353,7 @@ ptr = &A8
             TXA
             STA (ptr),Y
             LDA romselCopy
-            EOR #&80 ; SFTODO: Why not just NOT_AND romselMemsel?
+            EOR #&80 ; SFTODO: Why not just ANDNOT romselMemsel?
             STA romselCopy
             STA romsel
             PLA
@@ -10427,7 +10427,7 @@ ptr = &A8
             STA ramselCopy								;store at RAMID
             STA ramsel			          				;store at RAMSEL
             LDA vduStatus								;get VDU status
-            NOT_AND vduStatusShadow							;clear bit 4
+            ANDNOT vduStatusShadow							;clear bit 4
             STA vduStatus								;save VDU status
             LDA #modeChangeStateNone
             STA modeChangeState
@@ -10517,7 +10517,7 @@ ptr = &A8
             ; Return to caller with carry clear to indicate insertion succeeded.
             TSX
             LDA L0107,X ; get original flags
-            NOT_AND flagC
+            ANDNOT flagC
             STA L0107,X ; modify original flags so C is clear
             JMP restoreRamselClearPrvenReturnFromVectorHandler
 }
@@ -10547,7 +10547,7 @@ ptr = &A8
 ; SFTODO: The following code doesn't make sense, we seem to be returning in Y
 ; for examine and A for remove, which is the wrong way round. What am I missing?
 .LBDB8      LDA L0107,X ; get original flags
-            NOT_AND flagC
+            ANDNOT flagC
             STA L0107,X ; modify original flags so C is clear
             JSR ldaPrintBufferReadPtr
             TSX
@@ -10580,7 +10580,7 @@ ptr = &A8
             STA ramselCopy
             STA ramsel
             LDA romselCopy
-            NOT_AND romselPrvEn
+            ANDNOT romselPrvEn
             STA romselCopy
             STA romsel
             JMP returnFromVectorHandler
