@@ -2915,7 +2915,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     LDA (transientCmdPtr),Y:CMP #'?':BEQ ShowOsmode
     JMP GenerateSyntaxError
 .ParsedOK
-    JSR setOsmodeA
+    JSR SetOsmodeA
     JMP ExitAndClaimServiceCall
 .ShowOsmode
     JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
@@ -2925,19 +2925,18 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 }
 
-.setOsmodeA
+.SetOsmodeA
 {
     CMP #0:BEQ setOsmode0
     CMP #6:BCS GenerateBadParameterIndirect
     PHA
     JSR PrvEn								;switch in private RAM
-    LDA prvOsMode								;read OSMODE
-    BEQ L8F17
+    LDA prvOsMode:BEQ L8F17
 .L8EF6
-    PLA
-    STA prvOsMode								;write OSMODE
-.L8EFA
-    JSR PrvDis								;switch out private RAM
+    PLA:STA prvOsMode
+.CommonEnd
+    ; SQUASH: Couldn't we JMP PrvDis?
+    JSR PrvDis
     RTS
 			
 .GenerateBadParameterIndirect
@@ -2946,19 +2945,18 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .setOsmode0
     JSR PrvEn								;switch in private RAM
     LDA prvOsMode								;read OSMODE
-    BEQ L8EFA
+    BEQ CommonEnd
     JSR checkPrinterBufferEmpty
     LDA #&00
     STA prvOsMode								;write OSMODE
     JSR SFTODOZZ
-    JMP L8EFA
+    JMP CommonEnd
 			
 .L8F17
     JSR checkPrinterBufferEmpty
-    PLA
-    STA prvOsMode								;write OSMODE
+    PLA:STA prvOsMode
     JSR LBC98
-    JMP L8EFA
+    JMP CommonEnd
 }
 			
 ;*SHADOW Command
@@ -3194,7 +3192,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JMP L90DE
 			
 .L90A7      LDA #&04
-            JSR setOsmodeA
+            JSR SetOsmodeA
             LDA #&00
             STA osShadowRamFlag
             LDX #&3D								;select SHX register
