@@ -321,6 +321,9 @@ romselCopy = &F4
 ramsel = SHEILA + &34
 ramselCopy = &037F ; unused VDU variable workspace repurposed by IBOS
 
+rtcAddress = SHEILA + &38
+rtcData = SHEILA + &3C
+
 tubeEntry = &0406
 tubeEntryClaim = &C0 ; plus claim ID
 tubeEntryRelease = &80 ; plus claim ID
@@ -6660,12 +6663,12 @@ osfileBlock = L02EE
             LSR A
             ROR prvTmp
             ORA #&80
-            STA SHEILA+&38
+            STA rtcAddress
             LDA prvTmp
             LSR A
             LSR A
             ORA #&40
-            STA SHEILA+&38
+            STA rtcAddress
             JSR LA664
             PLP
             RTS
@@ -6812,7 +6815,7 @@ osfileBlock = L02EE
 .^rdRTCRAM   PHP
             SEI
             JSR LA66C								;Set RTC address according to X
-            LDA SHEILA+&3C								;Strobe out data
+            LDA rtcData								;Strobe out data
             JSR LA664
             PLP
             RTS
@@ -6820,7 +6823,7 @@ osfileBlock = L02EE
 ;write to RTC RAM (Addr = X, Data = A)
 .^wrRTCRAM   PHP
             JSR LA66C								;Set RTC address according to X
-            STA SHEILA+&3C								;Strobe in data
+            STA rtcData								;Strobe in data
             JSR LA664
             PLP
             RTS
@@ -6839,7 +6842,7 @@ osfileBlock = L02EE
 			
 .LA66C      SEI
             JSR LA661								;2 x NOP delay
-            STX SHEILA+&38								;Strobe in address
+            STX rtcAddress								;Strobe in address
             JMP Nop3								;3 x NOP delay
 }
 
@@ -6987,10 +6990,10 @@ osfileBlock = L02EE
     LDX #rtcRegA
 .loop
     JSR Nop3								;3 x NOP delay
-    STX SHEILA+&38								;Strobe in address
+    STX rtcAddress								;Strobe in address
     JSR Nop3								;3 x NOP delay
     ASSERT rtcRegAUIP == &80
-    LDA SHEILA+&3C
+    LDA rtcData
     BMI loop ; try again if update in progress
     RTS
 }
@@ -8923,9 +8926,9 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 {
 	  DEX:ASSERT rtcRegB == rtcRegC - 1
             JSR Nop3								;3 x NOP delay
-            STX SHEILA+&38						          	;Strobe in address
+            STX rtcAddress						          	;Strobe in address
             JSR Nop3								;3 x NOP delay
-            AND SHEILA+&3C							          ;Strobe out data
+            AND rtcData							          ;Strobe out data
             JSR LA664
             ASL A
             ASL A
