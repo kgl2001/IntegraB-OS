@@ -3287,6 +3287,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .append
 {
 ; SFTODO: Express these as transientWorkspace + n, to document what area of memory they live in?
+LineLengthIncludingCr = &A9
 LineNumber = &AA
 OswordInputLineBlockCopy = &AB ; 5 bytes
 
@@ -3311,6 +3312,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
     BEQ ShowLineLoop ; always branch
 .Eof
 
+    ; Now accept lines of input from the keyboard and append them to the file.
 .AppendLoop
     JSR IncrementAndPrintLineNumber
     ; Copy OswordInputLineBlock into OswordInputLineBlockCopy in main RAM for use.
@@ -3320,18 +3322,16 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
     LDA OswordInputLineBlock,Y:STA OswordInputLineBlockCopy,Y
     DEY:BPL CopyLoop
     LDX #lo(OswordInputLineBlockCopy):LDY #hi(OswordInputLineBlockCopy)
-    LDA #oswordInputLine:JSR OSWORD
-    BCS L9196
-    INY
-    STY L00A9
+    LDA #oswordInputLine:JSR OSWORD:BCS Escape
+    INY:STY LineLengthIncludingCr
     LDX #&00
 .L9183
     LDA prvInputBuffer,X:LDY transientFileHandle:JSR OSBPUT
     CMP #vduCr:BEQ AppendLoop
     INX
-    CPX L00A9:BNE L9183
+    CPX LineLengthIncludingCr:BNE L9183
     BEQ AppendLoop ; always branch
-.L9196
+.Escape
     LDA #osbyteAcknowledgeEscape
     JSR OSBYTE
     JSR PrvDis
