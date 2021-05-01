@@ -2418,7 +2418,8 @@ ptr = &00 ; 2 bytes
     JSR LB35E
     JMP exitSC
 .XNeFE
-    LDX #&44:JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
+    LDX #&44
+    JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
     PHA
     STA oswdbtY
     LDA oswdbtX
@@ -2428,7 +2429,7 @@ ptr = &00 ; 2 bytes
     EOR oswdbtX
     AND #&03
     JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
-    LDX #&0B
+    LDX #rtcRegB
     CMP #&00
     BNE L8B90
     JSR rdRTCRAM								;Read data from RTC memory location X into A
