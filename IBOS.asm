@@ -2970,7 +2970,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             CMP #'?'								;check for '='
             BEQ L8F38								;branch if set
             CMP #vduCr								;check for no parameters
-            BNE L8F47
+            BNE GenerateSyntaxErrorIndirect2
             LDA #&00								;if no parameters then
             JMP L8F41								;set &27F to 0
 			
@@ -2982,24 +2982,20 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
-.L8F47      JMP GenerateSyntaxError
+.GenerateSyntaxErrorIndirect2
+    JMP GenerateSyntaxError
 
 ;*SHX Command
 .shx
 {
-            JSR parseOnOff
-            BCC L8F60
-            LDA (transientCmdPtr),Y
-            CMP #'?'
-            BNE L8F47
-            JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
-            LDX #prvShx - prv83
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            JMP printOnOffOSNEWLExitSC
-			
-.L8F60      LDX #&3D								;select SHX register (&08: On, &FF: Off)
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+    JSR parseOnOff:BCC ParsedOK
+    LDA (transientCmdPtr),Y:CMP #'?':BNE GenerateSyntaxErrorIndirect2
+    JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
+    LDX #prvShx - prv83:JSR readPrivateRam8300X
+    JMP printOnOffOSNEWLExitSC
+.ParsedOK
+    LDX #prvShx - prv83:JSR writePrivateRam8300X
+    JMP ExitAndClaimServiceCall
 }
 
 {
