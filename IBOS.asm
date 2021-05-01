@@ -8925,10 +8925,8 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .rtcInterruptHandler
 {
 	  DEX:ASSERT rtcRegB == rtcRegC - 1
-            JSR Nop3								;3 x NOP delay
-            STX rtcAddress						          	;Strobe in address
-            JSR Nop3								;3 x NOP delay
-            AND rtcData							          ;Strobe out data
+            JSR Nop3:STX rtcAddress
+            JSR Nop3:AND rtcData
             JSR LA664
             ASL A
             ASL A
