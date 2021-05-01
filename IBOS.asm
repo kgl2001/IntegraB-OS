@@ -6831,7 +6831,7 @@ osfileBlock = L02EE
             RTS
 
 .^LA664      PHA
-            LDA #&0D								;Select 'Register D' register on RTC: Register &0D
+            LDA #&0D ; SFTODO: except for burning two CPU cycles, this seems redundant - note we PHA/PLA and LA66C does not use A
             JSR LA66C
             PLA
             RTS
