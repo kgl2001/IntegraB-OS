@@ -182,6 +182,7 @@ transientDateSFTODO1 = &AB ; SFTODO!? 2 bytes?
 vduStatus = &D0
 vduStatusShadow = &10
 vduGraphicsCharacterCell = &D6 ; 2 bytes
+romActiveLastBrk = &024A
 negativeVduQueueSize = &026A
 tubePresenceFlag = &027A ; SFTODO: allmem says 0=inactive, is there actually a specific bit or value for active? what does this code rely on?
 osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force shadow modes (note that AllMem.txt seems to have this wrong, at least my copy does)
@@ -193,6 +194,7 @@ romPrivateWorkspaceTable = &0DF0
 
 romTypeSrData = 2 ; ROM type byte used for banks allocated to pseudo-addressing via *SRDATA
 
+osBrkStackPointer = &F0
 osCmdPtr = &F2
 osErrorPtr = &FD
 osRdRmPtr = &F6
@@ -9623,11 +9625,19 @@ column = prvC
     JMP ExitServiceCall
 
 ;Error (BRK) occurred - Service call &06
+; SFTODO: I really don't know what's going on here. We seem to be checking for an error at
+; &FFB4, but that's in the OS ROM in the middle of an instruction. We also do some weird
+; stack-swizzling between checking the low and high bytes. My best guess is that this is trying
+; to work around a bug (or at least incompatibility) in some other ROM, perhaps one which
+; unintentionally triggers a BRK at &FFB4 (it's worth noting &FFB3 is 0=BRK). Maybe something
+; to do with shadow RAM given the "workaround" seems to set romselMemsel. Perhaps the
+; bug/incompatibility we're trying to workaround is in some application, not a ROM. Might be
+; worth asking on stardot about this.
 .^service06
     LDA osErrorPtr + 1
     CMP #&FF ; SFTODO: magic number?
     BNE ExitServiceCallIndirect
-    LDX oswdbtX ; SFTODO: seems a bit odd using this address in this service call
+    LDX osBrkStackPointer
     TXS
     LDA #&88
     PHA
@@ -9639,7 +9649,7 @@ column = prvC
     PHA
     LDA #&FF
     STA L0101,X
-    LDA L024A
+    LDA romActiveLastBrk
     STA L0102,X
     LDA osErrorPtr
     CMP #&B4 ; SFTODO: MAGIC NUMBER!?
