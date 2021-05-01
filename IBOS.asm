@@ -8948,6 +8948,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     PLA
 .NoAlarmInterrupt
     ASL A:BCC NoUpdateEndedInterrupt
+    ; SFTODO: I've talked about "alarms" in the following code but this is actually "update ended" - what does that mean? serviceAlarm for example may be misnamed.
     LDX #prvSFTODORTCISH - prv83:JSR readPrivateRam8300X
     PHA
     AND #&01 ; SFTODO: So b0 of prvSFTODORTCISH has something to do with triggering an OS event when the RTC alarm goes off?
@@ -8957,8 +8958,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     PLA
     AND #&02 ; SFTODO: So it like b1 of prvSFTODORTCISH has something to do with enabling a service call to be issued when the RTC alarm goes off
     BEQ DontGenerateServiceCall
-    LDX #serviceAlarm
-    JSR osEntryOsbyteIssueServiceRequest
+    LDX #serviceAlarm:JSR osEntryOsbyteIssueServiceRequest
 .DontGenerateServiceCall
 .NoUpdateEndedInterrupt
     JMP exitSC
