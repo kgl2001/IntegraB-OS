@@ -6848,42 +6848,32 @@ osfileBlock = L02EE
 }
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
+; SFTODO: Update comment to reflect the other changes it makes?
 .WriteRtcTime
 {
-.LA676      LDX #rtcRegA								;Select 'Register A' register on RTC: Register &0A
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            ORA #rtcRegADV2 OR rtcRegADV1 OR rtcRegADV0
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            AND #rtcRegBPIE OR rtcRegBAIE OR rtcRegBUIE
-            ORA #rtcRegBSET OR rtcRegBDM OR rtcRegB2412
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            LDX #rtcRegSeconds								;Select 'Seconds' register on RTC: Register &00
-            LDA prvDateSeconds								;Get 'Seconds' from &822F
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            LDX #rtcRegMinutes								;Select 'Minutes' register on RTC: Register &02
-            LDA prvDateMinutes								;Get 'Minutes' from &822E
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            LDX #rtcRegHours								;Select 'Hours' register on RTC: Register &04
-            LDA prvDateHours								;Get 'Hours' from &822D
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            LDX #rtcRegA								;Select 'Register A' register on RTC: Register &0A
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            AND #rtcRegADV1
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            LDX #userRegOsModeShx
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            LDX #&00
-            AND #&10 ; mask off DST bit of userRegOsModeShx SFTODO: named constant?
-            BEQ LA6BB
-            LDX #rtcRegBDSE ; SQUASH: Just do ASSERT rtcRegBDSE == 1:INX
-.LA6BB      STX prvTmp2
-            LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            NOT_AND rtcRegBSET OR rtcRegBDSE
-            ORA prvTmp2
-            JMP WriteRtcRam								;Write data from A to RTC memory location X
+    LDX #rtcRegA:JSR ReadRtcRam
+    ORA #rtcRegADV2 OR rtcRegADV1 OR rtcRegADV0
+    JSR WriteRtcRam
+    LDX #rtcRegB:JSR ReadRtcRam
+    AND #rtcRegBPIE OR rtcRegBAIE OR rtcRegBUIE
+    ORA #rtcRegBSET OR rtcRegBDM OR rtcRegB2412
+    JSR WriteRtcRam
+    LDX #rtcRegSeconds:LDA prvDateSeconds:JSR WriteRtcRam
+    LDX #rtcRegMinutes:LDA prvDateMinutes:JSR WriteRtcRam
+    LDX #rtcRegHours:LDA prvDateHours:JSR WriteRtcRam
+    LDX #rtcRegA:JSR ReadRtcRam
+    AND #rtcRegADV1
+    JSR WriteRtcRam
+    LDX #userRegOsModeShx:JSR readUserReg
+    LDX #0
+    AND #&10:BEQ NoAutoDSTAdjust ; test auto DST bit of userRegOsModeShx SFTODO: named constant?
+    LDX #rtcRegBDSE ; SQUASH: Just do ASSERT rtcRegBDSE == 1:INX
+.NoAutoDSTAdjust
+    STX prvTmp2
+    LDX #rtcRegB:JSR ReadRtcRam
+    NOT_AND rtcRegBSET OR rtcRegBDSE
+    ORA prvTmp2
+    JMP WriteRtcRam
 }
 			
 ;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
