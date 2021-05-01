@@ -6824,7 +6824,8 @@ osfileBlock = L02EE
             PLP
             RTS
 
-.^LA660      NOP
+.^Nop3
+.LA660      NOP
 .LA661      NOP
             NOP
             RTS
@@ -6838,7 +6839,7 @@ osfileBlock = L02EE
 .LA66C      SEI
             JSR LA661								;2 x NOP delay
             STX SHEILA+&38								;Strobe in address
-            JMP LA660								;3 x NOP delay
+            JMP Nop3								;3 x NOP delay
 }
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
@@ -6983,9 +6984,9 @@ osfileBlock = L02EE
 .waitOutRTCUpdate
 {
 .LA775      LDX #&0A								;Select 'Register A' register on RTC: Register &0A
-.LA777      JSR LA660								;3 x NOP delay
+.LA777      JSR Nop3								;3 x NOP delay
             STX SHEILA+&38								;Strobe in address
-            JSR LA660								;3 x NOP delay
+            JSR Nop3								;3 x NOP delay
             LDA SHEILA+&3C								;Strobe out data
             BMI LA777								;Loop if Update in Progress (if MSB set)
             RTS
@@ -8914,11 +8915,12 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             RTS
 }
 
+; SFTODO: This has only one caller (via JMP) - could we just move it inline? We know X=rtcRegC at this point.
 {
 .^LB46E      DEX									;Select 'Register B' register on RTC: Register &0B
-            JSR LA660								;3 x NOP delay
+            JSR Nop3								;3 x NOP delay
             STX SHEILA+&38						          	;Strobe in address
-            JSR LA660								;3 x NOP delay
+            JSR Nop3								;3 x NOP delay
             AND SHEILA+&3C							          ;Strobe out data
             JSR LA664
             ASL A
