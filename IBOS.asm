@@ -150,7 +150,7 @@ userRegKeyboardRepeat = &0D ; 0-7: Keyboard repeat
 userRegPrinterIgnore = &0E ; 0-7: Printer ignore
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7: Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
-userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX / b4: automatic daylight saving time adjust
+userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX / b4: automatic daylight saving time adjust SFTODO: Should rename this now we've discovered b4
 ; SFTODO: b4 of userRegOsModeShx doesn't seem to be exposed via *CONFIGURE/*STATUS - should it be? Might be interesting to try setting this bit manually and seeing if it works. If it's not going to be exposed we could save some code by deleting the support for it.
 userRegAlarm = &33 ; SFTODO? bits 0-5??
 userRegCentury = &35
@@ -6849,7 +6849,7 @@ osfileBlock = L02EE
 }
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
-; SFTODO: Update comment to reflect the other changes it makes?
+; SFTODO: Document this also updates DSE?
 .WriteRtcTime
 {
     ; Force DV2/1/0 in register A on; this temporarily stops the RTC clock while we set it.
@@ -6860,6 +6860,7 @@ osfileBlock = L02EE
     NOT_AND rtcRegBSET OR rtcRegBSQWE OR rtcRegBDM OR rtcRegB2412 OR rtcRegBDSE
     ORA #rtcRegBSET OR rtcRegBDM OR rtcRegB2412
     JSR WriteRtcRam
+    ; Actually set the time.
     LDX #rtcRegSeconds:LDA prvDateSeconds:JSR WriteRtcRam
     LDX #rtcRegMinutes:LDA prvDateMinutes:JSR WriteRtcRam
     LDX #rtcRegHours:LDA prvDateHours:JSR WriteRtcRam
@@ -6867,6 +6868,7 @@ osfileBlock = L02EE
     ; time-base frequency.
     LDX #rtcRegA:JSR ReadRtcRam:AND #rtcRegADV1:JSR WriteRtcRam
     LDX #userRegOsModeShx:JSR readUserReg
+    ; Set DSE in register B according to userRegOsModeShx and force SET off.
     LDX #0
     AND #&10:BEQ NoAutoDSTAdjust ; test auto DST bit of userRegOsModeShx SFTODO: named constant?
     LDX #rtcRegBDSE ; SQUASH: Just do ASSERT rtcRegBDSE == 1:INX
