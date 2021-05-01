@@ -6851,9 +6851,10 @@ osfileBlock = L02EE
 ; SFTODO: Update comment to reflect the other changes it makes?
 .WriteRtcTime
 {
-    LDX #rtcRegA:JSR ReadRtcRam
-    ORA #rtcRegADV2 OR rtcRegADV1 OR rtcRegADV0
-    JSR WriteRtcRam
+    ; Force DV2/1/0 in register A on; this temporarily stops the RTC clock while we set it.
+    LDX #rtcRegA:JSR ReadRtcRam:ORA #rtcRegADV2 OR rtcRegADV1 OR rtcRegADV0:JSR WriteRtcRam
+    ; Force SET (set mode), DM (binary mode) and 2412 (24 hour mode) on in register B ad
+    ; force SQWE (square wave enable) and DSE (auto daylight savings adjust) off.
     LDX #rtcRegB:JSR ReadRtcRam
     AND #rtcRegBPIE OR rtcRegBAIE OR rtcRegBUIE
     ORA #rtcRegBSET OR rtcRegBDM OR rtcRegB2412
@@ -6861,9 +6862,9 @@ osfileBlock = L02EE
     LDX #rtcRegSeconds:LDA prvDateSeconds:JSR WriteRtcRam
     LDX #rtcRegMinutes:LDA prvDateMinutes:JSR WriteRtcRam
     LDX #rtcRegHours:LDA prvDateHours:JSR WriteRtcRam
-    LDX #rtcRegA:JSR ReadRtcRam
-    AND #rtcRegADV1
-    JSR WriteRtcRam
+    ; Clear all bits in register A except DV1; this starts the RTC clock with a 32.768kHz
+    ; time-base frequency.
+    LDX #rtcRegA:JSR ReadRtcRam:AND #rtcRegADV1:JSR WriteRtcRam
     LDX #userRegOsModeShx:JSR readUserReg
     LDX #0
     AND #&10:BEQ NoAutoDSTAdjust ; test auto DST bit of userRegOsModeShx SFTODO: named constant?
