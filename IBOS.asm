@@ -6866,12 +6866,12 @@ osfileBlock = L02EE
             LDX #&00
             AND #&10
             BEQ LA6BB
-            LDX #&01
-.LA6BB      STX prv82+&4E
+            LDX #&01 ; SQUASH: Just do INX
+.LA6BB      STX prvTmp2
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             NOT_AND rtcRegBSET OR rtcRegBDSE
-            ORA prv82+&4E ; SFTODO: WE NOW HAVE A CLUE WHAT THIS LOCATION IS FOR
+            ORA prvTmp2
             JMP wrRTCRAM								;Write data from A to RTC memory location X
 }
 			
