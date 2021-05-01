@@ -3284,6 +3284,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 ;*APPEND Command
 .append
 {
+; SFTODO: Express these as transientWorkspace + n, to document what area of memory they live in?
 LineNumber = &AA
 
     LDA #osfindOpenUpdate:JSR parseFilenameAndOpen
@@ -3291,9 +3292,8 @@ LineNumber = &AA
     JSR PrvEn
 .L913A
     JSR OSNEWL
-    LDA #osbyteCheckEOF:LDX transientFileHandle:JSR OSBYTE
-    CPX #0:BNE Eof
-    JSR L91AC
+    LDA #osbyteCheckEOF:LDX transientFileHandle:JSR OSBYTE:CPX #0:BNE Eof
+    JSR IncrementAndPrintLineNumber
 .L914B
     LDY transientFileHandle:JSR OSBGET:BCS Eof
     CMP #vduCr:BEQ L913A
@@ -3303,7 +3303,7 @@ LineNumber = &AA
     BNE L914B
     BEQ L913A
 .Eof
-    JSR L91AC
+    JSR IncrementAndPrintLineNumber
     LDY #&04
 .L916A
     LDA L91A7,Y
@@ -3312,8 +3312,7 @@ LineNumber = &AA
     BPL L916A
     LDX #&AB
     LDY #&00
-    LDA #&00
-    JSR OSWORD								;read line from input
+    LDA #oswordInputLine:JSR OSWORD
     BCS L9196
     INY
     STY L00A9
@@ -3341,19 +3340,13 @@ LineNumber = &AA
 	  EQUB &FF								;maximum line length
 	  EQUB &20								;minimum acceptable ASCII value
 	  EQUB &7E								;maximum acceptable ASCII value
-	
-.L91AC      INC LineNumber
-            LDA LineNumber
-            CLC
-            JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
-            LDA #':'
-            JSR OSWRCH								;write to screen
-}
 
-{
+.IncrementAndPrintLineNumber
+    INC LineNumber
+    LDA LineNumber:CLC:JSR printADecimal
+    LDA #':':JSR OSWRCH
 .^printSpace
-.L91B9      LDA #' '
-            JMP OSWRCH								;write to screen
+    LDA #' ':JMP OSWRCH
 }
 			
 ;*PRINT Command
