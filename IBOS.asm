@@ -81,7 +81,9 @@ rtcRegDayOfMonth = &07
 rtcRegMonth = &08
 rtcRegYear = &09
 rtcRegA = &0A
+	rtcRegADV0 = 1<<4
 	rtcRegADV1 = 1<<5
+	rtcRegADV2 = 1<<6
 rtcRegB = &0B
 	rtcRegBDSE = 1<<0
 	rtcRegBAIE = 1<<5
@@ -6834,11 +6836,11 @@ osfileBlock = L02EE
 ;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
 .writeRtcTime
 {
-.LA676      LDX #&0A								;Select 'Register A' register on RTC: Register &0A
+.LA676      LDX #rtcRegA								;Select 'Register A' register on RTC: Register &0A
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            ORA #&70
+            ORA #rtcRegADV2 OR rtcRegADV1 OR rtcRegADV0
             JSR wrRTCRAM								;Write data from A to RTC memory location X
-            LDX #&0B								;Select 'Register B' register on RTC: Register &0B
+            LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
             AND #&70
             ORA #&86
