@@ -6820,7 +6820,7 @@ osfileBlock = L02EE
     PLP
     RTS
 
-; Write A into RTC RAM address X.
+; Write A to RTC RAM address X.
 .^WriteRtcRam
     PHP
     JSR SeiSelectRtcAddressX
