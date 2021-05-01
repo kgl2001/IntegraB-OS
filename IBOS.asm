@@ -500,10 +500,12 @@ prvBootSFTODO = prv81 ; SFTODO: Rename this once I've been over the code and I k
 ; code (using prvPrintBufferPtrBase) will operate on either, using X to specify
 ; the read pointer (0) or the write pointer (3).
 prvPrintBufferPtrBase = prv82 + &00
-prvPrintBufferWritePtr = prv82 + &00
-prvPrintBufferWriteBankIndex = prv82 + &02
-prvPrintBufferReadPtr = prv82 + &03
-prvPrintBufferReadBankIndex = prv82 + &05
+prvPrintBufferWritePtrIndex = 0
+prvPrintBufferWritePtr = prv82 + prvPrintBufferWritePtrIndex
+prvPrintBufferWriteBankIndex = prv82 + prvPrintBufferWritePtrIndex + 2
+prvPrintBufferReadPtrIndex = 3
+prvPrintBufferReadPtr = prv82 + prvPrintBufferReadPtrIndex
+prvPrintBufferReadBankIndex = prv82 + prvPrintBufferReadPtrIndex + 2
 ; The printer buffer can be up to 64K in size; 64K is &10000 bytes so we need to
 ; use a 24-bit representation and we therefore have high, middle and low bytes
 ; here instead of just high and low bytes.
@@ -10494,7 +10496,7 @@ ptr = &A8
 .PrintBufferNotFull
     LDA L0108,X ; get original A=character to insert
     JSR staPrintBufferWritePtr
-    JSR advancePrintBufferReadPtr
+    JSR AdvancePrintBufferWritePtr
     JSR decrementPrintBufferFree
     ; Return to caller with carry clear to indicate insertion succeeded.
     TSX:LDA L0107,X:AND_NOT flagC:STA L0107,X ; modify stacked flags so C is clear
@@ -10528,7 +10530,7 @@ ptr = &A8
     LDA L0107,X:AND #flagV:BNE ExamineBuffer ; test V in stacked flags from caller
     ; V was cleared by the caller, so we're removing a character from the buffer.
     PLA:STA L0108,X ; overwrite stacked A with character read from our buffer
-    JSR advancePrintBufferWritePtr
+    JSR AdvancePrintBufferReadPtr
     JSR incrementPrintBufferFree
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
 
@@ -10671,18 +10673,17 @@ ptr = &A8
 }
 
 {
-; SFTODO: Do I have ...ReadPtr and ...WritePtr the wrong way round???
-; Advance prvPrintBufferWritePtr by one, wrapping round at the end of each bank
-; and wrapping round at the end of the bank list.
-; SFTODO: This has only one caller
-.^advancePrintBufferWritePtr
-.LBEB2      LDX #&03
-            BNE LBEB8 ; always branch
 ; Advance prvPrintBufferReadPtr by one, wrapping round at the end of each bank
 ; and wrapping round at the end of the bank list.
 ; SFTODO: This has only one caller
-.^advancePrintBufferReadPtr
-.LBEB6      LDX #&00
+.^AdvancePrintBufferReadPtr
+.LBEB2      LDX #prvPrintBufferReadPtrIndex
+            ASSERT prvPrintBufferReadPtrIndex != 0:BNE LBEB8 ; always branch
+; Advance prvPrintBufferWritePtr by one, wrapping round at the end of each bank
+; and wrapping round at the end of the bank list.
+; SFTODO: This has only one caller
+.^AdvancePrintBufferWritePtr
+.LBEB6      LDX #prvPrintBufferWritePtrIndex
 .LBEB8      INC prvPrintBufferPtrBase,X
             BNE LBEE8
             INC prvPrintBufferPtrBase + 1,X
@@ -10838,14 +10839,14 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
 .ldaPrintBufferReadPtr
 {
 .LBF6A      PHA
-            LDX #&03
+            LDX #prvPrintBufferReadPtrIndex
             LDA #opcodeLdaAbs
             BNE LBF76 ; always branch
 ; Temporarily page in ROM bank prvPrintBufferBankList[prvPrintBufferWriteBankIndex] and do STA (prvPrintBufferWritePtr)
 ; SFTODO: This only has a single caller
 .^staPrintBufferWritePtr
 .LBF71      PHA
-            LDX #&00
+            LDX #prvPrintBufferWritePtrIndex
             LDA #opcodeStaAbs
 .LBF76      STA ramRomAccessSubroutineVariableInsn
             LDA prvPrintBufferPtrBase,X
