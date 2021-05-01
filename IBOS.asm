@@ -3005,7 +3005,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JSR OSBPUT								;write data in A to file handle Y
             INX									;next byte
             BPL L8F70								;for 128 bytes
-            BMI L8F8C								;close file and exit
+            BMI CloseHandleL00A8ExitAndClaimServiceCall								;close file and exit
 }
 
 ; SFTODO LINEAR REVIEW UP TO HERE
@@ -3018,8 +3018,8 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JSR OSBGET:JSR writeUserReg
     INX:BPL loop ; read 128 bytes
 
-.^L8F8C
-    JSR closeHandleL00A8
+.^CloseHandleL00A8ExitAndClaimServiceCall
+    JSR CloseHandleL00A8
     JMP ExitAndClaimServiceCall
 }
 
@@ -3329,7 +3329,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .L9196      LDA #osbyteAcknowledgeEscape
             JSR OSBYTE
             JSR PrvDis								;switch out private RAM
-            JSR closeHandleL00A8								;close file with file handle at &A8
+            JSR CloseHandleL00A8								;close file with file handle at &A8
             JSR OSNEWL
             JMP L8E07
 }
@@ -3393,7 +3393,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             LDX L00A9
             LDY #&00
             JSR OSBYTE
-            JMP closeHandleL00A8								;close file with file handle at &A8
+            JMP CloseHandleL00A8								;close file with file handle at &A8
 }
 			
 ;*SPOOLON Command
@@ -3464,7 +3464,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 			
 			
 ;Close file with file handle at &A8
-.closeHandleL00A8
+.CloseHandleL00A8
 {
 .L9268      LDA #osfindClose
             LDY L00A8
@@ -5378,7 +5378,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             ; presumably this is used on some other code paths too. That's probably
 	  ; true, as this is used in OSWORD &43 too and L02EE probably is a file
 	  ; handle.
-            JSR closeHandleL02EE
+            JSR CloseHandleL02EE
             PLP
 .errorBadAddress
 .L9DB8      BVC errorNotAllocated
@@ -5905,7 +5905,7 @@ osfileBlock = L02EE
             RTS
 }
 
-.closeHandleL02EE
+.CloseHandleL02EE
 {
 .LA098      LDA #osfindClose
             LDY L02EE
@@ -6197,7 +6197,7 @@ osfileBlock = L02EE
             BCC LA216
             LDA L02EE
             BEQ LA22E
-.LA22B      JSR closeHandleL02EE
+.LA22B      JSR CloseHandleL02EE
 .LA22E      BIT prvOswordBlockCopy                                                                  ;function
             BPL PrvDisexitScIndirect                                                                ;branch if read
             BVS PrvDisexitScIndirect                                                                ;branch if pseudo-address
