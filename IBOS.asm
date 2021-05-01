@@ -9820,7 +9820,7 @@ ibosCNPVIndex = 6
 		EQUB &0E
 		EQUW rdchvHandler-1
 		EQUB &10
-		EQUW insvHandler-1
+		EQUW InsvHandler-1
 		EQUB &2A
 		EQUW remvHandler-1
 		EQUB &2C
@@ -10488,7 +10488,7 @@ ptr = &A8
             RTS
 }
 
-.insvHandler
+.InsvHandler
 {
 .LBD5C	  TSX
             LDA L0102,X ; get original X=buffer number
@@ -10523,7 +10523,7 @@ ptr = &A8
 }
 
 ; SFTODO: Would it be possible to factor out the common-ish code at the start of
-; insvHandler/remvHandler/cnpvHandler to save space?
+; InsvHandler/remvHandler/cnpvHandler to save space?
 .remvHandler
 {
 .LBD96	  TSX
@@ -10538,7 +10538,7 @@ ptr = &A8
             TSX
             JSR checkPrintBufferEmpty
             BCC LBDB8
-            ; SFTODO: Some similarity with insvHandler here, could we factor out common code?
+            ; SFTODO: Some similarity with InsvHandler here, could we factor out common code?
             LDA L0107,X ; get original flags
             ORA #flagC
             STA L0107,X ; modify original flags so C is set
