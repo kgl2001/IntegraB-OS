@@ -2575,7 +2575,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             INX
             CPX prv81
             BNE L8C2D
-.L8C39      JMP L8E07
+.L8C39      JMP OSNEWLPrvDisExitAndClaimServiceCall
 
 .L8C3C      CMP #&80
             BCC L8C4C
@@ -2620,7 +2620,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 
 .purgeNow   JSR PrvEn 								;switch in private RAM
             JSR purgePrintBuffer
-            JMP PrvDisExitSC
+            JMP PrvDisExitAndClaimServiceCall
 
 .purgeOnOrOff
 	  LDX #prvPrintBufferPurgeOption - prv83
@@ -2788,7 +2788,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             BNE L8DE8
             LDX #&00
             JSR printKInPrivateOrSidewaysRAM						;write 'k in Private RAM'
-            JMP L8E07								;and finish
+            JMP OSNEWLPrvDisExitAndClaimServiceCall								;and finish
 			
 .L8DE8      LDX #&01								;starting with the first RAM bank
             JSR printKInPrivateOrSidewaysRAM						;write 'k in Sideways RAM '
@@ -2804,8 +2804,8 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             BNE L8DEF
 .L8E02      LDA #vduDel								;delete the last ',' that was just printed
             JSR OSWRCH								;write to screen
-.^L8E07      JSR OSNEWL
-.^PrvDisExitSC
+.^OSNEWLPrvDisExitAndClaimServiceCall      JSR OSNEWL
+.^PrvDisExitAndClaimServiceCall
             JSR PrvDis								;switch out private RAM
             JMP ExitAndClaimServiceCall								;Exit Service Call
 
@@ -2922,7 +2922,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
 .^L8EDE      SEC
             JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
-            JMP L8E07								;new line, exit out of private RAM and exit service call
+            JMP OSNEWLPrvDisExitAndClaimServiceCall								;new line, exit out of private RAM and exit service call
 }
 
 {
@@ -3339,7 +3339,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JSR PrvDis								;switch out private RAM
     JSR CloseHandleL00A8								;close file with file handle at &A8
     JSR OSNEWL
-    JMP L8E07
+    JMP OSNEWLPrvDisExitAndClaimServiceCall
 }
 			
 
