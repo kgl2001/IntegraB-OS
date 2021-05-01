@@ -569,6 +569,7 @@ prvTubeReleasePending = prv83 + &42 ; used during OSWORD 42; &FF means we have c
 ; SFTODO: If private RAM is battery backed, could we just keep OSMODE in
 ; prvOsMode and not bother with the copy in the low bits of userRegOsModeShx?
 ; That would save some code.
+prvSFTODORTCISH = prv83 + &44
 
 prvIbosBankNumber = prv83 + &00 ; SFTODO: not sure about this, but service01 seems to set this
 prvPseudoBankNumbers = prv83 + &08 ; 4 bytes, absolute RAM bank number for the Pseudo RAM banks W, X, Y, Z; SFTODO: may be &FF indicating "no such bank" if SRSET is used?
@@ -2418,8 +2419,8 @@ ptr = &00 ; 2 bytes
     JSR LB35E
     JMP exitSC
 .XNeFE
-    ; SFTODO: I think this is returning the original value of &8344 and doing something to alter something related to that
-    LDX #&44
+    ; SFTODO: I think this is returning the original value of &8344 and doing something to alter something related to that - we seem to be setting or clearing the low two bits of prv83+&44 based on the X and Y values for this call, and setting or clearing rtcRegBUIE according to this (although that's only one bit, of course)
+    LDX #prvSFTODORTCISH - prv83
     JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
     PHA
     STA oswdbtY
@@ -8934,7 +8935,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             PLA
 .LB490      ASL A
             BCC LB4AC
-            LDX #&44
+            LDX #prvSFTODORTCISH - prv83
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             PHA
             AND #&01
