@@ -2964,22 +2964,18 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 ;*SHADOW Command
 .shadow
 {
-	  JSR convertIntegerDefaultDecimal
-            BCC L8F41
-            LDA (L00A8),Y								;get next character from command parameter
-            CMP #'?'								;check for '='
-            BEQ L8F38								;branch if set
-            CMP #vduCr								;check for no parameters
-            BNE GenerateSyntaxErrorIndirect2
-            LDA #&00								;if no parameters then
-            JMP L8F41								;set &27F to 0
-			
-.L8F38      JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
-            LDA osShadowRamFlag
-            JMP L8EDE								;print shadow number and exit service call
-			
-.L8F41      STA osShadowRamFlag
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+    JSR convertIntegerDefaultDecimal:BCC ParsedOK
+    LDA (transientCmdPtr),Y
+    CMP #'?':BEQ ShowShadow
+    CMP #vduCr:BNE GenerateSyntaxErrorIndirect2
+    LDA #0:JMP ParsedOK ; default to *SHADOW 0 if no argument SQUASH: could BEQ ; always branch
+.ShowShadow
+    JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
+    LDA osShadowRamFlag
+    JMP L8EDE								;print shadow number and exit service call
+.ParsedOK
+    STA osShadowRamFlag
+    JMP ExitAndClaimServiceCall
 }
 
 .GenerateSyntaxErrorIndirect2
