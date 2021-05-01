@@ -3252,9 +3252,9 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 ;*GOIO Command
 .goio
 {
-    LDA (transientCmdPtr),Y
     ; If the argument is wrapped in brackets we treat it as an indirect address; we stash the
     ; flags after doing the first CMP to record whether or not we've seen brackets.
+    LDA (transientCmdPtr),Y
     CMP #'(':PHP:BNE NoOpenBracket
     INY
 .NoOpenBracket
