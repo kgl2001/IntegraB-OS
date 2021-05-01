@@ -181,6 +181,7 @@ transientDateSFTODO1 = &AB ; SFTODO!? 2 bytes?
 
 vduStatus = &D0
 vduStatusShadow = &10
+vduGraphicsCharacterCell = &D6 ; 2 bytes
 negativeVduQueueSize = &026A
 tubePresenceFlag = &027A ; SFTODO: allmem says 0=inactive, is there actually a specific bit or value for active? what does this code rely on?
 osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force shadow modes (note that AllMem.txt seems to have this wrong, at least my copy does)
@@ -368,7 +369,6 @@ L00BB       = &00BB
 L00BC       = &00BC
 L00BD       = &00BD
 L00D0       = &00D0
-L00D6       = &00D6
 L00EF       = &00EF
 L00F0       = &00F0
 L00F1       = &00F1
@@ -9623,40 +9623,43 @@ column = prvC
     JMP ExitServiceCall
 
 ;Error (BRK) occurred - Service call &06
-.^service06 LDA osErrorPtr + 1
-            CMP #&FF ; SFTODO: magic number?
-            BNE ExitServiceCallIndirect
-            LDX oswdbtX ; SFTODO: seems a bit odd using this address in this service call
-            TXS
-            LDA #&88
-            PHA
-            LDA L0102,X
-            PHA
-            LDA L00FC
-            PHA
-            LDA L0101,X
-            PHA
-            LDA #&FF
-            STA L0101,X
-            LDA L024A
-            STA L0102,X
-            LDA osErrorPtr
-            CMP #&B4 ; SFTODO: MAGIC NUMBER!?
-            BEQ LB936
-.LB931      PLA
-            TAX
-            PLA
-            PLP
-            RTS
+.^service06
+    LDA osErrorPtr + 1
+    CMP #&FF ; SFTODO: magic number?
+    BNE ExitServiceCallIndirect
+    LDX oswdbtX ; SFTODO: seems a bit odd using this address in this service call
+    TXS
+    LDA #&88
+    PHA
+    LDA L0102,X
+    PHA
+    LDA L00FC
+    PHA
+    LDA L0101,X
+    PHA
+    LDA #&FF
+    STA L0101,X
+    LDA L024A
+    STA L0102,X
+    LDA osErrorPtr
+    CMP #&B4 ; SFTODO: MAGIC NUMBER!?
+    BEQ LB936
+.LB931
+    PLA
+    TAX
+    PLA
+    PLP
+    RTS
 			
-.LB936      LDA romselCopy
-            ORA #romselMemsel
-            STA romselCopy
-            STA romsel
-            TSX
-            LDA L0102,X
-            STA (L00D6),Y
-            JMP LB931
+.LB936
+    LDA romselCopy
+    ORA #romselMemsel
+    STA romselCopy
+    STA romsel
+    TSX
+    LDA L0102,X
+    STA (vduGraphicsCharacterCell),Y ; SFTODO!?
+    JMP LB931
 }
 
 ; Set MEMSEL. This means that main/video memory will be paged in at &3000-&7FFF
