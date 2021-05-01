@@ -6,6 +6,8 @@
 
 ; Some all-caps keywords are used in comments to make it easier to find them later:
 ;
+; TODO/SFTODO: General purpose "something needs attention" comments
+;
 ; SQUASH: There's a potential code squashing opportunity here, i.e. an opportunity to shrink
 ; the code without affecting its functionality.
 ;
