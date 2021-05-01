@@ -2870,23 +2870,16 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 ;Check if printer buffer is empty
 .GenerateErrorIfPrinterBufferNotEmpty
 {
-.L8E6C      PHA
-            TYA
-            PHA
-            LDA #osbyteExamineBufferStatus
-            LDX #bufNumPrinter
-            LDY #&00
-            JSR OSBYTE								;Examine Buffer 3
-            PLA
-            TAY
-            PLA
-            BCC bufferNotEmpty
-            RTS
+    PHA:TYA:PHA
+    LDA #osbyteExamineBufferStatus:LDX #bufNumPrinter:LDY #0:JSR OSBYTE
+    PLA:TAY:PLA
+    BCC BufferNotEmpty
+    RTS
 
-.bufferNotEmpty
-	  JSR raiseError								;Goto error handling, where calling address is pulled from stack
-	  EQUB &80
-	  EQUS "Printing!", &00
+.BufferNotEmpty
+    JSR raiseError ; SFTODO: Change this to "GenerateError", or use "Raise" instead of "Generate" elsewhere
+    EQUB &80
+    EQUS "Printing!", &00
 }
 
 ; SFTODO: Since this only has two callers, wouldn't it be easier for them just to do LDX #0 or LDX #kInSidewaysRamString - kInPrivateRamString themselves instead of needing to faff with the CPX# stuff?
