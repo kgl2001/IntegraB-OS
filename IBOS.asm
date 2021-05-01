@@ -592,6 +592,8 @@ LF16E       = &F16E
 bufNumKeyboard = 0
 bufNumPrinter = 3 ; OS buffer number for the printer buffer
 
+eventNumUser = 9
+
 opcodeCmpAbs = &CD
 opcodeLdaAbs = &AD
 opcodeStaAbs = &8D
@@ -8952,10 +8954,9 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     JSR readPrivateRam8300X
     PHA
     AND #&01 ; SFTODO: So b0 of prvSFTODORTCISH has something to do with triggering an OS event when the RTC alarm goes off?
-    BEQ LB4A2
-    LDY #&09
-    JSR OSEVEN
-.LB4A2
+    BEQ noUserEvent
+    LDY #eventNumUser:JSR OSEVEN
+.noUserEvent
     PLA
     AND #&02 ; SFTODO: So it like b1 of prvSFTODORTCISH has something to do with enabling a service call to be issued when the RTC alarm goes off
     BEQ noUpdateEndedInterrupt ; SFTODO: Change label name given this call?
