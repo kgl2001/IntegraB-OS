@@ -8931,21 +8931,24 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 	  DEX:ASSERT rtcRegB == rtcRegC - 1
             JSR Nop3:STX rtcAddress
             JSR Nop3:AND rtcData
+	  ; We now have A = (RTC register B) AND (RTC register C); SFTODO: I believe this effectively means we have bits set in A for interrupts which have triggered and are not masked off.
             JSR SeiSelectRtcAddressXVariant
             ASL A
             ASL A
-            BCC LB488
+            BCC notPeriodicInterrupt
             PHA
             CLC
             JSR LB35F
             PLA
-.LB488      ASL A
-            BCC LB490
+.notPeriodicInterrupt
+            ASL A
+            BCC notAlarmInterrupt
             PHA
             JSR LB34E
             PLA
-.LB490      ASL A
-            BCC LB4AC
+.notAlarmInterrupt
+            ASL A
+            BCC notUpdateEndedInterrupt
             LDX #prvSFTODORTCISH - prv83
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             PHA
@@ -8955,10 +8958,11 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             JSR OSEVEN
 .LB4A2      PLA
             AND #&02
-            BEQ LB4AC
+            BEQ notUpdateEndedInterrupt ; SFTODO: Change label name given this call?
             LDX #&49
             JSR LF168								;OSBYTE 143 - Pass service commands to sideways ROM (http://mdfs.net/Docs/Comp/BBC/OS1-20/F135)
-.LB4AC      JMP exitSC								;Exit Service Call
+.notUpdateEndedInterrupt
+            JMP exitSC
 }
 
 .PrvDisMismatch
