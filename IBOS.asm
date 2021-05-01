@@ -3281,60 +3281,65 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 }
 			
 ;*APPEND Command
+.append
 {
-.^append	  LDA #osfindOpenUpdate								;open file for update
-            JSR parseFilenameAndOpen								;get address of file name and open file
-            LDA #&00
-            STA L00AA
-            JSR PrvEn								;switch in private RAM
-.L913A      JSR OSNEWL
-            LDA #osbyteCheckEOF
-            LDX L00A8
-            JSR OSBYTE
-            CPX #&00
-            BNE L9165
-            JSR L91AC
-.L914B      LDY L00A8
-            JSR OSBGET
-            BCS L9165
-            CMP #vduCr
-            BEQ L913A
-            CMP #' '
-            BCC L914B
-            CMP #vduDel
-            BCS L914B
-            JSR OSWRCH
-            BNE L914B
-            BEQ L913A
-.L9165      JSR L91AC
-            LDY #&04
-.L916A      LDA L91A7,Y
-            STA L00AB,Y
-            DEY
-            BPL L916A
-            LDX #&AB
-            LDY #&00
-            LDA #&00
-            JSR OSWORD								;read line from input
-            BCS L9196
-            INY
-            STY L00A9
-            LDX #&00
-.L9183      LDA prv80+&00,X
-            LDY L00A8
-            JSR OSBPUT
-            CMP #vduCr
-            BEQ L9165
-            INX
-            CPX L00A9
-            BNE L9183
-            BEQ L9165
-.L9196      LDA #osbyteAcknowledgeEscape
-            JSR OSBYTE
-            JSR PrvDis								;switch out private RAM
-            JSR CloseHandleL00A8								;close file with file handle at &A8
-            JSR OSNEWL
-            JMP L8E07
+    LDA #osfindOpenUpdate:JSR parseFilenameAndOpen
+    LDA #0:STA L00AA
+    JSR PrvEn
+.L913A
+    JSR OSNEWL
+    LDA #osbyteCheckEOF
+    LDX L00A8
+    JSR OSBYTE
+    CPX #&00
+    BNE L9165
+    JSR L91AC
+.L914B
+    LDY L00A8
+    JSR OSBGET
+    BCS L9165
+    CMP #vduCr
+    BEQ L913A
+    CMP #' '
+    BCC L914B
+    CMP #vduDel
+    BCS L914B
+    JSR OSWRCH
+    BNE L914B
+    BEQ L913A
+.L9165
+    JSR L91AC
+    LDY #&04
+.L916A
+    LDA L91A7,Y
+    STA L00AB,Y
+    DEY
+    BPL L916A
+    LDX #&AB
+    LDY #&00
+    LDA #&00
+    JSR OSWORD								;read line from input
+    BCS L9196
+    INY
+    STY L00A9
+    LDX #&00
+.L9183
+    LDA prv80+&00,X
+    LDY L00A8
+    JSR OSBPUT
+    CMP #vduCr
+    BEQ L9165
+    INX
+    CPX L00A9
+    BNE L9183
+    BEQ L9165
+.L9196
+    LDA #osbyteAcknowledgeEscape
+    JSR OSBYTE
+    JSR PrvDis								;switch out private RAM
+    JSR CloseHandleL00A8								;close file with file handle at &A8
+    JSR OSNEWL
+    JMP L8E07
 }
 			
 
