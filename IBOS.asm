@@ -3284,8 +3284,10 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 ;*APPEND Command
 .append
 {
+LineNumber = &AA
+
     LDA #osfindOpenUpdate:JSR parseFilenameAndOpen
-    LDA #0:STA L00AA
+    LDA #0:STA LineNumber
     JSR PrvEn
 .L913A
     JSR OSNEWL
@@ -3340,8 +3342,8 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 	  EQUB &20								;minimum acceptable ASCII value
 	  EQUB &7E								;maximum acceptable ASCII value
 	
-.L91AC      INC L00AA
-            LDA L00AA
+.L91AC      INC LineNumber
+            LDA LineNumber
             CLC
             JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
             LDA #':'
