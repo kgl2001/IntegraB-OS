@@ -1525,7 +1525,7 @@ tabColumn = 12
             PLA										;restore service type
             RTS
 
-.^exitSC    TSX
+.^ExitAndClaimServiceCall    TSX
             LDA #0:STA L0103,X ; set A=0 when returning to caller
             JMP exitSCa ; SQUASH: BEQ ; always branch
 
@@ -2365,7 +2365,7 @@ ptr = &00 ; 2 bytes
             EOR #&01
             STA oswdbtX
             PLP
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 			
 ;Test for OSBYTE &72 - Specify video memory to use on next MODE change (http://beebwiki.mdfs.net/OSBYTE_%2672)
@@ -2379,7 +2379,7 @@ ptr = &00 ; 2 bytes
 .L8B0F      LDY #&00
             JSR OSBYTE								;write to &27F
             STX oswdbtX
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 			
 ;Test for OSBYTE &A1 - Read configuration RAM/EEPROM
@@ -2390,7 +2390,7 @@ ptr = &00 ; 2 bytes
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA oswdbtY
             PHA
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 			
 ;Test for OSBYTE &A2 - Write configuration RAM/EEPROM
 .osbyteA2	  CMP #&A2								;OSBYTE &A2 - configuration RAM/EEPROM
@@ -2401,7 +2401,7 @@ ptr = &00 ; 2 bytes
             PLA
             LDA oswdbtY
             PHA
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 			
 ;Test for OSBYTE &44 - Test sideways RAM presence
 .osbyte44	  CMP #&44								;OSBYTE &44 (68) - Test sideways RAM presence
@@ -2428,13 +2428,13 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     ; It's X=&FF; test for presence of Integra-B. Return with X=&49 to indicate present.
     LDA #&49:STA oswdbtX
     PLA:LDA romselCopy:AND #maxBank:PHA ; SFTODO: DOCUMENT
-    JMP exitSC
+    JMP ExitAndClaimServiceCall
 .XNeFF
 .L8B63
     CMP #&FE:BNE XNeFE
     ; It's X=&FE; SFTODO: WHICH MEANS DO WHAT?
     JSR LB35E
-    JMP exitSC
+    JMP ExitAndClaimServiceCall
 .XNeFE
     ; For reference, the "standard" pattern for OSBYTE calls which modify a subset of bits at a
     ; location is to set the location to (<old value> AND Y) EOR X and return the old value in
@@ -2468,7 +2468,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JSR WriteRtcRam
     PLA
     STA oswdbtX
-    JMP exitSC
+    JMP ExitAndClaimServiceCall
 }
 
 ; SFTODO: Dead code
@@ -2552,7 +2552,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .L8C0E      STX prv81
             JSR PrvDis								;switch out private RAM
             BCC L8C19								;check for error
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 			
 .L8C19      JSR raiseError								;Goto error handling, where calling address is pulled from stack
 
@@ -2617,7 +2617,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .purgeOnOrOff
 	  LDX #prvPrintBufferPurgeOption - prv83
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 			
 ;*BUFFER Command
@@ -2799,7 +2799,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .^L8E07      JSR OSNEWL
 .^PrvDisExitSC
             JSR PrvDis								;switch out private RAM
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 
 ;Test for SWRAM			
 .L8E10      TXA
@@ -2907,7 +2907,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JMP syntaxError
 			
 .L8ED0      JSR L8EE5
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 			
 .L8ED6      JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDX #prvOsMode - prv83								;select OSMODE
@@ -2968,7 +2968,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JMP L8EDE								;print shadow number and exit service call
 			
 .L8F41      STA osShadowRamFlag
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
 .L8F47      JMP syntaxError
@@ -2988,7 +2988,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 			
 .L8F60      LDX #&3D								;select SHX register (&08: On, &FF: Off)
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 			
 ;*CSAVE Command
@@ -3017,7 +3017,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 
 .^L8F8C
     JSR closeHandleL00A8
-    JMP exitSC
+    JMP ExitAndClaimServiceCall
 }
 
 ;*TUBE Command
@@ -3033,7 +3033,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .L8FA3      JSR printOnOff
             JSR OSNEWL
 .exitSCIndirect
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 
 .syntaxErrorIndirect
             JMP syntaxError
@@ -3227,7 +3227,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             BCS L90F0
             LDX #&C0
             JSR L8A7B
-.L90ED      JMP exitSC								;Exit Service Call
+.L90ED      JMP ExitAndClaimServiceCall								;Exit Service Call
 
 .L90F0      BVC L90ED
             FALLTHROUGH_TO nle
@@ -3271,7 +3271,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             TAY
             LDA #&01
             JSR L00AF
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 			
 ;*APPEND Command
@@ -3375,7 +3375,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JMP L91D7
 			
 .L91E8      JSR L9201
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 			
 .L91EE      JSR L9201
 .^acknowledgeEscapeAndGenerateError
@@ -3407,7 +3407,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             LDX L00A8
             LDY #&00
             JSR OSBYTE
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 			
 			
@@ -3499,7 +3499,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             LDX #&EE
             LDY #&02
             JSR OSFILE
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
 ; *CONFIGURE and *STATUS simply issue the corresponding service calls, so the
@@ -3544,7 +3544,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 	  EQUS "Bad parameter", &00
 
 .exitSCIndirect
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
 ; SFTODO: This has only one caller
@@ -3808,7 +3808,7 @@ ENDIF
 	  JSR findNextCharAfterSpace							;find next character. offset stored in Y
             PLP
             JSR jmpConfTypTblX
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 			
 ; Jump to the code at ConfTypTbl[X]; C is preserved, as it is used to indicate
 ; *STATUS (clear) or *CONFIGURE (set).
@@ -6269,7 +6269,7 @@ osfileBlock = L02EE
             JSR OSFILE
 .^PrvDisexitSc
 .LA2DE      JSR PrvDis								;switch out private RAM
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
 .parseRomBankListChecked
@@ -6305,7 +6305,7 @@ osfileBlock = L02EE
             INY
             JSR insertBanksUsingTransientRomBankMask					;Initialise inserted ROMs
 .exitSCIndirect1
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 
 .writeUserRegAndCheckNextCharI
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
@@ -6330,7 +6330,7 @@ osfileBlock = L02EE
             INY
             JSR unplugBanksUsingTransientRomBankMask
 .exitSCIndirect2
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
 {
@@ -6665,7 +6665,7 @@ osfileBlock = L02EE
             JSR PrvEn								;switch in private RAM
             JSR LA53D
 .^LA537     JSR PrvDis								;switch out private RAM
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
 {
@@ -8981,7 +8981,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     LDX #serviceUpdateEnded:JSR osEntryOsbyteIssueServiceRequest
 .DontGenerateServiceCall
 .NoUpdateEndedInterrupt
-    JMP exitSC
+    JMP ExitAndClaimServiceCall
 }
 
 .PrvDisMismatch
@@ -9022,16 +9022,16 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             JSR getRtcDateTime							;read TIME & DATE information from RTC and store in Private RAM (&82xx)
             JSR initDateBufferAndEmitTimeAndDate								;format text for output to screen?
             JSR printDateBuffer								;output TIME & DATE data from address &8000 to screen
-.PrvDisexitSC
+.PrvDisExitAndClaimServiceCall
             JSR PrvDis								;switch out private RAM
-            JMP exitSC								;Exit Service Call								;
+            JMP ExitAndClaimServiceCall								;Exit Service Call								;
 			
 .setTime    INY
             JSR parseAndValidateTime
             BCC parseOk
             JMP PrvDisBadTime								;Error with Bad time
 .parseOk    JSR writeRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
-            JMP PrvDisexitSC								;switch out private RAM and exit
+            JMP PrvDisExitAndClaimServiceCall								;switch out private RAM and exit
 }
 
 ;*DATE Command
@@ -9061,7 +9061,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             JSR printDateBuffer								;output DATE data from address &8000 to screen
 .PrvDisexitSc
             JSR PrvDis								;switch out private RAM
-            JMP exitSC								;Exit Service Call								;
+            JMP ExitAndClaimServiceCall								;Exit Service Call								;
 			
 .setDate    INY
             JSR LB2F5
@@ -9164,7 +9164,7 @@ column = prvC
             CMP #daysPerWeek + 1
             BCC rowLoop
             JSR PrvDis								;switch out private RAM
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
 {
@@ -9264,7 +9264,7 @@ column = prvC
             JSR OSWRCH								;write to screen
 .LB6E0      JSR OSNEWL								;new line
 .LB6E3      JSR PrvDis								;switch out private RAM
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 			
 ;OSWORD &0E (14) Read real time clock
@@ -9312,7 +9312,7 @@ column = prvC
 
 .^unstackTransientCmdSpaceAndExitSC
 	  JSR unstackTransientCmdSpace						;restore 8 bytes of data to &A8 from the stack
-            JMP exitSC								;Exit Service Call
+            JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 			
 ;Save OSWORD XY entry table
