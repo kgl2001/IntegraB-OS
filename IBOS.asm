@@ -1501,7 +1501,7 @@ tabColumn = 12
             JSR ReadRtcRam								;Read data from RTC memory location X into A
             CMP #rtcRegCIRQF								;Interrupt Request Flag
             BCC exitSCa								;restore service call parameters and exit
-            JMP rtcInterruptHandler								;
+            JMP RtcInterruptHandler								;
 
 .L8635      LDX #&0B
 .L8637      CMP srvCallLU,X
@@ -8930,7 +8930,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 }
 
 ; On entry, X=rtcRegC and A is the value read from rtcRegC.
-.rtcInterruptHandler
+.RtcInterruptHandler
 {
     DEX:ASSERT rtcRegC - 1 == rtcRegB
     JSR Nop3:STX rtcAddress
@@ -8939,30 +8939,30 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     ; for interrupts which have triggered and are not masked off. We shift A left and test the
     ; bits as they fall off into the carry.
     JSR SeiSelectRtcAddressXVariant ; SFTODO: Does this leave interrupts disabled??? I can't see a CLI or PLP, although there might be one somewhere...
-    ASL A:ASL A:BCC noPeriodicInterrupt
+    ASL A:ASL A:BCC NoPeriodicInterrupt
     PHA
     CLC:JSR LB35F
     PLA
-.noPeriodicInterrupt
-    ASL A:BCC noAlarmInterrupt
+.NoPeriodicInterrupt
+    ASL A:BCC NoAlarmInterrupt
     PHA
     JSR LB34E
     PLA
-.noAlarmInterrupt
-    ASL A:BCC noUpdateEndedInterrupt
-    LDX #prvSFTODORTCISH - prv83
-    JSR readPrivateRam8300X
+.NoAlarmInterrupt
+    ASL A:BCC NoUpdateEndedInterrupt
+    LDX #prvSFTODORTCISH - prv83:JSR readPrivateRam8300X
     PHA
     AND #&01 ; SFTODO: So b0 of prvSFTODORTCISH has something to do with triggering an OS event when the RTC alarm goes off?
-    BEQ noUserEvent
+    BEQ DontGenerateUserEvent
     LDY #eventNumUser:JSR OSEVEN
-.noUserEvent
+.DontGenerateUserEvent
     PLA
     AND #&02 ; SFTODO: So it like b1 of prvSFTODORTCISH has something to do with enabling a service call to be issued when the RTC alarm goes off
-    BEQ noUpdateEndedInterrupt ; SFTODO: Change label name given this call?
+    BEQ DontGenerateServiceCall
     LDX #serviceAlarm
     JSR osEntryOsbyteIssueServiceRequest
-.noUpdateEndedInterrupt
+.DontGenerateServiceCall
+.NoUpdateEndedInterrupt
     JMP exitSC
 }
 
