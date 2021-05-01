@@ -9888,8 +9888,8 @@ ibosCNPVIndex = 6
             PLA
             PLA
             ; At this point the stack looks like this:
-            ;   &101,S  Y stacked by preceding instructions
-            ;   &102,S  X stacked by preceding instructions
+            ;   &101,S  Y stacked by vectorEntry
+            ;   &102,S  X stacked by vectorEntry
             ;   &103,S  return address from "JSR vectorEntry" (low)
             ;   &104,S  return address from "JSR vectorEntry" (high)
             ;   &105,S  previously paged in ROM bank stacked by romCodeStubCallIBOS
@@ -9900,10 +9900,8 @@ ibosCNPVIndex = 6
             ; which will restore the previously paged in ROM, the flags and then A,
             ; so the vector's caller will see the Z/N flags reflecting A, but
             ; otherwise preserved.
-            PLA
-            TAY
-            PLA
-            TAX
+            PLA:TAY
+            PLA:TAX
             RTS
 }
 
@@ -10553,14 +10551,9 @@ ptr = &A8
 ; SFTODO: Perhaps not the catchiest label name ever...
 .RestoreRamselClearPrvenReturnFromVectorHandler
 {
-            PLA
-            STA ramselCopy
-            STA ramsel
-            LDA romselCopy
-            AND_NOT romselPrvEn
-            STA romselCopy
-            STA romsel
-            JMP returnFromVectorHandler
+    PLA:STA ramselCopy:STA ramsel
+    LDA romselCopy:AND_NOT romselPrvEn:STA romselCopy:STA romsel
+    JMP returnFromVectorHandler
 }
 
 .cnpvHandler
