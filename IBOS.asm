@@ -179,6 +179,10 @@ transientDateBufferIndex = &AA ; SFTODO!?
 transientDateSFTODO2 = &AA ; SFTODO: prob just temp storage
 transientDateSFTODO1 = &AB ; SFTODO!? 2 bytes?
 
+FilingSystemWorkspace = &B0; IBOS repurposes this, which feels a bit risky but presumably works in practice
+
+ConvertIntegerResult = FilingSystemWorkspace ; 4 bytes
+
 vduStatus = &D0
 vduStatusShadow = &10
 vduGraphicsCharacterCell = &D6 ; 2 bytes
@@ -606,6 +610,8 @@ bufNumPrinter = 3 ; OS buffer number for the printer buffer
 
 eventNumUser = 9
 
+opcodeJmpAbsolute = &4C
+opcodeJmpIndirect = &6C
 opcodeCmpAbs = &CD
 opcodeLdaAbs = &AD
 opcodeStaAbs = &8D
@@ -1721,7 +1727,6 @@ padFlag = &B1 ; b7 clear iff "0" should be converted into "pad"
 ; occurs?
 ; SFTODO: Any chance of shrinking this code using loops to work on the 4-byte values?
 {
-result = &B0 ; 4 bytes
 base = &B8
 negateFlag = &B9
 originalCmdPtrY = &BA
@@ -1741,10 +1746,10 @@ firstDigitCmdPtrY = &BB
             STY originalCmdPtrY
             STY firstDigitCmdPtrY
             LDA #&00
-            STA result
-            STA result + 1
-            STA result + 2
-            STA result + 3
+            STA ConvertIntegerResult
+            STA ConvertIntegerResult + 1
+            STA ConvertIntegerResult + 2
+            STA ConvertIntegerResult + 3
             STA negateFlag
             LDA (transientCmdPtr),Y
             CMP #'-'
@@ -1770,37 +1775,37 @@ firstDigitCmdPtrY = &BB
             JMP L87B9
 			
 .L876E      TAX
-            LDA result
+            LDA ConvertIntegerResult
             STA L00B4
-            STX result
+            STX ConvertIntegerResult
             LDX #&00
-            LDA result + 1
+            LDA ConvertIntegerResult + 1
             STA L00B5
-            STX result + 1
-            LDA result + 2
+            STX ConvertIntegerResult + 1
+            LDA ConvertIntegerResult + 2
             STA L00B6
-            STX result + 2
-            LDA result + 3
+            STX ConvertIntegerResult + 2
+            LDA ConvertIntegerResult + 3
             STA L00B7
-            STX result + 3
+            STX ConvertIntegerResult + 3
             LDA base
             LDX #&08
 .L878D      LSR A
             BCC L87AD
             PHA
             CLC
-            LDA result
+            LDA ConvertIntegerResult
             ADC L00B4
-            STA result
-            LDA result + 1
+            STA ConvertIntegerResult
+            LDA ConvertIntegerResult + 1
             ADC L00B5
-            STA result + 1
-            LDA result + 2
+            STA ConvertIntegerResult + 1
+            LDA ConvertIntegerResult + 2
             ADC L00B6
-            STA result + 2
-            LDA result + 3
+            STA ConvertIntegerResult + 2
+            LDA ConvertIntegerResult + 3
             ADC L00B7
-            STA result + 3
+            STA ConvertIntegerResult + 3
             PLA
             BVS L8806
 .L87AD      ASL L00B4
@@ -1827,22 +1832,22 @@ firstDigitCmdPtrY = &BB
             BPL L87EF
             SEC
             LDA #&00
-            SBC result
-            STA result
+            SBC ConvertIntegerResult
+            STA ConvertIntegerResult
             LDA #&00
-            SBC result + 1
-            STA result + 1
+            SBC ConvertIntegerResult + 1
+            STA ConvertIntegerResult + 1
             LDA #&00
-            SBC result + 2
-            STA result + 2
+            SBC ConvertIntegerResult + 2
+            STA ConvertIntegerResult + 2
             LDA #&00
-            SBC result + 3
-            STA result + 3
+            SBC ConvertIntegerResult + 3
+            STA ConvertIntegerResult + 3
 .L87EF      CPY firstDigitCmdPtrY
             BEQ L87F8
             CLC
             CLV
-            LDA result
+            LDA ConvertIntegerResult
             RTS
 			
 .L87F8      LDA #vduBell
@@ -3245,36 +3250,34 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 }
 			
 ;*GOIO Command
+.goio
 {
-.^goio	  LDA (transientCmdPtr),Y
-            CMP #'('
-            PHP
-            BNE L9101
-            INY
-.L9101      JSR convertIntegerDefaultHex
-            BCC L9109
-            JMP GenerateSyntaxError
-			
-.L9109      LDA (transientCmdPtr),Y
-            CMP #')'
-            BNE L9110
-            INY
-.L9110      JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            LDA #'L'
-            PLP
-            BNE L911A
-            LDA #'l'
-.L911A      STA L00AF
-            CLC
-            TYA
-            ADC L00A8
-            TAX
-            LDA L00A9
-            ADC #&00
-            TAY
-            LDA #&01
-            JSR L00AF
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+    LDA (transientCmdPtr),Y
+    ; If the argument is wrapped in brackets we treat it as an indirect address; we stash the
+    ; flags after doing the first CMP to record whether or not we've seen brackets.
+    CMP #'(':PHP:BNE NoOpenBracket
+    INY
+.NoOpenBracket
+    JSR convertIntegerDefaultHex:BCC ParsedOK
+    JMP GenerateSyntaxError
+.ParsedOK
+    LDA (transientCmdPtr),Y
+    CMP #')':BNE NoCloseBracket
+    INY
+.NoCloseBracket
+    JSR findNextCharAfterSpace
+    ; Poke a suitable JMP instruction just before the binary address at ConvertIntegerResult.
+    LDA #opcodeJmpAbsolute
+    PLP:BNE NotIndirect ; use stashed result of earlier CMP #'(' to test for indirect call
+    LDA #opcodeJmpIndirect
+.NotIndirect
+    STA ConvertIntegerResult - 1
+    ; Set YX to point to the command tail. SFTODO: Is this an official kind of thing to do?
+    CLC:TYA:ADC transientCmdPtr:TAX
+    LDA transientCmdPtr + 1:ADC #0:TAY
+    LDA #1 ; SFTODO: Why? Is this related to the "A=1 on language entry"? Are we following some sort of standard here?
+    JSR ConvertIntegerResult - 1
+    JMP ExitAndClaimServiceCall
 }
 			
 ;*APPEND Command
