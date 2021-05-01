@@ -86,6 +86,7 @@ rtcRegA = &0A
 	rtcRegADV2 = 1<<6
 rtcRegB = &0B
 	rtcRegBDSE = 1<<0
+	rtcRegBUIE = 1<<4
 	rtcRegBAIE = 1<<5
 	rtcRegBPIE = 1<<6
 	rtcRegBSET = 1<<7
@@ -6842,7 +6843,7 @@ osfileBlock = L02EE
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR rdRTCRAM								;Read data from RTC memory location X into A
-            AND #&70
+            AND #rtcRegBPIE OR rtcRegBAIE OR rtcRegBUIE
             ORA #&86
             JSR wrRTCRAM								;Write data from A to RTC memory location X
             LDX #rtcRegSeconds								;Select 'Seconds' register on RTC: Register &00
