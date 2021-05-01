@@ -2882,23 +2882,24 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     EQUS "Printing!", &00
 }
 
-; SFTODO: Since this only has two callers, wouldn't it be easier for them just to do LDX #0 or LDX #kInSidewaysRamString - kInPrivateRamString themselves instead of needing to faff with the CPX# stuff?
+; SQUASH: Since this only has two callers, wouldn't it be easier for them just to do LDX #0 or
+; LDX #KInSidewaysRamString - KInPrivateRamString themselves instead of needing to faff with
+; the CPX# stuff?
 .printKInPrivateOrSidewaysRAM
 {
-.L8E8C      CPX #&00								;If X=0 then
-            BEQ L8E92								;select Private RAM message
-            LDX #kInSidewaysRamString - kInPrivateRamString								;else select Sideways RAM message
-.L8E92      LDA kInPrivateRamString,X								;Get Character from lookup table
-            BEQ rts								;Exit if 0
-            JSR OSWRCH								;Print Character
-            INX									;Next Character
-            BNE L8E92								;Loop
-.rts        RTS
+    CPX #0:BEQ PrintOffsetXLoop
+    LDX #KInSidewaysRamString - KInPrivateRamString
+.PrintOffsetXLoop
+    LDA KInPrivateRamString,X:BEQ Rts
+    JSR OSWRCH
+    INX:BNE PrintOffsetXLoop
+.Rts
+    RTS
 
-.kInPrivateRamString
-.L8E9E		EQUS "k in Private RAM", &00
-.kInSidewaysRamString
-		EQUS "k in Sideways RAM ", &00
+.KInPrivateRamString
+    EQUS "k in Private RAM", &00
+.KInSidewaysRamString
+    EQUS "k in Sideways RAM ", &00
 }
 
 ;*OSMODE Command
