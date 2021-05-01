@@ -10490,36 +10490,33 @@ ptr = &A8
 
 .InsvHandler
 {
-.LBD5C	  TSX
-            LDA L0102,X ; get original X=buffer number
-            CMP #bufNumPrinter
-            BEQ isPrinterBuffer
-            LDA #ibosINSVIndex
-            JMP forwardToParentVectorTblEntry
+    TSX:LDA L0102,X ; get original X=buffer number
+    CMP #bufNumPrinter:BEQ IsPrinterBuffer
+    LDA #ibosINSVIndex:JMP forwardToParentVectorTblEntry
 
-.isPrinterBuffer
-.LBD69      JSR pageInPrvs81
-            PHA
-            TSX
-            JSR checkPrintBufferFull
-            BCC insvBufferNotFull
-            ; Return to caller with carry set to indicate insertion failed.
-            LDA L0107,X ; get original flags
-            ORA #flagC
-            STA L0107,X ; modify original flags so C is set
-            JMP restoreRamselClearPrvenReturnFromVectorHandler
+.IsPrinterBuffer
+    JSR pageInPrvs81
+    PHA
+    TSX
+    JSR checkPrintBufferFull
+    BCC PrintBufferNotFull
+    ; Return to caller with carry set to indicate insertion failed.
+    LDA L0107,X ; get original flags
+    ORA #flagC
+    STA L0107,X ; modify original flags so C is set
+    JMP restoreRamselClearPrvenReturnFromVectorHandler
 
-.insvBufferNotFull
-.LBD7E      LDA L0108,X ; get original A=character to insert
-            JSR staPrintBufferWritePtr
-            JSR advancePrintBufferReadPtr
-            JSR decrementPrintBufferFree
-            ; Return to caller with carry clear to indicate insertion succeeded.
-            TSX
-            LDA L0107,X ; get original flags
-            ANDNOT flagC
-            STA L0107,X ; modify original flags so C is clear
-            JMP restoreRamselClearPrvenReturnFromVectorHandler
+.PrintBufferNotFull
+    LDA L0108,X ; get original A=character to insert
+    JSR staPrintBufferWritePtr
+    JSR advancePrintBufferReadPtr
+    JSR decrementPrintBufferFree
+    ; Return to caller with carry clear to indicate insertion succeeded.
+    TSX
+    LDA L0107,X ; get original flags
+    ANDNOT flagC
+    STA L0107,X ; modify original flags so C is clear
+    JMP restoreRamselClearPrvenReturnFromVectorHandler
 }
 
 ; SFTODO: Would it be possible to factor out the common-ish code at the start of
