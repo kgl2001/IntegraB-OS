@@ -3293,18 +3293,19 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
     LDA #osfindOpenUpdate:JSR parseFilenameAndOpen
     LDA #0:STA LineNumber
     JSR PrvEn
-.L913A
+    ; Start by showing the existing contents of the file we're *APPENDing to.
+.ShowLineLoop
     JSR OSNEWL
     LDA #osbyteCheckEOF:LDX transientFileHandle:JSR OSBYTE:CPX #0:BNE Eof
     JSR IncrementAndPrintLineNumber
-.L914B
+.ShowCharacterLoop
     LDY transientFileHandle:JSR OSBGET:BCS Eof
-    CMP #vduCr:BEQ L913A
-    CMP #' ':BCC L914B
-    CMP #vduDel:BCS L914B
+    CMP #vduCr:BEQ ShowLineLoop
+    CMP #' ':BCC ShowCharacterLoop
+    CMP #vduDel:BCS ShowCharacterLoop
     JSR OSWRCH
-    BNE L914B
-    BEQ L913A
+    BNE ShowCharacterLoop
+    BEQ ShowLineLoop ; always branch
 .Eof
     JSR IncrementAndPrintLineNumber
     ; Copy OswordInputLineBlock into OswordInputLineBlockCopy in main RAM for use.
