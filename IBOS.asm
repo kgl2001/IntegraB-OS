@@ -9618,13 +9618,14 @@ column = prvC
             CLC
             RTS
 
-.LB906      JMP ExitServiceCall								;restore service call parameters and exit
+{
+.ExitServiceCallIndirect
+    JMP ExitServiceCall
 
 ;Error (BRK) occurred - Service call &06
-{
 .^service06 LDA osErrorPtr + 1
             CMP #&FF ; SFTODO: magic number?
-            BNE LB906
+            BNE ExitServiceCallIndirect
             LDX oswdbtX ; SFTODO: seems a bit odd using this address in this service call
             TXS
             LDA #&88
