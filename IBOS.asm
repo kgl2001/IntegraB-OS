@@ -6867,8 +6867,8 @@ osfileBlock = L02EE
     ; Clear all bits in register A except DV1; this starts the RTC clock with a 32.768kHz
     ; time-base frequency.
     LDX #rtcRegA:JSR ReadRtcRam:AND #rtcRegADV1:JSR WriteRtcRam
-    LDX #userRegOsModeShx:JSR readUserReg
     ; Set DSE in register B according to userRegOsModeShx and force SET off.
+    LDX #userRegOsModeShx:JSR readUserReg
     LDX #0
     AND #&10:BEQ NoAutoDSTAdjust ; test auto DST bit of userRegOsModeShx SFTODO: named constant?
     LDX #rtcRegBDSE ; SQUASH: Just do ASSERT rtcRegBDSE == 1:INX
