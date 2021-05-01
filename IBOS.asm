@@ -10535,14 +10535,14 @@ ptr = &A8
     JSR ldaPrintBufferReadPtr
     TSX
     PHA ; note this doesn't affect X so our L01xx,X references stay the same
-    LDA L0107,X:AND #flagV:BNE examineBuffer ; test V in stacked flags from caller
+    LDA L0107,X:AND #flagV:BNE ExamineBuffer ; test V in stacked flags from caller
     ; V was cleared by the caller, so we're removing a character from the buffer.
     PLA:STA L0108,X ; overwrite stacked A with character read from our buffer
     JSR advancePrintBufferWritePtr
     JSR incrementPrintBufferFree
     JMP restoreRamselClearPrvenReturnFromVectorHandler
 
-.examineBuffer
+.ExamineBuffer
     ; V was set by the caller, so we're just examining the buffer without removing anything.
     PLA:STA L0102,X ; overwrite stacked Y with character peeked from our buffer
     FALLTHROUGH_TO restoreRamselClearPrvenReturnFromVectorHandler
