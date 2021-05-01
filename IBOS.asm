@@ -48,9 +48,9 @@
 ;&2A:	RTC &08 - Month (Set at writeRtcDate)
 ;&2B:	RTC &07 - Day of Month (Set at writeRtcDate)
 ;&2C:	RTC &06 - Day of Week (Set at writeRtcDate)
-;&2D:	RTC &04 - Hours (Set at writeRtcTime)
-;&2E:	RTC &02 - Minutes (Set at writeRtcTime)
-;&2F:	RTC &00 - Seconds (Set at writeRtcTime)
+;&2D:	RTC &04 - Hours (Set at WriteRtcTime)
+;&2E:	RTC &02 - Minutes (Set at WriteRtcTime)
+;&2F:	RTC &00 - Seconds (Set at WriteRtcTime)
 ;&52:	
 ;&53:	
 
@@ -6848,7 +6848,7 @@ osfileBlock = L02EE
 }
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
-.writeRtcTime
+.WriteRtcTime
 {
 .LA676      LDX #rtcRegA								;Select 'Register A' register on RTC: Register &0A
             JSR ReadRtcRam								;Read data from RTC memory location X into A
@@ -6981,7 +6981,7 @@ osfileBlock = L02EE
 
 ; SFTODO: Following block is dead code
 {
-            JSR writeRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC						***not used. nothing jumps into this code***
+            JSR WriteRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC						***not used. nothing jumps into this code***
             JMP writeRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
 }
 
@@ -9009,7 +9009,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             JSR parseAndValidateTime
             BCC parseOk
             JMP PrvDisBadTime								;Error with Bad time
-.parseOk    JSR writeRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
+.parseOk    JSR WriteRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
             JMP PrvDisExitAndClaimServiceCall								;switch out private RAM and exit
 }
 
@@ -9559,7 +9559,7 @@ column = prvC
 ; SFTODO: Don't these next two calls contain most of the logic we'd need to implement OSWORD &F?
 ;XY?0=&65
 ;OSWORD &49 (73) - Integra-B calls
-.LB8D8	  JSR writeRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
+.LB8D8	  JSR WriteRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
             SEC
             RTS
 			
