@@ -3258,9 +3258,9 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     CMP #'(':PHP:BNE NoOpenBracket
     INY
 .NoOpenBracket
-    JSR convertIntegerDefaultHex:BCC ParsedOK
+    JSR convertIntegerDefaultHex:BCC ConvertedOK
     JMP GenerateSyntaxError
-.ParsedOK
+.ConvertedOK
     LDA (transientCmdPtr),Y
     CMP #')':BNE NoCloseBracket
     INY
