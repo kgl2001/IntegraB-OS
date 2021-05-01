@@ -1494,7 +1494,7 @@ tabColumn = 12
             ; We're handling service call 5 - unrecognised interrupt.
             ; SFTODO: I'm guessing this is something to do with the RTC generating an interrupt when alarm time occurs.
             LDX #rtcRegC								;Select 'Register C' register on RTC: Register &0C
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             CMP #rtcRegCIRQF								;Interrupt Request Flag
             BCC exitSCa								;restore service call parameters and exit
             JMP rtcInterruptHandler								;
@@ -1899,7 +1899,7 @@ firstDigitCmdPtrY = &BB
             ADC #rtcUserBase								;Increment address by &0E bytes. First &0E bytes are for the RTC data
             TAX
             PLA
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             JMP L885B
 
 .^writeUserReg
@@ -1913,7 +1913,7 @@ firstDigitCmdPtrY = &BB
             ADC #rtcUserBase								;Increment address by &0E bytes. First &0E bytes are for the RTC data
             TAX
             PLA
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
 			
 .L885B      PHA
             TXA
@@ -2438,15 +2438,15 @@ ptr = &00 ; 2 bytes
     LDX #rtcRegB
     CMP #&00
     BNE L8B90
-    JSR rdRTCRAM								;Read data from RTC memory location X into A
+    JSR ReadRtcRam								;Read data from RTC memory location X into A
     NOT_AND rtcRegBUIE
     JMP L8B95
 			
 .L8B90
-    JSR rdRTCRAM								;Read data from RTC memory location X into A
+    JSR ReadRtcRam								;Read data from RTC memory location X into A
     ORA #rtcRegBUIE
 .L8B95
-    JSR wrRTCRAM								;Write data from A to RTC memory location X
+    JSR WriteRtcRam								;Write data from A to RTC memory location X
     PLA
     STA oswdbtX
     JMP exitSC								;Exit Service Call
@@ -6811,22 +6811,23 @@ osfileBlock = L02EE
 }
 
 {
-;read from RTC RAM (Addr = X, Data = A)
-.^rdRTCRAM   PHP
-            SEI
-            JSR SeiSelectRtcAddressX								;Set RTC address according to X
-            LDA rtcData								;Strobe out data
-            JSR SeiSelectRtcAddressXVariant
-            PLP
-            RTS
-			
-;write to RTC RAM (Addr = X, Data = A)
-.^wrRTCRAM   PHP
-            JSR SeiSelectRtcAddressX								;Set RTC address according to X
-            STA rtcData								;Strobe in data
-            JSR SeiSelectRtcAddressXVariant
-            PLP
-            RTS
+; Read RTC RAM address X into A.
+.^ReadRtcRam
+    PHP:SEI ; SQUASH: isn't this SEI redundant?
+    JSR SeiSelectRtcAddressX
+    LDA rtcData
+    JSR SeiSelectRtcAddressXVariant
+    PLP
+    RTS
+
+; Write A into RTC RAM address X.
+.^WriteRtcRam
+    PHP
+    JSR SeiSelectRtcAddressX
+    STA rtcData
+    JSR SeiSelectRtcAddressXVariant
+    PLP
+    RTS
 
 .^Nop3
     NOP
@@ -6853,27 +6854,27 @@ osfileBlock = L02EE
 .writeRtcTime
 {
 .LA676      LDX #rtcRegA								;Select 'Register A' register on RTC: Register &0A
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             ORA #rtcRegADV2 OR rtcRegADV1 OR rtcRegADV0
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             AND #rtcRegBPIE OR rtcRegBAIE OR rtcRegBUIE
             ORA #rtcRegBSET OR rtcRegBDM OR rtcRegB2412
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             LDX #rtcRegSeconds								;Select 'Seconds' register on RTC: Register &00
             LDA prvDateSeconds								;Get 'Seconds' from &822F
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             LDX #rtcRegMinutes								;Select 'Minutes' register on RTC: Register &02
             LDA prvDateMinutes								;Get 'Minutes' from &822E
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             LDX #rtcRegHours								;Select 'Hours' register on RTC: Register &04
             LDA prvDateHours								;Get 'Hours' from &822D
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             LDX #rtcRegA								;Select 'Register A' register on RTC: Register &0A
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             AND #rtcRegADV1
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             LDX #userRegOsModeShx
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LDX #&00
@@ -6882,10 +6883,10 @@ osfileBlock = L02EE
             LDX #rtcRegBDSE ; SQUASH: Just do ASSERT rtcRegBDSE == 1:INX
 .LA6BB      STX prvTmp2
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             NOT_AND rtcRegBSET OR rtcRegBDSE
             ORA prvTmp2
-            JMP wrRTCRAM								;Write data from A to RTC memory location X
+            JMP WriteRtcRam								;Write data from A to RTC memory location X
 }
 			
 ;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
@@ -6894,16 +6895,16 @@ osfileBlock = L02EE
 .LA6CB      JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
             LDX #rtcRegDayOfWeek							;Select 'Day of Week' register on RTC: Register &06
             LDA prvDateDayOfWeek							;Get 'Day of Week' from &822C
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             INX:ASSERT rtcRegDayOfWeek + 1 == rtcRegDayOfMonth		 		;Select 'Day of Month' register on RTC: Register &07
             LDA prvDateDayOfMonth							;Get 'Day of Month' from &822B
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             INX:ASSERT rtcRegDayOfMonth + 1 == rtcRegMonth					;Select 'Month' register on RTC: Register &08
             LDA prvDateMonth								;Get 'Month' from &822A
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             INX:ASSERT rtcRegMonth + 1 == rtcRegYear					;Select 'Year' register on RTC: Register &09
             LDA prvDateYear								;Get 'Year' from &8229
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             LDX #userRegCentury
             LDA prvDateCentury
             JMP writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
@@ -6914,13 +6915,13 @@ osfileBlock = L02EE
 {
 .LA6F3      JSR waitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
             LDX #rtcRegSeconds							;Select 'Seconds' register on RTC: Register &00
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             STA prvDateSeconds							;Store 'Seconds' at &822F
             LDX #rtcRegMinutes							;Select 'Minutes' register on RTC: Register &02
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             STA prvDateMinutes							;Store 'Minutes' at &822E
             LDX #rtcRegHours								;Select 'Hours' register on RTC: Register &04
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             STA prvDateHours								;Store 'Hours' at &822D
             RTS
 }
@@ -6930,16 +6931,16 @@ osfileBlock = L02EE
 {
 .LA70F      JSR waitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
             LDX #rtcRegDayOfWeek							;Select 'Day of Week' register on RTC: Register &06
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             STA prvDateDayOfWeek							;Store 'Day of Week' at &822C
             INX:ASSERT rtcRegDayOfWeek + 1 == rtcRegDayOfMonth				;Select 'Day of Month' register on RTC: Register &07
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             STA prvDateDayOfMonth							;Store 'Day of Month' at &822B
             INX:ASSERT rtcRegDayOfMonth + 1 == rtcRegMonth					;Select 'Month' register on RTC: Register &08
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             STA prvDateMonth								;Store 'Month' at &822A
             INX:ASSERT rtcRegMonth + 1 == rtcRegYear					;Select 'Year' register on RTC: Register &09
-.LA729      JSR rdRTCRAM								;Read data from RTC memory location X into A
+.LA729      JSR ReadRtcRam								;Read data from RTC memory location X into A
             STA prvDateYear								;Store 'Year' at &8229
             JMP defaultPrvDateCentury
 }
@@ -6949,13 +6950,13 @@ osfileBlock = L02EE
 {
 .LA732      JSR waitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
             LDX #rtcRegAlarmSeconds							;Select 'Sec Alarm' register on RTC: Register &01
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             STA prvDateSeconds							;Store 'Sec Alarm' at &822F
             LDX #rtcRegAlarmMinutes							;Select 'Min Alarm' register on RTC: Register &03
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             STA prvDateMinutes							;Store 'Min Alarm' at &822E
             LDX #rtcRegAlarmHours							;Select 'Hr Alarm' register on RTC: Register &05
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             STA prvDateHours								;Store 'Hr Alarm' at &822D
             RTS
 }
@@ -6966,13 +6967,13 @@ osfileBlock = L02EE
 .LA74E      JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
             LDX #&01								;Select 'Sec Alarm' register on RTC: Register &01
             LDA prvOswordBlockCopy + 15								;Get 'Sec Alarm' from &822F
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             LDX #&03								;Select 'Min Alarm' register on RTC: Register &03
             LDA prvOswordBlockCopy + 14								;Get 'Min Alarm' from &822E
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             LDX #&05								;Select 'Hr Alarm' register on RTC: Register &05
             LDA prvOswordBlockCopy + 13								;Get 'Hr Alarm' from &822D
-            JMP wrRTCRAM								;Write data from A to RTC memory location X
+            JMP WriteRtcRam								;Write data from A to RTC memory location X
 }
 
 .getRtcDateTime
@@ -7018,13 +7019,13 @@ osfileBlock = L02EE
 ;Stop Clock and Initialise RTC registers &00 to &0B
 .^LA790      LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             LDA #&86								;Stop Clock, Set Binary mode, Set 24hr mode
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             DEX									;Select 'Register A' register on RTC: Register &0A
             LDA #&E0								;Divider Off, Invalid write 'Update in Progress' bit!
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             DEX									;Start at Register &09
 .LA79E      LDA LA786,X								;Read data from table
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             DEX									;Next register
             BPL LA79E								;Until <0
             RTS									;Exit
@@ -7039,15 +7040,15 @@ osfileBlock = L02EE
             LSR A
             STA L00AE
             LDX #&0B								;Select 'Register B' register on RTC: Register &0B
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             ORA #&08
             ORA L00AE
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
 .clcRts      CLC
             RTS
 
 .LA7C2      LDX #&0B								;Select 'Register B' register on RTC: Register &0B
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             AND #&08
             BNE clcRts
             SEC
@@ -8650,7 +8651,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .LB26A      LDA prvTmp4
             BNE LB27B
             LDX #&06								;Select 'Day of Week' register on RTC: Register &06
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             STA prvTmp4
             LDA #&FF
             STA transientDateSFTODO1
@@ -8839,14 +8840,14 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             LDA LB344,X								;read forth byte from 2 byte lookup table
             STA prv82+&74								;save at &8274
             LDX #&0A								;Select 'Register A' register on RTC: Register &0A
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             AND #&F0
             ORA #&0E
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             LDX #&0B								;Select 'Register B' register on RTC: Register &0B
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             ORA #&40								;Enable Periodic Interrupts
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             LDA #&01
             STA prv82+&76
 .LB3CA      LDA prv82+&76
@@ -8892,14 +8893,14 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             AND #&20
             STA prv82+&76
             LDX #&0B								;Select 'Register B' register on RTC: Register &0B
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             AND #&9F
             ORA prv82+&76
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             LDX #&0A								;Select 'Register A' register on RTC: Register &0A
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             AND #&F0
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             LDA #&76								;Reflect keyboard status in keyboard LEDs
             JSR OSBYTE								;Call OSBYTE
             JMP LB460
@@ -9193,18 +9194,18 @@ column = prvC
             AND #&BF
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             NOT_AND rtcRegBPIE OR rtcRegBAIE
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             JMP LB6E3
 			
 .LB67C      ORA #&40
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             NOT_AND rtcRegBPIE OR rtcRegBAIE
             ORA #rtcRegBAIE
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             JMP LB6E3
 			
 .showAlarm  LDA #&40
@@ -9228,7 +9229,7 @@ column = prvC
             JSR OSWRCH								;write to screen
             JSR printSpace								;write ' ' to screen
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             AND #rtcRegBAIE
             JSR printOnOff
             LDX #userRegAlarm
@@ -9547,7 +9548,7 @@ column = prvC
 .LB8C6		JSR LB774
             JSR copyRtcAlarmToPrv
             LDX #&0B								;Select 'Register B' register on RTC: Register &0B
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             AND #&60
             STA prvOswordBlockCopy + 1
             CLC
@@ -9573,10 +9574,10 @@ column = prvC
             AND #rtcRegBPIE OR rtcRegBAIE
             STA prvOswordBlockCopy + 1
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
-            JSR rdRTCRAM								;Read data from RTC memory location X into A
+            JSR ReadRtcRam								;Read data from RTC memory location X into A
             NOT_AND rtcRegBPIE OR rtcRegBAIE
             ORA prvOswordBlockCopy + 1
-            JSR wrRTCRAM								;Write data from A to RTC memory location X
+            JSR WriteRtcRam								;Write data from A to RTC memory location X
             SEC
             RTS
 
