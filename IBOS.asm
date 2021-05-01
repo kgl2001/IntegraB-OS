@@ -10959,13 +10959,17 @@ SAVE "IBOS-01.rom", start, end
 ; it's much easier to take them out than to put them back in...
 
 ; SFTODO: The original ROM obviously has everything aligned correctly, but if
-; we're going to be modifying this in the future it might be good to put
-; asserts in routines which have to live outside a certain area of the ROM in
-; order to avoid breaking when we page in private RAM.
+; we're going to be modifying this in the future it might be good to put asserts
+; in routines which have to live outside a certain area of the ROM in order to
+; avoid breaking when we page in private RAM.
 
 ; SFTODO: I've been wrapping my multi-line comments to 80 characters (when I
 ; remember!), it might be nice to tweak the final disassembly to fit entirely in
 ; 80 columns.
 
-; SFTODO: Enhancement idea - allow "*CO." as an abbreviation for *CONFIGURE. The
-; Master accepts this, and it does trip me up when using IBOS.
+; SFTODO: Enhancement idea - allow "*CO." as an abbreviation for *CONFIGURE. The Master accepts
+; this, and it does trip me up when using IBOS.
+
+;; Local Variables:
+;; fill-column: 95
+;; End:
