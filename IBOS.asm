@@ -3311,10 +3311,8 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
     ; SQUASH: I don't believe this is necessary, we can just use OswordInputLineBlock directly.
     LDY #(OswordInputLineBlockEnd - OswordInputLineBlock) - 1
 .CopyLoop
-    LDA OswordInputLineBlock,Y
-    STA OswordInputLineBlockCopy,Y
-    DEY
-    BPL CopyLoop
+    LDA OswordInputLineBlock,Y:STA OswordInputLineBlockCopy,Y
+    DEY:BPL CopyLoop
     LDX #lo(OswordInputLineBlockCopy):LDY #hi(OswordInputLineBlockCopy)
     LDA #oswordInputLine:JSR OSWORD
     BCS L9196
@@ -3322,15 +3320,11 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
     STY L00A9
     LDX #&00
 .L9183
-    LDA prv80+&00,X
-    LDY transientFileHandle
-    JSR OSBPUT
-    CMP #vduCr
-    BEQ Eof ; SFTODO: MISUSED LABEL NAME?
+    LDA prvInputBuffer,X:LDY transientFileHandle:JSR OSBPUT
+    CMP #vduCr:BEQ Eof ; SFTODO: MISUSED LABEL NAME?
     INX
-    CPX L00A9
-    BNE L9183
-    BEQ Eof ; SFTODO: MISUSED LABEL NAME?
+    CPX L00A9:BNE L9183
+    BEQ Eof ; always branch SFTODO: MISUSED LABEL NAME?
 .L9196
     LDA #osbyteAcknowledgeEscape
     JSR OSBYTE
