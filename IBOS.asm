@@ -3334,8 +3334,8 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .L9196
     LDA #osbyteAcknowledgeEscape
     JSR OSBYTE
-    JSR PrvDis								;switch out private RAM
-    JSR CloseTransientFileHandle								;close file with file handle at &A8
+    JSR PrvDis
+    JSR CloseTransientFileHandle
     JSR OSNEWL
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 }
