@@ -97,6 +97,7 @@ rtcRegB = &0B
 	rtcRegBDSE = 1<<0
 	rtcRegB2412 = 1<<1
 	rtcRegBDM = 1<<2
+	rtcRegBSQWE = 1<<3
 	rtcRegBUIE = 1<<4
 	rtcRegBAIE = 1<<5
 	rtcRegBPIE = 1<<6
@@ -6856,7 +6857,7 @@ osfileBlock = L02EE
     ; Force SET (set mode), DM (binary mode) and 2412 (24 hour mode) on in register B ad
     ; force SQWE (square wave enable) and DSE (auto daylight savings adjust) off.
     LDX #rtcRegB:JSR ReadRtcRam
-    AND #rtcRegBPIE OR rtcRegBAIE OR rtcRegBUIE
+    NOT_AND rtcRegBSET OR rtcRegBSQWE OR rtcRegBDM OR rtcRegB2412 OR rtcRegBDSE
     ORA #rtcRegBSET OR rtcRegBDM OR rtcRegB2412
     JSR WriteRtcRam
     LDX #rtcRegSeconds:LDA prvDateSeconds:JSR WriteRtcRam
