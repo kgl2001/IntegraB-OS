@@ -940,8 +940,13 @@ t = &80
     EQUB 0
 
 .ibosParTbl
-    EQUB &01,&01,&01,&01
-    EQUB &00
+    ; The first byte here is the length of the parameter string plus 1, i.e. the parameters are
+    ; zero length strings.
+    EQUB 1 ; RTC
+    EQUB 1 ; SYS
+    EQUB 1 ; FSX
+    EQUB 1 ; SRAM
+    EQUB 0
 
 .ibosSubTbl
 }
@@ -1047,63 +1052,64 @@ MinimumAbbreviationLength = 3
 
 .DynamicSyntaxGenerationForIbosSubTblA
 {
-.L83A9      PHA
-	  ; SFTODO: The following seems needlessly long-winded; I wonder if
-	  ; this is a legacy of an earlier version of the code where the
-	  ; caller did JSR ibosRef *or something else* (note that we have some
-	  ; redundant calls to JSR ibosRef in IBOS 1.20 before calling this
-	  ; subroutine). As it is, I think we could replace the following with
-	  ; something like: PHA:ASL A:ASL A:TAY:LDA ibosSubTbl,Y:STA
-	  ; transientTblPtr:LDA ibosSubTbl+1,Y:STA transientTblPtr+1:LDA
-	  ; ibosSubTbl+2,Y:STA L00A8:LDA ibosSubTbl+3,Y:STA L00A9 If we
-	  ; rejigged the order of the data at ibosSubTbl we might be able to
-	  ; use a loop to do those copies. Actually we don't really even need
-	  ; to populate transientTblPtr, do we? We want the values in X and Y
-	  ; really. Anyway, you get the idea.
-            JSR ibosRef
-            STX transientTblPtr
-            STY transientTblPtr + 1
-            LDY #CmdTblPtrOffset
-            LDA (transientTblPtr),Y
-            TAX
-            INY
-            LDA (transientTblPtr),Y
-            STA transientTblPtr + 1
-            STX transientTblPtr
-	  ; Multiply A-on-entry by 4 and copy the the four bytes starting at
-	  ; ibosSubTbl+4*A-on-entry into transientTblPtr and L00A8/A9
-            PLA
-            PHA
-            ASL A
-            ASL A
-            TAY
-            LDA (transientTblPtr),Y
-            PHA
-            INY
-            LDA (transientTblPtr),Y
-            PHA
-            INY
-            LDA (transientTblPtr),Y
-            STA L00A8
-            INY
-            LDA (transientTblPtr),Y
-            STA L00A9
-            PLA
-            STA transientTblPtr + 1
-            PLA
-            STA transientTblPtr
-	  ; Call DynamicSyntaxGenerationForAUsingYX on the table and for the range of entries in that table identified by ibosSubTbl+A*4.
-.L83D9      LDX transientTblPtr
-            LDY transientTblPtr + 1
-            LDA L00A8
-            CLC
-            CLV
-            JSR DynamicSyntaxGenerationForAUsingYX
-            INC L00A8
-            CMP L00A9
-            BCC L83D9
-            PLA
-            RTS
+    PHA
+    ; SFTODO: The following seems needlessly long-winded; I wonder if
+    ; this is a legacy of an earlier version of the code where the
+    ; caller did JSR ibosRef *or something else* (note that we have some
+    ; redundant calls to JSR ibosRef in IBOS 1.20 before calling this
+    ; subroutine). As it is, I think we could replace the following with
+    ; something like: PHA:ASL A:ASL A:TAY:LDA ibosSubTbl,Y:STA
+    ; transientTblPtr:LDA ibosSubTbl+1,Y:STA transientTblPtr+1:LDA
+    ; ibosSubTbl+2,Y:STA L00A8:LDA ibosSubTbl+3,Y:STA L00A9 If we
+    ; rejigged the order of the data at ibosSubTbl we might be able to
+    ; use a loop to do those copies. Actually we don't really even need
+    ; to populate transientTblPtr, do we? We want the values in X and Y
+    ; really. Anyway, you get the idea.
+    JSR ibosRef
+    STX transientTblPtr
+    STY transientTblPtr + 1
+    LDY #CmdTblPtrOffset
+    LDA (transientTblPtr),Y
+    TAX
+    INY
+    LDA (transientTblPtr),Y
+    STA transientTblPtr + 1
+    STX transientTblPtr
+    ; Multiply A-on-entry by 4 and copy the the four bytes starting at
+    ; ibosSubTbl+4*A-on-entry into transientTblPtr and L00A8/A9
+    PLA
+    PHA
+    ASL A
+    ASL A
+    TAY
+    LDA (transientTblPtr),Y
+    PHA
+    INY
+    LDA (transientTblPtr),Y
+    PHA
+    INY
+    LDA (transientTblPtr),Y
+    STA L00A8
+    INY
+    LDA (transientTblPtr),Y
+    STA L00A9
+    PLA
+    STA transientTblPtr + 1
+    PLA
+    STA transientTblPtr
+    ; Call DynamicSyntaxGenerationForAUsingYX on the table and for the range of entries in that table identified by ibosSubTbl+A*4.
+.L83D9
+    LDX transientTblPtr
+    LDY transientTblPtr + 1
+    LDA L00A8
+    CLC
+    CLV
+    JSR DynamicSyntaxGenerationForAUsingYX
+    INC L00A8
+    CMP L00A9
+    BCC L83D9
+    PLA
+    RTS
 }
 			
 {
