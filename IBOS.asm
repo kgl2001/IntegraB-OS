@@ -262,11 +262,11 @@ CmdTblPtrOffset = 10
 ; state during mode changes. This is probably done because it's quicker than
 ; paging in private RAM; OSWRCH is relatively performance sensitive and we check
 ; this on every call.
-modeChangeState = &03A5
-modeChangeStateNone = 0 ; no mode change in progress
-modeChangeStateSeenVduSetMode = 1 ; we've seen VDU 22, we're waiting for mode byte
-modeChangeStateEnteringShadowMode = 2 ; we're changing into a shadow mode
-modeChangeStateEnteringNonShadowMode = 3 ; we're changing into a non-shadow mode
+ModeChangeState = &03A5
+ModeChangeStateNone = 0 ; no mode change in progress
+ModeChangeStateSeenVduSetMode = 1 ; we've seen VDU 22, we're waiting for mode byte
+ModeChangeStateEnteringShadowMode = 2 ; we're changing into a shadow mode
+ModeChangeStateEnteringNonShadowMode = 3 ; we're changing into a non-shadow mode
 
 ; This is part of CFS/RFS workspace which IBOS temporarily borrows; various different
 ; code templates are copied here for execution.
@@ -10142,14 +10142,14 @@ ibosCNPVIndex = 6
 {
             ; We're processing OSWRCH with A=vduSetMode. That is only actually a
             ; set mode call if we're not part-way through a longer VDU sequence
-            ; (e.g. VDU 23,128,22,...), so check that and set modeChangeState to 1 if we
+            ; (e.g. VDU 23,128,22,...), so check that and set ModeChangeState to 1 if we
             ; *are* going to change mode.
 .LBB81      PHA
             LDA negativeVduQueueSize
             BNE LBB8C
-            ; SFTODO: I think we know modeChangeState is 0 here, so we could just do INC modeChangeState.
-            LDA #modeChangeStateSeenVduSetMode
-            STA modeChangeState
+            ; SFTODO: I think we know ModeChangeState is 0 here, so we could just do INC ModeChangeState.
+            LDA #ModeChangeStateSeenVduSetMode
+            STA ModeChangeState
 .LBB8C      PLA
             JMP ProcessWrchv
 }
@@ -10162,14 +10162,14 @@ ibosCNPVIndex = 6
     PLA:PHA ; peek original OSWRCH A=new mode
     CMP #shadowModeOffset:BCS EnteringShadowMode
     LDA osShadowRamFlag:BEQ EnteringShadowMode
-    ; SFTODO: Aren't the next two instructions pointless? maybeSwapShadow2 immediately does LDA vduStatus.
+    ; SQUASH: The next two instructions are pointless; maybeSwapShadow2 immediately does LDA vduStatus.
     PLA:PHA ; peek original OSWRCH A=new mode
     JSR maybeSwapShadow2
     LDA ramselCopy:AND_NOT ramselShen:STA ramselCopy:STA ramsel
     PLA:PHA ; peek original OSWRCH A=new mode
     AND_NOT shadowModeOffset ; clear Shadow RAM enable bit SFTODO: isn't this redundant? We'd have done "BCS EnteringShadowMode" above if top bit was set, wouldn't we?
     LDX #prvSFTODOMODE - prv83:JSR writePrivateRam8300X
-    LDA #modeChangeStateEnteringNonShadowMode:STA modeChangeState
+    LDA #ModeChangeStateEnteringNonShadowMode:STA ModeChangeState
     PLA:JMP ProcessWrchv
 
 .EnteringShadowMode
@@ -10183,20 +10183,20 @@ ibosCNPVIndex = 6
     ORA #shadowModeOffset							;set Shadow RAM enable bit
     LDX #prvSFTODOMODE - prv83
     JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-    LDA #modeChangeStateEnteringShadowMode
-    STA modeChangeState
+    LDA #ModeChangeStateEnteringShadowMode
+    STA ModeChangeState
     PLA
     JMP ProcessWrchv
 
 .CheckOtherModeChangeStates
-    CMP #modeChangeStateEnteringNonShadowMode
+    CMP #ModeChangeStateEnteringNonShadowMode
     BNE WrchvHandlerDone
     BEQ AdjustCrtcHorz
 
 .^WrchvHandler
     JSR restoreOrigVectorRegs
     PHA
-    LDA modeChangeState
+    LDA ModeChangeState
     BNE SelectNewMode
     PLA
     CMP #vduSetMode
@@ -10205,8 +10205,8 @@ ibosCNPVIndex = 6
     JSR setMemsel
     JSR jmpParentWRCHV
     PHA
-    LDA modeChangeState
-    CMP #modeChangeStateEnteringShadowMode
+    LDA ModeChangeState
+    CMP #ModeChangeStateEnteringShadowMode
     BNE CheckOtherModeChangeStates
     LDA vduStatus
     ORA #vduStatusShadow
@@ -10234,8 +10234,8 @@ ibosCNPVIndex = 6
     LDX #&02
     STX crtcHorzTotal
     STA crtcHorzDisplayed
-    LDA #modeChangeStateNone
-    STA modeChangeState
+    LDA #ModeChangeStateNone
+    STA ModeChangeState
 .^WrchvHandlerDone
     PLA
     JMP returnFromVectorHandler
@@ -10332,14 +10332,14 @@ ScreenStart = &3000
     ; Enable shadow RAM.
     LDA #ramselShen:STA ramselCopy:STA ramsel ; set ramselShen (SFTODO: and clear Prvs* too; is this safe? probably...)
     LDA vduStatus:ORA #vduStatusShadow:STA vduStatus
-    LDA #modeChangeStateNone:STA modeChangeState
+    LDA #ModeChangeStateNone:STA ModeChangeState
     RTS
 
 .OsMode0
 .^DisableShadow
     LDA #0:STA ramselCopy:STA ramsel ; clear ramselShen (SFTODO: and Prvs* too; is this safe? probably...)
     LDA vduStatus:AND_NOT vduStatusShadow:STA vduStatus
-    LDA #modeChangeStateNone:STA modeChangeState
+    LDA #ModeChangeStateNone:STA ModeChangeState
     ; SFTODO: At a casual glance it seems weird we're setting osShadowRamFlag to 1 here, do I have the interpretation of that flag right?
     LDA #1:STA osShadowRamFlag
 .SFTODOCOMMON1
