@@ -1106,8 +1106,8 @@ LastEntry = &A9
 ; On entry:
 ;     C set => build a syntax error on the stack and generate it when vduCr is output
 ;     C clear => write output to screen (vduTab jumps to a fixed column for alignment)
-;                    V clear => prefix with two leading spaces
-;                    V set => no leading spaces
+;                V clear => prefix with two leading spaces
+;                V set => no leading spaces
 ;     V set => don't emit parameters
 ;     V clear => emit parameters
 .DynamicSyntaxGenerationForAUsingYX
