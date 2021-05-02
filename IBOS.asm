@@ -1345,32 +1345,26 @@ TmpCommandIndex = &AC
     JMP commandS
 			
 .RunCommand
-    ; Transfer control to CmdRef[CmdTblPtrOffset][X], preserving Y (the index into the next byte of the command tail after the * command).
+    ; Transfer control to CmdRef[CmdTblPtrOffset][X], preserving Y (the index into the next
+    ; byte of the command tail after the * command).
     STY TmpCommandTailOffset
     STX TmpCommandIndex
-    JSR CmdRef
+    ; Set transientTblPtr = CmdRef[CmdTblptrOffset].
+    JSR CmdRef:STX transientTblPtr:STY transientTblPtr + 1
+    LDY #CmdTblPtrOffset:LDA (transientTblPtr),Y:TAX
+    INY:LDA (transientTblPtr),Y:STA transientTblPtr + 1
     STX transientTblPtr
-    STY transientTblPtr + 1
-    LDY #CmdTblPtrOffset
-    LDA (transientTblPtr),Y
-    TAX
-    INY
-    LDA (transientTblPtr),Y
-    STA transientTblPtr + 1
-    STX transientTblPtr
-    LDA TmpCommandIndex:ASL A
-    TAY
-    INY
-    LDA (transientTblPtr),Y
-    PHA
-    DEY
-    LDA (transientTblPtr),Y
-    PHA
-    ; Record the relevant index at transientCommandIndex for use in generating a syntax error later if necessary.
-    LDX TmpCommandIndex
-    STX transientCommandIndex
+    ; Push the address at transientTblPtr[X] ready to transfer control via RTS.
+    LDA TmpCommandIndex:ASL A:TAY ; double TmpCommandIndex as table-entries are 16-bit
+    INY:LDA (transientTblPtr),Y:PHA
+    DEY:LDA (transientTblPtr),Y:PHA
+    ; Record the relevant index at transientCommandIndex for use in generating a syntax error
+    ; later if necessary. (transientCommandIndex == transientTblPtr so we couldn't just store
+    ; this here direectly. SQUASH: It might be possible to reshuffle the zero page use to
+    ; avoid this, but the chances of breaking things might be quite high.)
+    LDX TmpCommandIndex:STX transientCommandIndex
     LDY TmpCommandTailOffset
-    RTS
+    RTS ; transfer control to the command
 }
 
 ;*HELP Service Call
