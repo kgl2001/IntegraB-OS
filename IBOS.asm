@@ -2857,6 +2857,7 @@ MaxSwrBanks = 4
 .L8E4A
     TAX
     ; Modify stacked flags to reflect current status of carry.
+    ; SQUASH: Could we do ASSERT flagC == 1:PLA:PHP:LSR A:PLP:ROL A:PHA instead of all this?
     PLA:BCS L8E54
     AND_NOT flagC:PHA
     JMP StackedFlagsModified
