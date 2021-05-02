@@ -4034,6 +4034,7 @@ ENDIF
 	  ; to be for GENIE, which will almost certainly be claiming KEYV to
 	  ; allow it to be entered. (I haven't checked GXR or GENIE yet to see
 	  ; what is at &800D - OK, I now have, both GENIE 1.01 and GENIE 1.02 have "G" at &800D.)
+	  ; SFTODO: Ken - just a random thought, GENIE is PALPROM-ish with extra RAM, would your v2 board maybe be able to run it? Some discussion on stardot https://stardot.org.uk/forums/viewtopic.php?f=7&t=16297
 	  LDA KEYVH
             CMP #&FF
             BNE notExtendedVectorGROM
