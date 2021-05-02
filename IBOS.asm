@@ -2647,48 +2647,51 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 ;Note Buffer does not work in OSMODE 0
 .buffer
 {
+MaxSwrBanks = 4
+
     JSR PrvEn
+
     LDA prvOsMode:BNE NotOsMode0
     JSR raiseError
     EQUB &80
     EQUS "No Buffer!", &00
+
 .NotOsMode0
     JSR convertIntegerDefaultDecimal:BCC ParsedOK
-    LDA (transientCmdPtr),Y							;get byte from keyboard buffer SFTODO: command argument, not keyboard buffer?
-    CMP #'#'								;check for '#'
-    BEQ L8D07								;set buffer based on manually entered bank numbers
-    CMP #'?'								;check for '?'
-    BNE L8CC0								;identify free banks and set buffer based on number of banks requested by user
-    JMP L8DCA								;report number of banks set
-			
-.L8CC0
-    JSR PrvDis								;switch out private RAM
+    LDA (transientCmdPtr),Y
+    CMP #'#':BEQ L8D07
+    CMP #'?':BNE PrvDisGenerateSyntaxError
+    JMP L8DCA
+.PrvDisGenerateSyntaxError
+    JSR PrvDis
     JMP GenerateSyntaxError
 
 .ParsedOK
-    CMP #&05
-    BCC L8CCD
+    CMP #MaxSwrBanks + 1:BCC BankCountInA
     JMP GenerateBadParameter
-			
-.L8CCD      PHA
-            JSR GenerateErrorIfPrinterBufferNotEmpty								;check if print buffer is empty, and error if something is already in the buffer.
-            JSR L8D37								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
-            LDX #&00
-            LDY #&00								;starting at SWRAM bank 0
-.L8CD8      JSR L8E10								;test for SWRAM at bank Y
-            BCS L8CE6
-            TYA
-            STA prvPrintBufferBankList,X								;store RAM bank number in Private memory
-            INX									;increment counter for number of RAM banks found
-            CPX #&04								;until 4 banks are found
-            BEQ L8CEB
-.L8CE6      INY
-            CPY #&10								;until all 16 banks have been tested
-            BNE L8CD8
-.L8CEB      PLA
-            BNE L8CF4
-            JSR L8D37								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
-            JMP L8D01
+.BankCountInA
+    PHA
+    JSR GenerateErrorIfPrinterBufferNotEmpty
+    JSR L8D37								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
+    LDX #0
+    LDY #0								;starting at SWRAM bank 0
+.L8CD8
+    JSR L8E10								;test for SWRAM at bank Y
+    BCS L8CE6
+    TYA
+    STA prvPrintBufferBankList,X								;store RAM bank number in Private memory
+    INX									;increment counter for number of RAM banks found
+    CPX #MaxSwrBanks								;until 4 banks are found
+    BEQ L8CEB
+.L8CE6
+    INY
+    CPY #&10								;until all 16 banks have been tested
+    BNE L8CD8
+.L8CEB
+    PLA
+    BNE L8CF4
+    JSR L8D37								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
+    JMP L8D01
 			
 .L8CF4      TAX
             LDA #&FF
