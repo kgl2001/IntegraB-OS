@@ -2644,18 +2644,16 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 }
 			
 ;*BUFFER Command
-;Note Buffer does not work in OSMODE 0
 .buffer
 {
 MaxSwrBanks = 4
 TmpBankCount = L00AC
 TmpTransientCmdPtrOffset = L00AD
-; ENHANCE: It would be good to use romBinaryVersion for TestAddress, just out of paranoia.
-TestAddress = &8000
+TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 
     JSR PrvEn
 
-    LDA prvOsMode:BNE NotOsMode0
+    LDA prvOsMode:BNE NotOsMode0 ; the buffer isn't available in OSMODE 0
     JSR raiseError
     EQUB &80
     EQUS "No Buffer!", &00
