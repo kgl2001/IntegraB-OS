@@ -10291,80 +10291,79 @@ ptr = &A8
             BNE swapShadowIfShxEnabled							;and branch if clear
             RTS
 
-; If SHX is enabled, swap the contents of main and shadow RAM between
-; &3000-&7FFF. SFTODO: *personal opinion alert* AIUI, Acorn shadow RAM on the
-; B+ and M128 behaves as if SHX is always enabled. I think the only reason to
-; not always have SHX enabled is that it slows down mode changes. If that's
-; right, could we (perhaps keeping SHX off as an option just for the sake of it)
-; make this swap so fast it's unnoticeable by using 256 bytes of private RAM to
-; do the swap a page at a time, reducing the number of MEMSEL toggles we need to
-; do (currently we toggle twice per byte of screen memory) and speeding things
-; up?
+; If SHX is enabled, swap the contents of main and shadow RAM between &3000-&7FFF. SFTODO:
+; *personal opinion alert* AIUI, Acorn shadow RAM on the B+ and M128 behaves as if SHX is
+; always enabled. I think the only reason to not always have SHX enabled is that it slows down
+; mode changes. If that's right, could we (perhaps keeping SHX off as an option just for the
+; sake of it) make this swap so fast it's unnoticeable by using 256 bytes of private RAM to do
+; the swap a page at a time, reducing the number of MEMSEL toggles we need to do (currently we
+; toggle twice per byte of screen memory) and speeding things up?
 .swapShadowIfShxEnabled
-.LBC3B      LDX #(prvShx - prv83)							;select SHX register (&08: On, &FF: Off) SFTODO: 08->00?
-            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
-            BEQ rts                                                                                 ;nothing to do if SHX off
-            ; SFTODO: Why does IBOS play around with these CRTC registers at
-            ; all, anywhere? This bit of code seems particularly odd because it
-            ; seems to use fixed values, unlike the ones we calculate elsewhere.
-            ; Is it trying to black out the screen during the swap?
-            LDA #&08
-            STA crtcHorzTotal
-            LDA #&F0
-            STA crtcHorzDisplayed
-            ; SFTODO: Next few lines are temporarily (note we PHA the old romselCopy)
-            ; clearing PRVEN/MEMSEL
-            ; SFTODO: Since we use EOR to toggle MEMSEL in the swap loop,
-            ; couldn't we get away with not doing this (and of course not bother
-            ; resetting the original value afterwards either)? It doesn't matter
-            ; if MEMSEL is currently set or not, since the operation is
-            ; symmetrical, and we'd do an even number of toggles so we'd finish
-            ; in the original state.
-            LDA romselCopy
-            PHA
-            AND #maxBank
-            STA romselCopy
-            STA romsel
-            ; We're going to use ptr as temporary zp workspace, so stack the existing values.
-            LDA ptr
-            PHA
-            LDA ptr + 1
-            PHA
-            LDA #&00 ; SFTODO: LO(shadowStart)?
-            STA ptr
-            LDA #&30 ; SFTODO: HI(shadowStart)?
-            STA ptr + 1
-            LDY #&00
-.LBC66      LDA (ptr),Y
-            TAX
-            LDA romselCopy
-            EOR #romselMemsel ; SFTODO: Why not just AND #romselMemsel? We cleared PRVEN/MEMSEL above and I can't see any other entries to this code (e.g. via LBC66) To be fair this code is fine and maybe it is clearer to think of repeatedly flipping than setting or clearing.
-            STA romselCopy
-            STA romsel
-            LDA (ptr),Y
-            PHA
-            TXA
-            STA (ptr),Y
-            LDA romselCopy
-            EOR #&80 ; SFTODO: Why not just AND_NOT romselMemsel?
-            STA romselCopy
-            STA romsel
-            PLA
-            STA (ptr),Y
-            INY
-            BNE LBC66
-            INC ptr + 1
-            BPL LBC66
-            PLA
-            STA ptr + 1
-            PLA
-            STA ptr
-            ; Restore the original value of ROMSEL which we stacked above.
-            PLA
-            STA romselCopy
-            STA romsel
+    LDX #(prvShx - prv83)							;select SHX register (&08: On, &FF: Off) SFTODO: 08->00?
+    JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
+    BEQ rts                                                                                 ;nothing to do if SHX off
+    ; SFTODO: Why does IBOS play around with these CRTC registers at
+    ; all, anywhere? This bit of code seems particularly odd because it
+    ; seems to use fixed values, unlike the ones we calculate elsewhere.
+    ; Is it trying to black out the screen during the swap?
+    LDA #&08
+    STA crtcHorzTotal
+    LDA #&F0
+    STA crtcHorzDisplayed
+    ; SFTODO: Next few lines are temporarily (note we PHA the old romselCopy)
+    ; clearing PRVEN/MEMSEL
+    ; SFTODO: Since we use EOR to toggle MEMSEL in the swap loop,
+    ; couldn't we get away with not doing this (and of course not bother
+    ; resetting the original value afterwards either)? It doesn't matter
+    ; if MEMSEL is currently set or not, since the operation is
+    ; symmetrical, and we'd do an even number of toggles so we'd finish
+    ; in the original state.
+    LDA romselCopy
+    PHA
+    AND #maxBank
+    STA romselCopy
+    STA romsel
+    ; We're going to use ptr as temporary zp workspace, so stack the existing values.
+    LDA ptr
+    PHA
+    LDA ptr + 1
+    PHA
+    LDA #&00 ; SFTODO: LO(shadowStart)?
+    STA ptr
+    LDA #&30 ; SFTODO: HI(shadowStart)?
+    STA ptr + 1
+    LDY #&00
+.LBC66
+    LDA (ptr),Y
+    TAX
+    LDA romselCopy
+    EOR #romselMemsel ; SFTODO: Why not just AND #romselMemsel? We cleared PRVEN/MEMSEL above and I can't see any other entries to this code (e.g. via LBC66) To be fair this code is fine and maybe it is clearer to think of repeatedly flipping than setting or clearing.
+    STA romselCopy
+    STA romsel
+    LDA (ptr),Y
+    PHA
+    TXA
+    STA (ptr),Y
+    LDA romselCopy
+    EOR #&80 ; SFTODO: Why not just AND_NOT romselMemsel?
+    STA romselCopy
+    STA romsel
+    PLA
+    STA (ptr),Y
+    INY
+    BNE LBC66
+    INC ptr + 1
+    BPL LBC66
+    PLA
+    STA ptr + 1
+    PLA
+    STA ptr
+    ; Restore the original value of ROMSEL which we stacked above.
+    PLA
+    STA romselCopy
+    STA romsel
 .rts
-.LBC97      RTS
+    RTS
 }
 
 {
