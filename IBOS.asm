@@ -929,6 +929,8 @@ t = &80
     EQUW ibosTbl							;Start of IBOS options lookup table
     ASSERT P% = ibosRef + CmdTblParOffset
     EQUW ibosParTbl							;Start of IBOS options parameters lookup table (there are no parameters!)
+    ; SQUASH: I am not sure we actually need the next pointer, if we make the suggested SQUASH:
+    ; change in DynamicSyntaxGenerationForIbosSubTblA.
     ASSERT P% = ibosRef + CmdTblPtrOffset
     EQUW ibosSubTbl							;Start of IBOS sub option reference lookup table
 
@@ -1042,10 +1044,12 @@ MinimumAbbreviationLength = 3
     PLA
     RTS
 }
-			
 
 .DynamicSyntaxGenerationForIbosSubTblA
 {
+FirstEntry = &A8
+LastEntry = &A9
+
     PHA
 
     ; SQUASH: The following seems needlessly long-winded; it is probably a legacy of an earlier
@@ -1054,8 +1058,8 @@ MinimumAbbreviationLength = 3
     ;     ASL A:ASL A:TAY
     ;     LDA ibosSubTbl    ,Y:STA transientTblPtr
     ;     LDA ibosSubTbl + 1,Y:STA transientTblPtr + 1
-    ;     LDA ibosSubTbl + 2,Y:STA L00A8
-    ;     LDA ibosSubTbl + 3,Y:STA L00A9
+    ;     LDA ibosSubTbl + 2,Y:STA FirstEntry
+    ;     LDA ibosSubTbl + 3,Y:STA LastEntry
 
     ; Set transientTblPtr = transientTblPtr[CmdTblPtrOffset].
     JSR ibosRef:STX transientTblPtr:STY transientTblPtr + 1
@@ -1063,22 +1067,24 @@ MinimumAbbreviationLength = 3
     INY:LDA (transientTblPtr),Y:STA transientTblPtr + 1
     STX transientTblPtr ; SQUASH: Just STA in place of TAX above
 
-    ; Multiply A-on-entry by 4 and copy the the four bytes starting at
-    ; ibosSubTbl+4*A-on-entry into transientTblPtr and L00A8/A9
+    ; Copy the the four bytes starting at ibosSubTbl+4*A-on-entry into transientTblPtr and
+    ; FirstEntry/A9
     PLA:PHA:ASL A:ASL A:TAY ; Set Y = A-on-entry * 4
     LDA (transientTblPtr),Y:PHA
     INY:LDA (transientTblPtr),Y:PHA
-    INY:LDA (transientTblPtr),Y:STA L00A8
-    INY:LDA (transientTblPtr),Y:STA L00A9
+    INY:LDA (transientTblPtr),Y:STA FirstEntry
+    INY:LDA (transientTblPtr),Y:STA LastEntry
     PLA:STA transientTblPtr + 1
     PLA:STA transientTblPtr
 
-    ; Call DynamicSyntaxGenerationForAUsingYX on the table and for the range of entries L00A8 (inclusive) to L00A9 (exclusive0
+    ; Call DynamicSyntaxGenerationForAUsingYX on the table and for the range of entries FirstEntry
+    ; (inclusive) to LastEntry (exclusive). SFTODO: Except the upper bound actually seems to be
+    ; inclusive, so what am I missing?
 .Loop
     LDX transientTblPtr:LDY transientTblPtr + 1
-    LDA L00A8
+    LDA FirstEntry
     CLC:CLV:JSR DynamicSyntaxGenerationForAUsingYX
-    INC L00A8:CMP L00A9:BCC Loop
+    INC FirstEntry:CMP LastEntry:BCC Loop
 
     PLA
     RTS
