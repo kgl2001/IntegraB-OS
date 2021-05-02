@@ -3165,24 +3165,16 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     JMP L90DE
 			
 .L90A7
-    LDA #&04
-    JSR SetOsModeA
+    LDA #4:JSR SetOsModeA
     LDA #0:STA osShadowRamFlag ; SFTODO: This seems odd, but I haven't worked through this code yet
-    LDX #&3D								;select SHX register
-    LDA #&FF								;store &FF to &833D (&08: SHX On, &FF: SHX Off)
-    JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+    LDX #prvShx - prv83:LDA #&FF:JSR writePrivateRam8300X ; set SHX off SFTODO: magic
     LDA #vduSetMode:JSR OSWRCH:LDA currentMode:JSR OSWRCH
-    BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
-    BPL L90DE
+    BIT tubePresenceFlag:BPL NoTube
     JSR disableTube
-    TSX
-    LDA L0103,X
-    ORA #&40
-    STA L0103,X
-    LDA romselCopy
-    AND #maxBank
-    STA currentLanguageRom
+    TSX:LDA L0103,X:ORA #flagV:STA L0103,X ; set V in stacked flags
+    LDA romselCopy:AND #maxBank:STA currentLanguageRom
     JSR setBrkv
+.NoTube
 .L90DE
     PLA
     TAY
