@@ -2705,17 +2705,16 @@ TestAddress = &8000
     JSR UnassignPrintBufferBanks
     INY
     LDX #0:STX SFTODOFOO
-.L8D12
+.ParseUserBankListLoop
     JSR parseBankNumber:STY SFTODOBAR:BCS BankNumberParseError
     TAY:JSR TestForEmptySwrInBankY:TYA:BCS NotEmptySwrBank
-    LDX SFTODOFOO
-    STA prvPrintBufferBankList,X
-    INX
-    STX SFTODOFOO
-    CPX #&04:BEQ BankNumberParseError ; SFTODO: maybe change label name given this use
+    ; SQUASH: INC SFTODOFOO:LDX SFTODOFOO:STA prvPrintBufferBankList-1,X:...:CPX #MaxSwrBanks+1?
+    ; Or initialise SFTODOFOO to &FF?
+    LDX SFTODOFOO:STA prvPrintBufferBankList,X:INX:STX SFTODOFOO
+    CPX #MaxSwrBanks:BEQ BankNumberParseError ; SFTODO: maybe change label name given this use
 .NotEmptySwrBank
     LDY SFTODOBAR
-    JMP L8D12
+    JMP ParseUserBankListLoop
 			
 .BankNumberParseError
     JSR L8D5A
