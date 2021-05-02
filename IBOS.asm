@@ -10138,20 +10138,19 @@ ibosCNPVIndex = 6
 .LBB7E      JMP (parentVectorTbl + ibosWRCHVIndex * 2)
 }
 
-.NewMode
+; We're processing OSWRCH with A=vduSetMode. That is only actually a set mode call if we're not
+; part-way through a longer VDU sequence (e.g. VDU 23,128,22,...), so check that and set
+; ModeChangeState to ModeChangeStateSeenVduSetMode if we
+; *are* going to change mode.
+.OswrchVduSetMode
 {
-            ; We're processing OSWRCH with A=vduSetMode. That is only actually a
-            ; set mode call if we're not part-way through a longer VDU sequence
-            ; (e.g. VDU 23,128,22,...), so check that and set ModeChangeState to 1 if we
-            ; *are* going to change mode.
-.LBB81      PHA
-            LDA negativeVduQueueSize
-            BNE LBB8C
-            ; SFTODO: I think we know ModeChangeState is 0 here, so we could just do INC ModeChangeState.
-            LDA #ModeChangeStateSeenVduSetMode
-            STA ModeChangeState
-.LBB8C      PLA
-            JMP ProcessWrchv
+    PHA
+    LDA negativeVduQueueSize:BNE InLongerVduSequence
+    ; SQUASH: We know ModeChangeState is 0 here, so we could just do ASSERT ModeChangeStateNone
+    ; + 1 == ModeChangeStateSeenVduSetMode;INC ModeChangeState.
+    LDA #ModeChangeStateSeenVduSetMode:STA ModeChangeState
+.InLongerVduSequence
+    PLA:JMP ProcessWrchv
 }
 
 ; The following scope is the WRCHV handler; the entry point is at WrchvHandler half way down.
@@ -10191,7 +10190,7 @@ ibosCNPVIndex = 6
     PHA
     LDA ModeChangeState:BNE SelectNewMode
     PLA
-    CMP #vduSetMode:BEQ NewMode
+    CMP #vduSetMode:BEQ OswrchVduSetMode
 .^ProcessWrchv ; SFTODO: not a great name...
     JSR setMemsel
     JSR jmpParentWRCHV
