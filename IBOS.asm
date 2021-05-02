@@ -1116,7 +1116,7 @@ LastEntry = &A9
     LDA transientTblPtr + 1:PHA:LDA transientTblPtr:PHA
     STX transientTblPtr:STY transientTblPtr + 1
 
-    JSR startDynamicSyntaxGeneration
+    JSR StartDynamicSyntaxGeneration
 
     ; Emit the A-th entry of the keyword sub-table.
     TSX:LDA L0103,X:PHA ; get A on entry and push it again for easy access
@@ -1124,7 +1124,7 @@ LastEntry = &A9
     INY:LDA (transientTblPtr),Y:TAY
     PLA
     JSR EmitEntryAFromTableYX
-    LDA #vduTab:JSR emitDynamicSyntaxCharacter
+    LDA #vduTab:JSR EmitDynamicSyntaxCharacter
 
     ; Emit the A-th entry of the parameter sub-table if V is clear.
     BIT transientDynamicSyntaxState:BVS DontEmitParameters
@@ -1133,7 +1133,7 @@ LastEntry = &A9
     INY:LDA (transientTblPtr),Y:TAY
     PLA
     JSR EmitEntryAFromTableYX
-    LDA #vduCr:JSR emitDynamicSyntaxCharacter
+    LDA #vduCr:JSR EmitDynamicSyntaxCharacter
 
 .DontEmitParameters
     PLA:STA transientTblPtr:PLA:STA transientTblPtr + 1
@@ -1191,7 +1191,7 @@ Tmp = &AC
     JSR EmitEntryAFromTableTableBasePtr ; recurse to handle top-bit-set tokens
     JMP DoneChar
 .SimpleCharacter
-    JSR emitDynamicSyntaxCharacter
+    JSR EmitDynamicSyntaxCharacter
 .DoneChar
     INY:CPY Tmp:BNE CharLoop
 .CharLoopDone
@@ -1211,7 +1211,7 @@ Tmp = &AC
 ;                V clear => prefix with two leading spaces
 ;                V set => no leading spaces
 ; SQUASH: This only has one caller and doesn't return early.
-.startDynamicSyntaxGeneration ; SFTODO: rename?
+.StartDynamicSyntaxGeneration ; SFTODO: rename?
 {
     ; Stash V (&40, b6) and C (&80, b7) in transientDynamicSyntaxState with lower bits all 0.
     LDA #0:ROR A
@@ -1245,62 +1245,44 @@ Tmp = &AC
     EQUS "Syntax: "
 }
 
-.emitDynamicSyntaxCharacter
+; Emit character A to the message started by StartDynamicSyntaxGeneration. X and Y are
+; preserved.
+.EmitDynamicSyntaxCharacter
 {
 ; This is the physical column on screen for *HELP output, which is indented by two spaces; for
-; non-indented output we start counting at 2 in startDynamicSyntaxGeneration anyway, so we get
-; the same gap but the physical column for the tab will be tabColumn - 2.
-tabColumn = 12
+; non-indented output we start counting at 2 in StartDynamicSyntaxGeneration anyway, so we get
+; the same gap but the physical column for the tab will be TabColumn - 2.
+TabColumn = 12
 
-    BIT transientDynamicSyntaxState
-    BPL emitToScreen
-  ; We're emitting to an error message we're building up on the stack.
-    PHA
-    TXA
-    PHA
-    TSX
-    LDA L0102,X								;get A on entry, i.e. character to emit
-    PHA
-    LDA transientDynamicSyntaxState
-    AND #transientDynamicSyntaxStateCountMask
-    TAX
-    PLA
-    STA L0100,X
-    CMP #vduCr
-    BNE notCr
-    LDA #&00
-    STA L0100,X
-    JMP L0100
-			
-.notCr
+    BIT transientDynamicSyntaxState:BPL EmitToScreen
+
+    ; We're emitting to an error message we're building up on the stack.
+    PHA:TXA:PHA
+    TSX:LDA L0102,X:PHA ; get A on entry and push it again for easy access
+    LDA transientDynamicSyntaxState:AND #transientDynamicSyntaxStateCountMask:TAX
+    PLA:STA L0100,X
+    CMP #vduCr:BNE NotCr
+    LDA #0:STA L0100,X ; terminate the error message
+    JMP L0100 ; and raise the error
+.NotCr
     INC transientDynamicSyntaxState
-    PLA
-    TAX
-    PLA
+    PLA:TAX:PLA
     RTS
 			
-.notTab
+.NotTab
     INC transientDynamicSyntaxState
     JMP OSASCI
-			
-.emitToScreen
-    CMP #vduTab
-    BNE notTab
-    TXA
-    PHA
-    LDA transientDynamicSyntaxState
-    AND #transientDynamicSyntaxStateCountMask
-    TAX
+.EmitToScreen
+    CMP #vduTab:BNE NotTab
+    TXA:PHA
+    LDA transientDynamicSyntaxState:AND #transientDynamicSyntaxStateCountMask:TAX
     LDA #' '
-.tabLoop
-    CPX #tabColumn
-    BCS atOrPastTabColumn
+.TabLoop
+    CPX #TabColumn:BCS AtOrPastTabColumn
     JSR OSWRCH
-    INX
-    BNE tabLoop
-.atOrPastTabColumn
-    PLA
-    TAX
+    INX:BNE TabLoop ; always branch
+.AtOrPastTabColumn
+    PLA:TAX
     RTS
 }
 			
@@ -6428,7 +6410,7 @@ osfileBlock = L02EE
             CMP #'A'
             BCC LA492
             SBC #'A'-10
-            JMP LA48B ; SFTODO: could probably do "BPL LA48B ; branch always" to save a byte
+            JMP LA48B ; SFTODO: could probably do "BPL LA48B ; always branch" to save a byte
 			
 .LA47A      CMP #'Z'+1
             BCS LA492
