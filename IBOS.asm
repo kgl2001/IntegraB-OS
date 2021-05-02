@@ -3146,24 +3146,24 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ;switches to shadow, executes command, then switches back out of shadow?
 .^commandS
     CLV ; SFTODO: is this needed? I just find it odd there's no CLV or "set V" at commandX, although *perhaps* we just know V has a certain value
-    SEC:BCS L9088 ; always branch
+    SEC:BCS Common ; always branch
 
 ;execute '*X*' command
 ;switches from shadow, executes command, then switches back to shadow
 .^commandX
     CLC
-.L9088
+.Common
     PHP
     INY:INY ; skip "S*" or "X*"
     JSR findNextCharAfterSpace
     CLC:TYA:ADC transientCmdPtr:PHA
     LDA transientCmdPtr + 1:ADC #0:PHA
     TSX:LDA L0103,X ; get stacked flags from earlier PHP
-    ASSERT flagC == 1:LSR A:BCS L90A7 ; branch if C set in stacked flags
+    ASSERT flagC == 1:LSR A:BCS SwitchInShadow ; branch if C set in stacked flags
     LDX #&80:JSR L8A7B ; SFTODO: magic
-    JMP L90DE
+    JMP CallSubCommand
 			
-.L90A7
+.SwitchInShadow
     LDA #4:JSR SetOsModeA
     LDA #0:STA osShadowRamFlag ; SFTODO: This seems odd, but I haven't worked through this code yet
     LDX #prvShx - prv83:LDA #&FF:JSR writePrivateRam8300X ; set SHX off SFTODO: magic
@@ -3174,10 +3174,8 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA romselCopy:AND #maxBank:STA currentLanguageRom
     JSR setBrkv
 .NoTube
-.L90DE
-    PLA:TAY
-    PLA:TAX
-    JSR OSCLI
+.CallSubCommand
+    PLA:TAY:PLA:TAX:JSR OSCLI
     PLP
     BCS L90F0
     LDX #&C0:JSR L8A7B ; SFTODO: magic
@@ -3189,9 +3187,10 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     FALLTHROUGH_TO nle
 }
 
-;*NLE Command - enter IBOS as a language ROM
+;*NLE Command
 .nle
 {
+    ; Enter IBOS as a language ROM.
     LDX romselCopy
 .^doOsbyteEnterLanguage
     LDA #osbyteEnterLanguage:JMP OSBYTE
