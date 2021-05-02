@@ -1100,22 +1100,25 @@ LastEntry = &A9
     FALLTHROUGH_TO DynamicSyntaxGenerationForAUsingYX
 }
 
-; Generate a syntax message using entry A of the keyword and parameter sub-tables of the
-; reference table (e.g. ConfRef) pointed to by YX.
+; Generate a syntax message using entry A of the keyword and (optionally) parameter sub-tables
+; of the reference table (e.g. ConfRef) pointed to by YX.
 ;
 ; On entry:
 ;     C set => build a syntax error on the stack and generate it when vduCr is output
 ;     C clear => write output to screen (vduTab jumps to a fixed column for alignment)
-;                    V clear => prefix with two spaces and emit parameters
-;                    V set => no space prefix, don't emit parameters
+;                    V clear => prefix with two leading spaces
+;                    V set => no leading spaces
+;     V set => don't emit parameters
+;     V clear => emit parameters
 .DynamicSyntaxGenerationForAUsingYX
 {
-; SFTODO: Use a different local label instead of transientTblPtr in here? I am not sure what would be clearest as still working through code...
     PHA
     LDA transientTblPtr + 1:PHA:LDA transientTblPtr:PHA
     STX transientTblPtr:STY transientTblPtr + 1
+
     JSR startDynamicSyntaxGeneration
 
+    ; Emit the A-th entry of the keyword sub-table.
     TSX:LDA L0103,X:PHA ; get A on entry and push it again for easy access
     LDY #KeywordTableOffset:LDA (transientTblPtr),Y:TAX
     INY:LDA (transientTblPtr),Y:TAY
@@ -1123,7 +1126,8 @@ LastEntry = &A9
     JSR EmitEntryAFromTableYX
     LDA #vduTab:JSR emitDynamicSyntaxCharacter
 
-    BIT transientDynamicSyntaxState:BVS dontEmitParameters
+    ; Emit the A-th entry of the parameter sub-table if V is clear.
+    BIT transientDynamicSyntaxState:BVS DontEmitParameters
     TSX:LDA L0103,X:PHA ; get A on entry and push it again for easy access
     LDY #ParameterTableOffset:LDA (transientTblPtr),Y:TAX
     INY:LDA (transientTblPtr),Y:TAY
@@ -1131,7 +1135,7 @@ LastEntry = &A9
     JSR EmitEntryAFromTableYX
     LDA #vduCr:JSR emitDynamicSyntaxCharacter
 
-.dontEmitParameters
+.DontEmitParameters
     PLA:STA transientTblPtr:PLA:STA transientTblPtr + 1
     PLA
 .^rts
