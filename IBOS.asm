@@ -2676,7 +2676,7 @@ MaxSwrBanks = 4
     LDX #0
     LDY #0								;starting at SWRAM bank 0
 .L8CD8
-    JSR TestForSwrInBankY								;test for SWRAM at bank Y
+    JSR TestForEmptySwrInBankY								;test for SWRAM at bank Y
     BCS L8CE6
     TYA
     STA prvPrintBufferBankList,X								;store RAM bank number in Private memory
@@ -2713,7 +2713,7 @@ MaxSwrBanks = 4
             STY L00AD
             BCS L8D31
             TAY
-            JSR TestForSwrInBankY								;test for SWRAM at bank Y
+            JSR TestForEmptySwrInBankY								;test for SWRAM at bank Y
             TYA
             BCS L8D2C
             LDX L00AC
@@ -2831,16 +2831,17 @@ MaxSwrBanks = 4
             JSR PrvDis								;switch out private RAM
             JMP ExitAndClaimServiceCall								;Exit Service Call
 
-.TestForSwrInBankY
+; Return with C clear iff bank Y is an empty sideways RAM bank.
+.TestForEmptySwrInBankY
 ; ENHANCE: It would be good to use romBinaryVersion for TestAddress, in case (for example)
 ; the bank contains a ROM temporarily disabled by something like Advanced ROM Manager.
 TestAddress = &8000
     TXA:PHA
-    LDA romTypeTable,Y:BNE L8E68
-    LDA prvRomTypeTableCopy,Y:BNE L8E68
+    LDA romTypeTable,Y:BNE NotEmpty
+    LDA prvRomTypeTableCopy,Y:BNE NotEmpty
     PHP:SEI
     ; Flip the bits of TestAddress in bank Y and see if the change persists, i.e. if there's
-    ; RAM in that bank. Clear C iff we find RAM.
+    ; RAM in that bank.
     LDA #lo(TestAddress):STA ramRomAccessSubroutineVariableInsn + 1
     LDA #hi(TestAddress):STA ramRomAccessSubroutineVariableInsn + 2
     LDA #opcodeLdaAbs:STA ramRomAccessSubroutineVariableInsn:JSR ramRomAccessSubroutine:EOR #&FF
@@ -2848,7 +2849,8 @@ TestAddress = &8000
     ; modifications so A is naturally preserved?
     TAX:LDA #opcodeStaAbs:STA ramRomAccessSubroutineVariableInsn:TXA:JSR ramRomAccessSubroutine
     TAX:LDA #opcodeCmpAbs:STA ramRomAccessSubroutineVariableInsn:TXA:JSR ramRomAccessSubroutine
-    ; ENHANCE: Ideally we'd undo the change made to TestAddress.
+    ; ENHANCE: Ideally we'd undo the change made to TestAddress, although if had TestAddress ==
+    ; romBinaryVersion it would hardly be worth it.
     SEC
     BNE L8E4A
     CLC
@@ -2870,7 +2872,7 @@ TestAddress = &8000
     JSR ramRomAccessSubroutine
     PLP
     JMP L8E69
-.L8E68
+.NotEmpty
     SEC
 .L8E69
     PLA:TAX
