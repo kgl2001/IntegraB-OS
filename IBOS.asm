@@ -1247,58 +1247,61 @@ Tmp = &AC
 
 .emitDynamicSyntaxCharacter
 {
-; This is the physical column on screen for *HELP output, which is indented by
-; two spaces; for non-indented output we start counting at 2 anyway, so we get
+; This is the physical column on screen for *HELP output, which is indented by two spaces; for
+; non-indented output we start counting at 2 in startDynamicSyntaxGeneration anyway, so we get
 ; the same gap but the physical column for the tab will be tabColumn - 2.
 tabColumn = 12
 
-.L84F8      BIT transientDynamicSyntaxState
-            BPL emitToScreen
-	  ; We're emitting to an error message we're building up on the stack.
-            PHA
-            TXA
-            PHA
-            TSX
-            LDA L0102,X								;get A on entry, i.e. character to emit
-            PHA
-            LDA transientDynamicSyntaxState
-            AND #transientDynamicSyntaxStateCountMask
-            TAX
-            PLA
-            STA L0100,X
-            CMP #vduCr
-            BNE notCr
-            LDA #&00
-            STA L0100,X
-            JMP L0100
+    BIT transientDynamicSyntaxState
+    BPL emitToScreen
+  ; We're emitting to an error message we're building up on the stack.
+    PHA
+    TXA
+    PHA
+    TSX
+    LDA L0102,X								;get A on entry, i.e. character to emit
+    PHA
+    LDA transientDynamicSyntaxState
+    AND #transientDynamicSyntaxStateCountMask
+    TAX
+    PLA
+    STA L0100,X
+    CMP #vduCr
+    BNE notCr
+    LDA #&00
+    STA L0100,X
+    JMP L0100
 			
-.notCr      INC transientDynamicSyntaxState
-            PLA
-            TAX
-            PLA
-            RTS
+.notCr
+    INC transientDynamicSyntaxState
+    PLA
+    TAX
+    PLA
+    RTS
 			
-.notTab     INC transientDynamicSyntaxState
-            JMP OSASCI
+.notTab
+    INC transientDynamicSyntaxState
+    JMP OSASCI
 			
 .emitToScreen
-            CMP #vduTab
-            BNE notTab
-            TXA
-            PHA
-            LDA transientDynamicSyntaxState
-            AND #transientDynamicSyntaxStateCountMask
-            TAX
-            LDA #' '
-.tabLoop    CPX #tabColumn
-            BCS atOrPastTabColumn
-            JSR OSWRCH
-            INX
-            BNE tabLoop
+    CMP #vduTab
+    BNE notTab
+    TXA
+    PHA
+    LDA transientDynamicSyntaxState
+    AND #transientDynamicSyntaxStateCountMask
+    TAX
+    LDA #' '
+.tabLoop
+    CPX #tabColumn
+    BCS atOrPastTabColumn
+    JSR OSWRCH
+    INX
+    BNE tabLoop
 .atOrPastTabColumn
-            PLA
-            TAX
-            RTS
+    PLA
+    TAX
+    RTS
 }
 			
 ;Find next character after space.
