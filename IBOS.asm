@@ -4033,7 +4033,7 @@ ENDIF
 	  ; in the "Applications" section, but I think this is much more likely
 	  ; to be for GENIE, which will almost certainly be claiming KEYV to
 	  ; allow it to be entered. (I haven't checked GXR or GENIE yet to see
-	  ; what is at &800D.)
+	  ; what is at &800D - OK, I now have, both GENIE 1.01 and GENIE 1.02 have "G" at &800D.)
 	  LDA KEYVH
             CMP #&FF
             BNE notExtendedVectorGROM
@@ -10407,8 +10407,13 @@ ScreenStart = &3000
     LDA L0107,X:ORA #flagC:STA L0107,X ; modify stacked flags so C is set
     JMP RestoreRamselClearPrvenReturnFromVectorHandler ; SQUASH: BNE ; always branch
 
-; SFTODO: The following code doesn't make sense, we seem to be returning in Y for examine and A
-; for remove, which is the wrong way round. What am I missing?
+; ENHANCE: The following code returns the character in Y for examine and A for remove, which is
+; the wrong way round. This works in practice for the all-important case of the OS removing
+; characters from the printer buffer to send to the printer because OS 1.20 expects the
+; character to be in A for remove. It's pretty unlikely any non-OS code is ever going to call
+; REMV on the printer buffer, but ideally we would return the character in both A and Y for
+; both examine and remove. See https://stardot.org.uk/forums/viewtopic.php?f=54&p=319880.
+
 .PrintBufferNotEmpty
     LDA L0107,X:AND_NOT flagC:STA L0107,X ; modify stacked flags so C is clear
     JSR ldaPrintBufferReadPtr
