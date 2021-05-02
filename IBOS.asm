@@ -1176,106 +1176,64 @@ MinimumAbbreviationLength = 3
 .^rts       RTS
 }
 
-;move the correct reference address into &AA / &AB
-;on entry X & Y contain address of either *command or *command parameter lookup table
-; SFTODO: An example of something YX might point to is ConfTbl
-; SFTODO: Note that this will recursively expand top-bit-set characters as tokens
+; Emit the A-th entry of the string table pointed to by YX, recursively expanding top-bit set
+; tokens %1abcdefg as the %0abcdefg-th entry of the same string table.
 .emitEntryAFromTableYX
 {
-PtrSFTODO1 = &A8 ; 2 bytes
-PtrSFTODO2 = &AA ; 2 bytes
+; All this zero page workspace is preserved across calls.
+TableEntryPtr = &A8 ; 2 bytes
+TableBasePtr = &AA ; 2 bytes
 Tmp = &AC
 
-    PHA									;save stack value
-    TXA									;get start of *command or *command parameters lookup table low address
-    PHA									;and save
-    LDA PtrSFTODO2								;get *command pointer look up table low address
-    PHA									;and save
-    LDA PtrSFTODO2 + 1								;get *command pointer look up table high address
-    PHA									;and save
-    STX PtrSFTODO2
-    STY PtrSFTODO2 + 1								;save start of *command or *command parameter look up table address to &AA / &AB
-    TSX									;get stack pointer
-    LDA L0104,X								;get A on entry from stack
-    JSR emitEntryAFromTablePtrSFTODO2						;write parameters to screen?
-    PLA
-    STA PtrSFTODO2 + 1
-    PLA
-    STA PtrSFTODO2								;start of *command or *command parameter look up table address restored to &AA / &AB
-    PLA
-    TAX									;restore X register
-    PLA									;restore A register
-    RTS									;and return
-			
-;write *command or *command parameters to screen
-.emitEntryAFromTablePtrSFTODO2
-    PHA									;save stack value
-    TXA
-    PHA									;save contents of X
-    TYA
-    PHA									;save contents of Y
-    LDA PtrSFTODO1 + 1
-    PHA									;save contents of &A9
-    LDA PtrSFTODO1
-    PHA									;save contents of &A8
-    LDA Tmp
-    PHA									;save contents of &AC
-    TSX									;get stack pointer
-    LDA L0106,X								;get A on entry from stack
-    AND #&7F								;mask out bit 7
-    STA Tmp									;and store at &AC
-    LDA PtrSFTODO2
-    STA PtrSFTODO1									;copy &AA to &A8
-    LDA PtrSFTODO2 + 1
-    STA PtrSFTODO1 + 1								;copy &AB to &A9
+    PHA:TXA:PHA
+    LDA TableBasePtr:PHA:LDA TableBasePtr + 1:PHA
+    STX TableBasePtr:STY TableBasePtr + 1
+    TSX:LDA L0104,X	; get A on entry from stack
+    JSR EmitEntryAFromTableTableBasePtr
+    PLA:STA TableBasePtr + 1:PLA:STA TableBasePtr
+    PLA:TAX:PLA
+    RTS
 
-  ; Advance PtrSFTODO1 so it points to the (A on entry with bit 7 masked off)th entry in the table.
-    LDX #&00
-    LDY #&00								;y is fixed at &00
-.advanceLoop
-    CPX Tmp									;A on entry with bit 7 masked off
-    BEQ advanceLoopDone
-    CLC
-    LDA (PtrSFTODO1),Y
-    ADC PtrSFTODO1
-    STA PtrSFTODO1
-    ; SFTODO: We could use the BCC label:INC:.label trick here to shorten this
-    LDA PtrSFTODO1 + 1
-    ADC #&00
-    STA PtrSFTODO1 + 1
-    INX
-    BNE advanceLoop
-.advanceLoopDone
-			
-    LDA (PtrSFTODO1),Y								;get length of string plus 1
-    STA Tmp
-  ; SFTODO: Could we replace next three instructions with JMP doneChar? Or even BNE doneChar, since length of string plus 1 can't be 0?
-    CMP #&01
-    BEQ charLoopDone ; SFTODO: can this happen? do we have "zero length strings"?
+; Like EmitEntryAFromTableYX, but with the table pointed to by TableBasePtr instead of YX.
+.EmitEntryAFromTableTableBasePtr
+    ; Save everything.
+    PHA:TXA:PHA:TYA:PHA
+    LDA TableEntryPtr + 1:PHA:LDA TableEntryPtr:PHA
+    LDA Tmp:PHA
+
+    ; Make TableEntryPtr point to the (A on entry with bit 7 masked off)-th entry in the table
+    ; at TableBasePtr.
+    TSX:LDA L0106,X:AND #&7F:STA Tmp
+    LDA TableBasePtr:STA TableEntryPtr:LDA TableBasePtr + 1:STA TableEntryPtr + 1
+    LDX #0 ; current table entry index
+    LDY #0 ; remains fixed during the loop
+.AdvanceLoop
+    CPX Tmp:BEQ AdvanceLoopDone
+    CLC:LDA (TableEntryPtr),Y:ADC TableEntryPtr:STA TableEntryPtr
+    LDA TableEntryPtr + 1:ADC #0:STA TableEntryPtr + 1 ; SQUASH: INCCS TableEntryPtr + 1
+    INX:BNE AdvanceLoop ; always branch
+.AdvanceLoopDone
+
+    ; Emit the table entry at TableEntryPtr, recursing to handle top-bit-set tokens.
+    LDA (TableEntryPtr),Y:STA Tmp ; set Tmp = length of string + 1
+    ; SQUASH: Could we replace next three instructions with JMP DoneChar? Or even BNE DoneChar,
+    ; since length of string plus 1 can't be 0?
+    CMP #1:BEQ CharLoopDone ; SFTODO: can this happen? do we have "zero length strings"?
     INY
-.charLoop
-    LDA (PtrSFTODO1),Y
-    BPL simpleCharacter
-    JSR emitEntryAFromTablePtrSFTODO2 ; recurse to handle top-bit-set tokens
-    JMP doneChar
-.simpleCharacter
+.CharLoop
+    LDA (TableEntryPtr),Y:BPL SimpleCharacter
+    JSR EmitEntryAFromTableTableBasePtr ; recurse to handle top-bit-set tokens
+    JMP DoneChar
+.SimpleCharacter
     JSR emitDynamicSyntaxCharacter
-.doneChar
-    INY
-    CPY Tmp
-    BNE charLoop
-.charLoopDone
-    PLA
-    STA Tmp
-    PLA
-    STA PtrSFTODO1
-    PLA
-    STA PtrSFTODO1 + 1
-    PLA
-    TAY
-    PLA
-    TAX
-    PLA
+.DoneChar
+    INY:CPY Tmp:BNE CharLoop
+.CharLoopDone
+
+    ; Restore everything.
+    PLA:STA Tmp
+    PLA:STA TableEntryPtr:PLA:STA TableEntryPtr + 1
+    PLA:TAY:PLA:TAX:PLA
     RTS
 }
 			
