@@ -3189,12 +3189,12 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     FALLTHROUGH_TO nle
 }
 
-;*NLE Command
+;*NLE Command - enter IBOS as a language ROM
+.nle
 {
-.^nle	  LDX romselCopy									;Get current ROM number
+    LDX romselCopy
 .^doOsbyteEnterLanguage
-            LDA #osbyteEnterLanguage
-            JMP OSBYTE								;Enter IBOS as a language ROM
+    LDA #osbyteEnterLanguage:JMP OSBYTE
 }
 			
 ;*GOIO Command
