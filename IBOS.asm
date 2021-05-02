@@ -175,8 +175,9 @@ transientCmdPtr = &A8 ; 2 bytes
 transientTblPtr = &AA ; 2 bytes
 transientCmdIdx = &AA ; 1 byte SFTODO: as in other places, this is "cmd" in the sense that one of our * commands or one of our *CONFIGUURE X "things" is a "command", not *just* * commands
 transientDynamicSyntaxState = &AE ; 1 byte
-; SFTODO: Named constants for b7 and b6
-transientDynamicSyntaxStateCountMask = %00111111
+    ; b7 and b6 of transientDynamicSyntaxState act as flags. Since they're tested via BIT we
+    ; don't have any named constants for them; see StartDynamicSyntaxGeneration for details.
+    transientDynamicSyntaxStateCountMask = %00111111
 
 transientDateBufferPtr = &A8 ; SFTODO!?
 transientDateBufferIndex = &AA ; SFTODO!?
@@ -1216,7 +1217,7 @@ Tmp = &AC
     ; Stash V (&40, b6) and C (&80, b7) in transientDynamicSyntaxState with lower bits all 0.
     LDA #0:ROR A
     BVC VClear
-    ORA #&40 ; SFTODO: magic
+    ORA #flagV
 .VClear
     STA transientDynamicSyntaxState
 
