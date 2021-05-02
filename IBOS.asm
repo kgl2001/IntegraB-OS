@@ -864,13 +864,13 @@ GUARD	&C000
     RTS
 
 .^ConfTbla
-    EQUB &11								;Number of *CONFIGURE commands
+    EQUB 17							;Number of *CONFIGURE commands
     ASSERT P% = ConfRef + KeywordTableOffset ; SFTODO: Or is this not as common-with-CmdRef parsing as I imagine?
     EQUW ConfTbl							;Start of *CONFIGURE commands lookup table
     ASSERT P% = ConfRef + CmdTblParOffset
     EQUW ConfParTbl							;Start of *CONFIGURE commands parameter lookup table
 	
-;*CONFIGURE commands lookup table
+;*CONFIGURE keyword lookup table
 .ConfTbl
     EQUS 5, "FILE"
     EQUS 5, "LANG"
@@ -892,28 +892,29 @@ GUARD	&C000
     EQUB 0
 
 ;*CONFIGURE parameters table
-; SFTODO: Any chance we can steal some macro ideas from Mark Moxon's Elite disassembly to make the recursive tokens more self-documenting?
 .ConfParTbl
-    EQUB  7, &81, "(D/N)"						;Parameter &80 for *FILE:		'<0-15>(D/N)'
-    EQUB  5, &93, "15>"						;Parameter &81 for *LANG:		'<0-15>'
-    EQUB  6, "<1-8>"							;Parameter &82 for *BAUD:		'<1-8>'
-    EQUB  4, &93, "7>"							;Parameter &83 for *DATA:		'<0-7>'
-    EQUB  2, &83							;Parameter &84 for *FDRIVE:		'<0-7>'
-    EQUB  4, &93, "4>"							;Parameter &85 for *PRINTER:		'<0-4>'
-    EQUB  6, &93, "255>"						;Parameter &86 for *IGNORE:		'<0-255>'
-    EQUB  2, &86							;Parameter &87 for *DELAY:		'<0-255>'
-    EQUB  2, &86							;Parameter &88 for *REPEAT:		'<0-255>'
-    EQUB  7, &91, &92, "/SH", &92					;Parameter &89 for *CAPS:		'/NOCAPS/SHCAPS'
-    EQUB  6, &86, ",", &93, "1>"						;Parameter &8A for *TV:		'<0-255>,<0-1>'
-    EQUB 14, "(", &84, "/<128-135>)"					;Parameter &8B for *MODE:		'(<0-7>/<128-135>)'
-    EQUB  6, &91, "TUBE"						;Parameter &8C for *TUBE:		'/NOTUBE'
-    EQUB  6, &91, "BOOT"						;Parameter &8D for *BOOT:		'/NOBOOT'
-    EQUB  5, &91, "SHX"						;Parameter &8E for *SHX:		'/NOSHX'
-    EQUB  2, &85							;Parameter &8F:			'<0-4>'
-    EQUB  5, &93, "63>"						;Parameter &90:			'<0-63>'
-    EQUB  4, "/NO"							;Parameter &91:			'/NO'
-    EQUB  5, "CAPS"							;Parameter &92:			'CAPS'
-    EQUB  4, "<0-"							;Parameter &93:			'<0-'
+t = &80
+    ;     n, char 1, 2, ... n-1	   i  ConfTbl entry		fully expanded text
+    EQUB  7, t+1, "(D/N)"		;  0  FILE		"<0-15>(D/N)"
+    EQUB  5, t+19, "15>"		;  1  LANG		"<0-15>"
+    EQUB  6, "<1-8>"		;  2  BAUD          	"<1-8>"
+    EQUB  4, t+19, "7>"		;  3  DATA		"<0-7>"
+    EQUB  2, t+3			;  4  FDRIVE		"<0-7>"
+    EQUB  4, t+19, "4>"		;  5  PRINTER       	"<0-4>"
+    EQUB  6, t+19, "255>"		;  6  IGNORE		"<0-255>"
+    EQUB  2, t+6			;  7  DELAY		"<0-255>"
+    EQUB  2, t+6			;  8  REPEAT		"<0-255>"
+    EQUB  7, t+17, t+18, "/SH", t+18	;  9  CAPS		"/NOCAPS/SHCAPS"
+    EQUB  6, t+6, ",", t+19, "1>"	; 10  TV			"<0-255>,<0-1>"
+    EQUB 14, "(", t+4, "/<128-135>)"	; 11  MODE		"(<0-7>/<128-135>)"
+    EQUB  6, t+17, "TUBE"		; 12  TUBE		"/NOTUBE"
+    EQUB  6, t+17, "BOOT"		; 13  BOOT		"/NOBOOT"
+    EQUB  5, t+17, "SHX"		; 14  SHX			"/NOSHX"
+    EQUB  2, t+5			; 15  OSMODE		"<0-4>"
+    EQUB  5, t+19, "63>"		; 16  -			"<0-63>"
+    EQUB  4, "/NO"			; 17  -			"/NO"
+    EQUB  5, "CAPS"			; 18  -			"CAPS"
+    EQUB  4, "<0-"			; 19  -			"<0-"
     EQUB  0
 }
 
