@@ -10411,23 +10411,22 @@ ptr = &A8
 }
 
 {
-.^LBCF2      LDA #&00								;clear Shadow RAM enable bit
-            STA ramselCopy								;store at RAMID
-            STA ramsel			          				;store at RAMSEL
-            LDA vduStatus								;get VDU status
-            AND_NOT vduStatusShadow							;clear bit 4
-            STA vduStatus								;save VDU status
-            LDA #modeChangeStateNone
-            STA modeChangeState
-            ; SFTODO: At a casual glance it seems weird we're setting osShadowRamFlag to 1 here, do I have the interpretation of that flag right?
-            LDA #&01
-            STA osShadowRamFlag
+.^LBCF2
+    LDA #&00								;clear Shadow RAM enable bit
+    STA ramselCopy								;store at RAMID
+    STA ramsel			          				;store at RAMSEL
+    LDA vduStatus								;get VDU status
+    AND_NOT vduStatusShadow							;clear bit 4
+    STA vduStatus								;save VDU status
+    LDA #modeChangeStateNone
+    STA modeChangeState
+    ; SFTODO: At a casual glance it seems weird we're setting osShadowRamFlag to 1 here, do I have the interpretation of that flag right?
+    LDA #&01
+    STA osShadowRamFlag
 .SFTODOCOMMON1
-            JSR PrvEn								;switch in private RAM
-            LDA prvSFTODOMODE
-            AND #&7F
-            STA prvSFTODOMODE
-            JMP PrvDis								;switch out private RAM
+    JSR PrvEn
+    LDA prvSFTODOMODE:AND_NOT shadowModeOffset:STA prvSFTODOMODE
+    JMP PrvDis
 }
 
 ; Enter OSMODE 0, *assuming* we are currently in a different OSMODE.
