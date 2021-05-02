@@ -1203,39 +1203,44 @@ Tmp = &AC
     RTS
 }
 			
-; SFTODO: This has only one caller
+; Initialise transientDynamicSyntaxState and start generating a dynamic syntax message/error.
+;
+; On entry:
+;     C set => start building a syntax error on the stack
+;     C clear => write output to screen
+;                V clear => prefix with two leading spaces
+;                V set => no leading spaces
+; SQUASH: This only has one caller and doesn't return early.
 .startDynamicSyntaxGeneration ; SFTODO: rename?
 {
-    LDA #&00
-    ROR A ; move C on entry into b7 of A
-    BVC L84C8
-    ORA #&40 ; SFTODO: flagV??
-.L84C8
-    STA transientDynamicSyntaxState ; stash original V (&40, b6) and C (&80, b7) in transientDynamicSyntaxState
-    BPL generateToScreen
-    LDY #&00
-.copyLoop
-    LDA errorPrefix,Y
-    STA L0100,Y
-    INY
-    CMP #' '
-    BNE copyLoop
-    TYA
-    JMP saveA
+    ; Stash V (&40, b6) and C (&80, b7) in transientDynamicSyntaxState with lower bits all 0.
+    LDA #0:ROR A
+    BVC VClear
+    ORA #&40 ; SFTODO: magic
+.VClear
+    STA transientDynamicSyntaxState
 
-.generateToScreen
-    BIT transientDynamicSyntaxState
-    BVS L84E7
-    JSR printSpace
-    JSR printSpace
-.L84E7
-    LDA #&02
-.saveA
+    BPL GenerateToScreen ; generate to screen if C clear on entry
+    ; C set on entry; start building an error on the stack.
+    LDY #0
+.CopyLoop
+    LDA ErrorPrefix,Y:STA L0100,Y
+    INY
+    CMP #' ':BNE CopyLoop
+    TYA:JMP SaveA
+
+.GenerateToScreen
+    ; SQUASH: V hasn't changed since we entered this routine, so BIT is redundant.
+    BIT transientDynamicSyntaxState:BVS NoLeadingSpaces
+    JSR printSpace:JSR printSpace
+.NoLeadingSpaces
+    LDA #2
+.SaveA
     ORA transientDynamicSyntaxState
     STA transientDynamicSyntaxState
     RTS
 
-.errorPrefix
+.ErrorPrefix
     EQUB &00,&DC
     EQUS "Syntax: "
 }
