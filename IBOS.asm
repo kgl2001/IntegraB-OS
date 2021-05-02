@@ -2676,7 +2676,7 @@ MaxSwrBanks = 4
     LDX #0
     LDY #0								;starting at SWRAM bank 0
 .L8CD8
-    JSR L8E10								;test for SWRAM at bank Y
+    JSR TestForSwrInBankY								;test for SWRAM at bank Y
     BCS L8CE6
     TYA
     STA prvPrintBufferBankList,X								;store RAM bank number in Private memory
@@ -2713,7 +2713,7 @@ MaxSwrBanks = 4
             STY L00AD
             BCS L8D31
             TAY
-            JSR L8E10								;test for SWRAM at bank Y
+            JSR TestForSwrInBankY								;test for SWRAM at bank Y
             TYA
             BCS L8D2C
             LDX L00AC
@@ -2831,26 +2831,24 @@ MaxSwrBanks = 4
             JSR PrvDis								;switch out private RAM
             JMP ExitAndClaimServiceCall								;Exit Service Call
 
-;Test for SWRAM			
-.L8E10
+.TestForSwrInBankY
+; ENHANCE: It would be good to use romBinaryVersion for TestAddress, in case (for example)
+; the bank contains a ROM temporarily disabled by something like Advanced ROM Manager.
+TestAddress = &8000
     TXA:PHA
     LDA romTypeTable,Y:BNE L8E68
     LDA prvRomTypeTableCopy,Y:BNE L8E68
     PHP:SEI
-    ; SFTODO: Mildly magic constants in next two lines
-    LDA #&00:STA ramRomAccessSubroutineVariableInsn + 1
-    LDA #&80:STA ramRomAccessSubroutineVariableInsn + 2
-    LDA #opcodeLdaAbs:STA ramRomAccessSubroutineVariableInsn
-    JSR ramRomAccessSubroutine							;switch to ROM Bank Y and read value of &8000 to A
-    EOR #&FF								;EOR with &FF
-    TAX									;and write back to &8000
-    LDA #opcodeStaAbs:STA ramRomAccessSubroutineVariableInsn
-    TXA
-    JSR ramRomAccessSubroutine							;switch to ROM Bank Y and write value of A to &8000
-    TAX
-    LDA #opcodeCmpAbs:STA ramRomAccessSubroutineVariableInsn
-    TXA
-    JSR ramRomAccessSubroutine							;switch to ROM Bank Y and compare value of &8000 with A
+    ; Flip the bits of TestAddress in bank Y and see if the change persists, i.e. if there's
+    ; RAM in that bank. Clear C iff we find RAM.
+    LDA #lo(TestAddress):STA ramRomAccessSubroutineVariableInsn + 1
+    LDA #hi(TestAddress):STA ramRomAccessSubroutineVariableInsn + 2
+    LDA #opcodeLdaAbs:STA ramRomAccessSubroutineVariableInsn:JSR ramRomAccessSubroutine:EOR #&FF
+    ; SQUASH: We keep stashing A temporarily in X here, but couldn't we just use X to do the
+    ; modifications so A is naturally preserved?
+    TAX:LDA #opcodeStaAbs:STA ramRomAccessSubroutineVariableInsn:TXA:JSR ramRomAccessSubroutine
+    TAX:LDA #opcodeCmpAbs:STA ramRomAccessSubroutineVariableInsn:TXA:JSR ramRomAccessSubroutine
+    ; ENHANCE: Ideally we'd undo the change made to TestAddress.
     SEC
     BNE L8E4A
     CLC
