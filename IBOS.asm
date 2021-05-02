@@ -942,8 +942,7 @@ t = &80
     EQUB 0
 
 .ibosParTbl
-    ; The first byte here is the length of the parameter string plus 1, i.e. the parameters are
-    ; zero length strings.
+    ; 1 here is "string length + 1", so string length is 0.
     EQUB 1 ; RTC
     EQUB 1 ; SYS
     EQUB 1 ; FSX
