@@ -931,18 +931,18 @@ GUARD	&C000
     EQUW ibosSubTbl							;Start of IBOS sub option reference lookup table
 
 .ibosTbl
-    EQUS &04, "RTC"
-    EQUS &04, "SYS"
-    EQUS &04, "FSX"
-    EQUS &05, "SRAM"
-    EQUB &00
+    EQUS 4, "RTC"
+    EQUS 4, "SYS"
+    EQUS 4, "FSX"
+    EQUS 5, "SRAM"
+    EQUB 0
 
 .ibosParTbl
     EQUB &01,&01,&01,&01
     EQUB &00
-}
 
 .ibosSubTbl
+}
     ; Elements 0-3 of ibosSubTbl table correspond to the four entries at ibosTbl.
     ibosSubTblHelpNoArgument = 4
     ibosSubTblConfigureList = 5
