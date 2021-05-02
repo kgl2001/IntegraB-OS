@@ -193,7 +193,7 @@ vduGraphicsCharacterCell = &D6 ; 2 bytes
 romActiveLastBrk = &024A
 negativeVduQueueSize = &026A
 tubePresenceFlag = &027A ; SFTODO: allmem says 0=inactive, is there actually a specific bit or value for active? what does this code rely on?
-osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force shadow modes (note that AllMem.txt seems to have this wrong, at least my copy does)
+osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force shadow modes (note that AllMem.txt seems to have this wrong, at least my copy does) SFTODO: MAYBE ALLMEM IS RIGHT (THO I THINK I CHECKED WITH MASTER IN B-EM), BUT IT LOOKS LIKE *IBOS* USES 0=FORCE SHADOW MODE, BUT REVIEW THIS CAREFULLY LATER
 currentLanguageRom = &028C ; SFTODO: not sure yet if we're using this for what the OS does or repurposing it
 currentMode = &0355
 
@@ -10156,18 +10156,18 @@ ibosCNPVIndex = 6
 
 ; The following scope is the WRCHV handler; the entry point is at WrchvHandler half way down.
 {
-; We're processing the second byte of a vduSetMode command, i.e. we will change
-; mode when we forward this byte to the parent WRCHV.
+; We're processing the second byte of a vduSetMode command, i.e. we will change mode when we
+; forward this byte to the parent WRCHV.
 .SelectNewMode
     PLA:PHA ; peek original OSWRCH A=new mode
     CMP #shadowModeOffset:BCS EnteringShadowMode
     LDA osShadowRamFlag:BEQ EnteringShadowMode
-    ; SQUASH: The next two instructions are pointless; maybeSwapShadow2 immediately does LDA vduStatus.
-    PLA:PHA ; peek original OSWRCH A=new mode
+    ; We're entering a non-shadow mode.
+    PLA:PHA ; peek original OSWRCH A=new mode SQUASH: redundant, maybeSwapShadow2 does LDA
     JSR maybeSwapShadow2
     LDA ramselCopy:AND_NOT ramselShen:STA ramselCopy:STA ramsel
     PLA:PHA ; peek original OSWRCH A=new mode
-    AND_NOT shadowModeOffset ; clear Shadow RAM enable bit SFTODO: isn't this redundant? We'd have done "BCS EnteringShadowMode" above if top bit was set, wouldn't we?
+    AND_NOT shadowModeOffset ; SQUASH: redundant as we didn't take "BCS EnteringShadowMode" branch above
     LDX #prvSFTODOMODE - prv83:JSR writePrivateRam8300X
     LDA #ModeChangeStateEnteringNonShadowMode:STA ModeChangeState
     PLA:JMP ProcessWrchv
@@ -10200,17 +10200,16 @@ ibosCNPVIndex = 6
     LDA vduStatus:ORA #vduStatusShadow:STA vduStatus
 .AdjustCrtcHorz
     ; DELETE: There seems to be an undocumented feature of IBOS which will perform a horizontal
-    ; screen shift (analogous to the vertical shift controlled by *TV/
-    ; *CONFIGURE TV) based on userRegHorzTV. This is not exposed in *CONFIGURE/ STATUS, but it
-    ; *does seem to work if you use *FX162,54 to write directly to the
-    ; RTC register. In a modified IBOS this should probably either be removed to save space or
-    ; exposed via *CONFIGURE/*STATUS.
+    ; screen shift (analogous to the vertical shift controlled by *TV/*CONFIGURE TV) based on
+    ; userRegHorzTV. This is not exposed in *CONFIGURE/*STATUS, but it *does seem to work if
+    ; you use *FX162,54 to write directly to the RTC register. In a modified IBOS this should
+    ; probably either be removed to save space or exposed via *CONFIGURE/*STATUS.
     LDX #userRegHorzTV:JSR readUserReg
     CLC:ADC #&62
     LDX currentMode
-    CPX #&04:BCC crtcHorzDisplayedInA
+    CPX #4:BCC crtcHorzDisplayedInA
     LSR A
-    CPX #&07:BNE crtcHorzDisplayedInA
+    CPX #7:BNE crtcHorzDisplayedInA
     CLC:ADC #&04
 .crtcHorzDisplayedInA
     LDX #&02:STX crtcHorzTotal
