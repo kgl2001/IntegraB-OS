@@ -657,7 +657,7 @@ flagV = &40
 
 ; Convenience macro to avoid the annoyance of writing this out every time.
 MACRO AND_NOT n
-             AND #NOT(n) AND &FF
+    AND #NOT(n) AND &FF
 ENDMACRO
 
 ; The following convenience macros only save a couple of lines of code each time
@@ -692,7 +692,7 @@ ENDMACRO
 ; This makes fall-through more explicit and guards against accidentally breaking
 ; things when rearranging blocks of code.
 MACRO FALLTHROUGH_TO label
-          ASSERT P% == label
+    ASSERT P% == label
 ENDMACRO
 
 ORG	&8000
@@ -858,59 +858,64 @@ GUARD	&C000
 		EQUW srwp-1							;address of *SRWP command
 	
 ;Store *CONFIGURE reference table pointer address in X & Y
-.ConfRef	LDX #ConfRef MOD &100
-	LDY #ConfRef DIV &100
-	RTS
+.ConfRef
+{
+    LDX #lo(ConfRef):LDY #hi(ConfRef)
+    RTS
 
-.ConfTbla		EQUB &11								;Number of *CONFIGURE commands
-		ASSERT P% = ConfRef + KeywordTableOffset ; SFTODO: Or is this not as common-with-CmdRef parsing as I imagine?
-		EQUW ConfTbl							;Start of *CONFIGURE commands lookup table
-		ASSERT P% = ConfRef + CmdTblParOffset
-		EQUW ConfParTbl							;Start of *CONFIGURE commands parameter lookup table
+.^ConfTbla
+    EQUB &11								;Number of *CONFIGURE commands
+    ASSERT P% = ConfRef + KeywordTableOffset ; SFTODO: Or is this not as common-with-CmdRef parsing as I imagine?
+    EQUW ConfTbl							;Start of *CONFIGURE commands lookup table
+    ASSERT P% = ConfRef + CmdTblParOffset
+    EQUW ConfParTbl							;Start of *CONFIGURE commands parameter lookup table
 	
 ;*CONFIGURE commands lookup table
-.ConfTbl		EQUS &05, "FILE"
-		EQUS &05, "LANG"
-		EQUS &05, "BAUD"
-		EQUS &05, "DATA"
-		EQUS &07, "FDRIVE"
-		EQUS &08, "PRINTER"
-		EQUS &07, "IGNORE"
-		EQUS &06, "DELAY"
-		EQUS &07, "REPEAT"
-		EQUS &05, "CAPS"
-		EQUS &03, "TV"
-		EQUS &05, "MODE"
-		EQUS &05, "TUBE"
-		EQUS &05, "BOOT"
-		EQUS &04, "SHX"
-		EQUS &07, "OSMODE"
-		EQUS &06, "ALARM"
-		EQUB &00
+.ConfTbl
+    EQUS 5, "FILE"
+    EQUS 5, "LANG"
+    EQUS 5, "BAUD"
+    EQUS 5, "DATA"
+    EQUS 7, "FDRIVE"
+    EQUS 8, "PRINTER"
+    EQUS 7, "IGNORE"
+    EQUS 6, "DELAY"
+    EQUS 7, "REPEAT"
+    EQUS 5, "CAPS"
+    EQUS 3, "TV"
+    EQUS 5, "MODE"
+    EQUS 5, "TUBE"
+    EQUS 5, "BOOT"
+    EQUS 4, "SHX"
+    EQUS 7, "OSMODE"
+    EQUS 6, "ALARM"
+    EQUB 0
 
 ;*CONFIGURE parameters table
 ; SFTODO: Any chance we can steal some macro ideas from Mark Moxon's Elite disassembly to make the recursive tokens more self-documenting?
-.ConfParTbl	EQUB &07, &81, "(D/N)"						;Parameter &80 for *FILE:		'<0-15>(D/N)'
-		EQUB &05, &93, "15>"						;Parameter &81 for *LANG:		'<0-15>'
-		EQUB &06, "<1-8>"							;Parameter &82 for *BAUD:		'<1-8>'
-		EQUB &04, &93, "7>"							;Parameter &83 for *DATA:		'<0-7>'
-		EQUB &02, &83							;Parameter &84 for *FDRIVE:		'<0-7>'
-		EQUB &04, &93, "4>"							;Parameter &85 for *PRINTER:		'<0-4>'
-		EQUB &06, &93, "255>"						;Parameter &86 for *IGNORE:		'<0-255>'
-		EQUB &02, &86							;Parameter &87 for *DELAY:		'<0-255>'
-		EQUB &02, &86							;Parameter &88 for *REPEAT:		'<0-255>'
-		EQUB &07, &91, &92, "/SH", &92					;Parameter &89 for *CAPS:		'/NOCAPS/SHCAPS'
-		EQUB &06, &86, ",", &93, "1>"						;Parameter &8A for *TV:		'<0-255>,<0-1>'
-		EQUB &0E, "(", &84, "/<128-135>)"					;Parameter &8B for *MODE:		'(<0-7>/<128-135>)'
-		EQUB &06, &91, "TUBE"						;Parameter &8C for *TUBE:		'/NOTUBE'
-		EQUB &06, &91, "BOOT"						;Parameter &8D for *BOOT:		'/NOBOOT'
-		EQUB &05, &91, "SHX"						;Parameter &8E for *SHX:		'/NOSHX'
-		EQUB &02, &85							;Parameter &8F:			'<0-4>'
-		EQUB &05, &93, "63>"						;Parameter &90:			'<0-63>'
-		EQUB &04, "/NO"							;Parameter &91:			'/NO'
-		EQUB &05, "CAPS"							;Parameter &92:			'CAPS'
-		EQUB &04, "<0-"							;Parameter &93:			'<0-'
-		EQUB &00
+.ConfParTbl
+    EQUB  7, &81, "(D/N)"						;Parameter &80 for *FILE:		'<0-15>(D/N)'
+    EQUB  5, &93, "15>"						;Parameter &81 for *LANG:		'<0-15>'
+    EQUB  6, "<1-8>"							;Parameter &82 for *BAUD:		'<1-8>'
+    EQUB  4, &93, "7>"							;Parameter &83 for *DATA:		'<0-7>'
+    EQUB  2, &83							;Parameter &84 for *FDRIVE:		'<0-7>'
+    EQUB  4, &93, "4>"							;Parameter &85 for *PRINTER:		'<0-4>'
+    EQUB  6, &93, "255>"						;Parameter &86 for *IGNORE:		'<0-255>'
+    EQUB  2, &86							;Parameter &87 for *DELAY:		'<0-255>'
+    EQUB  2, &86							;Parameter &88 for *REPEAT:		'<0-255>'
+    EQUB  7, &91, &92, "/SH", &92					;Parameter &89 for *CAPS:		'/NOCAPS/SHCAPS'
+    EQUB  6, &86, ",", &93, "1>"						;Parameter &8A for *TV:		'<0-255>,<0-1>'
+    EQUB 14, "(", &84, "/<128-135>)"					;Parameter &8B for *MODE:		'(<0-7>/<128-135>)'
+    EQUB  6, &91, "TUBE"						;Parameter &8C for *TUBE:		'/NOTUBE'
+    EQUB  6, &91, "BOOT"						;Parameter &8D for *BOOT:		'/NOBOOT'
+    EQUB  5, &91, "SHX"						;Parameter &8E for *SHX:		'/NOSHX'
+    EQUB  2, &85							;Parameter &8F:			'<0-4>'
+    EQUB  5, &93, "63>"						;Parameter &90:			'<0-63>'
+    EQUB  4, "/NO"							;Parameter &91:			'/NO'
+    EQUB  5, "CAPS"							;Parameter &92:			'CAPS'
+    EQUB  4, "<0-"							;Parameter &93:			'<0-'
+    EQUB  0
+}
 
 ;Store IBOS Options reference table pointer address in X & Y
 .ibosRef	  LDX #ibosRef MOD &100
