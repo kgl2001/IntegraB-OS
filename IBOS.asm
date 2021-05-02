@@ -2912,12 +2912,12 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .osmode
 {
     JSR convertIntegerDefaultDecimal:BCC ParsedOK
-    LDA (transientCmdPtr),Y:CMP #'?':BEQ ShowOsmode
+    LDA (transientCmdPtr),Y:CMP #'?':BEQ ShowOsMode
     JMP GenerateSyntaxError
 .ParsedOK
-    JSR SetOsmodeA
+    JSR SetOsModeA
     JMP ExitAndClaimServiceCall
-.ShowOsmode
+.ShowOsMode
     JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
     LDX #prvOsMode - prv83:JSR readPrivateRam8300X
 .^SecPrintADecimalOSNEWLPrvDisExitAndClaimServiceCall
@@ -2925,13 +2925,13 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 }
 
-.SetOsmodeA
+.SetOsModeA
 {
-    CMP #0:BEQ SetOsmode0
+    CMP #0:BEQ SetOsMode0
     CMP #6:BCS GenerateBadParameterIndirect
     PHA
     JSR PrvEn
-    LDA prvOsMode:BEQ CurrentlyInOsmode0
+    LDA prvOsMode:BEQ CurrentlyInOsMode0
     PLA:STA prvOsMode
 .CommonEnd
     ; SQUASH: Couldn't we JMP PrvDis?
@@ -2941,15 +2941,15 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .GenerateBadParameterIndirect
     JMP GenerateBadParameter
 
-.SetOsmode0
+.SetOsMode0
     JSR PrvEn
     LDA prvOsMode:BEQ CommonEnd ; nothing to do as we're already in OSMODE 0
     JSR GenerateErrorIfPrinterBufferNotEmpty
     LDA #0:STA prvOsMode
-    JSR SFTODOZZ
+    JSR EnterOsMode0
     JMP CommonEnd
 			
-.CurrentlyInOsmode0
+.CurrentlyInOsMode0
     ; SFTODO: I *assume* we have to check the printer buffer isn't empty here because we're
     ; using the OS printer buffer in OSMODE 0, and entering a non-0 OSMODE will overwrite that
     ; with our main RAM stub, but I haven't checked the code yet.
@@ -3192,7 +3192,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JMP L90DE
 			
 .L90A7      LDA #&04
-            JSR SetOsmodeA
+            JSR SetOsModeA
             LDA #&00
             STA osShadowRamFlag
             LDX #&3D								;select SHX register
@@ -10435,30 +10435,33 @@ ptr = &A8
             JMP PrvDis								;switch out private RAM
 }
 
-; SFTODO: This has only one caller
-.SFTODOZZ
+; Enter OSMODE 0, *assuming* we are currently in a different OSMODE.
+; SQUASH: This has only one caller and doesn't seem to return early so it could probably be
+; inlined.
+.EnterOsMode0
 {
-.LBD18      PHP
-            SEI
-            LDX #&07
-.LBD1C      LDA parentVectorTbl1,X
-            STA BYTEVL,X
-            DEX
-            BPL LBD1C
-            LDX #&05
-.LBD27      LDA parentVectorTbl2,X
-            STA INSVL,X
-            DEX
-            BPL LBD27
-            PLP
-            ; SFTODO: The next few lines (down to and including JSR PrvDis) could be replaced by JSR SFTODOCOMMON1, I think.
-            JSR PrvEn								;switch in private RAM
-            LDA prvSFTODOMODE
-            AND #&7F
-            STA prvSFTODOMODE
-            JSR PrvDis								;switch out private RAM
-            JSR maybeSwapShadow2
-            JMP LBCF2
+    ; Restore the original vectors.
+    PHP:SEI
+    LDX #7
+.Loop1
+    LDA parentVectorTbl1,X:STA BYTEVL,X
+    ; SQUASH: Could we do something like "CPX #6:BCS skip:LDA parentVectorTbl2,X:STA
+    ; INSVL,X:.skip" here and then get rid of Loop2?
+    DEX:BPL Loop1
+    LDX #5
+.Loop2
+    LDA parentVectorTbl2,X:STA INSVL,X
+    DEX:BPL Loop2
+    PLP
+
+    ; Disable shadow RAM.
+    ; SQUASH: I think the next few lines up to and including "JSR PrvDis" could be replaced by
+    ; "JSR SFTODOCOMMON1".
+    JSR PrvEn
+    LDA prvSFTODOMODE:AND_NOT shadowModeOffset:STA prvSFTODOMODE
+    JSR PrvDis
+    JSR maybeSwapShadow2
+    JMP LBCF2
 }
 
 ; Page in PRVS8 and PRVS1, returning the previous value of RAMSEL in A.
