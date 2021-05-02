@@ -2675,27 +2675,23 @@ MaxSwrBanks = 4
     JSR UnassignPrintBufferBanks
     LDX #0 ; count of RAM banks found
     LDY #0 ; bank to test
-.L8CD8
+.BankTestLoop
     JSR TestForEmptySwrInBankY:BCS NotEmptySwr
     TYA:STA prvPrintBufferBankList,X
     INX:CPX #MaxSwrBanks:BEQ MaxBanksFound
 .NotEmptySwr
-    INY:CPY #maxBank + 1:BNE L8CD8
+    INY:CPY #maxBank + 1:BNE BankTestLoop
 .MaxBanksFound
-    PLA
-    BNE BankCountNot0
+    PLA:BNE BankCountNot0
     JSR UnassignPrintBufferBanks
     JMP L8D01
-
 .BankCountNot0
     TAX
     LDA #&FF
-.L8CF7
-    CPX #&04
-    BCS L8D01
+.SFTODOLOOP
+    CPX #&04:BCS L8D01
     STA prvPrintBufferBankList,X
-    INX
-    BNE L8CF7
+    INX:BNE SFTODOLOOP
 .L8D01
     JSR L8D5A
     JMP L8DCA
