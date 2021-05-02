@@ -3145,17 +3145,18 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ;execute '*S*' command
 ;switches to shadow, executes command, then switches back out of shadow?
 .^commandS
-    CLV ; SFTODO: is this needed? I just find it odd there's no CLV or "set V" at commandX, although *perhaps* we just know V has a certain value
+    CLV ; start with V clear, it's set during execution of *S* if we disabled the tube
     SEC:BCS Common ; always branch
 
 ;execute '*X*' command
 ;switches from shadow, executes command, then switches back to shadow
 .^commandX
-    CLC
+    CLC ; V is irrelevant in this case, unlike commandS
 .Common
     PHP
     INY:INY ; skip "S*" or "X*"
     JSR findNextCharAfterSpace
+    ; Push the address of the command tail onto the stack ready for CallSubCommand below.
     CLC:TYA:ADC transientCmdPtr:PHA
     LDA transientCmdPtr + 1:ADC #0:PHA
     TSX:LDA L0103,X ; get stacked flags from earlier PHP
@@ -3170,19 +3171,19 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA #vduSetMode:JSR OSWRCH:LDA currentMode:JSR OSWRCH
     BIT tubePresenceFlag:BPL NoTube
     JSR disableTube
-    TSX:LDA L0103,X:ORA #flagV:STA L0103,X ; set V in stacked flags
+    TSX:LDA L0103,X:ORA #flagV:STA L0103,X ; set V in stacked flags to indicate tube disabled
     LDA romselCopy:AND #maxBank:STA currentLanguageRom
     JSR setBrkv
 .NoTube
 .CallSubCommand
     PLA:TAY:PLA:TAX:JSR OSCLI
     PLP
-    BCS L90F0
+    BCS CheckVAfterSwitchInShadow
     LDX #&C0:JSR L8A7B ; SFTODO: magic
 .ExitAndClaimServiceCallIndirect
-    JMP ExitAndClaimServiceCall								;Exit Service Call
+    JMP ExitAndClaimServiceCall
 
-.L90F0
+.CheckVAfterSwitchInShadow
     BVC ExitAndClaimServiceCallIndirect
     FALLTHROUGH_TO nle
 }
