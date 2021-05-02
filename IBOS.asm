@@ -2663,7 +2663,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA (transientCmdPtr),Y
     CMP #'#':BEQ UseUserBankList
     CMP #'?':BNE PrvDisGenerateSyntaxError
-    JMP L8DCA
+    JMP ShowBufferSizeAndLocation
 .PrvDisGenerateSyntaxError
     JSR PrvDis
     JMP GenerateSyntaxError
@@ -2696,7 +2696,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     INX:BNE DisableUnwantedBankLoop ; always branch
 .prvPrintBufferBankListInitialised
     JSR L8D5A
-    JMP L8DCA
+    JMP ShowBufferSizeAndLocation
 
     ; ENHANCE: It's probably more trouble than it's worth, but at the moment something like
     ; "*BUFFER # 4,4,4,4" will set up a "64K" buffer using bank 4 four times, which probably
@@ -2724,7 +2724,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     ; just share it; we don't even fall through into it, so the label just needs moving.
 .prvPrintBufferBankListInitialised2
     JSR L8D5A
-    JMP L8DCA
+    JMP ShowBufferSizeAndLocation
 
 ; SQUASH: Could we use this in some other places where we're initialising
 ; prvPrintBufferBankList? Even if we called this first and then overwrote the first entry it
@@ -2746,7 +2746,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     STA prvPrintBufferBankList + 3
 .L8D5A
     LDA prvPrintBufferBankList:CMP #&FF:BEQ L8D46
-    AND #&F0:CMP #romselPrvEn:BNE BufferInSwr
+    AND #&F0:CMP #romselPrvEn:BNE BufferInSwr1
     ; Buffer is in private RAM, not sideways RAM.
     JSR SanitisePrvPrintBufferStart:STA prvPrintBufferBankStart
     LDA #&B0:STA prvPrintBufferBankEnd ; SFTODO: mildly magic
@@ -2758,7 +2758,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     SEC:LDA prvPrintBufferBankEnd:SBC prvPrintBufferBankStart:STA prvPrintBufferSizeMid
     JMP purgePrintBuffer
 
-.BufferInSwr
+.BufferInSwr1
     LDA #0
     STA prvPrintBufferSizeLow
     STA prvPrintBufferSizeMid
@@ -2778,24 +2778,24 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     STX prvPrintBufferBankCount
     JMP purgePrintBuffer
 			
-.L8DCA
+.ShowBufferSizeAndLocation
     ; Divide high and mid bytes of prvPrintBufferSize by 4 to get kilobytes.
     LDA prvPrintBufferSizeHigh:LSR A
     LDA prvPrintBufferSizeMid:ROR A:ROR A
     SEC:JSR printADecimal
-    LDA prvPrintBufferBankList:AND #&F0:CMP #&40:BNE L8DE8 ; SFTODO: magic constants
+    LDA prvPrintBufferBankList:AND #&F0:CMP #&40:BNE BufferInSwr2 ; SFTODO: magic constants
     LDX #0:JSR PrintKInPrivateOrSidewaysRAM ; write 'k in Private RAM'
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 			
-.L8DE8
+.BufferInSwr2
     LDX #1:JSR PrintKInPrivateOrSidewaysRAM ; write 'k in Sideways RAM '
     LDY #0
-.L8DEF
-    LDA prvPrintBufferBankList,Y:BMI L8E02
+.ShowBankLoop
+    LDA prvPrintBufferBankList,Y:BMI AllBanksShown
     SEC:JSR printADecimal
     LDA #',':JSR OSWRCH
-    INY:CPY #MaxSwrBanks:BNE L8DEF
-.L8E02
+    INY:CPY #MaxSwrBanks:BNE ShowBankLoop
+.AllBanksShown
     LDA #vduDel:JSR OSWRCH ; delete the last ',' that was just printed
 .^OSNEWLPrvDisExitAndClaimServiceCall
     JSR OSNEWL
