@@ -10533,71 +10533,52 @@ ScreenStart = &3000
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
 }
 
-; SFTODO: This only has one caller
-; SFTODO: Some of the code in here is similar to that used as part of 'buffer'
-; (the *BUFFER command), could it be factored out?
+; SQUASH: This only has one caller and doesn't seem to return early.
+; SQUASH: Some of the code in here is similar to that used as part of 'buffer' (the *BUFFER
+; command), could it be factored out?
 .initPrintBuffer
 {
-    LDX lastBreakType
-    BEQ softReset
-    ; On hard break or power-on reset, set up the printer buffer so it
-    ; uses private RAM from prvPrvPrintBufferStart onwards.
-    JSR PrvEn								;switch in private RAM
-    LDA #&00
+    LDX lastBreakType:BEQ softReset
+    ; On hard break or power-on reset, set up the printer buffer so it uses private RAM from
+    ; prvPrvPrintBufferStart onwards.
+    JSR PrvEn
+    LDA #0
     STA prvPrintBufferSizeLow
     STA prvPrintBufferSizeHigh
     STA prvPrintBufferFirstBankIndex
     STA prv82+&0F
     ; SFTODO: Following code is similar to chunk just below L8D5A, could
     ; it be factored out?
-    JSR SanitisePrvPrintBufferStart
-    STA prvPrintBufferBankStart
-    LDA #&B0
-    STA prvPrintBufferBankEnd
-    SEC
-    LDA prvPrintBufferBankEnd
-    SBC prvPrintBufferBankStart
-    STA prvPrintBufferSizeMid
-    LDA romselCopy
-    ORA #romselPrvEn
-    STA prvPrintBufferBankList
+    JSR SanitisePrvPrintBufferStart:STA prvPrintBufferBankStart
+    LDA #&B0:STA prvPrintBufferBankEnd
+    SEC:LDA prvPrintBufferBankEnd:SBC prvPrintBufferBankStart:STA prvPrintBufferSizeMid
+    LDA romselCopy:ORA #romselPrvEn:STA prvPrintBufferBankList
     LDA #&FF
     STA prv83+&19
     STA prv83+&1A
     STA prv83+&1B
 .softReset
     JSR purgePrintBuffer
-    JSR PrvDis								;switch out private RAM
+    JSR PrvDis
     ; Copy the rom access subroutine used by the printer buffer from ROM into RAM.
     LDY #romRomAccessSubroutineEnd - romRomAccessSubroutine - 1
 .LBE83
-    LDA romRomAccessSubroutine,Y
-    STA ramRomAccessSubroutine,Y
-    DEY
-    BPL LBE83
-    PHP
-    SEI
+    LDA romRomAccessSubroutine,Y:STA ramRomAccessSubroutine,Y
+    DEY:BPL LBE83
+    PHP:SEI
     ; Save the parent values of INSV, REMV and CNPV at
     ; parentVectorTbl2 and install our handlers at osPrintBuf+n*3 where
     ; n=4 for INSV, 5 for REMV and 6 for CNPV.
-    LDX #&00
+    LDX #0
     LDY #lo(osPrintBuf + 4 * 3)
 .LBE92
-    LDA INSVL,X
-    STA parentVectorTbl2,X
-    TYA
-    STA INSVL,X
-    LDA INSVH,X
-    STA parentVectorTbl2+1,X
-    LDA #hi(osPrintBuf + 4 * 3)
-    STA INSVH,X
-    INY
-    INY
-    INY
-    INX
-    INX
-    CPX #&06
-    BNE LBE92
+    LDA INSVL,X:STA parentVectorTbl2,X
+    TYA:STA INSVL,X
+    LDA INSVH,X:STA parentVectorTbl2+1,X
+    LDA #hi(osPrintBuf + 4 * 3):STA INSVH,X
+    INY:INY:INY
+    INX:INX
+    CPX #6:BNE LBE92
     PLP
     RTS
 }
