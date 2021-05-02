@@ -2648,8 +2648,8 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .buffer
 {
 MaxSwrBanks = 4
-SFTODOFOO = L00AC
-SFTODOBAR = L00AD
+TmpBankCount = L00AC
+TmpTransientCmdPtrOffset = L00AD
 ; ENHANCE: It would be good to use romBinaryVersion for TestAddress, just out of paranoia.
 TestAddress = &8000
 
@@ -2704,16 +2704,16 @@ TestAddress = &8000
     JSR GenerateErrorIfPrinterBufferNotEmpty
     JSR UnassignPrintBufferBanks
     INY
-    LDX #0:STX SFTODOFOO
+    LDX #0:STX TmpBankCount
 .ParseUserBankListLoop
-    JSR parseBankNumber:STY SFTODOBAR:BCS BankNumberParseError
+    JSR parseBankNumber:STY TmpTransientCmdPtrOffset:BCS BankNumberParseError
     TAY:JSR TestForEmptySwrInBankY:TYA:BCS NotEmptySwrBank
-    ; SQUASH: INC SFTODOFOO:LDX SFTODOFOO:STA prvPrintBufferBankList-1,X:...:CPX #MaxSwrBanks+1?
-    ; Or initialise SFTODOFOO to &FF?
-    LDX SFTODOFOO:STA prvPrintBufferBankList,X:INX:STX SFTODOFOO
+    ; SQUASH: INC TmpBankCount:LDX TmpBankCount:STA prvPrintBufferBankList-1,X:...:CPX #MaxSwrBanks+1?
+    ; Or initialise TmpBankCount to &FF?
+    LDX TmpBankCount:STA prvPrintBufferBankList,X:INX:STX TmpBankCount
     CPX #MaxSwrBanks:BEQ BankNumberParseError ; SFTODO: maybe change label name given this use
 .NotEmptySwrBank
-    LDY SFTODOBAR
+    LDY TmpTransientCmdPtrOffset
     JMP ParseUserBankListLoop
 			
 .BankNumberParseError
