@@ -1021,7 +1021,7 @@ MinimumAbbreviationLength = 3 ; including the "." which indicates an abbreviatio
     ; SFTODO: Possibly related and possibly not - doing "*CREATEME" on (emulated) IBOS 1.20
     ; seems to sometimes do nothing and sometimes generate a pseudo-error, as if the parsing is
     ; going wrong. Changing "ME" for other strings can make a difference.
-    JSR findNextCharAfterSpace
+    JSR FindNextCharAfterSpace
     CLC ; indicate "match found" to caller
     BCC CleanUpAndReturn ; always branch
 .NotMatch
@@ -1292,28 +1292,26 @@ TabColumn = 12
 {
 .SkipSpace
     INY
-.^findNextCharAfterSpace
+.^FindNextCharAfterSpace
     LDA (transientCmdPtr),Y
     CMP #' ':BEQ SkipSpace
-    CMP #vduCr
-    BEQ L854B
+    CMP #vduCr:BEQ SecRts
     CLC
     RTS
 
 ; SQUASH: Many copies of these two instructions, can we share?
-.L854B
+.SecRts
     SEC
     RTS
 
-; SFTODO: This skips a single comma if present
-.^findNextCharAfterSpaceSkippingComma
-    JSR findNextCharAfterSpace								;find next character. offset stored in Y
-    BCS L854B
+; Like FindNextCharAfterSpace, but a single comma will also be skipped (if present) after any
+; spaces.
+.^FindNextCharAfterSpaceSkippingComma
+    JSR FindNextCharAfterSpace:BCS SecRts
     LDA (transientCmdPtr),Y
-    CMP #','
-    BNE L8559
+    CMP #',':BNE ClcRts
     INY
-.L8559
+.ClcRts
     CLC
     RTS
 }
@@ -1543,7 +1541,7 @@ TabColumn = 12
 ; Parse "ON" or "OFF" from the command line, returning with C clear if we succeed, in which case A=&FF for ON or 0 for OFF. If parsing fails we return with C set and A=&7F. Flags reflect value in A on exit.
 .parseOnOff
 {
-.L8699      JSR findNextCharAfterSpace							;find next character. offset stored in Y
+.L8699      JSR FindNextCharAfterSpace							;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             AND #&DF								;capitalise
             CMP #'O'
@@ -1687,7 +1685,7 @@ firstDigitCmdPtrY = &BB
 .L872B      LDA #10
 .^convertIntegerDefaultBaseA
 .L872D      STA base
-            JSR findNextCharAfterSpace							;find next character. offset stored in Y
+            JSR FindNextCharAfterSpace							;find next character. offset stored in Y
             BCS clvRts                                                                              ;return with V set if it's a carriage return
             STY originalCmdPtrY
             STY firstDigitCmdPtrY
@@ -3100,7 +3098,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 .Common
     PHP
     INY:INY ; skip "S*" or "X*"
-    JSR findNextCharAfterSpace
+    JSR FindNextCharAfterSpace
     ; Push the address of the command tail onto the stack ready for CallSubCommand below.
     CLC:TYA:ADC transientCmdPtr:PHA
     LDA transientCmdPtr + 1:ADC #0:PHA
@@ -3158,7 +3156,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     CMP #')':BNE NoCloseBracket
     INY
 .NoCloseBracket
-    JSR findNextCharAfterSpace
+    JSR FindNextCharAfterSpace
     ; Poke a suitable JMP instruction just before the binary address at ConvertIntegerResult.
     LDA #opcodeJmpAbsolute
     PLP:BNE NotIndirect ; use stashed result of earlier CMP #'(' to test for indirect call
@@ -3327,7 +3325,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 			
 			
 ;get start and end of file name offset and store in Y & X
-.^L9247      JSR findNextCharAfterSpace							;find next character. offset stored in Y
+.^L9247      JSR FindNextCharAfterSpace							;find next character. offset stored in Y
             LDA (transientCmdPtr),Y							;read character
             CMP #vduCr								;CR?
             BNE L9253								;not CR, so jump
@@ -3404,7 +3402,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 
 ;*STATUS Command
 .^status	  LDX #serviceStatus
-.L92BB      JSR findNextCharAfterSpace							;find next character. offset stored in Y
+.L92BB      JSR FindNextCharAfterSpace							;find next character. offset stored in Y
             LDA #&FF								;load &FF
             PHA									;and store
             LDA (transientCmdPtr),Y							;read character
@@ -3696,7 +3694,7 @@ ENDIF
             JMP ExitServiceCall								;restore service call parameters and exit
 			
 .optionRecognised
-	  JSR findNextCharAfterSpace							;find next character. offset stored in Y
+	  JSR FindNextCharAfterSpace							;find next character. offset stored in Y
             PLP
             JSR jmpConfTypTblX
             JMP ExitAndClaimServiceCall								;Exit Service Call
@@ -3762,7 +3760,7 @@ ENDIF
             JSR L93E3
             PLA
             TAY
-            JSR findNextCharAfterSpace							;find next character. offset stored in Y
+            JSR FindNextCharAfterSpace							;find next character. offset stored in Y
             LDA (transientCmdPtr),Y							;Read File system type
             AND #&DF								;Capitalise
             CMP #'N'								;Is 'N' - NFS
@@ -3917,7 +3915,7 @@ ENDIF
             AND #&07
             ASL A
             PHA
-            JSR findNextCharAfterSpaceSkippingComma
+            JSR FindNextCharAfterSpaceSkippingComma
             JSR convertIntegerDefaultDecimalChecked
             AND #&01
             STA L00AE
@@ -3942,7 +3940,7 @@ ENDIF
 			
             ASL L00AE								;Missing address label?
             ASL L00AE
-            JSR findNextCharAfterSpaceSkippingComma
+            JSR FindNextCharAfterSpaceSkippingComma
             JSR convertIntegerDefaultDecimalChecked
             AND #&03
             ORA L00AE
@@ -4961,7 +4959,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 .L9BE9      LDA #&00
             STA prvOswordBlockCopy + 6							;low byte of buffer length
             STA prvOswordBlockCopy + 7							;high byte of buffer length
-.L9BF1      JSR findNextCharAfterSpace							;find next character. offset stored in Y
+.L9BF1      JSR FindNextCharAfterSpace							;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #vduCr
             BEQ rts  								;Yes? Then jump to end
@@ -5019,7 +5017,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             RTS
 
 {
-.^L9C52      JSR findNextCharAfterSpace								;find next character. offset stored in Y
+.^L9C52      JSR FindNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'@'
             BNE parseOsword4243BufferAddress
@@ -5063,7 +5061,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 			
 .parseOsword4243Length
 {
-.L9C9C      JSR findNextCharAfterSpace								;find next character. offset stored in Y
+.L9C9C      JSR FindNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'+'
             PHP
@@ -6201,7 +6199,7 @@ osfileBlock = L02EE
 
 .writeUserRegAndCheckNextCharI
             JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
-            JSR findNextCharAfterSpace							;find next character. offset stored in Y
+            JSR FindNextCharAfterSpace							;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             AND #&DF								;Capitalise
             CMP #'I'								;and check for 'I' (Immediate)
@@ -6397,7 +6395,7 @@ osfileBlock = L02EE
 .parseBankNumber
 {
 ; SFTODO: Would it be more compact to check for W-Z *first*, then use convertIntegerDefaultHex? This might only work if we do a "proper" upper case conversion, not sure.
-.LA458      JSR findNextCharAfterSpace								;find next character. offset stored in Y
+.LA458      JSR FindNextCharAfterSpace								;find next character. offset stored in Y
             BCS endOfLine
             LDA (transientCmdPtr),Y
             CMP #','
@@ -8374,7 +8372,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .setFFLoop  STA prvDateCentury,X
             DEX
             BPL setFFLoop
-            JSR findNextCharAfterSpace								;find next character. offset stored in Y
+            JSR FindNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #vduCr
             BEQ dateArgumentParsed
@@ -8384,7 +8382,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             CMP #&FF
             BEQ dayOfWeekOpen
 	  ; The user has specified a day of the week; if there's no trailing comma this is the end of the user-specified partial date.
-            JSR findNextCharAfterSpace								;find next character. offset stored in Y
+            JSR FindNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #','
             BNE dateArgumentParsed
@@ -8396,7 +8394,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .dayOfMonthInA
             STA prvDateDayOfMonth
 	  ; After the day of the month there may be a '/' followed by month/year components; if there's no '/' we have finished parsing the user-specified partial date.
-            JSR findNextCharAfterSpace								;find next character. offset stored in Y
+            JSR FindNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'/'
             BNE dateArgumentParsed
@@ -8406,7 +8404,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             LDA #&FF
 .monthInA   STA prvDateMonth
 	  ; After the month there may be a '/' followed by a year component; if there's no '/' we have finished parsing the user-specified partial date.
-            JSR findNextCharAfterSpace								;find next character. offset stored in Y
+            JSR FindNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'/'
             BNE dateArgumentParsed
@@ -8482,7 +8480,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .LB1ED      STY prvTmp2
             LDA #&00
             STA transientDateSFTODO1
-            JSR findNextCharAfterSpace								;find next character. offset stored in Y
+            JSR FindNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'+'
             BEQ plus
@@ -9066,7 +9064,7 @@ column = prvC
 
 .LB62D      PLP
             JSR copyPrvAlarmToRtc
-            JSR findNextCharAfterSpace								;find next character. offset stored in Y
+            JSR FindNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             AND #&DF                                                                                ; convert to upper case (imperfectly)
             CMP #'R'
