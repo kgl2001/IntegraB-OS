@@ -10173,20 +10173,13 @@ ibosCNPVIndex = 6
     PLA:JMP ProcessWrchv
 
 .EnteringShadowMode
-    LDA ramselCopy								;get RAM copy of RAMSEL
-    ORA #ramselShen								;set Shadow RAM enable bit
-    STA ramselCopy								;and save RAM copy of RAMSEL
-    STA ramsel							          ;save RAMSEL
+    LDA ramselCopy:ORA #ramselShen:STA ramselCopy:STA ramsel
     JSR maybeSwapShadow1
-    PLA
-    PHA
-    ORA #shadowModeOffset							;set Shadow RAM enable bit
-    LDX #prvSFTODOMODE - prv83
-    JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-    LDA #ModeChangeStateEnteringShadowMode
-    STA ModeChangeState
-    PLA
-    JMP ProcessWrchv
+    PLA:PHA ; peek original OSWRCH A=new mode
+    ORA #shadowModeOffset:LDX #prvSFTODOMODE - prv83:JSR writePrivateRam8300X
+    ; SQUASH: Share STA ModeChangeState:PLA:JMP ProcessWrchv with code above?
+    LDA #ModeChangeStateEnteringShadowMode:STA ModeChangeState
+    PLA:JMP ProcessWrchv
 
 .CheckOtherModeChangeStates
     CMP #ModeChangeStateEnteringNonShadowMode
