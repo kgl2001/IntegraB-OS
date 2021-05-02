@@ -3156,17 +3156,10 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     PHP
     INY:INY ; skip "S*" or "X*"
     JSR findNextCharAfterSpace
-    CLC
-    TYA
-    ADC transientCmdPtr
-    PHA
-    LDA transientCmdPtr + 1
-    ADC #0
-    PHA
-    TSX
-    LDA L0103,X
-    LSR A
-    BCS L90A7
+    CLC:TYA:ADC transientCmdPtr:PHA
+    LDA transientCmdPtr + 1:ADC #0:PHA
+    TSX:LDA L0103,X ; get stacked flags from earlier PHP
+    ASSERT flagC == 1:LSR A:BCS L90A7 ; branch if C set in stacked flags
     LDX #&80
     JSR L8A7B
     JMP L90DE
