@@ -918,43 +918,46 @@ GUARD	&C000
 }
 
 ;Store IBOS Options reference table pointer address in X & Y
-.ibosRef	  LDX #ibosRef MOD &100
-            LDY #ibosRef DIV &100
-            RTS
+.ibosRef
+{
+    LDX #lo(ibosRef):LDY #hi(ibosRef)
+    RTS
 
-		EQUB &04								;Number of IBOS options
-		ASSERT P% - ibosRef = KeywordTableOffset
-		EQUW ibosTbl							;Start of IBOS options lookup table
-		EQUW ibosParTbl							;Start of IBOS options parameters lookup table (there are no parameters!)
-		ASSERT P% - ibosRef = CmdTblPtrOffset
-		EQUW ibosSubTbl							;Start of IBOS sub option reference lookup table
+    EQUB &04								;Number of IBOS options
+    ASSERT P% - ibosRef = KeywordTableOffset
+    EQUW ibosTbl							;Start of IBOS options lookup table
+    EQUW ibosParTbl							;Start of IBOS options parameters lookup table (there are no parameters!)
+    ASSERT P% - ibosRef = CmdTblPtrOffset
+    EQUW ibosSubTbl							;Start of IBOS sub option reference lookup table
 
-.ibosTbl		EQUS &04, "RTC"
-		EQUS &04, "SYS"
-		EQUS &04, "FSX"
-		EQUS &05, "SRAM"
-		EQUB &00
+.ibosTbl
+    EQUS &04, "RTC"
+    EQUS &04, "SYS"
+    EQUS &04, "FSX"
+    EQUS &05, "SRAM"
+    EQUB &00
 
-.ibosParTbl	EQUB &01,&01,&01,&01
-		EQUB &00
+.ibosParTbl
+    EQUB &01,&01,&01,&01
+    EQUB &00
+}
 
 .ibosSubTbl
-; Elements 0-3 of ibosSubTbl table correspond to the four entries at ibosTbl.
-ibosSubTblHelpNoArgument = 4
-ibosSubTblConfigureList = 5
- 	          EQUW CmdRef
-		EQUB &00,&03							;&04 x IBOS/RTC Sub options - from offset &00
-		EQUW CmdRef
-		EQUB &04,&13							;&10 x IBOS/SYS Sub options - from offset &04
-		EQUW CmdRef
-		EQUB &14,&17							;&04 x IBOS/FSX Sub options - from offset &14
-		EQUW CmdRef
-		EQUB &18,&1F							;&08 x IBOS/SRAM Sub options - from offset &18
-		EQUW ibosRef
-		EQUB &00,&03							;&04 x IBOS Options - from offset &00
-		EQUW ConfRef
-		EQUB &00,&10							;&11 x CONFIGURE Parameters - from offset &00
-
+    ; Elements 0-3 of ibosSubTbl table correspond to the four entries at ibosTbl.
+    ibosSubTblHelpNoArgument = 4
+    ibosSubTblConfigureList = 5
+    EQUW CmdRef
+    EQUB &00,&03							;&04 x IBOS/RTC Sub options - from offset &00
+    EQUW CmdRef
+    EQUB &04,&13							;&10 x IBOS/SYS Sub options - from offset &04
+    EQUW CmdRef
+    EQUB &14,&17							;&04 x IBOS/FSX Sub options - from offset &14
+    EQUW CmdRef
+    EQUB &18,&1F							;&08 x IBOS/SRAM Sub options - from offset &18
+    EQUW ibosRef
+    EQUB &00,&03							;&04 x IBOS Options - from offset &00
+    EQUW ConfRef
+    EQUB &00,&10							;&11 x CONFIGURE Parameters - from offset &00
 
 ; SFTODO: Get rid of the "sub-" prefix here?
 ; Search the keyword sub-table of the reference table pointed to by YX (typically initialised
