@@ -2831,7 +2831,7 @@ MaxSwrBanks = 4
             JSR PrvDis								;switch out private RAM
             JMP ExitAndClaimServiceCall								;Exit Service Call
 
-; Return with C clear iff bank Y is an empty sideways RAM bank.
+; Return with C clear iff bank Y is an empty sideways RAM bank. X and Y are preserved.
 .TestForEmptySwrInBankY
 ; ENHANCE: It would be good to use romBinaryVersion for TestAddress, just out of paranoia.
 TestAddress = &8000
