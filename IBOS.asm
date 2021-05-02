@@ -1,6 +1,6 @@
 ; Terminology:
 ; - "private RAM" is the 12K of RAM which can be paged in via PRVEN+PRVS1/4/8 in
-;   the &8000-&BFFF region
+;   the &8000-&AFFF region
 ; - "shadow RAM" is the 20K of RAM which can be paged in via SHEN+MEMSEL in the
 ;   &3000-&7FFF region
 
@@ -14,6 +14,8 @@
 ; DELETE: Code which does something but not necessarily something all that useful, which might
 ; be a candidate for removal if we're desperate for space later. Some such code might
 ; alternatively be expanded into a more complete feature instead of deleting it.
+;
+; ENHANCE: An idea for a possible enhancement in a future version of IBOS.
 
 ; SFTODO: The following constants and associated comments are a bit randomly ordered, this should be tidied up eventually.
 ; For example, it might help to move the comments about RTC register use nearer to the private memory allocations, as
