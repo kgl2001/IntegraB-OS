@@ -2833,8 +2833,7 @@ MaxSwrBanks = 4
 
 ; Return with C clear iff bank Y is an empty sideways RAM bank.
 .TestForEmptySwrInBankY
-; ENHANCE: It would be good to use romBinaryVersion for TestAddress, in case (for example)
-; the bank contains a ROM temporarily disabled by something like Advanced ROM Manager.
+; ENHANCE: It would be good to use romBinaryVersion for TestAddress, just out of paranoia.
 TestAddress = &8000
     TXA:PHA
     LDA romTypeTable,Y:BNE NotEmpty
@@ -2849,32 +2848,29 @@ TestAddress = &8000
     ; modifications so A is naturally preserved?
     TAX:LDA #opcodeStaAbs:STA ramRomAccessSubroutineVariableInsn:TXA:JSR ramRomAccessSubroutine
     TAX:LDA #opcodeCmpAbs:STA ramRomAccessSubroutineVariableInsn:TXA:JSR ramRomAccessSubroutine
-    ; ENHANCE: Ideally we'd undo the change made to TestAddress, although if had TestAddress ==
-    ; romBinaryVersion it would hardly be worth it.
     SEC
-    BNE L8E4A
+    BNE IsRom
     CLC
-.L8E4A
+.IsRom
     TAX
     ; Modify stacked flags to reflect current status of carry.
     ; SQUASH: Could we do ASSERT flagC == 1:PLA:PHP:LSR A:PLP:ROL A:PHA instead of all this?
-    PLA:BCS L8E54
+    PLA:BCS SetStackedCarry
     AND_NOT flagC:PHA
     JMP StackedFlagsModified
-.L8E54
+.SetStackedCarry
     ORA #flagC:PHA
 .StackedFlagsModified
-    TXA									;restore the contents of ROM Bank Y &8000
-    EOR #&FF								;EOR with &FF
-    TAX									;and write back to &8000
-    LDA #opcodeStaAbs:STA ramRomAccessSubroutineVariableInsn
-    TXA
-    JSR ramRomAccessSubroutine
+    ; Undo the bit flip of TestAddress so we leave the bank as we found it.
+    TXA:EOR #&FF
+    ; SQUASH: We are stashing A temporarily in X here, but couldn't we just use X to do the
+    ; modifications so A is naturally preserved?
+    TAX:LDA #opcodeStaAbs:STA ramRomAccessSubroutineVariableInsn:TXA:JSR ramRomAccessSubroutine
     PLP
-    JMP L8E69
+    JMP CommonEnd
 .NotEmpty
     SEC
-.L8E69
+.CommonEnd
     PLA:TAX
     RTS
 }
