@@ -3160,8 +3160,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA transientCmdPtr + 1:ADC #0:PHA
     TSX:LDA L0103,X ; get stacked flags from earlier PHP
     ASSERT flagC == 1:LSR A:BCS L90A7 ; branch if C set in stacked flags
-    LDX #&80
-    JSR L8A7B
+    LDX #&80:JSR L8A7B ; SFTODO: magic
     JMP L90DE
 			
 .L90A7
@@ -3176,20 +3175,17 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     JSR setBrkv
 .NoTube
 .L90DE
-    PLA
-    TAY
-    PLA
-    TAX
+    PLA:TAY
+    PLA:TAX
     JSR OSCLI
     PLP
     BCS L90F0
-    LDX #&C0
-    JSR L8A7B
-.L90ED
+    LDX #&C0:JSR L8A7B ; SFTODO: magic
+.ExitAndClaimServiceCallIndirect
     JMP ExitAndClaimServiceCall								;Exit Service Call
 
 .L90F0
-    BVC L90ED
+    BVC ExitAndClaimServiceCallIndirect
     FALLTHROUGH_TO nle
 }
 
