@@ -2704,27 +2704,20 @@ TestAddress = &8000
     JSR GenerateErrorIfPrinterBufferNotEmpty
     JSR UnassignPrintBufferBanks
     INY
-    LDX #&00
-    STX SFTODOFOO
+    LDX #0:STX SFTODOFOO
 .L8D12
-    JSR parseBankNumber
-    STY SFTODOBAR
-    BCS L8D31
-    TAY
-    JSR TestForEmptySwrInBankY
-    TYA
-    BCS L8D2C
+    JSR parseBankNumber:STY SFTODOBAR:BCS BankNumberParseError
+    TAY:JSR TestForEmptySwrInBankY:TYA:BCS NotEmptySwrBank
     LDX SFTODOFOO
     STA prvPrintBufferBankList,X
     INX
     STX SFTODOFOO
-    CPX #&04
-    BEQ L8D31
-.L8D2C
+    CPX #&04:BEQ BankNumberParseError ; SFTODO: maybe change label name given this use
+.NotEmptySwrBank
     LDY SFTODOBAR
     JMP L8D12
 			
-.L8D31
+.BankNumberParseError
     JSR L8D5A
     JMP L8DCA
 
