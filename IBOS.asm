@@ -255,7 +255,7 @@ oswdbtY = &F1
 
 ; SFTODO: These may need renaming, or they may not be as general as I am assuming
 KeywordTableOffset = 6
-CmdTblParOffset = 8
+ParameterTableOffset = 8
 CmdTblPtrOffset = 10
 
 ; This is a byte of unused CFS/RFS workspace which IBOS repurposes to track
@@ -725,7 +725,7 @@ GUARD	&C000
 		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used SFTODO: I'm not sure this is entirely true - the code at SearchKeywordTable seems to use the 0 byte at the end of CmdTbl to know when to stop, and if I type "*SRWE" on an emulated IBOS 1.20 machine I get a "Bad id" error, suggesting the command is recognised (if not necessarily useful). It is possible some *other* code does use this, I'm *guessing* the *HELP display code uses this in order to keep SRWE and SRWP "secret" (but I haven't looked yet).
 		ASSERT P% = CmdRef + KeywordTableOffset
 		EQUW CmdTbl							;Start of * command table
-		ASSERT P% = CmdRef + CmdTblParOffset
+		ASSERT P% = CmdRef + ParameterTableOffset
 		EQUW CmdParTbl							;Start of * command parameter table
 		ASSERT P% = CmdRef + CmdTblPtrOffset
 		EQUW CmdExTbl							;Start of * command execute address table
@@ -867,7 +867,7 @@ GUARD	&C000
     EQUB 17							;Number of *CONFIGURE commands
     ASSERT P% = ConfRef + KeywordTableOffset ; SFTODO: Or is this not as common-with-CmdRef parsing as I imagine?
     EQUW ConfTbl							;Start of *CONFIGURE commands lookup table
-    ASSERT P% = ConfRef + CmdTblParOffset
+    ASSERT P% = ConfRef + ParameterTableOffset
     EQUW ConfParTbl							;Start of *CONFIGURE commands parameter lookup table
 	
 ;*CONFIGURE keyword lookup table
@@ -927,7 +927,7 @@ t = &80
     EQUB &04								;Number of IBOS options
     ASSERT P% = ibosRef + KeywordTableOffset
     EQUW ibosTbl							;Start of IBOS options lookup table
-    ASSERT P% = ibosRef + CmdTblParOffset
+    ASSERT P% = ibosRef + ParameterTableOffset
     EQUW ibosParTbl							;Start of IBOS options parameters lookup table (there are no parameters!)
     ; SQUASH: I am not sure we actually need the next pointer, if we make the suggested SQUASH:
     ; change in DynamicSyntaxGenerationForIbosSubTblA.
@@ -1100,63 +1100,42 @@ LastEntry = &A9
     FALLTHROUGH_TO DynamicSyntaxGenerationForAUsingYX
 }
 
-; Generate a syntax message using entry A of the table (e.g. ConfTbl) pointed to by YX.
+; Generate a syntax message using entry A of the keyword and parameter sub-tables of the
+; reference table (e.g. ConfRef) pointed to by YX.
 ;
 ; On entry:
-;     C set => build a syntax error on the stack and generate it when a carriage return is output
+;     C set => build a syntax error on the stack and generate it when vduCr is output
 ;     C clear => write output to screen (vduTab jumps to a fixed column for alignment)
 ;                    V clear => prefix with two spaces and emit parameters
 ;                    V set => no space prefix, don't emit parameters
 .DynamicSyntaxGenerationForAUsingYX
 {
 ; SFTODO: Use a different local label instead of transientTblPtr in here? I am not sure what would be clearest as still working through code...
-.L83FB      PHA									;save A-on-entry
-            LDA transientTblPtr + 1
-            PHA									;save current contents of &AB
-            LDA transientTblPtr
-            PHA									;save current contents of &AA again SFTODO: why? is this something to do with being entered at DynamicSyntaxGenerationForAUsingYX?? it seems to make little sense otherwise, as we are going to peek the value pushed at DynamicSyntaxGenerationForAUsingYX using LDA L0103,X below anyway.
-            STX transientTblPtr
-            STY transientTblPtr + 1							;save start of *command pointer lookup table address to &AA / &AB
-            JSR startDynamicSyntaxGeneration
+    PHA
+    LDA transientTblPtr + 1:PHA:LDA transientTblPtr:PHA
+    STX transientTblPtr:STY transientTblPtr + 1
+    JSR startDynamicSyntaxGeneration
 
-            TSX									;get stack pointer
-            LDA L0103,X								;get A saved at DynamicSyntaxGenerationForAUsingYX from stack
-            PHA									;and save
-            LDY #KeywordTableOffset								;offset for address *command lookup table
-            LDA (transientTblPtr),Y
-            TAX
-            INY
-            LDA (transientTblPtr),Y
-            TAY									;save start of *command lookup table address to X & Y
-            PLA									;recover stack value
-            JSR EmitEntryAFromTableYX								;write *command to screen???
-            LDA #vduTab
-            JSR emitDynamicSyntaxCharacter
+    TSX:LDA L0103,X:PHA ; get A on entry and push it again for easy access
+    LDY #KeywordTableOffset:LDA (transientTblPtr),Y:TAX
+    INY:LDA (transientTblPtr),Y:TAY
+    PLA
+    JSR EmitEntryAFromTableYX
+    LDA #vduTab:JSR emitDynamicSyntaxCharacter
 
-            BIT transientDynamicSyntaxState						
-            BVS dontEmitParameters
-
-            TSX									;get stack pointer
-            LDA L0103,X								;read A-on-entry from stack
-            PHA									;and save
-            LDY #CmdTblParOffset							;offset for address *command parameters lookup table
-            LDA (transientTblPtr),Y
-            TAX
-            INY
-            LDA (transientTblPtr),Y
-            TAY									;save start of *command parameters lookup table to X & Y
-            PLA									;recover stack value
-            JSR EmitEntryAFromTableYX								;write *command parameters to screen???
-            LDA #vduCr
-            JSR emitDynamicSyntaxCharacter
+    BIT transientDynamicSyntaxState:BVS dontEmitParameters
+    TSX:LDA L0103,X:PHA ; get A on entry and push it again for easy access
+    LDY #ParameterTableOffset:LDA (transientTblPtr),Y:TAX
+    INY:LDA (transientTblPtr),Y:TAY
+    PLA
+    JSR EmitEntryAFromTableYX
+    LDA #vduCr:JSR emitDynamicSyntaxCharacter
 
 .dontEmitParameters
-            PLA
-            STA transientTblPtr
-            PLA
-            STA transientTblPtr + 1
-            PLA
-.^rts       RTS
+    PLA:STA transientTblPtr:PLA:STA transientTblPtr + 1
+    PLA
+.^rts
+    RTS
 }
 
 ; Emit the A-th entry of the string table pointed to by YX, recursively expanding top-bit set
