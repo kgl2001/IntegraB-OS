@@ -977,7 +977,7 @@ KeywordLength = L00AC
 ; SFTODO: There's more than meets the eye to MinimumAbbreviationLength; at least on b-em, IBOS
 ; 1.20 *does* allow "*ST." for *STATUS and "*BU.?" for "*BUFFER ?", but it doesn't allow
 ; "*CO." for *CONFIGURE.
-MinimumAbbreviationLength = 3
+MinimumAbbreviationLength = 3 ; including the "." which indicates an abbreviation
 
     PHA
     ; Add A to transientCmdPtr so we can index from 0 in the following code.
