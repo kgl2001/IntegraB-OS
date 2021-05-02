@@ -2743,7 +2743,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             CMP #romselPrvEn
             BNE bufferInSidewaysRam
             ; Buffer is in private RAM, not sideways RAM.
-            JSR sanitisePrvPrintBufferStart
+            JSR SanitisePrvPrintBufferStart
             STA prvPrintBufferBankStart
             LDA #&B0
             STA prvPrintBufferBankEnd
@@ -10550,7 +10550,7 @@ ScreenStart = &3000
             STA prv82+&0F
             ; SFTODO: Following code is similar to chunk just below L8D5A, could
             ; it be factored out?
-            JSR sanitisePrvPrintBufferStart
+            JSR SanitisePrvPrintBufferStart
             STA prvPrintBufferBankStart
             LDA #&B0
             STA prvPrintBufferBankEnd
@@ -10813,19 +10813,16 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
 }
 
 ; If prvPrvPrintBufferStart isn't in the range &90-&AC, set it to &AC. We return with prvPrvPrintBufferStart in A.
-.sanitisePrvPrintBufferStart
+.SanitisePrvPrintBufferStart
 {
-.LBFBD      LDX #prvPrvPrintBufferStart-prv83                                                                   ; SFTODO: not too happy with this format
-            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
-            CMP #&90
-            BCC LBFCA
-            CMP #&AC
-            ; SFTODO: We could BCC to a *different* RTS (there's one just above)
-            ; and make the JSR:RTS below into a JMP, saving a byte.
-            BCC LBFCF
-.LBFCA      LDA #&AC
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
-.LBFCF      RTS
+    ; SQUASH: We could change "BCC Rts" below to use the RTS above and make the JSR:RTS a JMP.
+    LDX #prvPrvPrintBufferStart - prv83:JSR readPrivateRam8300X
+    CMP #&90:BCC UseAC
+    CMP #&AC:BCC Rts
+.UseAC
+    LDA #&AC:JSR writePrivateRam8300X
+.Rts
+    RTS
 }
 
     EQUB &00,&00,&00,&00,&00,&00,&00,&00
