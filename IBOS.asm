@@ -10159,96 +10159,97 @@ ibosCNPVIndex = 6
 ; We're processing the second byte of a vduSetMode command, i.e. we will change
 ; mode when we forward this byte to the parent WRCHV.
 .selectNewMode
-.LBB90      PLA                                                                                     ;get original OSWRCH A=new mode
-            PHA                                                                                     ;save it again
-            CMP #shadowModeOffset
-            BCS enteringShadowMode
-            LDA osShadowRamFlag
-            BEQ enteringShadowMode
-            ; SFTODO: Aren't the next two instructions pointless? maybeSwapShadow2 immediately does LDA vduStatus.
-            PLA                                                                                     ;get original OSWRCH A=new mode
-            PHA                                                                                     ;save it again
-            JSR maybeSwapShadow2
-            LDA ramselCopy								;get RAM copy of RAMSEL
-            AND_NOT ramselShen							;clear Shadow RAM enable bit
-            STA ramselCopy								;and save RAM copy of RAMSEL
-            STA ramsel							          ;save RAMSEL
-            PLA                                                                                     ;get original OSWRCH A=new mode
-            PHA                                                                                     ;save it again
-            AND_NOT shadowModeOffset							;clear Shadow RAM enable bit SFTODO: isn't this redundant? We'd have done "BCS enteringShadowMode" above if top bit was set, wouldn't we?
-            LDX #prvSFTODOMODE - prv83
-            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-            LDA #modeChangeStateEnteringNonShadowMode
-            STA modeChangeState
-            PLA
-            JMP processWrchv
+    PLA                                                                                     ;get original OSWRCH A=new mode
+    PHA                                                                                     ;save it again
+    CMP #shadowModeOffset
+    BCS enteringShadowMode
+    LDA osShadowRamFlag
+    BEQ enteringShadowMode
+    ; SFTODO: Aren't the next two instructions pointless? maybeSwapShadow2 immediately does LDA vduStatus.
+    PLA                                                                                     ;get original OSWRCH A=new mode
+    PHA                                                                                     ;save it again
+    JSR maybeSwapShadow2
+    LDA ramselCopy								;get RAM copy of RAMSEL
+    AND_NOT ramselShen							;clear Shadow RAM enable bit
+    STA ramselCopy								;and save RAM copy of RAMSEL
+    STA ramsel							          ;save RAMSEL
+    PLA                                                                                     ;get original OSWRCH A=new mode
+    PHA                                                                                     ;save it again
+    AND_NOT shadowModeOffset							;clear Shadow RAM enable bit SFTODO: isn't this redundant? We'd have done "BCS enteringShadowMode" above if top bit was set, wouldn't we?
+    LDX #prvSFTODOMODE - prv83
+    JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+    LDA #modeChangeStateEnteringNonShadowMode
+    STA modeChangeState
+    PLA
+    JMP processWrchv
 
 .enteringShadowMode
-.LBBBD      LDA ramselCopy								;get RAM copy of RAMSEL
-            ORA #ramselShen								;set Shadow RAM enable bit
-            STA ramselCopy								;and save RAM copy of RAMSEL
-            STA ramsel							          ;save RAMSEL
-            JSR maybeSwapShadow1
-            PLA
-            PHA
-            ORA #shadowModeOffset							;set Shadow RAM enable bit
-            LDX #prvSFTODOMODE - prv83
-            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-            LDA #modeChangeStateEnteringShadowMode
-            STA modeChangeState
-            PLA
-            JMP processWrchv
+    LDA ramselCopy								;get RAM copy of RAMSEL
+    ORA #ramselShen								;set Shadow RAM enable bit
+    STA ramselCopy								;and save RAM copy of RAMSEL
+    STA ramsel							          ;save RAMSEL
+    JSR maybeSwapShadow1
+    PLA
+    PHA
+    ORA #shadowModeOffset							;set Shadow RAM enable bit
+    LDX #prvSFTODOMODE - prv83
+    JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+    LDA #modeChangeStateEnteringShadowMode
+    STA modeChangeState
+    PLA
+    JMP processWrchv
 
 .checkOtherModeChangeStates
-.LBBDD      CMP #modeChangeStateEnteringNonShadowMode
-            BNE wrchvHandlerDone
-            BEQ adjustCrtcHorz
+    CMP #modeChangeStateEnteringNonShadowMode
+    BNE wrchvHandlerDone
+    BEQ adjustCrtcHorz
 
 .^wrchvHandler
-.LBBE3	  JSR restoreOrigVectorRegs
-            PHA
-            LDA modeChangeState
-            BNE selectNewMode
-            PLA
-            CMP #vduSetMode
-            BEQ newMode
+    JSR restoreOrigVectorRegs
+    PHA
+    LDA modeChangeState
+    BNE selectNewMode
+    PLA
+    CMP #vduSetMode
+    BEQ newMode
 .^processWrchv ; SFTODO: not a great name...
-.LBBF1      JSR setMemsel
-            JSR jmpParentWRCHV
-            PHA
-            LDA modeChangeState
-            CMP #modeChangeStateEnteringShadowMode
-            BNE checkOtherModeChangeStates
-            LDA vduStatus
-            ORA #vduStatusShadow
-            STA vduStatus
+    JSR setMemsel
+    JSR jmpParentWRCHV
+    PHA
+    LDA modeChangeState
+    CMP #modeChangeStateEnteringShadowMode
+    BNE checkOtherModeChangeStates
+    LDA vduStatus
+    ORA #vduStatusShadow
+    STA vduStatus
 .adjustCrtcHorz
-            ; DELETE: There seems to be an undocumented feature of IBOS which will perform a
-            ; horizontal screen shift (analogous to the vertical shift controlled by *TV/
-            ; *CONFIGURE TV) based on userRegHorzTV. This is not exposed in *CONFIGURE/
-            ; *STATUS, but it does seem to work if you use *FX162,54 to write directly to the
-            ; RTC register. In a modified IBOS this should probably either be removed to save
-            ; space or exposed via *CONFIGURE/*STATUS.
-.LBC05      LDX #userRegHorzTV
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            CLC
-            ADC #&62
-            LDX currentMode
-            CPX #&04
-            BCC LBC1C
-            LSR A
-            CPX #&07
-            BNE LBC1C
-            CLC
-            ADC #&04
-.LBC1C      LDX #&02
-            STX crtcHorzTotal
-            STA crtcHorzDisplayed
-            LDA #modeChangeStateNone
-            STA modeChangeState
+    ; DELETE: There seems to be an undocumented feature of IBOS which will perform a horizontal
+    ; screen shift (analogous to the vertical shift controlled by *TV/
+    ; *CONFIGURE TV) based on userRegHorzTV. This is not exposed in *CONFIGURE/ STATUS, but it
+    ; *does seem to work if you use *FX162,54 to write directly to the
+    ; RTC register. In a modified IBOS this should probably either be removed to save space or
+    ; exposed via *CONFIGURE/*STATUS.
+    LDX #userRegHorzTV
+    JSR readUserReg
+    CLC
+    ADC #&62
+    LDX currentMode
+    CPX #&04
+    BCC LBC1C
+    LSR A
+    CPX #&07
+    BNE LBC1C
+    CLC
+    ADC #&04
+.LBC1C
+    LDX #&02
+    STX crtcHorzTotal
+    STA crtcHorzDisplayed
+    LDA #modeChangeStateNone
+    STA modeChangeState
 .^wrchvHandlerDone
-.LBC29      PLA
-            JMP returnFromVectorHandler
+    PLA
+    JMP returnFromVectorHandler
 }
 
 {
