@@ -10784,6 +10784,10 @@ SAVE "IBOS-01.rom", start, end
 
 ; SFTODO: Minor inconsistency between "PrintBuffer" and "PrinterBuffer" in various labels
 
+; SFTODO: *If* GXR has some incompatibilities with shadow mode on Integra-B, we could produce a
+; patched GXR for it - I already have a half-decent disassembly at
+; https://github.com/ZornsLemma/GXR.
+
 ;; Local Variables:
 ;; fill-column: 95
 ;; End:
