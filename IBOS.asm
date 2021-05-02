@@ -2647,29 +2647,28 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 ;Note Buffer does not work in OSMODE 0
 .buffer
 {
-            JSR PrvEn								;switch in private RAM
-            LDA prvOsMode								;read OSMODE
-            BNE L8CAE								;error if OSMODE 0, otherwise continue
-            JSR raiseError								;Goto error handling, where calling address is pulled from stack
-
-	  EQUB &80
-	  EQUS "No Buffer!", &00
-
-.L8CAE      JSR convertIntegerDefaultDecimal
-            BCC L8CC6
-            LDA (transientCmdPtr),Y							;get byte from keyboard buffer SFTODO: command argument, not keyboard buffer?
-            CMP #'#'								;check for '#'
-            BEQ L8D07								;set buffer based on manually entered bank numbers
-            CMP #'?'								;check for '?'
-            BNE L8CC0								;identify free banks and set buffer based on number of banks requested by user
-            JMP L8DCA								;report number of banks set
+    JSR PrvEn
+    LDA prvOsMode:BNE NotOsMode0
+    JSR raiseError
+    EQUB &80
+    EQUS "No Buffer!", &00
+.NotOsMode0
+    JSR convertIntegerDefaultDecimal:BCC ParsedOK
+    LDA (transientCmdPtr),Y							;get byte from keyboard buffer SFTODO: command argument, not keyboard buffer?
+    CMP #'#'								;check for '#'
+    BEQ L8D07								;set buffer based on manually entered bank numbers
+    CMP #'?'								;check for '?'
+    BNE L8CC0								;identify free banks and set buffer based on number of banks requested by user
+    JMP L8DCA								;report number of banks set
 			
-.L8CC0      JSR PrvDis								;switch out private RAM
-            JMP GenerateSyntaxError
-			
-.L8CC6      CMP #&05
-            BCC L8CCD
-            JMP GenerateBadParameter
+.L8CC0
+    JSR PrvDis								;switch out private RAM
+    JMP GenerateSyntaxError
+
+.ParsedOK
+    CMP #&05
+    BCC L8CCD
+    JMP GenerateBadParameter
 			
 .L8CCD      PHA
             JSR GenerateErrorIfPrinterBufferNotEmpty								;check if print buffer is empty, and error if something is already in the buffer.
