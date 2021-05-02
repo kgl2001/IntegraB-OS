@@ -2833,30 +2833,22 @@ MaxSwrBanks = 4
 
 ;Test for SWRAM			
 .L8E10
-    TXA
-    PHA
-    LDA romTypeTable,Y							;read ROM Type from ROM Type Table
-    BNE L8E68								;exit if not 0
-    LDA prvRomTypeTableCopy,Y							;read ROM Type from Private RAM backup
-    BNE L8E68								;exit if not 0
-    PHP
-    SEI
-    LDA #&00
-    STA ramRomAccessSubroutineVariableInsn + 1
-    LDA #&80
-    STA ramRomAccessSubroutineVariableInsn + 2
-    LDA #opcodeLdaAbs
-    STA ramRomAccessSubroutineVariableInsn
+    TXA:PHA
+    LDA romTypeTable,Y:BNE L8E68
+    LDA prvRomTypeTableCopy,Y:BNE L8E68
+    PHP:SEI
+    ; SFTODO: Mildly magic constants in next two lines
+    LDA #&00:STA ramRomAccessSubroutineVariableInsn + 1
+    LDA #&80:STA ramRomAccessSubroutineVariableInsn + 2
+    LDA #opcodeLdaAbs:STA ramRomAccessSubroutineVariableInsn
     JSR ramRomAccessSubroutine							;switch to ROM Bank Y and read value of &8000 to A
     EOR #&FF								;EOR with &FF
     TAX									;and write back to &8000
-    LDA #opcodeStaAbs
-    STA ramRomAccessSubroutineVariableInsn
+    LDA #opcodeStaAbs:STA ramRomAccessSubroutineVariableInsn
     TXA
     JSR ramRomAccessSubroutine							;switch to ROM Bank Y and write value of A to &8000
     TAX
-    LDA #opcodeCmpAbs
-    STA ramRomAccessSubroutineVariableInsn
+    LDA #opcodeCmpAbs:STA ramRomAccessSubroutineVariableInsn
     TXA
     JSR ramRomAccessSubroutine							;switch to ROM Bank Y and compare value of &8000 with A
     SEC
@@ -2864,14 +2856,12 @@ MaxSwrBanks = 4
     CLC
 .L8E4A
     TAX
-    PLA
-    BCS L8E54
-    AND #&FE
+    PLA:BCS L8E54
+    AND_NOT flagC
     PHA
     JMP L8E57
-			
 .L8E54
-    ORA #&01
+    ORA #flagC
     PHA
 .L8E57
     TXA									;restore the contents of ROM Bank Y &8000
