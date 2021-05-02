@@ -1661,7 +1661,7 @@ tabColumn = 12
 }
 			
 ;Convert binary number in A to numeric characters and write characters to screen
-;C set on entry means left pad to three characters with spaces, clear means no padding.
+;C set on entry means left pad to three characters with spaces, clear means no padding. SFTODO: Not sure that's right - see how this is used in "buffer"
 ;A is preserved
 .printADecimal
 {
@@ -2712,10 +2712,10 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     JSR parseBankNumber:STY TmpTransientCmdPtrOffset
     BCS prvPrintBufferBankListInitialised2 ; stop parsing if bank number is invalid
     TAY:JSR TestForEmptySwrInBankY:TYA:BCS NotEmptySwrBank
-    ; SQUASH: INC TmpBankCount:LDX TmpBankCount:STA prvPrintBufferBankList-1,X:...:CPX #MaxSwrBanks+1?
-    ; Or initialise TmpBankCount to &FF?
+    ; SQUASH: INC TmpBankCount:LDX TmpBankCount:STA prvPrintBufferBankList-1,X:...:CPX
+    ; #MaxSwrBanks+1? Or initialise TmpBankCount to &FF?
     LDX TmpBankCount:STA prvPrintBufferBankList,X:INX:STX TmpBankCount
-    CPX #MaxSwrBanks:BEQ prvPrintBufferBankListInitialised2 ; SFTODO: maybe change label name given this use
+    CPX #MaxSwrBanks:BEQ prvPrintBufferBankListInitialised2
 .NotEmptySwrBank
     LDY TmpTransientCmdPtrOffset
     JMP ParseUserBankListLoop
@@ -2748,10 +2748,8 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA prvPrintBufferBankList:CMP #&FF:BEQ L8D46
     AND #&F0:CMP #romselPrvEn:BNE BufferInSwr
     ; Buffer is in private RAM, not sideways RAM.
-    JSR SanitisePrvPrintBufferStart
-    STA prvPrintBufferBankStart
-    LDA #&B0 ; SFTODO: mildly magic
-    STA prvPrintBufferBankEnd
+    JSR SanitisePrvPrintBufferStart:STA prvPrintBufferBankStart
+    LDA #&B0:STA prvPrintBufferBankEnd ; SFTODO: mildly magic
     LDA #0
     STA prvPrintBufferFirstBankIndex
     STA prvPrintBufferBankCount
@@ -2774,48 +2772,31 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     INX:CPX #MaxSwrBanks:BNE L8D99
     DEX
 .L8DB5
-    LDA #&80 ; SFTODO: mildly magic
-    STA prvPrintBufferBankStart
-    LDA #&00
-    STA prvPrintBufferFirstBankIndex
-    LDA #&C0
-    STA prvPrintBufferBankEnd
+    LDA #&80:STA prvPrintBufferBankStart ; SFTODO: mildly magic
+    LDA #0:STA prvPrintBufferFirstBankIndex
+    LDA #&C0:STA prvPrintBufferBankEnd ; SFTODO: mildly magic
     STX prvPrintBufferBankCount
     JMP purgePrintBuffer
 			
 .L8DCA
-    LDA prvPrintBufferSizeHigh
-    LSR A
-    LDA prvPrintBufferSizeMid
-    ROR A
-    ROR A
-    SEC									;left justify (ignore leading 0s)
-    JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
-    LDA prvPrintBufferBankList
-    AND #&F0
-    CMP #&40
-    BNE L8DE8
-    LDX #&00
-    JSR PrintKInPrivateOrSidewaysRAM						;write 'k in Private RAM'
-    JMP OSNEWLPrvDisExitAndClaimServiceCall								;and finish
+    ; Divide high and mid bytes of prvPrintBufferSize by 4 to get kilobytes.
+    LDA prvPrintBufferSizeHigh:LSR A
+    LDA prvPrintBufferSizeMid:ROR A:ROR A
+    SEC:JSR printADecimal
+    LDA prvPrintBufferBankList:AND #&F0:CMP #&40:BNE L8DE8
+    LDX #0:JSR PrintKInPrivateOrSidewaysRAM ; write 'k in Private RAM'
+    JMP OSNEWLPrvDisExitAndClaimServiceCall
 			
 .L8DE8
-    LDX #&01								;starting with the first RAM bank
-    JSR PrintKInPrivateOrSidewaysRAM						;write 'k in Sideways RAM '
-    LDY #&00
+    LDX #1:JSR PrintKInPrivateOrSidewaysRAM ; write 'k in Sideways RAM '
+    LDY #0
 .L8DEF
-    LDA prvPrintBufferBankList,Y								;get RAM bank number from Private memory
-    BMI L8E02								;if nothing in private memory then finish, otherwise
-    SEC									;left justify (ignore leading 0s)
-    JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
-    LDA #','
-    JSR OSWRCH								;write to screen
-    INY									;repeat
-    CPY #MaxSwrBanks								;upto 4 times for maximum of 4 banks
-    BNE L8DEF
+    LDA prvPrintBufferBankList,Y:BMI L8E02
+    SEC:JSR printADecimal
+    LDA #',':JSR OSWRCH
+    INY:CPY #MaxSwrBanks:BNE L8DEF
 .L8E02
-    LDA #vduDel								;delete the last ',' that was just printed
-    JSR OSWRCH
+    LDA #vduDel:JSR OSWRCH ; delete the last ',' that was just printed
 .^OSNEWLPrvDisExitAndClaimServiceCall
     JSR OSNEWL
 .^PrvDisExitAndClaimServiceCall
