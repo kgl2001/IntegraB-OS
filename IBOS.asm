@@ -1068,7 +1068,7 @@ LastEntry = &A9
     STX transientTblPtr ; SQUASH: Just STA in place of TAX above
 
     ; Copy the the four bytes starting at ibosSubTbl+4*A-on-entry into transientTblPtr and
-    ; FirstEntry/A9
+    ; FirstEntry/LastEntry.
     PLA:PHA:ASL A:ASL A:TAY ; Set Y = A-on-entry * 4
     LDA (transientTblPtr),Y:PHA
     INY:LDA (transientTblPtr),Y:PHA
@@ -1077,9 +1077,9 @@ LastEntry = &A9
     PLA:STA transientTblPtr + 1
     PLA:STA transientTblPtr
 
-    ; Call DynamicSyntaxGenerationForAUsingYX on the table and for the range of entries FirstEntry
-    ; (inclusive) to LastEntry (exclusive). SFTODO: Except the upper bound actually seems to be
-    ; inclusive, so what am I missing?
+    ; Call DynamicSyntaxGenerationForAUsingYX on the table and for the range of entries
+    ; FirstEntry (inclusive) to LastEntry (exclusive). SFTODO: Except the upper bound actually
+    ; seems to be inclusive, so what am I missing?
 .Loop
     LDX transientTblPtr:LDY transientTblPtr + 1
     LDA FirstEntry
