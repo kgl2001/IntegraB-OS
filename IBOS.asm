@@ -530,7 +530,10 @@ prvPrintBufferFirstBankIndex = prv82 + &0D
 ; banks used for the printer buffer. This is &C0 for sideways RAM or &B0 for
 ; private RAM.
 prvPrintBufferBankEnd   = prv82 + &0E
-prvPrintBufferSFTODO = prv82 + &0F
+; prvPrintBufferBankCount seems to be the number of banks of sideways RAM allocated to the
+; printer buffer; it's 0 if there's no buffer or the buffer is in private RAM.
+; SQUASH: This seems to be write-only.
+prvPrintBufferBankCount = prv82 + &0F
 ; prvPrintBufferBankList is a 4 byte list of private/sideways RAM banks used by
 ; the printer buffer. If there are less than 4 banks, the unused entries will be
 ; &FF. If the buffer is in private RAM, the first entry will be &4X where X is
@@ -2750,7 +2753,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             STA prvPrintBufferBankEnd
             LDA #&00
             STA prvPrintBufferFirstBankIndex
-            STA prvPrintBufferSFTODO
+            STA prvPrintBufferBankCount
             STA prvPrintBufferSizeLow
             STA prvPrintBufferSizeHigh
             SEC
@@ -2784,7 +2787,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             STA prvPrintBufferFirstBankIndex
             LDA #&C0
             STA prvPrintBufferBankEnd
-            STX prvPrintBufferSFTODO
+            STX prvPrintBufferBankCount
             JMP purgePrintBuffer
 			
 .L8DCA      LDA prvPrintBufferSizeHigh
@@ -10547,7 +10550,7 @@ ScreenStart = &3000
     STA prvPrintBufferSizeLow
     STA prvPrintBufferSizeHigh
     STA prvPrintBufferFirstBankIndex
-    STA prvPrintBufferSFTODO
+    STA prvPrintBufferBankCount
     ; SFTODO: Following code is similar to chunk just below L8D5A, could
     ; it be factored out?
     JSR SanitisePrvPrintBufferStart:STA prvPrintBufferBankStart
