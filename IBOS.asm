@@ -10412,17 +10412,11 @@ ptr = &A8
 
 {
 .^LBCF2
-    LDA #&00								;clear Shadow RAM enable bit
-    STA ramselCopy								;store at RAMID
-    STA ramsel			          				;store at RAMSEL
-    LDA vduStatus								;get VDU status
-    AND_NOT vduStatusShadow							;clear bit 4
-    STA vduStatus								;save VDU status
-    LDA #modeChangeStateNone
-    STA modeChangeState
+    LDA #0:STA ramselCopy:STA ramsel ; clear ramselShen (SFTODO: and Prvs* too; is this safe? probably...)
+    LDA vduStatus:AND_NOT vduStatusShadow:STA vduStatus
+    LDA #modeChangeStateNone:STA modeChangeState
     ; SFTODO: At a casual glance it seems weird we're setting osShadowRamFlag to 1 here, do I have the interpretation of that flag right?
-    LDA #&01
-    STA osShadowRamFlag
+    LDA #1:STA osShadowRamFlag
 .SFTODOCOMMON1
     JSR PrvEn
     LDA prvSFTODOMODE:AND_NOT shadowModeOffset:STA prvSFTODOMODE
