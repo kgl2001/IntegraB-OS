@@ -1320,67 +1320,70 @@ TabColumn = 12
 ;Unrecognised Star command
 .service04
 {
-	  JSR setTransientCmdPtr
-            JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
-            JSR SearchKeywordTable								;test for valid * command
-            BCC runCmd								;branch if found a valid * command
-            TAY
-            LDA (transientCmdPtr),Y
-            AND #&DF								;capitalise
-            CMP #'I'								;'I' - All Integra-B commands can be prefixed with 'I' to distinguish from other commands
-            BNE L857E								; if not 'I', then test for '*X*' or '*S*' commands
-            INY										
-            TYA									;so try again, with A=1 and Y=1
-            JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
-            JSR SearchKeywordTable								;test for valid * command
-            BCC runCmd								;branch if found a valid * command
+  JSR setTransientCmdPtr
+    JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
+    JSR SearchKeywordTable								;test for valid * command
+    BCC runCmd								;branch if found a valid * command
+    TAY
+    LDA (transientCmdPtr),Y
+    AND #&DF								;capitalise
+    CMP #'I'								;'I' - All Integra-B commands can be prefixed with 'I' to distinguish from other commands
+    BNE L857E								; if not 'I', then test for '*X*' or '*S*' commands
+    INY										
+    TYA									;so try again, with A=1 and Y=1
+    JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
+    JSR SearchKeywordTable								;test for valid * command
+    BCC runCmd								;branch if found a valid * command
 
-.L8579      LDA #&04 ; SFTODO: redundant? ExitServiceCall immediately does PLA
-            JMP ExitServiceCall								;restore service call parameters and exit
+.L8579
+    LDA #&04 ; SFTODO: redundant? ExitServiceCall immediately does PLA
+    JMP ExitServiceCall								;restore service call parameters and exit
 			
-.L857E      INY									;
-            LDA (transientCmdPtr),Y							;read second character
-            CMP #'*'
-            BNE L8579								;if not, then restore and exit
-            DEY
-            LDA (transientCmdPtr),Y
-            AND #&DF								;capitalise
-            CMP #'X'								;'X' - '*X*' command
-            BNE L8591								;if not, then check for '*S*'
-            JMP commandX								;execute '*X*' command
+.L857E
+    INY									;
+    LDA (transientCmdPtr),Y							;read second character
+    CMP #'*'
+    BNE L8579								;if not, then restore and exit
+    DEY
+    LDA (transientCmdPtr),Y
+    AND #&DF								;capitalise
+    CMP #'X'								;'X' - '*X*' command
+    BNE L8591								;if not, then check for '*S*'
+    JMP commandX								;execute '*X*' command
 			
-.L8591      CMP #'S'								;'S' - Undocumented '*S*' command
-            BNE L8579								;if not, then restore and exit
-            JMP commandS								;execute '*S*' command
+.L8591
+    CMP #'S'								;'S' - Undocumented '*S*' command
+    BNE L8579								;if not, then restore and exit
+    JMP commandS								;execute '*S*' command
 			
 .runCmd
-	  ; Transfer control to CmdRef[CmdTblPtrOffset][X], preserving Y (the index into the next byte of the command tail after the * command).
-	  STY L00AD
-            STX L00AC
-            JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
-            STX transientTblPtr
-            STY transientTblPtr + 1
-            LDY #CmdTblPtrOffset
-            LDA (transientTblPtr),Y
-            TAX
-            INY
-            LDA (transientTblPtr),Y
-            STA transientTblPtr + 1
-            STX transientTblPtr
-            LDA L00AC								;get matching command index
-            ASL A									;double it as we have 16-bit entries at CmdTblPtrOffset
-            TAY
-            INY
-            LDA (transientTblPtr),Y
-            PHA
-            DEY
-            LDA (transientTblPtr),Y
-            PHA
-	  ; Record the relevant index at transientCmdIdx for use in generating a syntax error later if necessary.
-            LDX L00AC
-            STX transientCmdIdx
-            LDY L00AD
-            RTS
+    ; Transfer control to CmdRef[CmdTblPtrOffset][X], preserving Y (the index into the next byte of the command tail after the * command).
+    STY L00AD
+    STX L00AC
+    JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
+    STX transientTblPtr
+    STY transientTblPtr + 1
+    LDY #CmdTblPtrOffset
+    LDA (transientTblPtr),Y
+    TAX
+    INY
+    LDA (transientTblPtr),Y
+    STA transientTblPtr + 1
+    STX transientTblPtr
+    LDA L00AC								;get matching command index
+    ASL A									;double it as we have 16-bit entries at CmdTblPtrOffset
+    TAY
+    INY
+    LDA (transientTblPtr),Y
+    PHA
+    DEY
+    LDA (transientTblPtr),Y
+    PHA
+    ; Record the relevant index at transientCmdIdx for use in generating a syntax error later if necessary.
+    LDX L00AC
+    STX transientCmdIdx
+    LDY L00AD
+    RTS
 }
 
 ;*HELP Service Call
