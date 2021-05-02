@@ -10374,7 +10374,7 @@ ptr = &A8
     STA ramsel
     LDX #prvOsMode - prv83								;select OSMODE
     JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-    BEQ LBCF2
+    BEQ DisableShadow
     JSR installOSPrintBufStub
     PHP
     SEI
@@ -10401,17 +10401,14 @@ ptr = &A8
     BNE LBCB0
     PLP
     JSR initPrintBuffer
-    LDA lastBreakType
-    BNE LBCF2
-    LDX #prvSFTODOMODE - prv83:JSR readPrivateRam8300X:BPL LBCF2
-    LDA #ramselShen:STA ramselCopy:STA ramsel
+    LDA lastBreakType:BNE DisableShadow ; branch if not soft reset
+    LDX #prvSFTODOMODE - prv83:JSR readPrivateRam8300X:BPL DisableShadow
+    ; Enable shadow RAM.
+    LDA #ramselShen:STA ramselCopy:STA ramsel ; set ramselShen (SFTODO: and clear Prvs* too; is this safe? probably...)
     LDA vduStatus:ORA #vduStatusShadow:STA vduStatus
     LDA #modeChangeStateNone:STA modeChangeState
     RTS
-}
-
-{
-.^LBCF2
+.^DisableShadow
     LDA #0:STA ramselCopy:STA ramsel ; clear ramselShen (SFTODO: and Prvs* too; is this safe? probably...)
     LDA vduStatus:AND_NOT vduStatusShadow:STA vduStatus
     LDA #modeChangeStateNone:STA modeChangeState
@@ -10449,7 +10446,7 @@ ptr = &A8
     LDA prvSFTODOMODE:AND_NOT shadowModeOffset:STA prvSFTODOMODE
     JSR PrvDis
     JSR maybeSwapShadow2
-    JMP LBCF2
+    JMP DisableShadow
 }
 
 ; Page in PRVS8 and PRVS1, returning the previous value of RAMSEL in A.
