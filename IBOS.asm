@@ -1290,30 +1290,32 @@ TabColumn = 12
 ;On exit A=character Y=offset for character. Carry set if end of line
 ;X is preserved.
 {
-.L853E      INY
+.SkipSpace
+    INY
 .^findNextCharAfterSpace
-.L853F      LDA (transientCmdPtr),Y
-            CMP #' '
-            BEQ L853E
-            CMP #vduCr
-            BEQ L854B
-            CLC
-            RTS
+    LDA (transientCmdPtr),Y
+    CMP #' ':BEQ SkipSpace
+    CMP #vduCr
+    BEQ L854B
+    CLC
+    RTS
 
-; SFTODO: Many copies of these two instructions, can we share?
-.L854B      SEC
-            RTS
+; SQUASH: Many copies of these two instructions, can we share?
+.L854B
+    SEC
+    RTS
 
 ; SFTODO: This skips a single comma if present
 .^findNextCharAfterSpaceSkippingComma
-.L854D      JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            BCS L854B
-            LDA (transientCmdPtr),Y
-            CMP #','
-            BNE L8559
-            INY
-.L8559      CLC
-            RTS
+    JSR findNextCharAfterSpace								;find next character. offset stored in Y
+    BCS L854B
+    LDA (transientCmdPtr),Y
+    CMP #','
+    BNE L8559
+    INY
+.L8559
+    CLC
+    RTS
 }
 
 ;Unrecognised Star command
