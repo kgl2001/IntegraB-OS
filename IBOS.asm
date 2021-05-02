@@ -3145,17 +3145,18 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ;execute '*S*' command
 ;switches to shadow, executes command, then switches back out of shadow?
 ; SFTODO: Having finally looked at this code properly, that's not really what *S* does; it's a
-; bit weird TBH. I don't see why it *couldn't* be the inverse of *X*, but as written it seems
-; to do *OSMODE 4, *SHADOW 0 (i.e. force shadow mode on when changing mode), *SHX OFF,
-; re-select the current screen mode (which will therefore be the shadow version, whether it was
-; before or not), disable the tube if enabled and then run the command, returning to the caller
-; if we didn't disable the tube and otherwise entering the NLE. I am really not sure what's
-; going on - I might *guess* this is an attempt to allow a user to "force" shadow RAM to be
-; used by a language ROM (e.g. an early version of View) in a simple way, but I'm not sure.
-; Disabling the tube seems particularly odd. Particularly as we force SHX OFF (presumably for
-; speed), if you use *S* to do anything other than launch a language ROM or new application the
-; running application is likely to be pretty confused when it gets control back, which is
-; partly what makes me think this is intended for launching languages.
+; bit weird TBH. I don't see why it *couldn't* be the inverse of *X* (although I don't know how
+; useful that would be, really), but as written it seems to do *OSMODE 4, *SHADOW 0 (i.e. force
+; shadow mode on when changing mode), *SHX OFF, re-select the current screen mode (which will
+; therefore be the shadow version, whether it was before or not), disable the tube if enabled
+; and then run the command, returning to the caller if we didn't disable the tube and otherwise
+; entering the NLE. I am really not sure what's going on - I might *guess* this is an attempt
+; to allow a user to "force" shadow RAM to be used by a language ROM (e.g. an early version of
+; View) in a simple way, but I'm not sure. Disabling the tube seems particularly odd.
+; Particularly as we force SHX OFF (presumably for speed), if you use *S* to do anything other
+; than launch a language ROM or new application the running application is likely to be pretty
+; confused when it gets control back, which is partly what makes me think this is intended for
+; launching languages.
 .^commandS
     CLV ; start with V clear, it's set during execution of *S* if we disabled the tube
     SEC:BCS Common ; always branch
