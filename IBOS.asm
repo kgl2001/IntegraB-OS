@@ -173,7 +173,7 @@ transientRomBankMask = &AE ; 2 bytes SFTODO: Rename this "set" or something inst
 
 transientCmdPtr = &A8 ; 2 bytes
 transientTblPtr = &AA ; 2 bytes
-transientCmdIdx = &AA ; 1 byte SFTODO: as in other places, this is "cmd" in the sense that one of our * commands or one of our *CONFIGUURE X "things" is a "command", not *just* * commands
+transientCommandIndex = &AA ; 1 byte SFTODO: as in other places, this is "cmd" in the sense that one of our * commands or one of our *CONFIGUURE X "things" is a "command", not *just* * commands
 transientDynamicSyntaxState = &AE ; 1 byte
     ; b7 and b6 of transientDynamicSyntaxState act as flags. Since they're tested via BIT we
     ; don't have any named constants for them; see StartDynamicSyntaxGeneration for details.
@@ -1097,7 +1097,7 @@ LastEntry = &A9
 .common
     CLC
     BIT rts ; set V
-    LDA transientCmdIdx
+    LDA transientCommandIndex
     FALLTHROUGH_TO DynamicSyntaxGenerationForAUsingYX
 }
 
@@ -1320,6 +1320,9 @@ TabColumn = 12
 ;Unrecognised Star command
 .service04
 {
+TmpCommandTailOffset = &AD
+TmpCommandIndex = &AC
+
     JSR setTransientCmdPtr
     JSR CmdRef:JSR SearchKeywordTable:BCC RunCommand
     ; We didn't find a match, so see if there's an "I" prefix (case-insensitive) and if so try without that.
@@ -1343,9 +1346,9 @@ TabColumn = 12
 			
 .RunCommand
     ; Transfer control to CmdRef[CmdTblPtrOffset][X], preserving Y (the index into the next byte of the command tail after the * command).
-    STY L00AD
-    STX L00AC
-    JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
+    STY TmpCommandTailOffset
+    STX TmpCommandIndex
+    JSR CmdRef
     STX transientTblPtr
     STY transientTblPtr + 1
     LDY #CmdTblPtrOffset
@@ -1355,8 +1358,7 @@ TabColumn = 12
     LDA (transientTblPtr),Y
     STA transientTblPtr + 1
     STX transientTblPtr
-    LDA L00AC								;get matching command index
-    ASL A									;double it as we have 16-bit entries at CmdTblPtrOffset
+    LDA TmpCommandIndex:ASL A
     TAY
     INY
     LDA (transientTblPtr),Y
@@ -1364,10 +1366,10 @@ TabColumn = 12
     DEY
     LDA (transientTblPtr),Y
     PHA
-    ; Record the relevant index at transientCmdIdx for use in generating a syntax error later if necessary.
-    LDX L00AC
-    STX transientCmdIdx
-    LDY L00AD
+    ; Record the relevant index at transientCommandIndex for use in generating a syntax error later if necessary.
+    LDX TmpCommandIndex
+    STX transientCommandIndex
+    LDY TmpCommandTailOffset
     RTS
 }
 
@@ -3571,9 +3573,9 @@ ENDIF
 
 .setYToTransientCmdIdxTimes3
 {
-.L93C3      LDA transientCmdIdx
+.L93C3      LDA transientCommandIndex
             ASL A
-            ADC transientCmdIdx
+            ADC transientCommandIndex
             TAY
             RTS
 }
@@ -3632,14 +3634,14 @@ ENDIF
             RTS
 }
 			
-; SFTODO: This code saves transientCmdIdx (&AA) across call to ConfRefDynamicSyntaxGenerationForTransientCmdIdx, but it superficially looks as though ConfRefDynamicSyntaxGenerationForTransientCmdIdx preserves it itself, so the code to preserve here may be redundant.
+; SFTODO: This code saves transientCommandIndex (&AA) across call to ConfRefDynamicSyntaxGenerationForTransientCmdIdx, but it superficially looks as though ConfRefDynamicSyntaxGenerationForTransientCmdIdx preserves it itself, so the code to preserve here may be redundant.
 .printConfigNameAndGetValue ; SFTODO: name is a bit of a guess as I still haven't been through the "dynamic syntax generation" (which is presumably slightly misnamed at least, as at least some of our callers would just want the option name with no other fluff) code properly
 {
-.L9427      LDA transientCmdIdx
+.L9427      LDA transientCommandIndex
             PHA
             JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
             PLA
-            STA transientCmdIdx
+            STA transientCommandIndex
             JSR getConfigValue
             LDA transientConfigPrefix
             RTS
@@ -3692,7 +3694,7 @@ ENDIF
 ; *STATUS (clear) or *CONFIGURE (set).
 .jmpConfTypTblX
             PHP
-            STX transientCmdIdx
+            STX transientCommandIndex
             TXA
             ASL A
             TAX
