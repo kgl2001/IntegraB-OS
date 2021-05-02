@@ -10562,23 +10562,24 @@ ScreenStart = &3000
     JSR PrvDis
     ; Copy the rom access subroutine used by the printer buffer from ROM into RAM.
     LDY #romRomAccessSubroutineEnd - romRomAccessSubroutine - 1
-.LBE83
+.SubroutineCopyLoop
     LDA romRomAccessSubroutine,Y:STA ramRomAccessSubroutine,Y
-    DEY:BPL LBE83
-    PHP:SEI
+    DEY:BPL SubroutineCopyLoop
+
     ; Save the parent values of INSV, REMV and CNPV at
     ; parentVectorTbl2 and install our handlers at osPrintBuf+n*3 where
     ; n=4 for INSV, 5 for REMV and 6 for CNPV.
+    PHP:SEI
     LDX #0
     LDY #lo(osPrintBuf + 4 * 3)
-.LBE92
+.VectorLoop
     LDA INSVL,X:STA parentVectorTbl2,X
     TYA:STA INSVL,X
     LDA INSVH,X:STA parentVectorTbl2+1,X
     LDA #hi(osPrintBuf + 4 * 3):STA INSVH,X
     INY:INY:INY
     INX:INX
-    CPX #6:BNE LBE92
+    CPX #6:BNE VectorLoop
     PLP
     RTS
 }
