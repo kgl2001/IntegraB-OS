@@ -193,7 +193,7 @@ vduGraphicsCharacterCell = &D6 ; 2 bytes
 romActiveLastBrk = &024A
 negativeVduQueueSize = &026A
 tubePresenceFlag = &027A ; SFTODO: allmem says 0=inactive, is there actually a specific bit or value for active? what does this code rely on?
-osShadowRamFlag = &027F ; *SHADOW option, 0=don't force shadow modes, 1=force shadow modes (note that AllMem.txt seems to have this wrong, at least my copy does) SFTODO: MAYBE ALLMEM IS RIGHT (THO I THINK I CHECKED WITH MASTER IN B-EM), BUT IT LOOKS LIKE *IBOS* USES 0=FORCE SHADOW MODE, BUT REVIEW THIS CAREFULLY LATER
+osShadowRamFlag = &027F ; *SHADOW option, 1=force shadow mode, 0=don't force shadow mode
 currentLanguageRom = &028C ; SFTODO: not sure yet if we're using this for what the OS does or repurposing it
 currentMode = &0355
 
@@ -3175,15 +3175,11 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 			
 .L90A7      LDA #&04
             JSR SetOsModeA
-            LDA #&00
-            STA osShadowRamFlag
+            LDA #0:STA osShadowRamFlag ; SFTODO: This seems odd, but I haven't worked through this code yet
             LDX #&3D								;select SHX register
             LDA #&FF								;store &FF to &833D (&08: SHX On, &FF: SHX Off)
             JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
-            LDA #vduSetMode								;change screen mode
-            JSR OSWRCH
-            LDA currentMode								;current screen mode
-            JSR OSWRCH
+            LDA #vduSetMode:JSR OSWRCH:LDA currentMode:JSR OSWRCH
             BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BPL L90DE
             JSR disableTube
@@ -10032,10 +10028,8 @@ ibosCNPVIndex = 6
 ; Read base of display RAM for a given mode (http://beebwiki.mdfs.net/OSBYTE_%2685)
 .^osbyte85Handler
 .LBADC      PHA
-            TXA
-            BMI shadowMode
-            LDA osShadowRamFlag
-            BEQ shadowMode
+            TXA:BMI shadowMode
+            LDA osShadowRamFlag:BEQ shadowMode
             PLA
             JMP returnViaParentBYTEV
 
@@ -10318,7 +10312,6 @@ ScreenStart = &3000
     LDA #0:STA ramselCopy:STA ramsel ; clear ramselShen (SFTODO: and Prvs* too; is this safe? probably...)
     LDA vduStatus:AND_NOT vduStatusShadow:STA vduStatus
     LDA #ModeChangeStateNone:STA ModeChangeState
-    ; SFTODO: At a casual glance it seems weird we're setting osShadowRamFlag to 1 here, do I have the interpretation of that flag right?
     LDA #1:STA osShadowRamFlag
 .SFTODOCOMMON1
     JSR PrvEn
