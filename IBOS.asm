@@ -2731,97 +2731,106 @@ TestAddress = &8000
     STA prvPrintBufferBankList + 3
     RTS
 
-.L8D46      LDA romselCopy
-            AND #maxBank
-            ORA #romselPrvEn
-            STA prvPrintBufferBankList
-            LDA #&FF
-            STA prvPrintBufferBankList + 1
-            STA prvPrintBufferBankList + 2
-            STA prvPrintBufferBankList + 3
-.L8D5A      LDA prvPrintBufferBankList
-            CMP #&FF
-            BEQ L8D46
-            AND #&F0
-            CMP #romselPrvEn
-            BNE bufferInSidewaysRam
-            ; Buffer is in private RAM, not sideways RAM.
-            JSR SanitisePrvPrintBufferStart
-            STA prvPrintBufferBankStart
-            LDA #&B0
-            STA prvPrintBufferBankEnd
-            LDA #&00
-            STA prvPrintBufferFirstBankIndex
-            STA prvPrintBufferBankCount
-            STA prvPrintBufferSizeLow
-            STA prvPrintBufferSizeHigh
-            SEC
-            LDA prvPrintBufferBankEnd
-            SBC prvPrintBufferBankStart
-            STA prvPrintBufferSizeMid
-            JMP purgePrintBuffer
+.L8D46
+    LDA romselCopy
+    AND #maxBank
+    ORA #romselPrvEn
+    STA prvPrintBufferBankList
+    LDA #&FF
+    STA prvPrintBufferBankList + 1
+    STA prvPrintBufferBankList + 2
+    STA prvPrintBufferBankList + 3
+.L8D5A
+    LDA prvPrintBufferBankList
+    CMP #&FF
+    BEQ L8D46
+    AND #&F0
+    CMP #romselPrvEn
+    BNE bufferInSidewaysRam
+    ; Buffer is in private RAM, not sideways RAM.
+    JSR SanitisePrvPrintBufferStart
+    STA prvPrintBufferBankStart
+    LDA #&B0
+    STA prvPrintBufferBankEnd
+    LDA #&00
+    STA prvPrintBufferFirstBankIndex
+    STA prvPrintBufferBankCount
+    STA prvPrintBufferSizeLow
+    STA prvPrintBufferSizeHigh
+    SEC
+    LDA prvPrintBufferBankEnd
+    SBC prvPrintBufferBankStart
+    STA prvPrintBufferSizeMid
+    JMP purgePrintBuffer
 
 .bufferInSidewaysRam
-.L8D8D      LDA #&00
-            STA prvPrintBufferSizeLow
-            STA prvPrintBufferSizeMid
-            STA prvPrintBufferSizeHigh
-            TAX
-.L8D99      LDA prvPrintBufferBankList,X
-            BMI L8DB5
-            CLC
-            LDA prvPrintBufferSizeMid
-            ADC #&40
-            STA prvPrintBufferSizeMid
-            LDA prvPrintBufferSizeHigh
-            ADC #&00
-            STA prvPrintBufferSizeHigh
-            INX
-            CPX #&04
-            BNE L8D99
-            DEX
-.L8DB5      LDA #&80
-            STA prvPrintBufferBankStart
-            LDA #&00
-            STA prvPrintBufferFirstBankIndex
-            LDA #&C0
-            STA prvPrintBufferBankEnd
-            STX prvPrintBufferBankCount
-            JMP purgePrintBuffer
+    LDA #&00
+    STA prvPrintBufferSizeLow
+    STA prvPrintBufferSizeMid
+    STA prvPrintBufferSizeHigh
+    TAX
+.L8D99
+    LDA prvPrintBufferBankList,X
+    BMI L8DB5
+    CLC
+    LDA prvPrintBufferSizeMid
+    ADC #&40
+    STA prvPrintBufferSizeMid
+    LDA prvPrintBufferSizeHigh
+    ADC #&00
+    STA prvPrintBufferSizeHigh
+    INX
+    CPX #&04
+    BNE L8D99
+    DEX
+.L8DB5
+    LDA #&80
+    STA prvPrintBufferBankStart
+    LDA #&00
+    STA prvPrintBufferFirstBankIndex
+    LDA #&C0
+    STA prvPrintBufferBankEnd
+    STX prvPrintBufferBankCount
+    JMP purgePrintBuffer
 			
-.L8DCA      LDA prvPrintBufferSizeHigh
-            LSR A
-            LDA prvPrintBufferSizeMid
-            ROR A
-            ROR A
-            SEC									;left justify (ignore leading 0s)
-            JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
-            LDA prvPrintBufferBankList
-            AND #&F0
-            CMP #&40
-            BNE L8DE8
-            LDX #&00
-            JSR PrintKInPrivateOrSidewaysRAM						;write 'k in Private RAM'
-            JMP OSNEWLPrvDisExitAndClaimServiceCall								;and finish
+.L8DCA
+    LDA prvPrintBufferSizeHigh
+    LSR A
+    LDA prvPrintBufferSizeMid
+    ROR A
+    ROR A
+    SEC									;left justify (ignore leading 0s)
+    JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
+    LDA prvPrintBufferBankList
+    AND #&F0
+    CMP #&40
+    BNE L8DE8
+    LDX #&00
+    JSR PrintKInPrivateOrSidewaysRAM						;write 'k in Private RAM'
+    JMP OSNEWLPrvDisExitAndClaimServiceCall								;and finish
 			
-.L8DE8      LDX #&01								;starting with the first RAM bank
-            JSR PrintKInPrivateOrSidewaysRAM						;write 'k in Sideways RAM '
-            LDY #&00
-.L8DEF      LDA prvPrintBufferBankList,Y								;get RAM bank number from Private memory
-            BMI L8E02								;if nothing in private memory then finish, otherwise
-            SEC									;left justify (ignore leading 0s)
-            JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
-            LDA #','
-            JSR OSWRCH								;write to screen
-            INY									;repeat
-            CPY #&04								;upto 4 times for maximum of 4 banks
-            BNE L8DEF
-.L8E02      LDA #vduDel								;delete the last ',' that was just printed
-            JSR OSWRCH								;write to screen
-.^OSNEWLPrvDisExitAndClaimServiceCall      JSR OSNEWL
+.L8DE8
+    LDX #&01								;starting with the first RAM bank
+    JSR PrintKInPrivateOrSidewaysRAM						;write 'k in Sideways RAM '
+    LDY #&00
+.L8DEF
+    LDA prvPrintBufferBankList,Y								;get RAM bank number from Private memory
+    BMI L8E02								;if nothing in private memory then finish, otherwise
+    SEC									;left justify (ignore leading 0s)
+    JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
+    LDA #','
+    JSR OSWRCH								;write to screen
+    INY									;repeat
+    CPY #MaxSwrBanks								;upto 4 times for maximum of 4 banks
+    BNE L8DEF
+.L8E02
+    LDA #vduDel								;delete the last ',' that was just printed
+    JSR OSWRCH
+.^OSNEWLPrvDisExitAndClaimServiceCall
+    JSR OSNEWL
 .^PrvDisExitAndClaimServiceCall
-            JSR PrvDis								;switch out private RAM
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+    JSR PrvDis
+    JMP ExitAndClaimServiceCall
 
 ; Return with C clear iff bank Y is an empty sideways RAM bank. X and Y are preserved.
 .TestForEmptySwrInBankY
