@@ -2723,9 +2723,9 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 			
 .L8D37      LDA #&FF								;unassign RAM banks from *BUFFER
             STA prvPrintBufferBankList
-            STA prv83+&19
-            STA prv83+&1A
-            STA prv83+&1B
+            STA prvPrintBufferBankList + 1
+            STA prvPrintBufferBankList + 2
+            STA prvPrintBufferBankList + 3
             RTS
 
 .L8D46      LDA romselCopy
@@ -10356,7 +10356,7 @@ ScreenStart = &3000
     CPX #8:BNE Loop
     PLP
 
-    JSR initPrintBuffer
+    JSR InitPrintBuffer
     LDA lastBreakType:BNE DisableShadow ; branch if not soft reset
     LDX #prvSFTODOMODE - prv83:JSR readPrivateRam8300X:BPL DisableShadow
     ; Enable shadow RAM.
@@ -10536,7 +10536,7 @@ ScreenStart = &3000
 ; SQUASH: This only has one caller and doesn't seem to return early.
 ; SQUASH: Some of the code in here is similar to that used as part of 'buffer' (the *BUFFER
 ; command), could it be factored out?
-.initPrintBuffer
+.InitPrintBuffer
 {
     LDX lastBreakType:BEQ softReset
     ; On hard break or power-on reset, set up the printer buffer so it uses private RAM from
@@ -10550,7 +10550,7 @@ ScreenStart = &3000
     ; SFTODO: Following code is similar to chunk just below L8D5A, could
     ; it be factored out?
     JSR SanitisePrvPrintBufferStart:STA prvPrintBufferBankStart
-    LDA #&B0:STA prvPrintBufferBankEnd
+    LDA #&B0:STA prvPrintBufferBankEnd ; SFTODO: Magic constant ("top of private RAM")
     SEC:LDA prvPrintBufferBankEnd:SBC prvPrintBufferBankStart:STA prvPrintBufferSizeMid
     LDA romselCopy:ORA #romselPrvEn:STA prvPrintBufferBankList
     LDA #&FF
@@ -10793,6 +10793,7 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
 }
 
 ; If prvPrvPrintBufferStart isn't in the range &90-&AC, set it to &AC. We return with prvPrvPrintBufferStart in A.
+; SFTODO: Mildly magic constants
 .SanitisePrvPrintBufferStart
 {
     ; SQUASH: We could change "BCC Rts" below to use the RTS above and make the JSR:RTS a JMP.
