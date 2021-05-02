@@ -1206,34 +1206,38 @@ Tmp = &AC
 ; SFTODO: This has only one caller
 .startDynamicSyntaxGeneration ; SFTODO: rename?
 {
-.L84C1      LDA #&00
-            ROR A ; move C on entry into b7 of A
-            BVC L84C8
-            ORA #&40 ; SFTODO: flagV??
-.L84C8      STA transientDynamicSyntaxState ; stash original V (&40, b6) and C (&80, b7) in transientDynamicSyntaxState
-            BPL generateToScreen
-            LDY #&00
-.copyLoop   LDA errorPrefix,Y
-            STA L0100,Y
-            INY
-            CMP #' '
-            BNE copyLoop
-            TYA
-            JMP saveA
+    LDA #&00
+    ROR A ; move C on entry into b7 of A
+    BVC L84C8
+    ORA #&40 ; SFTODO: flagV??
+.L84C8
+    STA transientDynamicSyntaxState ; stash original V (&40, b6) and C (&80, b7) in transientDynamicSyntaxState
+    BPL generateToScreen
+    LDY #&00
+.copyLoop
+    LDA errorPrefix,Y
+    STA L0100,Y
+    INY
+    CMP #' '
+    BNE copyLoop
+    TYA
+    JMP saveA
 
 .generateToScreen
-            BIT transientDynamicSyntaxState
-            BVS L84E7
-            JSR printSpace								;write ' ' to screen
-            JSR printSpace								;write ' ' to screen
-.L84E7      LDA #&02
-.saveA      ORA transientDynamicSyntaxState
-            STA transientDynamicSyntaxState
-            RTS
+    BIT transientDynamicSyntaxState
+    BVS L84E7
+    JSR printSpace
+    JSR printSpace
+.L84E7
+    LDA #&02
+.saveA
+    ORA transientDynamicSyntaxState
+    STA transientDynamicSyntaxState
+    RTS
 
 .errorPrefix
-        	  EQUB &00,&DC
-	  EQUS "Syntax: "
+    EQUB &00,&DC
+    EQUS "Syntax: "
 }
 
 .emitDynamicSyntaxCharacter
