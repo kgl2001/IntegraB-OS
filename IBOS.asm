@@ -2657,7 +2657,7 @@ MaxSwrBanks = 4
     EQUS "No Buffer!", &00
 
 .NotOsMode0
-    JSR convertIntegerDefaultDecimal:BCC ParsedOK
+    JSR convertIntegerDefaultDecimal:BCC BankCountParsedOK
     LDA (transientCmdPtr),Y
     CMP #'#':BEQ UseUserBankList
     CMP #'?':BNE PrvDisGenerateSyntaxError
@@ -2666,31 +2666,25 @@ MaxSwrBanks = 4
     JSR PrvDis
     JMP GenerateSyntaxError
 
-.ParsedOK
+.BankCountParsedOK
     CMP #MaxSwrBanks + 1:BCC BankCountInA
     JMP GenerateBadParameter
 .BankCountInA
     PHA
     JSR GenerateErrorIfPrinterBufferNotEmpty
     JSR UnassignPrintBufferBanks
-    LDX #0
-    LDY #0								;starting at SWRAM bank 0
+    LDX #0 ; count of RAM banks found
+    LDY #0 ; bank to test
 .L8CD8
-    JSR TestForEmptySwrInBankY								;test for SWRAM at bank Y
-    BCS L8CE6
-    TYA
-    STA prvPrintBufferBankList,X								;store RAM bank number in Private memory
-    INX									;increment counter for number of RAM banks found
-    CPX #MaxSwrBanks								;until 4 banks are found
-    BEQ L8CEB
-.L8CE6
-    INY
-    CPY #&10								;until all 16 banks have been tested
-    BNE L8CD8
-.L8CEB
+    JSR TestForEmptySwrInBankY:BCS NotEmptySwr
+    TYA:STA prvPrintBufferBankList,X
+    INX:CPX #MaxSwrBanks:BEQ MaxBanksFound
+.NotEmptySwr
+    INY:CPY #maxBank + 1:BNE L8CD8
+.MaxBanksFound
     PLA
     BNE L8CF4
-    JSR UnassignPrintBufferBanks								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
+    JSR UnassignPrintBufferBanks
     JMP L8D01
 			
 .L8CF4      TAX
