@@ -2764,14 +2764,14 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     STA prvPrintBufferSizeMid
     STA prvPrintBufferSizeHigh
     TAX
-.L8D99
-    LDA prvPrintBufferBankList,X:BMI L8DB5
+.CountBankLoop
+    LDA prvPrintBufferBankList,X:BMI AllBanksCounted
     CLC:LDA prvPrintBufferSizeMid:ADC #&40:STA prvPrintBufferSizeMid ; SFTODO: mildly magic
     ; SQUASH: INCCS prvprintBufferSizeHigh
     LDA prvPrintBufferSizeHigh:ADC #0:STA prvPrintBufferSizeHigh
-    INX:CPX #MaxSwrBanks:BNE L8D99
+    INX:CPX #MaxSwrBanks:BNE CountBankLoop
     DEX
-.L8DB5
+.AllBanksCounted
     LDA #&80:STA prvPrintBufferBankStart ; SFTODO: mildly magic
     LDA #0:STA prvPrintBufferFirstBankIndex
     LDA #&C0:STA prvPrintBufferBankEnd ; SFTODO: mildly magic
@@ -2783,7 +2783,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA prvPrintBufferSizeHigh:LSR A
     LDA prvPrintBufferSizeMid:ROR A:ROR A
     SEC:JSR printADecimal
-    LDA prvPrintBufferBankList:AND #&F0:CMP #&40:BNE L8DE8
+    LDA prvPrintBufferBankList:AND #&F0:CMP #&40:BNE L8DE8 ; SFTODO: magic constants
     LDX #0:JSR PrintKInPrivateOrSidewaysRAM ; write 'k in Private RAM'
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 			
