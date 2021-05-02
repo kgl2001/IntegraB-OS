@@ -10554,9 +10554,9 @@ ScreenStart = &3000
     SEC:LDA prvPrintBufferBankEnd:SBC prvPrintBufferBankStart:STA prvPrintBufferSizeMid
     LDA romselCopy:ORA #romselPrvEn:STA prvPrintBufferBankList
     LDA #&FF
-    STA prv83+&19
-    STA prv83+&1A
-    STA prv83+&1B
+    STA prvPrintBufferBankList + 1
+    STA prvPrintBufferBankList + 2
+    STA prvPrintBufferBankList + 3
 .softReset
     JSR purgePrintBuffer
     JSR PrvDis
