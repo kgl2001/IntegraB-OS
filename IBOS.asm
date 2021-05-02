@@ -2730,39 +2730,30 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     RTS
 
 .L8D46
-    LDA romselCopy
-    AND #maxBank
-    ORA #romselPrvEn
-    STA prvPrintBufferBankList
+    ; SQUASH: "JSR UnassignPrintBufferBanks" here, then delete the LDA #&FF:STA... below?
+    LDA romselCopy:AND #maxBank:ORA #romselPrvEn:STA prvPrintBufferBankList
     LDA #&FF
     STA prvPrintBufferBankList + 1
     STA prvPrintBufferBankList + 2
     STA prvPrintBufferBankList + 3
 .L8D5A
-    LDA prvPrintBufferBankList
-    CMP #&FF
-    BEQ L8D46
-    AND #&F0
-    CMP #romselPrvEn
-    BNE bufferInSidewaysRam
+    LDA prvPrintBufferBankList:CMP #&FF:BEQ L8D46
+    AND #&F0:CMP #romselPrvEn:BNE BufferInSwr
     ; Buffer is in private RAM, not sideways RAM.
     JSR SanitisePrvPrintBufferStart
     STA prvPrintBufferBankStart
-    LDA #&B0
+    LDA #&B0 ; SFTODO: mildly magic
     STA prvPrintBufferBankEnd
-    LDA #&00
+    LDA #0
     STA prvPrintBufferFirstBankIndex
     STA prvPrintBufferBankCount
     STA prvPrintBufferSizeLow
     STA prvPrintBufferSizeHigh
-    SEC
-    LDA prvPrintBufferBankEnd
-    SBC prvPrintBufferBankStart
-    STA prvPrintBufferSizeMid
+    SEC:LDA prvPrintBufferBankEnd:SBC prvPrintBufferBankStart:STA prvPrintBufferSizeMid
     JMP purgePrintBuffer
 
-.bufferInSidewaysRam
-    LDA #&00
+.BufferInSwr
+    LDA #0
     STA prvPrintBufferSizeLow
     STA prvPrintBufferSizeMid
     STA prvPrintBufferSizeHigh
@@ -2770,19 +2761,15 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 .L8D99
     LDA prvPrintBufferBankList,X
     BMI L8DB5
-    CLC
-    LDA prvPrintBufferSizeMid
-    ADC #&40
-    STA prvPrintBufferSizeMid
-    LDA prvPrintBufferSizeHigh
-    ADC #&00
-    STA prvPrintBufferSizeHigh
+    CLC:LDA prvPrintBufferSizeMid:ADC #&40:STA prvPrintBufferSizeMid ; SFTODO: mildly magic
+    ; SQUASH: INCCS prvprintBufferSizeHigh
+    LDA prvPrintBufferSizeHigh:ADC #0:STA prvPrintBufferSizeHigh
     INX
     CPX #&04
     BNE L8D99
     DEX
 .L8DB5
-    LDA #&80
+    LDA #&80 ; SFTODO: mildly magic
     STA prvPrintBufferBankStart
     LDA #&00
     STA prvPrintBufferFirstBankIndex
