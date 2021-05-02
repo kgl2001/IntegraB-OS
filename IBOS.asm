@@ -1182,98 +1182,100 @@ MinimumAbbreviationLength = 3
 ; SFTODO: Note that this will recursively expand top-bit-set characters as tokens
 .emitEntryAFromTableYX
 {
-.L8443      PHA									;save stack value
-            TXA									;get start of *command or *command parameters lookup table low address
-            PHA									;and save
-            LDA L00AA								;get *command pointer look up table low address
-            PHA									;and save
-            LDA L00AB								;get *command pointer look up table high address
-            PHA									;and save
-            STX L00AA
-            STY L00AB								;save start of *command or *command parameter look up table address to &AA / &AB
-            TSX									;get stack pointer
-            LDA L0104,X								;get A on entry from stack
-            JSR emitEntryAFromTableL00AA						;write parameters to screen?
-            PLA										
-            STA L00AB
-            PLA
-            STA L00AA								;start of *command or *command parameter look up table address restored to &AA / &AB
-            PLA
-            TAX									;restore X register
-            PLA									;restore A register
-            RTS									;and return
+    PHA									;save stack value
+    TXA									;get start of *command or *command parameters lookup table low address
+    PHA									;and save
+    LDA L00AA								;get *command pointer look up table low address
+    PHA									;and save
+    LDA L00AB								;get *command pointer look up table high address
+    PHA									;and save
+    STX L00AA
+    STY L00AB								;save start of *command or *command parameter look up table address to &AA / &AB
+    TSX									;get stack pointer
+    LDA L0104,X								;get A on entry from stack
+    JSR emitEntryAFromTableL00AA						;write parameters to screen?
+    PLA
+    STA L00AB
+    PLA
+    STA L00AA								;start of *command or *command parameter look up table address restored to &AA / &AB
+    PLA
+    TAX									;restore X register
+    PLA									;restore A register
+    RTS									;and return
 			
 ;write *command or *command parameters to screen
 ; SFTODO: Instead of preserving A8/A9 and copying AA/AB onto them, could this just work directly with AA/AB? I think the main reason it couldn't is if our caller assumes they are preserved, I don't know if that is true yet. - I think the answer is no, because this calls itself recursively
 ptr = &A8
 tmp = &AC
 .emitEntryAFromTableL00AA
-.L8461      PHA									;save stack value
-            TXA
-            PHA									;save contents of X
-            TYA
-            PHA									;save contents of Y
-            LDA ptr + 1
-            PHA									;save contents of &A9
-            LDA ptr
-            PHA									;save contents of &A8
-            LDA tmp
-            PHA									;save contents of &AC
-            TSX									;get stack pointer
-            LDA L0106,X								;get A on entry from stack
-            AND #&7F								;mask out bit 7
-            STA tmp									;and store at &AC
-            LDA L00AA
-            STA ptr									;copy &AA to &A8
-            LDA L00AB
-            STA ptr + 1								;copy &AB to &A9
+    PHA									;save stack value
+    TXA
+    PHA									;save contents of X
+    TYA
+    PHA									;save contents of Y
+    LDA ptr + 1
+    PHA									;save contents of &A9
+    LDA ptr
+    PHA									;save contents of &A8
+    LDA tmp
+    PHA									;save contents of &AC
+    TSX									;get stack pointer
+    LDA L0106,X								;get A on entry from stack
+    AND #&7F								;mask out bit 7
+    STA tmp									;and store at &AC
+    LDA L00AA
+    STA ptr									;copy &AA to &A8
+    LDA L00AB
+    STA ptr + 1								;copy &AB to &A9
 
-	  ; Advance ptr so it points to the (A on entry with bit 7 masked off)th entry in the table.
-            LDX #&00
-            LDY #&00								;y is fixed at &00
+  ; Advance ptr so it points to the (A on entry with bit 7 masked off)th entry in the table.
+    LDX #&00
+    LDY #&00								;y is fixed at &00
 .advanceLoop
-	  CPX tmp									;A on entry with bit 7 masked off
-            BEQ advanceLoopDone
-            CLC
-	  LDA (ptr),Y
-            ADC ptr
-            STA ptr
-	  ; SFTODO: We could use the BCC label:INC:.label trick here to shorten this
-            LDA ptr + 1
-            ADC #&00
-            STA ptr + 1
-            INX
-            BNE advanceLoop
+    CPX tmp									;A on entry with bit 7 masked off
+    BEQ advanceLoopDone
+    CLC
+    LDA (ptr),Y
+    ADC ptr
+    STA ptr
+    ; SFTODO: We could use the BCC label:INC:.label trick here to shorten this
+    LDA ptr + 1
+    ADC #&00
+    STA ptr + 1
+    INX
+    BNE advanceLoop
 .advanceLoopDone
 			
-            LDA (ptr),Y								;get length of string plus 1
-            STA tmp
-	  ; SFTODO: Could we replace next three instructions with JMP doneChar? Or even BNE doneChar, since length of string plus 1 can't be 0?
-            CMP #&01
-            BEQ charLoopDone ; SFTODO: can this happen? do we have "zero length strings"?
-            INY
-.charLoop   LDA (ptr),Y
-            BPL simpleCharacter
-            JSR emitEntryAFromTableL00AA ; recurse to handle top-bit-set tokens
-            JMP doneChar
+    LDA (ptr),Y								;get length of string plus 1
+    STA tmp
+  ; SFTODO: Could we replace next three instructions with JMP doneChar? Or even BNE doneChar, since length of string plus 1 can't be 0?
+    CMP #&01
+    BEQ charLoopDone ; SFTODO: can this happen? do we have "zero length strings"?
+    INY
+.charLoop
+    LDA (ptr),Y
+    BPL simpleCharacter
+    JSR emitEntryAFromTableL00AA ; recurse to handle top-bit-set tokens
+    JMP doneChar
 .simpleCharacter
-	  JSR emitDynamicSyntaxCharacter
-.doneChar   INY
-            CPY tmp
-            BNE charLoop
+    JSR emitDynamicSyntaxCharacter
+.doneChar
+    INY
+    CPY tmp
+    BNE charLoop
 .charLoopDone
-	  PLA
-            STA tmp
-            PLA
-            STA ptr
-            PLA
-            STA ptr + 1
-            PLA
-            TAY
-            PLA
-            TAX
-            PLA
-            RTS
+    PLA
+    STA tmp
+    PLA
+    STA ptr
+    PLA
+    STA ptr + 1
+    PLA
+    TAY
+    PLA
+    TAX
+    PLA
+    RTS
 }
 			
 ; SFTODO: This has only one caller
