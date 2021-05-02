@@ -2684,15 +2684,15 @@ MaxSwrBanks = 4
 .MaxBanksFound
     PLA:BNE BankCountNot0
     JSR UnassignPrintBufferBanks
-    JMP L8D01
+    JMP prvPrintBufferBankListInitialised
 .BankCountNot0
     TAX
     LDA #&FF
 .SFTODOLOOP
-    CPX #&04:BCS L8D01
+    CPX #MaxSwrBanks:BCS prvPrintBufferBankListInitialised
     STA prvPrintBufferBankList,X
-    INX:BNE SFTODOLOOP
-.L8D01
+    INX:BNE SFTODOLOOP ; always branch
+.prvPrintBufferBankListInitialised
     JSR L8D5A
     JMP L8DCA
 
