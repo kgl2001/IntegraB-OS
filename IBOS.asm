@@ -2648,6 +2648,10 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .buffer
 {
 MaxSwrBanks = 4
+SFTODOFOO = L00AC
+SFTODOBAR = L00AD
+; ENHANCE: It would be good to use romBinaryVersion for TestAddress, just out of paranoia.
+TestAddress = &8000
 
     JSR PrvEn
 
@@ -2698,26 +2702,26 @@ MaxSwrBanks = 4
 
 .UseUserBankList
     JSR GenerateErrorIfPrinterBufferNotEmpty
-    JSR UnassignPrintBufferBanks								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
+    JSR UnassignPrintBufferBanks
     INY
     LDX #&00
-    STX L00AC
+    STX SFTODOFOO
 .L8D12
     JSR parseBankNumber
-    STY L00AD
+    STY SFTODOBAR
     BCS L8D31
     TAY
-    JSR TestForEmptySwrInBankY								;test for SWRAM at bank Y
+    JSR TestForEmptySwrInBankY
     TYA
     BCS L8D2C
-    LDX L00AC
+    LDX SFTODOFOO
     STA prvPrintBufferBankList,X
     INX
-    STX L00AC
+    STX SFTODOFOO
     CPX #&04
     BEQ L8D31
 .L8D2C
-    LDY L00AD
+    LDY SFTODOBAR
     JMP L8D12
 			
 .L8D31
@@ -2829,8 +2833,6 @@ MaxSwrBanks = 4
 
 ; Return with C clear iff bank Y is an empty sideways RAM bank. X and Y are preserved.
 .TestForEmptySwrInBankY
-; ENHANCE: It would be good to use romBinaryVersion for TestAddress, just out of paranoia.
-TestAddress = &8000
     TXA:PHA
     LDA romTypeTable,Y:BNE NotEmpty
     LDA prvRomTypeTableCopy,Y:BNE NotEmpty
