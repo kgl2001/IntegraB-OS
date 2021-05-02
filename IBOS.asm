@@ -971,7 +971,7 @@ t = &80
 ;     A is preserved
 ;     C clear => keyword sub-table entry X matched
 ;                (transientCmdPtr),Y is the first non-space after the matched word
-;     C set => no match found
+;     C set => no match found SFTODO: and what about A/Y? service04 uses A so it's important
 .SearchKeywordTable
 {
 KeywordLength = &AC
@@ -1320,43 +1320,28 @@ TabColumn = 12
 ;Unrecognised Star command
 .service04
 {
-  JSR setTransientCmdPtr
-    JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
-    JSR SearchKeywordTable								;test for valid * command
-    BCC runCmd								;branch if found a valid * command
-    TAY
-    LDA (transientCmdPtr),Y
-    AND #&DF								;capitalise
-    CMP #'I'								;'I' - All Integra-B commands can be prefixed with 'I' to distinguish from other commands
-    BNE L857E								; if not 'I', then test for '*X*' or '*S*' commands
-    INY										
-    TYA									;so try again, with A=1 and Y=1
-    JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
-    JSR SearchKeywordTable								;test for valid * command
-    BCC runCmd								;branch if found a valid * command
-
-.L8579
-    LDA #&04 ; SFTODO: redundant? ExitServiceCall immediately does PLA
-    JMP ExitServiceCall								;restore service call parameters and exit
+    JSR setTransientCmdPtr
+    JSR CmdRef:JSR SearchKeywordTable:BCC RunCommand
+    ; We didn't find a match, so see if there's an "I" prefix (case-insensitive) and if so try without that.
+    TAY:LDA (transientCmdPtr),Y:AND #&DF:CMP #'I':BNE NoIPrefix
+    INY:TYA ; skip the "I"
+    JSR CmdRef:JSR SearchKeywordTable:BCC RunCommand
+.ExitServiceCallIndirect
+    LDA #4 ; SQUASH: redundant, ExitServiceCall will do PLA
+    JMP ExitServiceCall
 			
-.L857E
-    INY									;
-    LDA (transientCmdPtr),Y							;read second character
-    CMP #'*'
-    BNE L8579								;if not, then restore and exit
-    DEY
-    LDA (transientCmdPtr),Y
-    AND #&DF								;capitalise
-    CMP #'X'								;'X' - '*X*' command
-    BNE L8591								;if not, then check for '*S*'
-    JMP commandX								;execute '*X*' command
+.NoIPrefix
+    ; Check to see if this is "*X*" or "*S*".
+    INY:LDA (transientCmdPtr),Y ; read the second character
+    CMP #'*':BNE ExitServiceCallIndirect
+    DEY:LDA (transientCmdPtr),Y:AND #&DF ; read and capitalise the first character
+    CMP #'X':BNE NotX
+    JMP commandX
+.NotX
+    CMP #'S':BNE ExitServiceCallIndirect
+    JMP commandS
 			
-.L8591
-    CMP #'S'								;'S' - Undocumented '*S*' command
-    BNE L8579								;if not, then restore and exit
-    JMP commandS								;execute '*S*' command
-			
-.runCmd
+.RunCommand
     ; Transfer control to CmdRef[CmdTblPtrOffset][X], preserving Y (the index into the next byte of the command tail after the * command).
     STY L00AD
     STX L00AC
