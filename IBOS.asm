@@ -2644,6 +2644,8 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 }
 			
 ;*BUFFER Command
+; This is a big chunk of fairly self-contained code, so we use two levels of scope instead of
+; the usual one to pin down the labels a bit more.
 .buffer
 {
 MaxSwrBanks = 4
@@ -2652,12 +2654,10 @@ TmpTransientCmdPtrOffset = L00AD
 TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 
     JSR PrvEn
-
     LDA prvOsMode:BNE NotOsMode0 ; the buffer isn't available in OSMODE 0
     JSR raiseError
     EQUB &80
     EQUS "No Buffer!", &00
-
 .NotOsMode0
     JSR convertIntegerDefaultDecimal:BCC BankCountParsedOK
     LDA (transientCmdPtr),Y
@@ -2669,6 +2669,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     JMP GenerateSyntaxError
 
 .BankCountParsedOK
+{
     CMP #MaxSwrBanks + 1:BCC BankCountInA
     JMP GenerateBadParameter
 .BankCountInA
@@ -2695,15 +2696,17 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     STA prvPrintBufferBankList,X
     INX:BNE DisableUnwantedBankLoop ; always branch
 .prvPrintBufferBankListInitialised
-    JSR L8D5A
+    JSR InitialiseBuffer
     JMP ShowBufferSizeAndLocation
+}
 
-    ; ENHANCE: It's probably more trouble than it's worth, but at the moment something like
-    ; "*BUFFER # 4,4,4,4" will set up a "64K" buffer using bank 4 four times, which probably
-    ; doesn't work out very well; ideally we'd generate an error in this case, or at least
-    ; de-duplicate the list (perhaps using a bank bitmap as we parse) so we'd end up with a 16K
-    ; buffer in this example.
+; ENHANCE: It's probably more trouble than it's worth, but at the moment something like
+; "*BUFFER # 4,4,4,4" will set up a "64K" buffer using bank 4 four times, which probably
+; doesn't work out very well; ideally we'd generate an error in this case, or at least
+; de-duplicate the list (perhaps using a bank bitmap as we parse) so we'd end up with a 16K
+; buffer in this example.
 .UseUserBankList
+{
     JSR GenerateErrorIfPrinterBufferNotEmpty
     JSR UnassignPrintBufferBanks
     INY
@@ -2723,8 +2726,9 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     ; SQUASH: This code is identical to prvPrintBufferBankListInitialised above, so we could
     ; just share it; we don't even fall through into it, so the label just needs moving.
 .prvPrintBufferBankListInitialised2
-    JSR L8D5A
+    JSR InitialiseBuffer
     JMP ShowBufferSizeAndLocation
+}
 
 ; SQUASH: Could we use this in some other places where we're initialising
 ; prvPrintBufferBankList? Even if we called this first and then overwrote the first entry it
@@ -2737,16 +2741,17 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     STA prvPrintBufferBankList + 3
     RTS
 
-.L8D46
+{
+.UsePrivateRam
     ; SQUASH: "JSR UnassignPrintBufferBanks" here, then delete the LDA #&FF:STA... below?
     LDA romselCopy:AND #maxBank:ORA #romselPrvEn:STA prvPrintBufferBankList
     LDA #&FF
     STA prvPrintBufferBankList + 1
     STA prvPrintBufferBankList + 2
     STA prvPrintBufferBankList + 3
-.L8D5A
-    LDA prvPrintBufferBankList:CMP #&FF:BEQ L8D46
-    AND #&F0:CMP #romselPrvEn:BNE BufferInSwr1
+.^InitialiseBuffer
+    LDA prvPrintBufferBankList:CMP #&FF:BEQ UsePrivateRam
+    AND #&F0:CMP #romselPrvEn:BNE BufferInSwr1 ; SFTODO: magic
     ; Buffer is in private RAM, not sideways RAM.
     JSR SanitisePrvPrintBufferStart:STA prvPrintBufferBankStart
     LDA #&B0:STA prvPrintBufferBankEnd ; SFTODO: mildly magic
@@ -2777,8 +2782,10 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA #&C0:STA prvPrintBufferBankEnd ; SFTODO: mildly magic
     STX prvPrintBufferBankCount
     JMP purgePrintBuffer
+}
 			
 .ShowBufferSizeAndLocation
+{
     ; Divide high and mid bytes of prvPrintBufferSize by 4 to get kilobytes.
     LDA prvPrintBufferSizeHigh:LSR A
     LDA prvPrintBufferSizeMid:ROR A:ROR A
@@ -2797,14 +2804,16 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     INY:CPY #MaxSwrBanks:BNE ShowBankLoop
 .AllBanksShown
     LDA #vduDel:JSR OSWRCH ; delete the last ',' that was just printed
-.^OSNEWLPrvDisExitAndClaimServiceCall
+.*OSNEWLPrvDisExitAndClaimServiceCall
     JSR OSNEWL
-.^PrvDisExitAndClaimServiceCall
+.*PrvDisExitAndClaimServiceCall
     JSR PrvDis
     JMP ExitAndClaimServiceCall
+}
 
 ; Return with C clear iff bank Y is an empty sideways RAM bank. X and Y are preserved.
 .TestForEmptySwrInBankY
+{
     TXA:PHA
     LDA romTypeTable,Y:BNE NotEmpty
     LDA prvRomTypeTableCopy,Y:BNE NotEmpty
@@ -2843,6 +2852,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 .CommonEnd
     PLA:TAX
     RTS
+}
 }
 
 ;Check if printer buffer is empty
@@ -10517,7 +10527,7 @@ ScreenStart = &3000
     STA prvPrintBufferSizeHigh
     STA prvPrintBufferFirstBankIndex
     STA prvPrintBufferBankCount
-    ; SFTODO: Following code is similar to chunk just below L8D5A, could
+    ; SFTODO: Following code is similar to chunk just below InitialiseBuffer, could
     ; it be factored out?
     JSR SanitisePrvPrintBufferStart:STA prvPrintBufferBankStart
     LDA #&B0:STA prvPrintBufferBankEnd ; SFTODO: Magic constant ("top of private RAM")
