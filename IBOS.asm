@@ -2856,29 +2856,25 @@ MaxSwrBanks = 4
     CLC
 .L8E4A
     TAX
+    ; Modify stacked flags to reflect current status of carry.
     PLA:BCS L8E54
-    AND_NOT flagC
-    PHA
-    JMP L8E57
+    AND_NOT flagC:PHA
+    JMP StackedFlagsModified
 .L8E54
-    ORA #flagC
-    PHA
-.L8E57
+    ORA #flagC:PHA
+.StackedFlagsModified
     TXA									;restore the contents of ROM Bank Y &8000
     EOR #&FF								;EOR with &FF
     TAX									;and write back to &8000
-    LDA #opcodeStaAbs
-    STA ramRomAccessSubroutineVariableInsn
+    LDA #opcodeStaAbs:STA ramRomAccessSubroutineVariableInsn
     TXA
     JSR ramRomAccessSubroutine
     PLP
     JMP L8E69
-			
 .L8E68
     SEC
 .L8E69
-    PLA
-    TAX
+    PLA:TAX
     RTS
 }
 
