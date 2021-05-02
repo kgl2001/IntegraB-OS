@@ -2659,7 +2659,7 @@ MaxSwrBanks = 4
 .NotOsMode0
     JSR convertIntegerDefaultDecimal:BCC ParsedOK
     LDA (transientCmdPtr),Y
-    CMP #'#':BEQ L8D07
+    CMP #'#':BEQ UseUserBankList
     CMP #'?':BNE PrvDisGenerateSyntaxError
     JMP L8DCA
 .PrvDisGenerateSyntaxError
@@ -2672,7 +2672,7 @@ MaxSwrBanks = 4
 .BankCountInA
     PHA
     JSR GenerateErrorIfPrinterBufferNotEmpty
-    JSR L8D37								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
+    JSR UnassignPrintBufferBanks								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
     LDX #0
     LDY #0								;starting at SWRAM bank 0
 .L8CD8
@@ -2690,7 +2690,7 @@ MaxSwrBanks = 4
 .L8CEB
     PLA
     BNE L8CF4
-    JSR L8D37								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
+    JSR UnassignPrintBufferBanks								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
     JMP L8D01
 			
 .L8CF4      TAX
@@ -2702,9 +2702,10 @@ MaxSwrBanks = 4
             BNE L8CF7
 .L8D01      JSR L8D5A
             JMP L8DCA
-			
+
+.UseUserBankList
 .L8D07      JSR GenerateErrorIfPrinterBufferNotEmpty
-            JSR L8D37								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
+            JSR UnassignPrintBufferBanks								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
             INY
             LDX #&00
             STX L00AC
@@ -2726,13 +2727,17 @@ MaxSwrBanks = 4
 			
 .L8D31      JSR L8D5A
             JMP L8DCA
-			
-.L8D37      LDA #&FF								;unassign RAM banks from *BUFFER
-            STA prvPrintBufferBankList
-            STA prvPrintBufferBankList + 1
-            STA prvPrintBufferBankList + 2
-            STA prvPrintBufferBankList + 3
-            RTS
+
+; SQUASH: Could we use this in some other places where we're initialising
+; prvPrintBufferBankList? Even if we called this first and then overwrote the first entry it
+; would potentially still save code.
+.UnassignPrintBufferBanks
+    LDA #&FF
+    STA prvPrintBufferBankList
+    STA prvPrintBufferBankList + 1
+    STA prvPrintBufferBankList + 2
+    STA prvPrintBufferBankList + 3
+    RTS
 
 .L8D46      LDA romselCopy
             AND #maxBank
