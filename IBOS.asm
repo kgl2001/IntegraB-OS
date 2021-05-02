@@ -3161,7 +3161,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA transientCmdPtr + 1:ADC #0:PHA
     TSX:LDA L0103,X ; get stacked flags from earlier PHP
     ASSERT flagC == 1:LSR A:BCS SwitchInShadow ; branch if C set in stacked flags
-    LDX #&80:JSR L8A7B ; SFTODO: magic
+    LDX #&80:JSR L8A7B ; push current RAM state and select video RAM
     JMP CallSubCommand
 			
 .SwitchInShadow
@@ -3179,7 +3179,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     PLA:TAY:PLA:TAX:JSR OSCLI
     PLP
     BCS CheckVAfterSwitchInShadow
-    LDX #&C0:JSR L8A7B ; SFTODO: magic
+    LDX #&C0:JSR L8A7B ; pop and select stacked shadow RAM state
 .ExitAndClaimServiceCallIndirect
     JMP ExitAndClaimServiceCall
 
