@@ -2832,58 +2832,64 @@ MaxSwrBanks = 4
             JMP ExitAndClaimServiceCall								;Exit Service Call
 
 ;Test for SWRAM			
-.L8E10      TXA
-            PHA
-            LDA romTypeTable,Y							;read ROM Type from ROM Type Table
-            BNE L8E68								;exit if not 0
-            LDA prvRomTypeTableCopy,Y							;read ROM Type from Private RAM backup
-            BNE L8E68								;exit if not 0
-            PHP
-            SEI
-            LDA #&00
-            STA ramRomAccessSubroutineVariableInsn + 1
-            LDA #&80
-            STA ramRomAccessSubroutineVariableInsn + 2
-            LDA #opcodeLdaAbs
-            STA ramRomAccessSubroutineVariableInsn
-            JSR ramRomAccessSubroutine							;switch to ROM Bank Y and read value of &8000 to A
-            EOR #&FF								;EOR with &FF
-            TAX									;and write back to &8000
-            LDA #opcodeStaAbs
-            STA ramRomAccessSubroutineVariableInsn
-            TXA
-            JSR ramRomAccessSubroutine							;switch to ROM Bank Y and write value of A to &8000
-            TAX
-            LDA #opcodeCmpAbs
-            STA ramRomAccessSubroutineVariableInsn
-            TXA
-            JSR ramRomAccessSubroutine							;switch to ROM Bank Y and compare value of &8000 with A
-            SEC
-            BNE L8E4A
-            CLC
-.L8E4A      TAX
-            PLA
-            BCS L8E54
-            AND #&FE
-            PHA
-            JMP L8E57
+.L8E10
+    TXA
+    PHA
+    LDA romTypeTable,Y							;read ROM Type from ROM Type Table
+    BNE L8E68								;exit if not 0
+    LDA prvRomTypeTableCopy,Y							;read ROM Type from Private RAM backup
+    BNE L8E68								;exit if not 0
+    PHP
+    SEI
+    LDA #&00
+    STA ramRomAccessSubroutineVariableInsn + 1
+    LDA #&80
+    STA ramRomAccessSubroutineVariableInsn + 2
+    LDA #opcodeLdaAbs
+    STA ramRomAccessSubroutineVariableInsn
+    JSR ramRomAccessSubroutine							;switch to ROM Bank Y and read value of &8000 to A
+    EOR #&FF								;EOR with &FF
+    TAX									;and write back to &8000
+    LDA #opcodeStaAbs
+    STA ramRomAccessSubroutineVariableInsn
+    TXA
+    JSR ramRomAccessSubroutine							;switch to ROM Bank Y and write value of A to &8000
+    TAX
+    LDA #opcodeCmpAbs
+    STA ramRomAccessSubroutineVariableInsn
+    TXA
+    JSR ramRomAccessSubroutine							;switch to ROM Bank Y and compare value of &8000 with A
+    SEC
+    BNE L8E4A
+    CLC
+.L8E4A
+    TAX
+    PLA
+    BCS L8E54
+    AND #&FE
+    PHA
+    JMP L8E57
 			
-.L8E54      ORA #&01
-            PHA
-.L8E57      TXA									;restore the contents of ROM Bank Y &8000
-            EOR #&FF								;EOR with &FF
-            TAX									;and write back to &8000
-            LDA #opcodeStaAbs
-            STA ramRomAccessSubroutineVariableInsn
-            TXA
-            JSR ramRomAccessSubroutine
-            PLP
-            JMP L8E69
+.L8E54
+    ORA #&01
+    PHA
+.L8E57
+    TXA									;restore the contents of ROM Bank Y &8000
+    EOR #&FF								;EOR with &FF
+    TAX									;and write back to &8000
+    LDA #opcodeStaAbs
+    STA ramRomAccessSubroutineVariableInsn
+    TXA
+    JSR ramRomAccessSubroutine
+    PLP
+    JMP L8E69
 			
-.L8E68      SEC
-.L8E69      PLA
-            TAX
-            RTS
+.L8E68
+    SEC
+.L8E69
+    PLA
+    TAX
+    RTS
 }
 
 ;Check if printer buffer is empty
