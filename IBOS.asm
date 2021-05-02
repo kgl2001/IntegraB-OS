@@ -2955,7 +2955,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     ; with our main RAM stub, but I haven't checked the code yet.
     JSR GenerateErrorIfPrinterBufferNotEmpty
     PLA:STA prvOsMode
-    JSR LBC98
+    JSR IbosSetUp
     JMP CommonEnd
 }
 			
@@ -4230,7 +4230,7 @@ tmp = &A8
 .shxInA     LDX #prvShx - prv83							;select SHX register (&08: On, &FF: Off)
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
 .softReset
-.L9719      JSR LBC98
+.L9719      JSR IbosSetUp
             LDX #userRegModeShadowTV							;get TV / MODE parameters
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
 	  ; Arithmetic shift A right 5 bits to get a sign-extended version of the TV setting in A.
@@ -10368,7 +10368,7 @@ ptr = &A8
 }
 
 {
-.^LBC98
+.^IbosSetUp ; SFTODO: Not a great name, but will do until I fully understand the contexts it's called in
     LDA #0:STA ramselCopy:STA ramsel ; clear ramselShen (SFTODO: and Prvs* too; is this safe? probably...)
 
     ; If we're in OSMODE 0, don't install vector handlers, set up the print buffer or enable
