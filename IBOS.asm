@@ -953,18 +953,12 @@ t = &80
     ; Elements 0-3 of ibosSubTbl table correspond to the four entries at ibosTbl.
     ibosSubTblHelpNoArgument = 4
     ibosSubTblConfigureList = 5
-    EQUW CmdRef
-    EQUB &00,&03							;&04 x IBOS/RTC Sub options - from offset &00
-    EQUW CmdRef
-    EQUB &04,&13							;&10 x IBOS/SYS Sub options - from offset &04
-    EQUW CmdRef
-    EQUB &14,&17							;&04 x IBOS/FSX Sub options - from offset &14
-    EQUW CmdRef
-    EQUB &18,&1F							;&08 x IBOS/SRAM Sub options - from offset &18
-    EQUW ibosRef
-    EQUB &00,&03							;&04 x IBOS Options - from offset &00
-    EQUW ConfRef
-    EQUB &00,&10							;&11 x CONFIGURE Parameters - from offset &00
+    EQUW CmdRef:EQUB &00,&03							;&04 x IBOS/RTC Sub options - from offset &00
+    EQUW CmdRef:EQUB &04,&13							;&10 x IBOS/SYS Sub options - from offset &04
+    EQUW CmdRef:EQUB &14,&17							;&04 x IBOS/FSX Sub options - from offset &14
+    EQUW CmdRef:EQUB &18,&1F							;&08 x IBOS/SRAM Sub options - from offset &18
+    EQUW ibosRef:EQUB &00,&03							;&04 x IBOS Options - from offset &00
+    EQUW ConfRef:EQUB &00,&10							;&11 x CONFIGURE Parameters - from offset &00
 
 ; SFTODO: Get rid of the "sub-" prefix here?
 ; Search the keyword sub-table of the reference table pointed to by YX (typically initialised
@@ -1053,61 +1047,39 @@ MinimumAbbreviationLength = 3
 .DynamicSyntaxGenerationForIbosSubTblA
 {
     PHA
-    ; SFTODO: The following seems needlessly long-winded; I wonder if
-    ; this is a legacy of an earlier version of the code where the
-    ; caller did JSR ibosRef *or something else* (note that we have some
-    ; redundant calls to JSR ibosRef in IBOS 1.20 before calling this
-    ; subroutine). As it is, I think we could replace the following with
-    ; something like: PHA:ASL A:ASL A:TAY:LDA ibosSubTbl,Y:STA
-    ; transientTblPtr:LDA ibosSubTbl+1,Y:STA transientTblPtr+1:LDA
-    ; ibosSubTbl+2,Y:STA L00A8:LDA ibosSubTbl+3,Y:STA L00A9 If we
-    ; rejigged the order of the data at ibosSubTbl we might be able to
-    ; use a loop to do those copies. Actually we don't really even need
-    ; to populate transientTblPtr, do we? We want the values in X and Y
-    ; really. Anyway, you get the idea.
-    JSR ibosRef
-    STX transientTblPtr
-    STY transientTblPtr + 1
-    LDY #CmdTblPtrOffset
-    LDA (transientTblPtr),Y
-    TAX
-    INY
-    LDA (transientTblPtr),Y
-    STA transientTblPtr + 1
-    STX transientTblPtr
+
+    ; SQUASH: The following seems needlessly long-winded; it is probably a legacy of an earlier
+    ; version where this didn't just operate on ibosRef (note that some callers redundantly
+    ; call "JSR ibosRef" before calling this subroutine). We could rewrite it as:
+    ;     ASL A:ASL A:TAY
+    ;     LDA ibosSubTbl    ,Y:STA transientTblPtr
+    ;     LDA ibosSubTbl + 1,Y:STA transientTblPtr + 1
+    ;     LDA ibosSubTbl + 2,Y:STA L00A8
+    ;     LDA ibosSubTbl + 3,Y:STA L00A9
+
+    ; Set transientTblPtr = transientTblPtr[CmdTblPtrOffset].
+    JSR ibosRef:STX transientTblPtr:STY transientTblPtr + 1
+    LDY #CmdTblPtrOffset:LDA (transientTblPtr),Y:TAX
+    INY:LDA (transientTblPtr),Y:STA transientTblPtr + 1
+    STX transientTblPtr ; SQUASH: Just STA in place of TAX above
+
     ; Multiply A-on-entry by 4 and copy the the four bytes starting at
     ; ibosSubTbl+4*A-on-entry into transientTblPtr and L00A8/A9
-    PLA
-    PHA
-    ASL A
-    ASL A
-    TAY
-    LDA (transientTblPtr),Y
-    PHA
-    INY
-    LDA (transientTblPtr),Y
-    PHA
-    INY
-    LDA (transientTblPtr),Y
-    STA L00A8
-    INY
-    LDA (transientTblPtr),Y
-    STA L00A9
-    PLA
-    STA transientTblPtr + 1
-    PLA
-    STA transientTblPtr
-    ; Call DynamicSyntaxGenerationForAUsingYX on the table and for the range of entries in that table identified by ibosSubTbl+A*4.
-.L83D9
-    LDX transientTblPtr
-    LDY transientTblPtr + 1
+    PLA:PHA:ASL A:ASL A:TAY ; Set Y = A-on-entry * 4
+    LDA (transientTblPtr),Y:PHA
+    INY:LDA (transientTblPtr),Y:PHA
+    INY:LDA (transientTblPtr),Y:STA L00A8
+    INY:LDA (transientTblPtr),Y:STA L00A9
+    PLA:STA transientTblPtr + 1
+    PLA:STA transientTblPtr
+
+    ; Call DynamicSyntaxGenerationForAUsingYX on the table and for the range of entries L00A8 (inclusive) to L00A9 (exclusive0
+.Loop
+    LDX transientTblPtr:LDY transientTblPtr + 1
     LDA L00A8
-    CLC
-    CLV
-    JSR DynamicSyntaxGenerationForAUsingYX
-    INC L00A8
-    CMP L00A9
-    BCC L83D9
+    CLC:CLV:JSR DynamicSyntaxGenerationForAUsingYX
+    INC L00A8:CMP L00A9:BCC Loop
+
     PLA
     RTS
 }
