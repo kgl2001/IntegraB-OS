@@ -1146,7 +1146,7 @@ MinimumAbbreviationLength = 3
             LDA (transientTblPtr),Y
             TAY									;save start of *command lookup table address to X & Y
             PLA									;recover stack value
-            JSR emitEntryAFromTableYX								;write *command to screen???
+            JSR EmitEntryAFromTableYX								;write *command to screen???
             LDA #vduTab
             JSR emitDynamicSyntaxCharacter
 
@@ -1163,7 +1163,7 @@ MinimumAbbreviationLength = 3
             LDA (transientTblPtr),Y
             TAY									;save start of *command parameters lookup table to X & Y
             PLA									;recover stack value
-            JSR emitEntryAFromTableYX								;write *command parameters to screen???
+            JSR EmitEntryAFromTableYX								;write *command parameters to screen???
             LDA #vduCr
             JSR emitDynamicSyntaxCharacter
 
@@ -1178,7 +1178,7 @@ MinimumAbbreviationLength = 3
 
 ; Emit the A-th entry of the string table pointed to by YX, recursively expanding top-bit set
 ; tokens %1abcdefg as the %0abcdefg-th entry of the same string table.
-.emitEntryAFromTableYX
+.EmitEntryAFromTableYX
 {
 ; All this zero page workspace is preserved across calls.
 TableEntryPtr = &A8 ; 2 bytes
