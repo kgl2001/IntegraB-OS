@@ -1088,16 +1088,16 @@ LastEntry = &A9
 			
 {
 .^CmdRefDynamicSyntaxGenerationForTransientCmdIdx
-.L83EC      JSR CmdRef								;get start of *command pointer look up table address X=&26, Y=&80
-            JMP common
+    JSR CmdRef
+    JMP common
 			
-; SFTODO: Use a different local label instead of transientTblPtr in here? I am not sure what would be clearest as still working through code...
 .^ConfRefDynamicSyntaxGenerationForTransientCmdIdx
-.L83F2      JSR ConfRef
-.common     CLC
-            BIT rts									;set V
-            LDA transientCmdIdx							;set A=transientCmdIdx ready to fall through into DynamicSyntaxGenerationForAUsingYX
-	  FALLTHROUGH_TO DynamicSyntaxGenerationForAUsingYX
+    JSR ConfRef
+.common
+    CLC
+    BIT rts ; set V
+    LDA transientCmdIdx
+    FALLTHROUGH_TO DynamicSyntaxGenerationForAUsingYX
 }
 
 ; Generate a syntax message using entry A of the table (e.g. ConfTbl) pointed to by YX.
@@ -1109,6 +1109,7 @@ LastEntry = &A9
 ;                    V set => no space prefix, don't emit parameters
 .DynamicSyntaxGenerationForAUsingYX
 {
+; SFTODO: Use a different local label instead of transientTblPtr in here? I am not sure what would be clearest as still working through code...
 .L83FB      PHA									;save A-on-entry
             LDA transientTblPtr + 1
             PHA									;save current contents of &AB
