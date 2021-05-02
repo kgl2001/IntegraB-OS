@@ -10369,37 +10369,28 @@ ptr = &A8
 
 {
 .^LBC98
-    LDA #&00
-    STA ramselCopy
-    STA ramsel
-    LDX #prvOsMode - prv83								;select OSMODE
-    JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-    BEQ DisableShadow
+    LDA #0:STA ramselCopy:STA ramsel ; clear ramselShen (SFTODO: and Prvs* too; is this safe? probably...)
+
+    ; If we're in OSMODE 0, don't install vector handlers, set up the print buffer or enable
+    ; shadow RAM.
+    LDX #prvOsMode - prv83:JSR readPrivateRam8300X:BEQ OsMode0
     JSR installOSPrintBufStub
-    PHP
-    SEI
-    ; Save the parent values of BYTEV, WORDV, WRCHV and RDCHV at
-    ; parentVectorTbl1 and install our handlers at osPrintBuf+n*3 where
-    ; n=0 for BYTEV, 1 for WORDV, etc.
-    LDX #&00
+
+    ; Save the parent values of BYTEV, WORDV, WRCHV and RDCHV at parentVectorTbl1 and install
+    ; our handlers at osPrintBuf+n*3 where n=0 for BYTEV, 1 for WORDV, etc.
+    PHP:SEI
+    LDX #0
     LDY #lo(osPrintBuf)
-.LBCB0
-    LDA BYTEVL,X
-    STA parentVectorTbl1,X
-    TYA
-    STA BYTEVL,X
-    LDA BYTEVH,X
-    STA parentVectorTbl1+1,X
-    LDA #hi(osPrintBuf)
-    STA BYTEVH,X
-    INY
-    INY
-    INY
-    INX
-    INX
-    CPX #&08
-    BNE LBCB0
+.Loop
+    LDA BYTEVL,X:STA parentVectorTbl1,X
+    TYA:STA BYTEVL,X
+    LDA BYTEVH,X:STA parentVectorTbl1+1,X
+    LDA #hi(osPrintBuf):STA BYTEVH,X
+    INY:INY:INY
+    INX:INX
+    CPX #8:BNE Loop
     PLP
+
     JSR initPrintBuffer
     LDA lastBreakType:BNE DisableShadow ; branch if not soft reset
     LDX #prvSFTODOMODE - prv83:JSR readPrivateRam8300X:BPL DisableShadow
@@ -10408,6 +10399,8 @@ ptr = &A8
     LDA vduStatus:ORA #vduStatusShadow:STA vduStatus
     LDA #modeChangeStateNone:STA modeChangeState
     RTS
+
+.OsMode0
 .^DisableShadow
     LDA #0:STA ramselCopy:STA ramsel ; clear ramselShen (SFTODO: and Prvs* too; is this safe? probably...)
     LDA vduStatus:AND_NOT vduStatusShadow:STA vduStatus
