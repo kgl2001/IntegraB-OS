@@ -10368,7 +10368,7 @@ ptr = &A8
 }
 
 {
-.^IbosSetUp ; SFTODO: Not a great name, but will do until I fully understand the contexts it's called in
+.^IbosSetUp ; SFTODO: Not a great name, but will do until I fully understand the contexts it's called in - note this doesn't install *all* vectors, only the ones in Tbl1, FWIW
     LDA #0:STA ramselCopy:STA ramsel ; clear ramselShen (SFTODO: and Prvs* too; is this safe? probably...)
 
     ; If we're in OSMODE 0, don't install vector handlers, set up the print buffer or enable
