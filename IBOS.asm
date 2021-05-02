@@ -2683,44 +2683,50 @@ MaxSwrBanks = 4
     INY:CPY #maxBank + 1:BNE L8CD8
 .MaxBanksFound
     PLA
-    BNE L8CF4
+    BNE BankCountNot0
     JSR UnassignPrintBufferBanks
     JMP L8D01
-			
-.L8CF4      TAX
-            LDA #&FF
-.L8CF7      CPX #&04
-            BCS L8D01
-            STA prvPrintBufferBankList,X
-            INX
-            BNE L8CF7
-.L8D01      JSR L8D5A
-            JMP L8DCA
+
+.BankCountNot0
+    TAX
+    LDA #&FF
+.L8CF7
+    CPX #&04
+    BCS L8D01
+    STA prvPrintBufferBankList,X
+    INX
+    BNE L8CF7
+.L8D01
+    JSR L8D5A
+    JMP L8DCA
 
 .UseUserBankList
-.L8D07      JSR GenerateErrorIfPrinterBufferNotEmpty
-            JSR UnassignPrintBufferBanks								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
-            INY
-            LDX #&00
-            STX L00AC
-.L8D12      JSR parseBankNumber
-            STY L00AD
-            BCS L8D31
-            TAY
-            JSR TestForEmptySwrInBankY								;test for SWRAM at bank Y
-            TYA
-            BCS L8D2C
-            LDX L00AC
-            STA prvPrintBufferBankList,X
-            INX
-            STX L00AC
-            CPX #&04
-            BEQ L8D31
-.L8D2C      LDY L00AD
-            JMP L8D12
+    JSR GenerateErrorIfPrinterBufferNotEmpty
+    JSR UnassignPrintBufferBanks								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
+    INY
+    LDX #&00
+    STX L00AC
+.L8D12
+    JSR parseBankNumber
+    STY L00AD
+    BCS L8D31
+    TAY
+    JSR TestForEmptySwrInBankY								;test for SWRAM at bank Y
+    TYA
+    BCS L8D2C
+    LDX L00AC
+    STA prvPrintBufferBankList,X
+    INX
+    STX L00AC
+    CPX #&04
+    BEQ L8D31
+.L8D2C
+    LDY L00AD
+    JMP L8D12
 			
-.L8D31      JSR L8D5A
-            JMP L8DCA
+.L8D31
+    JSR L8D5A
+    JMP L8DCA
 
 ; SQUASH: Could we use this in some other places where we're initialising
 ; prvPrintBufferBankList? Even if we called this first and then overwrote the first entry it
