@@ -2687,11 +2687,11 @@ MaxSwrBanks = 4
     JMP prvPrintBufferBankListInitialised
 .BankCountNot0
     TAX
-    LDA #&FF
-.SFTODOLOOP
+    LDA #&FF ; SFTODO: named constant for this (in lots of places)?
+.DisableUnwantedBankLoop
     CPX #MaxSwrBanks:BCS prvPrintBufferBankListInitialised
     STA prvPrintBufferBankList,X
-    INX:BNE SFTODOLOOP ; always branch
+    INX:BNE DisableUnwantedBankLoop ; always branch
 .prvPrintBufferBankListInitialised
     JSR L8D5A
     JMP L8DCA
