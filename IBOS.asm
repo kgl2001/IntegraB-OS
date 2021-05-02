@@ -973,10 +973,7 @@ t = &80
 ;     C set => no match found
 .SearchKeywordTable
 {
-KeywordLength = L00AC
-; SFTODO: There's more than meets the eye to MinimumAbbreviationLength; at least on b-em, IBOS
-; 1.20 *does* allow "*ST." for *STATUS and "*BU.?" for "*BUFFER ?", but it doesn't allow
-; "*CO." for *CONFIGURE.
+KeywordLength = &AC
 MinimumAbbreviationLength = 3 ; including the "." which indicates an abbreviation
 
     PHA
@@ -10733,14 +10730,15 @@ SAVE "IBOS-01.rom", start, end
 ; remember!), it might be nice to tweak the final disassembly to fit entirely in
 ; 95 columns.
 
-; SFTODO: Enhancement idea - allow "*CO." as an abbreviation for *CONFIGURE. The Master accepts
-; this, and it does trip me up when using IBOS.
-
 ; SFTODO: Minor inconsistency between "PrintBuffer" and "PrinterBuffer" in various labels
 
 ; SFTODO: *If* GXR has some incompatibilities with shadow mode on Integra-B, we could produce a
 ; patched GXR for it - I already have a half-decent disassembly at
 ; https://github.com/ZornsLemma/GXR.
+
+; It would be nice if "*CO." could be used as an abbreviation for *CONFIGURE, as on the Master,
+; but OS 1.20 interprets this as an abbreviate for "*CODE" and IBOS never gets a chance to see
+; it. Short of installing a USERV handler, there isn't much we can do about this.
 
 ;; Local Variables:
 ;; fill-column: 95
