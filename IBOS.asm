@@ -3177,7 +3177,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDX #&80:JSR L8A7B ; push current RAM state and select video RAM
     JMP CallSubCommand
 			
-.SwitchInShadow
+.SwitchInShadow ; SFTODO: Should maybe change this and related labels, since *S* really does "weird stuff"
     LDA #4:JSR SetOsModeA
     LDA #0:STA osShadowRamFlag
     LDX #prvShx - prv83:LDA #&FF:JSR writePrivateRam8300X ; set SHX off SFTODO: magic
