@@ -925,10 +925,11 @@ t = &80
     RTS
 
     EQUB &04								;Number of IBOS options
-    ASSERT P% - ibosRef = KeywordTableOffset
+    ASSERT P% = ibosRef + KeywordTableOffset
     EQUW ibosTbl							;Start of IBOS options lookup table
+    ASSERT P% = ibosRef + CmdTblParOffset
     EQUW ibosParTbl							;Start of IBOS options parameters lookup table (there are no parameters!)
-    ASSERT P% - ibosRef = CmdTblPtrOffset
+    ASSERT P% = ibosRef + CmdTblPtrOffset
     EQUW ibosSubTbl							;Start of IBOS sub option reference lookup table
 
 .ibosTbl
