@@ -2932,9 +2932,8 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     JMP CommonEnd
 			
 .CurrentlyInOsMode0
-    ; SFTODO: I *assume* we have to check the printer buffer isn't empty here because we're
-    ; using the OS printer buffer in OSMODE 0, and entering a non-0 OSMODE will overwrite that
-    ; with our main RAM stub, but I haven't checked the code yet.
+    ; We have to check the printer buffer is empty here because OSMODE 0 uses the OS printer
+    ; buffer, which will be overwritten by our vector redirection stub in other OSMODEs.
     JSR GenerateErrorIfPrinterBufferNotEmpty
     PLA:STA prvOsMode
     JSR IbosSetUp
@@ -3146,64 +3145,67 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ;execute '*S*' command
 ;switches to shadow, executes command, then switches back out of shadow?
 .^commandS
-.L9083      CLV
-            SEC
-            BCS L9088
+    CLV ; SFTODO: is this needed? I just find it odd there's no CLV or "set V" at commandX, although *perhaps* we just know V has a certain value
+    SEC:BCS L9088 ; always branch
 
 ;execute '*X*' command
 ;switches from shadow, executes command, then switches back to shadow
 .^commandX
-.L9087      CLC
-.L9088      PHP
-            INY
-            INY
-            JSR findNextCharAfterSpace								;find next character. offset stored in Y
-            CLC
-            TYA
-            ADC L00A8
-            PHA
-            LDA L00A9
-            ADC #&00
-            PHA
-            TSX
-            LDA L0103,X
-            LSR A
-            BCS L90A7
-            LDX #&80
-            JSR L8A7B
-            JMP L90DE
+    CLC
+.L9088
+    PHP
+    INY:INY ; skip "S*" or "X*"
+    JSR findNextCharAfterSpace
+    CLC
+    TYA
+    ADC transientCmdPtr
+    PHA
+    LDA transientCmdPtr + 1
+    ADC #0
+    PHA
+    TSX
+    LDA L0103,X
+    LSR A
+    BCS L90A7
+    LDX #&80
+    JSR L8A7B
+    JMP L90DE
 			
-.L90A7      LDA #&04
-            JSR SetOsModeA
-            LDA #0:STA osShadowRamFlag ; SFTODO: This seems odd, but I haven't worked through this code yet
-            LDX #&3D								;select SHX register
-            LDA #&FF								;store &FF to &833D (&08: SHX On, &FF: SHX Off)
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
-            LDA #vduSetMode:JSR OSWRCH:LDA currentMode:JSR OSWRCH
-            BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
-            BPL L90DE
-            JSR disableTube
-            TSX
-            LDA L0103,X
-            ORA #&40
-            STA L0103,X
-            LDA romselCopy
-            AND #maxBank
-            STA currentLanguageRom
-            JSR setBrkv
-.L90DE      PLA
-            TAY
-            PLA
-            TAX
-            JSR OSCLI
-            PLP
-            BCS L90F0
-            LDX #&C0
-            JSR L8A7B
-.L90ED      JMP ExitAndClaimServiceCall								;Exit Service Call
+.L90A7
+    LDA #&04
+    JSR SetOsModeA
+    LDA #0:STA osShadowRamFlag ; SFTODO: This seems odd, but I haven't worked through this code yet
+    LDX #&3D								;select SHX register
+    LDA #&FF								;store &FF to &833D (&08: SHX On, &FF: SHX Off)
+    JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+    LDA #vduSetMode:JSR OSWRCH:LDA currentMode:JSR OSWRCH
+    BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
+    BPL L90DE
+    JSR disableTube
+    TSX
+    LDA L0103,X
+    ORA #&40
+    STA L0103,X
+    LDA romselCopy
+    AND #maxBank
+    STA currentLanguageRom
+    JSR setBrkv
+.L90DE
+    PLA
+    TAY
+    PLA
+    TAX
+    JSR OSCLI
+    PLP
+    BCS L90F0
+    LDX #&C0
+    JSR L8A7B
+.L90ED
+    JMP ExitAndClaimServiceCall								;Exit Service Call
 
-.L90F0      BVC L90ED
-            FALLTHROUGH_TO nle
+.L90F0
+    BVC L90ED
+    FALLTHROUGH_TO nle
 }
 
 ;*NLE Command
