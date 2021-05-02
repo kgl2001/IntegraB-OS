@@ -2698,23 +2698,31 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     JSR L8D5A
     JMP L8DCA
 
+    ; ENHANCE: It's probably more trouble than it's worth, but at the moment something like
+    ; "*BUFFER # 4,4,4,4" will set up a "64K" buffer using bank 4 four times, which probably
+    ; doesn't work out very well; ideally we'd generate an error in this case, or at least
+    ; de-duplicate the list (perhaps using a bank bitmap as we parse) so we'd end up with a 16K
+    ; buffer in this example.
 .UseUserBankList
     JSR GenerateErrorIfPrinterBufferNotEmpty
     JSR UnassignPrintBufferBanks
     INY
     LDX #0:STX TmpBankCount
 .ParseUserBankListLoop
-    JSR parseBankNumber:STY TmpTransientCmdPtrOffset:BCS BankNumberParseError
+    JSR parseBankNumber:STY TmpTransientCmdPtrOffset
+    BCS prvPrintBufferBankListInitialised2 ; stop parsing if bank number is invalid
     TAY:JSR TestForEmptySwrInBankY:TYA:BCS NotEmptySwrBank
     ; SQUASH: INC TmpBankCount:LDX TmpBankCount:STA prvPrintBufferBankList-1,X:...:CPX #MaxSwrBanks+1?
     ; Or initialise TmpBankCount to &FF?
     LDX TmpBankCount:STA prvPrintBufferBankList,X:INX:STX TmpBankCount
-    CPX #MaxSwrBanks:BEQ BankNumberParseError ; SFTODO: maybe change label name given this use
+    CPX #MaxSwrBanks:BEQ prvPrintBufferBankListInitialised2 ; SFTODO: maybe change label name given this use
 .NotEmptySwrBank
     LDY TmpTransientCmdPtrOffset
     JMP ParseUserBankListLoop
-			
-.BankNumberParseError
+
+    ; SQUASH: This code is identical to prvPrintBufferBankListInitialised above, so we could
+    ; just share it; we don't even fall through into it, so the label just needs moving.
+.prvPrintBufferBankListInitialised2
     JSR L8D5A
     JMP L8DCA
 
@@ -2759,14 +2767,11 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     STA prvPrintBufferSizeHigh
     TAX
 .L8D99
-    LDA prvPrintBufferBankList,X
-    BMI L8DB5
+    LDA prvPrintBufferBankList,X:BMI L8DB5
     CLC:LDA prvPrintBufferSizeMid:ADC #&40:STA prvPrintBufferSizeMid ; SFTODO: mildly magic
     ; SQUASH: INCCS prvprintBufferSizeHigh
     LDA prvPrintBufferSizeHigh:ADC #0:STA prvPrintBufferSizeHigh
-    INX
-    CPX #&04
-    BNE L8D99
+    INX:CPX #MaxSwrBanks:BNE L8D99
     DEX
 .L8DB5
     LDA #&80 ; SFTODO: mildly magic
