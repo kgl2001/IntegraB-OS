@@ -2672,7 +2672,7 @@ MaxSwrBanks = 4
 .BankCountInA
     PHA
     JSR GenerateErrorIfPrinterBufferNotEmpty
-    JSR UnassignPrintBufferBanks								;unassign RAM banks from *BUFFER by setting prv83+&18 thru prv83+&1A to &FF
+    JSR UnassignPrintBufferBanks
     LDX #0
     LDY #0								;starting at SWRAM bank 0
 .L8CD8
