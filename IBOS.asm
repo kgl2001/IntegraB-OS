@@ -3438,7 +3438,7 @@ ENDIF
     RTS
 }
 
-.setYToTransientCmdIdxTimes3
+.SetYToTransientCmdIdxTimes3
     LDA transientCommandIndex
     ASL A
     ADC transientCommandIndex
@@ -3446,24 +3446,19 @@ ENDIF
     RTS
 
 .GetShiftedBitMask
-{
-.L93CA      LDA ConfParBit+ConfParBitBitCountOffset,Y
-            AND #&7F ; SFTODO: so what does b7 signify?
-            TAX
-            LDA bitMaskTable,X
-            STA transientConfigBitMask ; SFTODO: use PHA?
-            LDA ConfParBit+ConfParBitStartBitOffset,Y
-            TAX ; SFTODO: we could just do LDX ...,Y in previous instruction, couldn't we?
-            LDA transientConfigBitMask ; SFTODO: use PLA?
-            JSR ShiftALeftByX
-            STA transientConfigBitMask
-            RTS
-}
+    LDA ConfParBit + ConfParBitBitCountOffset,Y
+    AND #&7F ; SFTODO: so what does b7 signify?
+    TAX:LDA bitMaskTable,X:STA transientConfigBitMask ; SQUASH: use PHA?
+    LDA ConfParBit+ConfParBitStartBitOffset,Y:TAX ; SQUASH: we could just do LDX ...,Y
+    LDA transientConfigBitMask ; SQUASH: use PLA?
+    JSR ShiftALeftByX
+    STA transientConfigBitMask
+    RTS
 
 .setConfigValue
 {
 .L93E1      STA transientConfigPrefix
-.^L93E3     JSR setYToTransientCmdIdxTimes3
+.^L93E3     JSR SetYToTransientCmdIdxTimes3
             JSR GetShiftedBitMask
             LDA ConfParBit+1,Y
             TAX ; SQUASH: LDX blah,Y?
@@ -3484,7 +3479,7 @@ ENDIF
 
 .getConfigValue
 {
-.L940A      JSR setYToTransientCmdIdxTimes3
+.L940A      JSR SetYToTransientCmdIdxTimes3
             JSR GetShiftedBitMask
             LDA ConfParBit+ConfParBitUserRegOffset,Y
             TAX ; SQUASH: can we just use LDX blah,Y to avoid this?
@@ -3704,7 +3699,7 @@ ENDIF
             EOR transientConfigPrefixSFTODO
             JMP L932E
 			
-.Conf6Write JSR setYToTransientCmdIdxTimes3
+.Conf6Write JSR SetYToTransientCmdIdxTimes3
             LDA ConfParBit+2,Y
             ASL A
             LDA #&00
