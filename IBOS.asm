@@ -10242,7 +10242,7 @@ ScreenStart = &3000
     JSR pageInPrvs81
     PHA
     TSX
-    JSR checkPrintBufferFull:BCC PrintBufferNotFull
+    JSR CheckPrintBufferFull:BCC PrintBufferNotFull
     ; Return to caller with carry set to indicate insertion failed.
     LDA L0107,X:ORA #flagC:STA L0107,X ; modify stacked flags so C is set
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
@@ -10269,7 +10269,7 @@ ScreenStart = &3000
     JSR pageInPrvs81
     PHA
     TSX
-    JSR checkPrintBufferEmpty:BCC PrintBufferNotEmpty
+    JSR CheckPrintBufferEmpty:BCC PrintBufferNotEmpty
     ; SQUASH: Some similarity with InsvHandler here, could we factor out common code?
     LDA L0107,X:ORA #flagC:STA L0107,X ; modify stacked flags so C is set
     JMP RestoreRamselClearPrvenReturnFromVectorHandler ; SQUASH: BNE ; always branch
@@ -10425,40 +10425,24 @@ ScreenStart = &3000
     RTS
 }
 
-; SFTODO: This has only one caller
+{
 ; Return with carry set if and only if the printer buffer is full.
-.checkPrintBufferFull
-{
-.LBEE9      LDA prvPrintBufferFreeLow
-            ORA prvPrintBufferFreeMid
-            ORA prvPrintBufferFreeHigh
-            BEQ LBEF6
-            CLC
-            RTS
-			
-.LBEF6      SEC
-            RTS
-}
+; SQUASH: This has only one caller
+.^CheckPrintBufferFull
+    LDA prvPrintBufferFreeLow:ORA prvPrintBufferFreeMid:ORA prvPrintBufferFreeHigh:BEQ SecRts
+    CLC:RTS
+.SecRts
+    SEC:RTS
 
-; SFTODO: This has only one caller
 ; Return with carry set if and only if the printer buffer is empty.
-.checkPrintBufferEmpty
-{
-.LBEF8      LDA prvPrintBufferFreeLow
-            CMP prvPrintBufferSizeLow
-            BNE LBF12
-            LDA prvPrintBufferFreeMid
-            CMP prvPrintBufferSizeMid
-            BNE LBF12
-            LDA prvPrintBufferFreeMid
-            CMP prvPrintBufferSizeMid
-            BNE LBF12
-            SEC
-            RTS
-
-; SFTODO: We could share this code with the tail of LBEE9 to save two bytes.
-.LBF12      CLC
-            RTS
+; SQUASH: This has only one caller
+.^CheckPrintBufferEmpty
+    LDA prvPrintBufferFreeLow:CMP prvPrintBufferSizeLow:BNE ClcRts
+    LDA prvPrintBufferFreeMid:CMP prvPrintBufferSizeMid:BNE ClcRts
+    LDA prvPrintBufferFreeMid:CMP prvPrintBufferSizeMid:BNE ClcRts
+    SEC:RTS
+.ClcRts
+    CLC:RTS ; SQUASH: Re-use the CLC:RTS just above.
 }
 
 ; SFTODO: This currently only has one caller, so could be inlined. Although
