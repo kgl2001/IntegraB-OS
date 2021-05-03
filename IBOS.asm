@@ -9248,11 +9248,11 @@ column = prvC
 
 ; SFTODO: Mostly un-decoded
 ; SFTODO: *Roughly* speaking this is copying provOswordBlockCopy+1 bytes of data from prvDateBuffer to the 32-bit address at prvOswordBlockOrigAddr+4 in a tube-aware way, although we also have the option use b7 of prvOswordBlockCopy+7 to explicitly ignore tube.
+.CopyPrvDateBuffer ; SFTODO: probably not ideal name but will do for now
 {
 Ptr = &A8
 AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 
-.^CopyPrvDateBuffer
     XASSERT_USE_PRV1
     ; SFTODO: Is the next line technically incorrect? We should probably only write to the host
     ; if the high word is &FFFF, not just if the high bit of the high word is set.
