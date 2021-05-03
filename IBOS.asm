@@ -1698,6 +1698,7 @@ Base = &B8
 NegateFlag = &B9
 OriginalCmdPtrY = &BA
 FirstDigitCmdPtrY = &BB
+SFTODOOTHER = &B4 ; 4 bytes
 
 ; SQUASH: Could we share this fragment?
 .NothingToConvert
@@ -1740,17 +1741,17 @@ FirstDigitCmdPtrY = &BB
 .ValidDigit
     TAX
     LDA ConvertIntegerResult
-    STA L00B4
+    STA SFTODOOTHER
     STX ConvertIntegerResult
     LDX #&00
     LDA ConvertIntegerResult + 1
-    STA L00B5
+    STA SFTODOOTHER + 1
     STX ConvertIntegerResult + 1
     LDA ConvertIntegerResult + 2
-    STA L00B6
+    STA SFTODOOTHER + 2
     STX ConvertIntegerResult + 2
     LDA ConvertIntegerResult + 3
-    STA L00B7
+    STA SFTODOOTHER + 3
     STX ConvertIntegerResult + 3
     LDA Base
     LDX #&08
