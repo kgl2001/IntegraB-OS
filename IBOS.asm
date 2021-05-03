@@ -716,9 +716,10 @@ MACRO PRVDIS ; SFTODO: Rename to indicate this is PRVS1 only? Also perhaps put a
     JSR PrvDis
 ENDMACRO
 
-ORG	&8000
-GUARD	&C000
-.start
+start = &8000
+end = &C000
+ORG	start
+GUARD	end
 
 ;ROM Header Information
 .romHeader	JMP language							;00: Language entry point
@@ -2495,7 +2496,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JMP PrintOnOffOSNEWLExitSC
 
 .purgeNow   PRVEN 								;switch in private RAM
-            JSR purgePrintBuffer
+            JSR PurgePrintBuffer
             JMP PrvDisExitAndClaimServiceCall
 
 .purgeOnOrOff
@@ -2622,7 +2623,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     STA prvPrintBufferSizeLow
     STA prvPrintBufferSizeHigh
     SEC:LDA prvPrintBufferBankEnd:SBC prvPrintBufferBankStart:STA prvPrintBufferSizeMid
-    JMP purgePrintBuffer
+    JMP PurgePrintBuffer
 
 .BufferInSwr1
     LDA #0
@@ -2642,7 +2643,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA #0:STA prvPrintBufferFirstBankIndex
     LDA #&C0:STA prvPrintBufferBankEnd ; SFTODO: mildly magic
     STX prvPrintBufferBankCount
-    JMP purgePrintBuffer
+    JMP PurgePrintBuffer
 }
 			
 .ShowBufferSizeAndLocation
@@ -10321,7 +10322,7 @@ ScreenStart = &3000
     TSX:LDA L0107,X:AND #flagV:BEQ Count ; test V in stacked flags from caller
     ; We're purging the buffer.
     LDX #prvPrintBufferPurgeOption - prv83:JSR ReadPrivateRam8300X:BEQ PurgeOff
-    JSR purgePrintBuffer
+    JSR PurgePrintBuffer
 .PurgeOff
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
 
@@ -10368,7 +10369,7 @@ ScreenStart = &3000
     STA prvPrintBufferBankList + 2
     STA prvPrintBufferBankList + 3
 .softReset
-    JSR purgePrintBuffer
+    JSR PurgePrintBuffer
     PRVDIS
     ; Copy the rom access subroutine used by the printer buffer from ROM into RAM.
     LDY #romRomAccessSubroutineEnd - romRomAccessSubroutine - 1
@@ -10547,25 +10548,14 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
             JMP ramRomAccessSubroutine
 }
 
-.purgePrintBuffer
-{
-.LBF90      LDA #&00
-            STA prvPrintBufferWritePtr
-            STA prvPrintBufferReadPtr
-            LDA prvPrintBufferBankStart
-            STA prvPrintBufferWritePtr + 1
-            STA prvPrintBufferReadPtr + 1
-            LDA prvPrintBufferFirstBankIndex
-            STA prvPrintBufferWriteBankIndex
-            STA prvPrintBufferReadBankIndex
-            LDA prvPrintBufferSizeLow
-            STA prvPrintBufferFreeLow
-            LDA prvPrintBufferSizeMid
-            STA prvPrintBufferFreeMid
-            LDA prvPrintBufferSizeHigh
-            STA prvPrintBufferFreeHigh
-            RTS
-}
+.PurgePrintBuffer
+    LDA #0:STA prvPrintBufferWritePtr:STA prvPrintBufferReadPtr
+    LDA prvPrintBufferBankStart:STA prvPrintBufferWritePtr + 1:STA prvPrintBufferReadPtr + 1
+    LDA prvPrintBufferFirstBankIndex:STA prvPrintBufferWriteBankIndex:STA prvPrintBufferReadBankIndex
+    LDA prvPrintBufferSizeLow:STA prvPrintBufferFreeLow
+    LDA prvPrintBufferSizeMid:STA prvPrintBufferFreeMid
+    LDA prvPrintBufferSizeHigh:STA prvPrintBufferFreeHigh
+    RTS
 
 ; If prvPrvPrintBufferStart isn't in the range &90-&AC, set it to &AC. We return with prvPrvPrintBufferStart in A.
 ; SFTODO: Mildly magic constants
@@ -10581,14 +10571,7 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
     RTS
 }
 
-    EQUB &00,&00,&00,&00,&00,&00,&00,&00
-    EQUB &00,&00,&00,&00,&00,&00,&00,&00
-    EQUB &00,&00,&00,&00,&00,&00,&00,&00
-    EQUB &00,&00,&00,&00,&00,&00,&00,&00
-    EQUB &00,&00,&00,&00,&00,&00,&00,&00
-    EQUB &00,&00,&00,&00,&00,&00,&00,&00
-.end
-
+PRINT end - P%, "bytes free"
 SAVE "IBOS-01.rom", start, end
 
 ; SFTODO: Would it be possible to save space by factoring out "LDX #prvOsMode:JSR
