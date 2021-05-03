@@ -1926,8 +1926,8 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
 
 ;Set BRK Vector
 .^setBrkv
-    LDA #lo(brkvHandler):STA BRKVL
-    LDA #hi(brkvHandler):STA BRKVH
+    LDA #lo(BrkvHandler):STA BRKVL
+    LDA #hi(BrkvHandler):STA BRKVH
     RTS
 
 ; SFTODO: Start of this code is same as L8969 - could we save a few bytes by (e.g.) setting osErrorPtr to &8000 here and testing for that in BRKV handler and skipping the error printing code in that case?
@@ -1974,10 +1974,9 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
     EQUS "System Reset", vduCr, vduCr, "Go (Y/N) ? ", 0
 
 ;BRK vector entry point
-.brkvHandler
-; SFTODO: Use of L0700 in next line is potentially iffy, but I suspect this is used only when we're in NLE when IBOS *is* current language, so that would be fine
-inputBuf = &700
-inputBufSize = 256
+.BrkvHandler
+InputBuf = &700
+InputBufSize = 256
     LDX #&FF:TXS
     CLI
     CLD
@@ -1994,34 +1993,32 @@ inputBufSize = 256
     JSR OSNEWL
 .CmdLoop
     JSR PrintStar
-    JSR readLine
-    LDX #lo(inputBuf):LDY #hi(inputBuf):JSR OSCLI
+    JSR ReadLine
+    LDX #lo(InputBuf):LDY #hi(InputBuf):JSR OSCLI
     JMP CmdLoop
 			
-.osword0Block
+.OswordInputLineBlock
 ;OSWORD A=&0, Read line from input - Parameter block
-    EQUW inputBuf
-    EQUB inputBufSize - 1 ; maximum length excluding CR
+    EQUW InputBuf
+    EQUB InputBufSize - 1 ; maximum length excluding CR
     EQUB ' ' ; minimum acceptable ASCII value
     EQUB '~' ; maximum acceptable ASCII value
-.osword0BlockEnd
+.OswordInputLineBlockEnd
 
 ; SQUASH: This only has one caller
 .PrintStar
     LDA #'*':JMP OSWRCH
 
-	  ; SFTODO: Is this necessary? Isn't it legit to call OSWORD 0 with a parameter block in SWR anyway, without copying to main RAM first? I think BASIC does that (check), and if it's good enough for BASIC surely it's good enough for us?
-.readLine   LDY #(osword0BlockEnd - osword0Block) - 1
-.copyLoop   LDA osword0Block,Y
-            STA L0100,Y
-            DEY
-            BPL copyLoop
-            LDA #oswordInputLine
-            LDX #lo(L0100)
-            LDY #hi(L0100)
-            JSR OSWORD
-            BCS acknowledgeEscapeAndGenerateErrorIndirect ; SFTODO: could we BCC a nearby RTS and just fall through to acknowledge...?
-            RTS
+.ReadLine
+    ; SQUASH: I don't believe this is necessary, we can just use OswordInputLineBlock directly.
+    LDY #(OswordInputLineBlockEnd - OswordInputLineBlock) - 1
+.CopyLoop
+    LDA OswordInputLineBlock,Y:STA L0100,Y
+    DEY:BPL CopyLoop
+    LDA #oswordInputLine:LDX #lo(L0100):LDY #hi(L0100):JSR OSWORD
+    ; SQUASH: could we BCC a nearby RTS and just fall through to acknowledge...?
+    BCS acknowledgeEscapeAndGenerateErrorIndirect
+    RTS
 
 .acknowledgeEscapeAndGenerateErrorIndirect
 .L89BF      JMP acknowledgeEscapeAndGenerateError
@@ -2052,10 +2049,10 @@ inputBufSize = 256
 fullResetPrv = &2800
             JSR LA790								;Stop Clock and Initialise RTC registers &00 to &0B
             LDX #&00								;Relocate 256 bytes of code to main memory
-.copyLoop   LDA fullResetPrvTemplate,X
+.CopyLoop   LDA fullResetPrvTemplate,X
             STA fullResetPrv,X
             INX
-            BNE copyLoop
+            BNE CopyLoop
             JMP fullResetPrv
 
 ;This code is relocated from IBOS ROM to RAM starting at &2800
@@ -6541,10 +6538,10 @@ osfileBlock = L02EE
 
 ;copy ROM type table to Private RAM
             LDX #maxBank
-.copyLoop   LDA romTypeTable,X
+.CopyLoop   LDA romTypeTable,X
             STA prvRomTypeTableCopy,X
             DEX
-            BPL copyLoop
+            BPL CopyLoop
 
             PRVDIS								;switch out private RAM
 
