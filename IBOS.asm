@@ -10274,7 +10274,7 @@ ScreenStart = &3000
 
 .PrintBufferNotFull
     LDA L0108,X ; get original A=character to insert
-    JSR staPrintBufferWritePtr
+    JSR StaPrintBufferWritePtr
     JSR AdvancePrintBufferWritePtr
     JSR DecrementPrintBufferFree
     ; Return to caller with carry clear to indicate insertion succeeded.
@@ -10308,7 +10308,7 @@ ScreenStart = &3000
 
 .PrintBufferNotEmpty
     LDA L0107,X:AND_NOT flagC:STA L0107,X ; modify stacked flags so C is clear
-    JSR ldaPrintBufferReadPtr
+    JSR LdaPrintBufferReadPtr
     TSX
     PHA ; note this doesn't affect X so our L01xx,X references stay the same
     LDA L0107,X:AND #flagV:BNE ExamineBuffer ; test V in stacked flags from caller
@@ -10423,12 +10423,14 @@ ScreenStart = &3000
 ; Advance prvPrintBufferReadPtr by one, wrapping round at the end of each bank and wrapping
 ; round at the end of the bank list.
 .^AdvancePrintBufferReadPtr
+    XASSERT_USE_PRV1
     LDX #prvPrintBufferReadPtrIndex
     ASSERT prvPrintBufferReadPtrIndex != 0:BNE Common ; always branch
 
 ; Advance prvPrintBufferWritePtr by one, wrapping round at the end of each bank and wrapping
 ; round at the end of the bank list.
 .^AdvancePrintBufferWritePtr
+    XASSERT_USE_PRV1
     LDX #prvPrintBufferWritePtrIndex
 .Common
     INC prvPrintBufferPtrBase,X:BNE Rts
@@ -10454,6 +10456,7 @@ ScreenStart = &3000
 ; Return with carry set if and only if the printer buffer is full.
 ; SQUASH: This has only one caller
 .^CheckPrintBufferFull
+    XASSERT_USE_PRV1
     LDA prvPrintBufferFreeLow:ORA prvPrintBufferFreeMid:ORA prvPrintBufferFreeHigh:BEQ SecRts
     CLC
     RTS
@@ -10464,6 +10467,7 @@ ScreenStart = &3000
 ; Return with carry set if and only if the printer buffer is empty.
 ; SQUASH: This has only one caller
 .^CheckPrintBufferEmpty
+    XASSERT_USE_PRV1
     LDA prvPrintBufferFreeLow:CMP prvPrintBufferSizeLow:BNE ClcRts
     LDA prvPrintBufferFreeMid:CMP prvPrintBufferSizeMid:BNE ClcRts
     ; ENHANCE: Next line is a duplicate of previous one, it should be checking High not Mid.
@@ -10550,30 +10554,27 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
             RTS				;relocates to &038F
 .romRomAccessSubroutineEnd
 
-; Temporarily page in ROM bank prvPrintBufferBankList[prvPrintBufferReadBankIndex] and do LDA (prvPrintBufferReadPtr)
-; SFTODO: This only has a single caller
-.ldaPrintBufferReadPtr
 {
-.LBF6A      PHA
-            LDX #prvPrintBufferReadPtrIndex
-            LDA #opcodeLdaAbs
-            BNE LBF76 ; always branch
+; Temporarily page in ROM bank prvPrintBufferBankList[prvPrintBufferReadBankIndex] and do LDA (prvPrintBufferReadPtr)
+.^LdaPrintBufferReadPtr
+    PHA
+    LDX #prvPrintBufferReadPtrIndex
+    LDA #opcodeLdaAbs
+    BNE Common ; always branch
+
 ; Temporarily page in ROM bank prvPrintBufferBankList[prvPrintBufferWriteBankIndex] and do STA (prvPrintBufferWritePtr)
-; SFTODO: This only has a single caller
-.^staPrintBufferWritePtr
-.LBF71      PHA
-            LDX #prvPrintBufferWritePtrIndex
-            LDA #opcodeStaAbs
-.LBF76      STA ramRomAccessSubroutineVariableInsn
-            LDA prvPrintBufferPtrBase,X
-            STA ramRomAccessSubroutineVariableInsn + 1
-            LDA prvPrintBufferPtrBase + 1,X
-            STA ramRomAccessSubroutineVariableInsn + 2
-            LDY prvPrintBufferPtrBase + 2,X
-            LDA prvPrintBufferBankList,Y
-            TAY
-            PLA
-            JMP ramRomAccessSubroutine
+.^StaPrintBufferWritePtr
+    PHA
+    LDX #prvPrintBufferWritePtrIndex
+    LDA #opcodeStaAbs
+.Common
+    XASSERT_USE_PRV1
+    STA ramRomAccessSubroutineVariableInsn
+    LDA prvPrintBufferPtrBase    ,X:STA ramRomAccessSubroutineVariableInsn + 1
+    LDA prvPrintBufferPtrBase + 1,X:STA ramRomAccessSubroutineVariableInsn + 2
+    LDY prvPrintBufferPtrBase + 2,X:LDA prvPrintBufferBankList,Y:TAY
+    PLA
+    JMP ramRomAccessSubroutine
 }
 
 .PurgePrintBuffer
