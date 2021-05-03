@@ -2953,7 +2953,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ;Initialise Tube
 ; SFTODO: Some code in common with disableTube here (OSARGS/filing system reselection), could factor it out
 .enableTube
-.L9009      BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
+            BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
             BMI exitSCIndirect							;nothing to do if already on
             LDA #&FF
             LDX #prvSFTODOTUBE2ISH - prv83
@@ -3573,7 +3573,7 @@ ENDIF
 .^L93E3     JSR setYToTransientCmdIdxTimes3
             JSR getShiftedBitMask
             LDA ConfParBit+1,Y
-            TAX ; SFTODO: LDX blah,Y?
+            TAX ; SQUASH: LDX blah,Y?
             LDA transientConfigPrefix
             JSR shiftALeftByX
             AND transientConfigBitMask
@@ -3582,7 +3582,7 @@ ENDIF
             EOR #&FF
             STA transientConfigBitMask
             LDA ConfParBit+ConfParBitUserRegOffset,Y
-            TAX ; SFTODO: avoid this with LDX blah,Y?
+            TAX ; SQUASH: avoid this with LDX blah,Y?
             JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND transientConfigBitMask
             ORA transientConfigPrefix
@@ -3594,12 +3594,12 @@ ENDIF
 .L940A      JSR setYToTransientCmdIdxTimes3
             JSR getShiftedBitMask
             LDA ConfParBit+ConfParBitUserRegOffset,Y
-            TAX ; SFTODO: can we just use LDX blah,Y to avoid this?
+            TAX ; SQUASH: can we just use LDX blah,Y to avoid this?
             JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND transientConfigBitMask
             STA transientConfigPrefixSFTODO ; SFTODO: Just PHA?
             LDA ConfParBit+1,Y
-            TAX ; SFTODO: LDX blah,Y
+            TAX ; SQUASH: LDX blah,Y
             LDA transientConfigPrefixSFTODO ; SFTODO: Just PLA?
             JSR shiftARightByX
             STA transientConfigPrefixSFTODO
@@ -4253,7 +4253,9 @@ tmp = &A8
 
 ;Tube system initialisation - Service call &FF
 {
-.^serviceFF JSR clearShenPrvEn
+.^serviceFF
+    XASSERT_USE_PRV1
+ JSR clearShenPrvEn
             PHA
             BIT prvSFTODOTUBEISH
             BMI L9836
@@ -4285,7 +4287,7 @@ tmp = &A8
 
 ; SFTODO: This only has one caller
 .clearShenPrvEn ; SFTODO: not super happy with this name
-.L984C      LDA ramselCopy
+            LDA ramselCopy
             PHA
             LDA #&00
             STA ramselCopy
@@ -4295,7 +4297,7 @@ tmp = &A8
             RTS
 
 .PRVDISStaRamsel
-.L985D      PHA
+            PHA
             PRVDIS								;switch out private RAM
             PLA
             STA ramselCopy
@@ -4414,7 +4416,7 @@ ramPresenceFlags = &A8
 ; SFTODO: There are a few cases where we JMP to osbyteXXInternal, if we rearranged the code a little (could always use macros to maintain readability, if that's a factor) we could probably save some JMPs
 .osbyte44Internal
 {
-.L9928	  PRVEN								;switch in private RAM
+       	  PRVEN								;switch in private RAM
             PHP
             SEI
             LDA #&00
@@ -4444,7 +4446,7 @@ ramPresenceFlags = &A8
 ;OSBYTE &45 (69) - Test PSEUDO/Absolute usage (http://beebwiki.mdfs.net/OSBYTE_%2645)
 .osbyte45Internal
 {
-.L995C      PRVEN								;switch in private RAM
+            PRVEN								;switch in private RAM
             PHP
             SEI
             LDA #&00
@@ -4505,9 +4507,9 @@ ramPresenceFlags = &A8
 .rts        RTS
 }
 
-; SFTODO: Dead data
+; SQUASH: Dead data
 {
-	  EQUS "RAM","ROM"
+    EQUS "RAM","ROM"
 }
 
 ; SFTODO: This has only one caller
@@ -10628,6 +10630,9 @@ SAVE "IBOS-01.rom", start, end
 
 ; SFTODO: Would it be possible to save space by factoring out "LDX #prvOsMode:JSR
 ; ReadPrivateRam8300X" into a subroutine?
+
+; SQUASH: We may be able to save some space by paging in PRV1 and accessing it
+; directly instead of using {Read,Write}PrivateRam8300X in some places.
 
 ; SFTODO: Could we save space by factoring out some common-ish sequences of code
 ; to set or clear various bits of ROMSEL/RAMSEL and their RAM copies?
