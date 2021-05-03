@@ -8442,7 +8442,8 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; SFTODO: This has only one caller
 .SFTODOProbParsePlusMinusDate
 {
-.LB1ED      STY prvTmp2
+    XASSERT_USE_PRV1
+            STY prvTmp2
             LDA #&00
             STA transientDateSFTODO1
             JSR FindNextCharAfterSpace								;find next character. offset stored in Y
@@ -8558,7 +8559,8 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; Parse a time from the command line, populating prvDate* and returning with C clear iff parsing succeeded.
 .parseAndValidateTime
 {
-.LB2B5      JSR convertIntegerDefaultDecimal
+    XASSERT_USE_PRV1
+            JSR convertIntegerDefaultDecimal
             BCS parseError
             STA prvDateHours
             LDA (transientCmdPtr),Y
@@ -8597,7 +8599,9 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 
 {
 ; SFTODO: This has only one caller
-.^LB2F5      LDA #&00
+.^LB2F5
+    XASSERT_USE_PRV1
+      LDA #&00
             STA prvDateDayOfWeek
             JSR convertIntegerDefaultDecimal
             BCS LB32F
