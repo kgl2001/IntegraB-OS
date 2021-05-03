@@ -492,6 +492,8 @@ prv81       = &8100
 prv82       = &8200
 prv83       = &8300
 prv1End     = &8400 ; exclusive
+prv8Start   = &9000
+prv8End     = &B000 ; exclusive
 
 ; SFTODO: The following are grouped "logically" for now, rather than by address.
 ; This is probably easiest to understand, and if we're going to create a table
@@ -715,6 +717,19 @@ ENDMACRO
 MACRO PRVDIS ; SFTODO: Rename to indicate this is PRVS1 only? Also perhaps put a verb in the name?
     ASSERT P% >= prv1End
     JSR PrvDis
+ENDMACRO
+
+; As PRVEN, but for paging in PRVS1 and PRVS8.
+MACRO PRVS81EN ; SFTODO: Better name?
+    PRINT ~P%
+    ASSERT (P% >= prv1End AND P% < prv8Start) OR (P% >= prv8End)
+    JSR pageInPrvs81
+ENDMACRO
+
+; As PRVDIS, but for paging out PRVS1 and PRVS8. SFTODO: This is never used, delete it?!
+MACRO PRVS81DIS ; SFTODO: Better name?
+    ASSERT (P% >= prv1End AND P% < prv8Start) OR (P% >= prv8End)
+    JSR pageOutPrvs81
 ENDMACRO
 
 start = &8000
@@ -10241,7 +10256,7 @@ ScreenStart = &3000
     LDA #ibosINSVIndex:JMP forwardToParentVectorTblEntry
 
 .IsPrinterBuffer
-    JSR pageInPrvs81
+    PRVS81EN
     PHA
     TSX
     JSR CheckPrintBufferFull:BCC PrintBufferNotFull
@@ -10268,7 +10283,7 @@ ScreenStart = &3000
     LDA #ibosREMVIndex:JMP forwardToParentVectorTblEntry
 			
 .IsPrinterBuffer
-    JSR pageInPrvs81
+    PRVS81EN
     PHA
     TSX
     JSR CheckPrintBufferEmpty:BCC PrintBufferNotEmpty
