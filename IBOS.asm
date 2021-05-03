@@ -1937,10 +1937,10 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
     LDX #&FF:TXS
     JSR setBrkv
     LDA lastBreakType:BNE NotSoftReset
-    JMP cmdLoop ; SQUASH: "BEQ ; always branch", and then we can just fall through to NotSoftReset
+    JMP CmdLoop ; SQUASH: "BEQ ; always branch", and then we can just fall through to NotSoftReset
 .NotSoftReset
     LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeAt:BEQ atPressed
-    JMP cmdLoop ; SQUASH: "BEQ ; always branch" and fall through to atPressed
+    JMP CmdLoop ; SQUASH: "BEQ ; always branch" and fall through to atPressed
 
     ; Implement IBOS reset when @ held down during (non-soft) reset.
 .atPressed
@@ -1977,44 +1977,38 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
 .brkvHandler
 ; SFTODO: Use of L0700 in next line is potentially iffy, but I suspect this is used only when we're in NLE when IBOS *is* current language, so that would be fine
 inputBuf = &700
+inputBufSize = 256
     LDX #&FF:TXS
-            CLI
-            CLD
-	  ; Clear the VDU queue, so (e.g.) the first few characters of output
-	  ; aren't swallowed if an error occurred half-way through a VDU 23.
-            LDA #osbyteReadWriteVduQueueLength
-            LDX #&00
-            LDY #&00
-            JSR OSBYTE
-            LDA #osbyteAcknowledgeEscape
-            JSR OSBYTE
-            JSR OSNEWL
-            LDY #&01
-.L8981      LDA (osErrorPtr),Y
-            BEQ L898B
-            JSR OSWRCH
-            INY
-            BNE L8981
-.L898B      JSR OSNEWL
-.cmdLoop    JSR printStar
-            JSR readLine
-            LDX #lo(inputBuf)
-            LDY #hi(inputBuf)
-            JSR OSCLI
-            JMP cmdLoop
+    CLI
+    CLD
+    ; Clear the VDU queue, so (e.g.) the first few characters of output aren't swallowed if an
+    ; error occurred half-way through a VDU 23.
+    LDA #osbyteReadWriteVduQueueLength:LDX #0:LDY #0:JSR OSBYTE
+    LDA #osbyteAcknowledgeEscape:JSR OSBYTE
+    JSR OSNEWL
+    LDY #1
+.ShowErrorLoop
+    LDA (osErrorPtr),Y:BEQ ErrorShown
+    JSR OSWRCH:INY:BNE ShowErrorLoop ; always branch
+.ErrorShown
+    JSR OSNEWL
+.CmdLoop
+    JSR PrintStar
+    JSR readLine
+    LDX #lo(inputBuf):LDY #hi(inputBuf):JSR OSCLI
+    JMP CmdLoop
 			
 .osword0Block
 ;OSWORD A=&0, Read line from input - Parameter block
-	  EQUW inputBuf								;buffer address
-	  EQUB &FF								;maximum line length
-	  EQUB &20								;minimum acceptable ASCII value
-	  EQUB &7E								;maximum acceptable ASCII value
+    EQUW inputBuf
+    EQUB inputBufSize - 1 ; maximum length excluding CR
+    EQUB ' ' ; minimum acceptable ASCII value
+    EQUB '~' ; maximum acceptable ASCII value
 .osword0BlockEnd
 
-; SFTODO: This only has one caller
-.printStar
-       	  LDA #'*'
-            JMP OSWRCH
+; SQUASH: This only has one caller
+.PrintStar
+    LDA #'*':JMP OSWRCH
 
 	  ; SFTODO: Is this necessary? Isn't it legit to call OSWORD 0 with a parameter block in SWR anyway, without copying to main RAM first? I think BASIC does that (check), and if it's good enough for BASIC surely it's good enough for us?
 .readLine   LDY #(osword0BlockEnd - osword0Block) - 1
