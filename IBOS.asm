@@ -1770,35 +1770,25 @@ firstDigitCmdPtrY = &BB
 .DigitConverted
     CMP base:BCC ValidDigit
 .InvalidDigit
-    BIT negateFlag
-    BPL L87EF
+    ; We stop parsing when we see an invalid digit but we don't consider it an error as such. SFTODO: I think this is true, but check
+    BIT negateFlag:BPL DontNegate
     SEC
-    LDA #&00
-    SBC ConvertIntegerResult
-    STA ConvertIntegerResult
-    LDA #&00
-    SBC ConvertIntegerResult + 1
-    STA ConvertIntegerResult + 1
-    LDA #&00
-    SBC ConvertIntegerResult + 2
-    STA ConvertIntegerResult + 2
-    LDA #&00
-    SBC ConvertIntegerResult + 3
-    STA ConvertIntegerResult + 3
-.L87EF
-    CPY firstDigitCmdPtrY
-    BEQ L87F8
+    LDA #0:SBC ConvertIntegerResult    :STA ConvertIntegerResult
+    LDA #0:SBC ConvertIntegerResult + 1:STA ConvertIntegerResult + 1
+    LDA #0:SBC ConvertIntegerResult + 2:STA ConvertIntegerResult + 2
+    LDA #0:SBC ConvertIntegerResult + 3:STA ConvertIntegerResult + 3
+.DontNegate
+    CPY firstDigitCmdPtrY:BEQ NothingParsed
     CLC
     CLV
     LDA ConvertIntegerResult
     RTS
-			
-.L87F8
-    LDA #vduBell:JSR OSWRCH								;Generate VDU 7 beep
-    LDA #&00
+.NothingParsed
+    LDA #vduBell:JSR OSWRCH
+    LDA #0
     LDY originalCmdPtrY
     SEC
-    BIT rts									;set V
+    BIT rts ; set V
 .rts
     RTS
 
