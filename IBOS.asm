@@ -257,6 +257,10 @@ oswdbtY = &F1
 ; SFTODO: These may need renaming, or they may not be as general as I am assuming
 KeywordTableOffset = 6
 ParameterTableOffset = 8
+; SQUASH: I am not sure CmdTblPtrOffset is actually useful - every "table" holds a different
+; data structure in the thing pointed to by CmdTblPtrOffset so there's no generic code which
+; uses this pointer - we can just hard-code the relevant address where we need it and not lose
+; any real generality.
 CmdTblPtrOffset = 10
 
 ; This is a byte of unused CFS/RFS workspace which IBOS repurposes to track
@@ -933,7 +937,7 @@ t = &80
     ; SQUASH: I am not sure we actually need the next pointer, if we make the suggested SQUASH:
     ; change in DynamicSyntaxGenerationForIbosSubTblA.
     ASSERT P% = ibosRef + CmdTblPtrOffset
-    EQUW ibosSubTbl							;Start of IBOS sub option reference lookup table
+    EQUW ibosHelpTable							;Start of IBOS sub option reference lookup table
 
 .ibosTbl
     EQUS 4, "RTC"
@@ -950,11 +954,11 @@ t = &80
     EQUB 1 ; SRAM
     EQUB 0
 
-.ibosSubTbl
+.ibosHelpTable
 }
-    ; Elements 0-3 of ibosSubTbl table correspond to the four entries at ibosTbl.
-    ibosSubTblHelpNoArgument = 4
-    ibosSubTblConfigureList = 5
+    ; Elements 0-3 of ibosHelpTable table correspond to the four entries at ibosTbl.
+    ibosHelpTableHelpNoArgument = 4
+    ibosHelpTableConfigureList = 5
     EQUW CmdRef:EQUB &00,&03							;&04 x IBOS/RTC Sub options - from offset &00
     EQUW CmdRef:EQUB &04,&13							;&10 x IBOS/SYS Sub options - from offset &04
     EQUW CmdRef:EQUB &14,&17							;&04 x IBOS/FSX Sub options - from offset &14
@@ -1053,10 +1057,10 @@ LastEntry = &A9
     ; version where this didn't just operate on ibosRef (note that some callers redundantly
     ; call "JSR ibosRef" before calling this subroutine). We could rewrite it as:
     ;     ASL A:ASL A:TAY
-    ;     LDA ibosSubTbl    ,Y:STA transientTblPtr
-    ;     LDA ibosSubTbl + 1,Y:STA transientTblPtr + 1
-    ;     LDA ibosSubTbl + 2,Y:STA FirstEntry
-    ;     LDA ibosSubTbl + 3,Y:STA LastEntry
+    ;     LDA ibosHelpTable    ,Y:STA transientTblPtr
+    ;     LDA ibosHelpTable + 1,Y:STA transientTblPtr + 1
+    ;     LDA ibosHelpTable + 2,Y:STA FirstEntry
+    ;     LDA ibosHelpTable + 3,Y:STA LastEntry
 
     ; Set transientTblPtr = transientTblPtr[CmdTblPtrOffset].
     JSR ibosRef:STX transientTblPtr:STY transientTblPtr + 1
@@ -1064,7 +1068,7 @@ LastEntry = &A9
     INY:LDA (transientTblPtr),Y:STA transientTblPtr + 1
     STX transientTblPtr ; SQUASH: Just STA in place of TAX above
 
-    ; Copy the the four bytes starting at ibosSubTbl+4*A-on-entry into transientTblPtr and
+    ; Copy the the four bytes starting at ibosHelpTable+4*A-on-entry into transientTblPtr and
     ; FirstEntry/LastEntry.
     PLA:PHA:ASL A:ASL A:TAY ; Set Y = A-on-entry * 4
     LDA (transientTblPtr),Y:PHA
@@ -1350,7 +1354,9 @@ TmpCommandIndex = &AC
     ; byte of the command tail after the * command).
     STY TmpCommandTailOffset
     STX TmpCommandIndex
-    ; Set transientTblPtr = CmdRef[CmdTblptrOffset].
+    ; Set transientTblPtr = CmdRef[CmdTblPtrOffset].
+    ; SQUASH: Since we know we're looking at CmdRef here, this is needlessly complex - we can
+    ; just hard-code CmdExTbl.
     JSR CmdRef:STX transientTblPtr:STY transientTblPtr + 1
     LDY #CmdTblPtrOffset:LDA (transientTblPtr),Y:TAX
     INY:LDA (transientTblPtr),Y:STA transientTblPtr + 1
@@ -1375,7 +1381,7 @@ TmpCommandIndex = &AC
     LDA (transientCmdPtr),Y:CMP #vduCr:BNE CheckArgument
 
     ; This is *HELP with no argument.
-    LDX #ibosSubTblHelpNoArgument
+    LDX #ibosHelpTableHelpNoArgument
 .ShowHelpX
     TXA:PHA ; save X, the ibosRefSubTblA entry to show
     ; Show our ROM title and version.
@@ -3654,7 +3660,7 @@ ENDIF
             PLP
             BCC statusAll
 	  ; This is *CONFIGURE with no option, so show the supported options.
-            LDA #ibosSubTblConfigureList
+            LDA #ibosHelpTableConfigureList
             JSR ibosRef ; SFTODO: Redundant? DynamicSyntaxGenerationForIbosSubTblA does JSR ibosRef itself...
             JSR DynamicSyntaxGenerationForIbosSubTblA
             JMP ExitServiceCall								;restore service call parameters and exit
