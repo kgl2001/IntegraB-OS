@@ -9314,14 +9314,14 @@ column = prvC
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=1: Read time and date in binary coded decimal (BCD) format
 .^oswd0eReadBCD
-.LB835      JSR getRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
-            LDY #&06
-.LB83A      JSR LB85A
-            STA (oswdbtX),Y
-            DEY
-            BPL LB83A
-            SEC
-            RTS
+    JSR getRtcDateTime
+    LDY #6
+.Loop
+   JSR LB85A
+   STA (oswdbtX),Y
+   DEY:BPL Loop
+   SEC
+   RTS
 }
 
 {
@@ -9330,11 +9330,11 @@ column = prvC
 .^oswd0eConvertBCD
     XASSERT_USE_PRV1
     LDX #6
-.LB846
+.Loop
     LDA prvOswordBlockCopy + 1,X
     JSR LB87A
     STA prvOswordBlockCopy + 9,X
-    DEX:BPL LB846
+    DEX:BPL Loop
     LDA #19:STA prvDateCentury
     JMP LB821 ; SQUASH: "BNE ; always branch"
 
