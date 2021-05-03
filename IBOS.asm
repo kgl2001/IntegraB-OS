@@ -491,6 +491,7 @@ prv80       = &8000
 prv81       = &8100
 prv82       = &8200
 prv83       = &8300
+prv1End     = &8400 ; exclusive
 
 ; SFTODO: The following are grouped "logically" for now, rather than by address.
 ; This is probably easiest to understand, and if we're going to create a table
@@ -704,7 +705,7 @@ ENDMACRO
 ; paging in PRVS1. (This isn't foolproof; "P%=&8500:PRVEN:JSR &8100" would be buggy but not
 ; caught.)
 MACRO PRVEN ; SFTODO: Rename to indicate this is PRVS1 only? Also perhaps put a verb in the name?
-    ASSERT P% >= &8400
+    ASSERT P% >= prv1End
     JSR PrvEn
 ENDMACRO
 
@@ -712,7 +713,7 @@ ENDMACRO
 ; paging in PRVS1. This isn't likely to catch anything which wouldn't be caught by PRVEN, but
 ; it just might.
 MACRO PRVDIS ; SFTODO: Rename to indicate this is PRVS1 only? Also perhaps put a verb in the name?
-    ASSERT P% >= &8400
+    ASSERT P% >= prv1End
     JSR PrvDis
 ENDMACRO
 
@@ -1834,7 +1835,7 @@ firstDigitCmdPtrY = &BB
 }
 
 {
-    ASSERT P% >= &8400 ; we're going to page in PRVS1
+    ASSERT P% >= prv1End ; we're going to page in PRVS1
 
 ; Page in private RAM temporarily and do STA prv83,X. A, X and Y are preserved, flags reflect A
 ; on exit.
@@ -2962,7 +2963,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 }
 
 {
-    ASSERT P% >= &8400 ; we're going to page in PRVS1
+    ASSERT P% >= prv1End ; we're going to page in PRVS1
 
 ; Page in PRVS1.
 ; SFTODO: Is there any chance of saving space by sharing some code with the
