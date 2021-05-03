@@ -225,6 +225,7 @@ keycodeNone = &FF ; internal keycode returned if no key is pressed
 
 osargsReadFilingSystemNumber = 0
 
+osbyteSelectOutputDevice = &03
 osbyteSetPrinterType = &05
 osbyteSetPrinterIgnore = &06
 osbyteSetSerialReceiveRate = &07
@@ -247,6 +248,7 @@ osbyteReadWriteBreakEscapeEffect = &C8
 osbyteReadWriteKeyboardStatus = &CA
 osbyteEnableDisableStartupMessage = &D7
 osbyteReadWriteVduQueueLength = &DA
+osbyteReadWriteCharacterOutputDeviceStatus = &EC
 osbyteReadWriteStartupOptions = &FF
 
 oswordInputLine = &00
@@ -3153,43 +3155,40 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 }
 			
 ;*PRINT Command
+.print
 {
-.^print      LDA #osfindOpenInput							;open file for input
-            JSR parseFilenameAndOpen								;get address of file name and open file
-            LDA #&EC
-            LDX #&00
-            LDY #&FF
-            JSR OSBYTE
-            STA L00A9
-            LDA #&03
-            LDX #&1A
-            LDY #&00
-            JSR OSBYTE
-.L91D7      BIT L00FF
-            BMI L91EE
-            LDY L00A8
-            JSR OSBGET
-            BCS L91E8
-            JSR OSASCI
-            JMP L91D7
+    LDA #osfindOpenInput:JSR parseFilenameAndOpen
+    ; SQUASH: We could just read/write &27C directly
+    LDA #osbyteReadWriteCharacterOutputDeviceStatus:LDX #0:LDY #&FF:JSR OSBYTE
+    STA L00A9
+    LDA #osbyteSelectOutputDevice:LDX #%00011010:LDY #0:JSR OSBYTE
+.L91D7
+    BIT L00FF
+    BMI L91EE
+    LDY L00A8
+    JSR OSBGET
+    BCS L91E8
+    JSR OSASCI
+    JMP L91D7
 			
-.L91E8      JSR L9201
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+.L91E8
+    JSR L9201
+    JMP ExitAndClaimServiceCall
 			
-.L91EE      JSR L9201
+.L91EE
+    JSR L9201
 .^acknowledgeEscapeAndGenerateError
-.L91F1      LDA #osbyteAcknowledgeEscape
-            JSR OSBYTE
-            JSR RaiseError								;Goto error handling, where calling address is pulled from stack
+    LDA #osbyteAcknowledgeEscape:JSR OSBYTE
+    JSR RaiseError
+    EQUB &11
+    EQUS "Escape", &00
 
-	  EQUB &11
-	  EQUS "Escape", &00
-
-.L9201      LDA #&03
-            LDX L00A9
-            LDY #&00
-            JSR OSBYTE
-            JMP CloseTransientFileHandle								;close file with file handle at &A8
+.L9201
+    LDA #&03
+    LDX L00A9
+    LDY #&00
+    JSR OSBYTE
+    JMP CloseTransientFileHandle
 }
 			
 ;*SPOOLON Command
