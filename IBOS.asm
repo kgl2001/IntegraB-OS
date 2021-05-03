@@ -1822,24 +1822,25 @@ firstDigitCmdPtrY = &BB
 }
 
 {
-; Write data to Private RAM &83xx (Addr = X, Data = A)
+; Page in private RAM temporarily and do STA prv83,X. A, X and Y are preserved, flags reflect A
+; on exit.
 .^WritePrivateRam8300X
     PHP:SEI
     JSR SwitchInPrivateRAM
     STA prv83,X
-    PHA
+    PHA ; SQUASH: move this into SwitchOutPrivateRAM
     JMP SwitchOutPrivateRAM
 
-; Read data from Private RAM &83xx (Addr = X, Data = A)
+; Page in private RAM temporarily and do LDA prv83,X. A, X and Y are preserved, flags reflect A
+; on exit.
 .^ReadPrivateRam8300X
     PHP:SEI
     JSR SwitchInPrivateRAM
     LDA prv83,X
-    PHA
+    PHA ; SQUASH: move this into SwitchOutPrivateRAM
     ; SQUASH: We could move SwitchOutPrivateRAM just after this code and fall through to it.
     JMP SwitchOutPrivateRAM
 
-; Switch in Private RAM
 .SwitchInPrivateRAM
     PHA
     ; SFTODO: Shouldn't we be updating ramselCopy and romselCopy here? I know we have
@@ -1849,16 +1850,14 @@ firstDigitCmdPtrY = &BB
     PLA
     RTS
 
-; Switch out Private RAM; this is not a subroutine and it expects to PLA:PLP values stacked by
-; the caller.
+; This is *not* a subroutine; it expects to PLA:PLP values stacked by the caller.
 .SwitchOutPrivateRAM
     ; SFTODO: See SwitchInPrivateRAM; are we taking a chance here with NMIs?
     LDA romselCopy:STA romsel
     LDA ramselCopy:STA ramsel
     PLA
     PLP
-    PHA
-    PLA
+    PHA:PLA ; make flags reflect value in A on exit
     RTS
 }
 
