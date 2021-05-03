@@ -1558,57 +1558,57 @@ TmpCommandIndex = &AC
 ;Convert binary number in A to numeric characters and write characters to screen
 ;C set on entry means left pad to three characters with spaces, clear means no padding. SFTODO: Not sure that's right - see how this is used in "buffer"
 ;A is preserved
-.printADecimal
+.PrintADecimal
 {
-pad = &B0 ; character output in place of leading zeros
-padFlag = &B1 ; b7 clear iff "0" should be converted into "pad" 
+Pad = &B0 ; character output in place of leading zeros
+PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
 
 .L86DE      PHA
             LDA #&00
-            STA padFlag
-            BCS noPadding ; we use NUL for padding, which has the same effect
+            STA PadFlag
+            BCS NoPadding ; we use NUL for Padding, which has the same effect
             LDA #' '
-.noPadding  STA pad
+.NoPadding  STA Pad
             PLA
             PHA
 
             LDX #0 ; SFTODO: change to LDX #&FF and get rid of DEX/INX stuff?
             SEC
-.hundredsLoop
+.HundredsLoop
             SBC #100
             INX
-            BCS hundredsLoop
+            BCS HundredsLoop
             ADC #100
-            JSR printDigit
+            JSR PrintDigit
 
             LDX #0 ; SFTODO: change to LDX #&FF and get rid of DEX/INX stuff?
             SEC
-.tensLoop
+.TensLoop
             SBC #10
             INX
-            BCS tensLoop
+            BCS TensLoop
             ADC #10
-            JSR printDigit
+            JSR PrintDigit
 
             TAX
             INX ; SFTODO: optimisable?
-            DEC padFlag
-            JSR printDigit
+            DEC PadFlag
+            JSR PrintDigit
             PLA
             RTS
 			
-.printDigit
+.PrintDigit
             PHA
             DEX ; SFTODO: optimisable?
-            LDA pad
+            LDA Pad
             CPX #&00 ; SFTODO: Could get rid of this if LDA moved before DEX
-            BNE notZero
-            BIT padFlag
-            BPL printPad
-.notZero    DEC padFlag
+            BNE NotZero
+            BIT PadFlag
+            BPL PrintPad
+.NotZero    DEC PadFlag
             TXA
             ORA #'0'								;Convert binary number to ASCII number
-.printPad   JSR OSWRCH								;Write number to screen
+.PrintPad   JSR OSWRCH								;Write number to screen
             PLA
             RTS
 }
@@ -2682,7 +2682,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     ; Divide high and mid bytes of prvPrintBufferSize by 4 to get kilobytes.
     LDA prvPrintBufferSizeHigh:LSR A
     LDA prvPrintBufferSizeMid:ROR A:ROR A
-    SEC:JSR printADecimal
+    SEC:JSR PrintADecimal
     LDA prvPrintBufferBankList:AND #&F0:CMP #&40:BNE BufferInSwr2 ; SFTODO: magic constants
     LDX #0:JSR PrintKInPrivateOrSidewaysRAM ; write 'k in Private RAM'
     JMP OSNEWLPrvDisExitAndClaimServiceCall
@@ -2692,7 +2692,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDY #0
 .ShowBankLoop
     LDA prvPrintBufferBankList,Y:BMI AllBanksShown
-    SEC:JSR printADecimal
+    SEC:JSR PrintADecimal
     LDA #',':JSR OSWRCH
     INY:CPY #MaxSwrBanks:BNE ShowBankLoop
 .AllBanksShown
@@ -2796,7 +2796,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
     LDX #prvOsMode - prv83:JSR readPrivateRam8300X
 .^SecPrintADecimalOSNEWLPrvDisExitAndClaimServiceCall
-    SEC:JSR printADecimal
+    SEC:JSR PrintADecimal
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 }
 
@@ -3200,7 +3200,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 
 .IncrementAndPrintLineNumber
     INC LineNumber
-    LDA LineNumber:CLC:JSR printADecimal
+    LDA LineNumber:CLC:JSR PrintADecimal
     LDA #':':JSR OSWRCH
 .^printSpace
     LDA #' ':JMP OSWRCH
@@ -3702,7 +3702,7 @@ ENDIF
 
 ;Read *CONF. FILE parameters from RTC register and write to screen
             JSR printConfigNameAndGetValue
-            JSR printADecimalPad
+            JSR PrintADecimalPad
             JSR printSpace								;write ' ' to screen
             LDX #userRegDiscNetBootData							;Register &10 (0: File system disc/net flag / 4: Boot / 5-7: Data )
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
@@ -3748,23 +3748,23 @@ ENDIF
 {
 	  BCS Conf1Write
             JSR printConfigNameAndGetValue
-            JMP printADecimalPadNewline
+            JMP PrintADecimalPadNewline
 			
 .Conf1Write
             JSR convertIntegerDefaultDecimalChecked
             JMP setConfigValue ; SFTODO: move Conf1 block so we can fall through?
 }
 			
-; SFTODO: If we moved this to just before printADecimal we could fall through into it
-.printADecimalPad
+; SFTODO: If we moved this to just before PrintADecimal we could fall through into it
+.PrintADecimalPad
 {
 .L94F8      SEC
-            JMP printADecimal								;Convert binary number to numeric characters and write characters to screen
+            JMP PrintADecimal								;Convert binary number to numeric characters and write characters to screen
 }
 
-.printADecimalPadNewline
+.PrintADecimalPadNewline
 {
-.L94FC      JSR printADecimalPad
+.L94FC      JSR PrintADecimalPad
             JMP OSNEWL
 }
 			
@@ -3829,7 +3829,7 @@ ENDIF
             PLA
             CLC
             ADC #&01
-            JMP printADecimalPadNewline
+            JMP PrintADecimalPadNewline
 
 .Conf2Write JSR convertIntegerDefaultDecimalChecked
             SEC
@@ -3847,7 +3847,7 @@ ENDIF
             CMP #maxMode + 1
             BCC modeInA
             ADC #(shadowModeOffset - (maxMode + 1)) - 1 ; -1 because C is set
-.modeInA	  JMP printADecimalPadNewline
+.modeInA	  JMP PrintADecimalPadNewline
 
 .Conf5Write JSR convertIntegerDefaultDecimalChecked
 	  ; Map a mode 0-7 or 128-135 to a "compressed mode" in the range 0-15.
@@ -3868,12 +3868,12 @@ ENDIF
             CMP #&04
             BCC L959A
             ORA #&F8
-.L959A      JSR printADecimalPad
+.L959A      JSR PrintADecimalPad
             LDA #','
             JSR OSWRCH
             PLA
             AND #&01
-            JMP printADecimalPadNewline
+            JMP PrintADecimalPadNewline
 
 .Conf4Write JSR convertIntegerDefaultDecimalChecked
             AND #&07
@@ -3898,7 +3898,7 @@ ENDIF
             RTS
 
             JSR L95BF								;Missing address label?
-            JSR printADecimalPad
+            JSR PrintADecimalPad
             LDA #','
             JMP OSWRCH
 			
@@ -4383,10 +4383,10 @@ ramPresenceFlags = &A8
             BPL countLoop								;Loop until 0
             CMP #&00								;If RAM total = 0k (will occur with either 0 RAM banks or 8 x 32k RAM banks), then SFTODO: could do "TAX" to save a byte
             BEQ allBanksPresent							;Write '256K' to screen
-	  ; SFTODO: We could save the SEC by just doing JSR printADecimalPad
+	  ; SFTODO: We could save the SEC by just doing JSR PrintADecimalPad
 	  ; SFTODO: Do we really want padding here? If we have (say) 64K, surely it's neater to print "Computech INTEGRA-B 64K" not "Computech INTEGRA-B  64K"?
             SEC
-            JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
+            JSR PrintADecimal								;Convert binary number to numeric characters and write characters to screen
             JMP printKAndNewline							;Write 'K' to screen
 
 .allBanksPresent
@@ -4651,7 +4651,7 @@ ramPresenceFlags = &A8
             JMP bankShown
 .showAssignedBank
             SEC
-            JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
+            JSR PrintADecimal								;Convert binary number to numeric characters and write characters to screen
 .bankShown  CPY #&03								;Check for 4th bank
             BEQ osnewlPrvDisexitSc							;Yes? Then end
             LDA #','
@@ -6208,7 +6208,7 @@ osfileBlock = L02EE
 ;Get and print details of ROM at location &AA
 .LA360      LDA L00AA								;Get ROM Number
             CLC
-            JSR printADecimal								;Convert binary number to numeric characters and write characters to screen
+            JSR PrintADecimal								;Convert binary number to numeric characters and write characters to screen
             JSR printSpace								;write ' ' to screen
             LDA #'('								;'('
             JSR OSWRCH								;write to screen
