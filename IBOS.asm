@@ -724,7 +724,7 @@ GUARD	&C000
 .romType
 		EQUB &C2								;06: ROM type - Bits 1, 6 & 7 set - Language & Service
 .copyrightOffset
-		EQUB copyright MOD &100						;07: Copyright offset pointer
+		EQUB copyright - romHeader						;07: Copyright offset pointer
 		EQUB &FF								;08: Binary version number
 .title
 		EQUS "IBOS", 0							;09: Title string
@@ -737,9 +737,10 @@ GUARD	&C000
 		EQUS " 1989", 0						;xx: Copyright message
 
 ;Store *Command reference table pointer address in X & Y
-.CmdRef		LDX #CmdRef MOD &100
-		LDY #CmdRef DIV &100
-		RTS
+.CmdRef
+{
+    LDX #lo(CmdRef):LDY #hi(CmdRef)
+    RTS
 		
 		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used SFTODO: I'm not sure this is entirely true - the code at SearchKeywordTable seems to use the 0 byte at the end of CmdTbl to know when to stop, and if I type "*SRWE" on an emulated IBOS 1.20 machine I get a "Bad id" error, suggesting the command is recognised (if not necessarily useful). It is possible some *other* code does use this, I'm *guessing* the *HELP display code uses this in order to keep SRWE and SRWP "secret" (but I haven't looked yet).
 		ASSERT P% = CmdRef + KeywordTableOffset
@@ -875,6 +876,7 @@ GUARD	&C000
 		EQUW srwrite-1							;address of *SRWRITE command
 		EQUW srwe-1							;address of *SRWE command
 		EQUW srwp-1							;address of *SRWP command
+}
 	
 ;Store *CONFIGURE reference table pointer address in X & Y
 .ConfRef
