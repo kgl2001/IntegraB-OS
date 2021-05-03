@@ -9299,15 +9299,15 @@ column = prvC
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=0: Read time and date in string format
 .^oswd0eReadString
-.LB81E      JSR getRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
-.^LB821      JSR initDateSFTODOS								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
-            LDA prvOswordBlockOrigAddr							;get OSWORD X register (lookup table LSB)
-            STA prvOswordBlockCopy + 4							;save OSWORD X register (lookup table LSB)
-            LDA prvOswordBlockOrigAddr + 1						;get OSWORD Y register (lookup table MSB)
-            STA prvOswordBlockCopy + 5							;save OSWORD Y register (lookup table MSB)
-            JSR initDateBufferAndEmitTimeAndDate
-            SEC
-            RTS
+    JSR getRtcDateTime
+.^LB821
+    XASSERT_USE_PRV1
+    JSR initDateSFTODOS
+    LDA prvOswordBlockOrigAddr:STA prvDateSFTODO4
+    LDA prvOswordBlockOrigAddr + 1:STA prvDateSFTODO4 + 1
+    JSR initDateBufferAndEmitTimeAndDate
+    SEC
+    RTS
 }
 
 {
