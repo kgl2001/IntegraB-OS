@@ -1652,9 +1652,6 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
     RTS
 }
 			
-.convertIntegerDefaultHex
-    LDA #16:JMP convertIntegerDefaultBaseA ; SQUASH: "BNE ; always branch"
-
 ; Parse a 32-bit integer from (transientCmdPtr),Y. The following prefixes are
 ; recognised:
 ;     "-"  negative decimal
@@ -1683,6 +1680,9 @@ Base = FilingSystemWorkspace + 8
 NegateFlag = FilingSystemWorkspace + 9
 OriginalCmdPtrY = FilingSystemWorkspace + 10
 FirstDigitCmdPtrY = FilingSystemWorkspace + 11
+
+.^convertIntegerDefaultHex
+    LDA #16:JMP convertIntegerDefaultBaseA ; SQUASH: "BNE ; always branch"
 
 ; SQUASH: Could we share this fragment?
 .NothingToConvert
