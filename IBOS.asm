@@ -707,6 +707,15 @@ MACRO PRVEN ; SFTODO: Rename to indicate this is PRVS1 only? Also perhaps put a 
     JSR PrvEn
 ENDMACRO
 
+; This macro wraps "JSR PrvDis" with a sanity check that the code calling it won't be hidden by
+; paging in PRVS1. This isn't likely to catch anything which wouldn't be caught by PRVEN, but
+; it just might, e.g. ".foo:PRVDIS:blahblah:.bar:PRVEN:blahblah:JMP foo" where that code
+; fragment straddles &8400.
+MACRO PRVDIS ; SFTODO: Rename to indicate this is PRVS1 only? Also perhaps put a verb in the name?
+    ASSERT P% >= &8400
+    JSR PrvDis
+ENDMACRO
+
 ORG	&8000
 GUARD	&C000
 .start
@@ -1425,7 +1434,7 @@ TmpCommandIndex = &AC
 			
 .GenerateSyntaxErrorForTransientCommandIndex
 {
-    JSR PrvDis
+    PRVDIS
     LDA transientCommandIndex
     JSR CmdRef
     SEC
@@ -1505,7 +1514,7 @@ TmpCommandIndex = &AC
 ; Generate an error using the error number and error string immediately following the "JSR RaiseError" call.
 .RaiseError
 {
-    JSR PrvDis
+    PRVDIS
     PLA:STA osErrorPtr:PLA:STA osErrorPtr + 1
     LDY #1 ; start at 1 because RTS pushes return address - 1 onto stack
 .CopyLoop
@@ -2200,7 +2209,7 @@ ptr = &00 ; 2 bytes
             STA ramsel
 .L8AC1      LDA prvTmp
             TAX
-            JSR PrvDis								;switch out private RAM
+            PRVDIS								;switch out private RAM
             PLP
             RTS
 }
@@ -2423,7 +2432,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             CLC									;otherwise set error flag
 .L8C0C      LDX #&00								;wipe parameter
 .L8C0E      STX prv81
-            JSR PrvDis								;switch out private RAM
+            PRVDIS								;switch out private RAM
             BCC L8C19								;check for error
             JMP ExitAndClaimServiceCall								;Exit Service Call
 			
@@ -2516,7 +2525,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     CMP #'?':BNE PrvDisGenerateSyntaxError
     JMP ShowBufferSizeAndLocation
 .PrvDisGenerateSyntaxError
-    JSR PrvDis
+    PRVDIS
     JMP GenerateSyntaxErrorForTransientCommandIndex
 
 .BankCountParsedOK
@@ -2658,7 +2667,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 .*OSNEWLPrvDisExitAndClaimServiceCall
     JSR OSNEWL
 .*PrvDisExitAndClaimServiceCall
-    JSR PrvDis
+    PRVDIS
     JMP ExitAndClaimServiceCall
 }
 
@@ -2768,7 +2777,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     PLA:STA prvOsMode
 .CommonEnd
     ; SQUASH: Couldn't we JMP PrvDis?
-    JSR PrvDis
+    PRVDIS
     RTS
 			
 .GenerateBadParameterIndirect
@@ -2949,7 +2958,10 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
             LDA #osbyteIssueServiceRequest						;issue paged ROM service request
             JMP OSBYTE								;execute paged ROM service request
 }
-			
+
+{
+    ASSERT P% >= &8400 ; we're going to page in PRVS1
+
 ; Page in PRVS1.
 ; SFTODO: Is there any chance of saving space by sharing some code with the
 ; similar pageInPrvs81?
@@ -2957,7 +2969,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ; SFTODO: I'd like to get rid of the PrvEn label and just use pageInPrvs1 but
 ; won't do it just yet, as I don't fully understand the model the code is using
 ; to manage paging private RAM in/out.
-.PrvEn      PHA
+.^PrvEn      PHA
             LDA ramselCopy
             ORA #ramselPrvs1
             STA ramselCopy
@@ -2969,8 +2981,6 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
             PLA
             RTS
 			
-
-
 ; Page out private RAM.
 ; SFTODO: This clears PRVS1 in RAMSEL, but is that actually necessary? If PRVEN is
 ; clear none of the private RAM is accessible. Do we ever just set PRVEN and rely
@@ -2979,7 +2989,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ; private 12K.
 ; SFTODO: I'm tempted to get rid of the PrvDis label but I'll leave it for now
 .pageOutPrv1
-.PrvDis	  PHA
+.^PrvDis	  PHA
             LDA romselCopy
             AND_NOT romselPrvEn                                                                     ;Clear PrvEn
             STA romselCopy
@@ -2990,6 +3000,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
             STA ramsel
             PLA
             RTS
+}
 			
 
 {
@@ -3144,7 +3155,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 
 .Escape
     LDA #osbyteAcknowledgeEscape:JSR OSBYTE
-    JSR PrvDis
+    PRVDIS
     JSR CloseTransientFileHandle
     JSR OSNEWL
     JMP OSNEWLPrvDisExitAndClaimServiceCall
@@ -3929,7 +3940,7 @@ ENDIF
             CPX prv81
             BNE L9634
 .notPowerOnStarBoot
-            JSR PrvDis								;switch out private RAM
+            PRVDIS								;switch out private RAM
             LDA #osbyteKeyboardScanFrom10
             JSR OSBYTE
             CPX #keycodeNone
@@ -4229,11 +4240,11 @@ tmp = &A8
 .softReset  BIT prvSFTODOTUBE2ISH
 	  BPL L983D
 .L9836      PLA
-            JSR PrvDisStaRamsel
+            JSR PRVDISStaRamsel
             JMP ExitServiceCall								;restore service call parameters and exit
 			
 .L983D      PLA
-            JSR PrvDisStaRamsel
+            JSR PRVDISStaRamsel
             PLA
             TAY
             PLA
@@ -4253,9 +4264,9 @@ tmp = &A8
             PLA
             RTS
 
-.PrvDisStaRamsel
+.PRVDISStaRamsel
 .L985D      PHA
-            JSR PrvDis								;switch out private RAM
+            PRVDIS								;switch out private RAM
             PLA
             STA ramselCopy
             STA ramsel
@@ -6080,7 +6091,7 @@ osfileBlock = L02EE
             LDY #&02
             JSR OSFILE
 .^PrvDisexitSc
-.LA2DE      JSR PrvDis								;switch out private RAM
+.LA2DE      PRVDIS								;switch out private RAM
             JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
@@ -6196,7 +6207,7 @@ osfileBlock = L02EE
             LDY #&55								;'U' (Unplugged)
             PRVEN								;switch in private RAM
             LDA prvRomTypeTableCopy,X;								;get backup copy of ROM Type
-            JSR PrvDis								;switch out private RAM
+            PRVDIS								;switch out private RAM
             BNE LA3BC								;if any bits set, then unplugged ROM exists so get and write ROM details
             JSR printSpace								;write ' ' to screen in place of 'U'
             JSR printSpace								;write ' ' to screen in place of 'S'
@@ -6386,7 +6397,7 @@ osfileBlock = L02EE
             STA prvRomTypeTableCopy,Y								;Save ROM Type to Private RAM copy of ROM Type table
 .skipBank   DEY
             BPL bankLoop
-            JSR PrvDis								;switch out private RAM
+            PRVDIS								;switch out private RAM
             RTS
 }
 			
@@ -6476,7 +6487,7 @@ osfileBlock = L02EE
 .LA52E      JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
             PRVEN								;switch in private RAM
             JSR LA53D
-.^LA537     JSR PrvDis								;switch out private RAM
+.^LA537     PRVDIS								;switch out private RAM
             JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
@@ -6526,7 +6537,7 @@ osfileBlock = L02EE
             DEX
             BPL copyLoop
 
-            JSR PrvDis								;switch out private RAM
+            PRVDIS								;switch out private RAM
 
             LDX lastBreakType
             BEQ softReset
@@ -8790,21 +8801,21 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 }
 
 .PrvDisMismatch
-      	  JSR PrvDis								;switch out private RAM
+      	  PRVDIS								;switch out private RAM
             JSR RaiseError								;Goto error handling, where calling address is pulled from stack
 
             EQUB &80
   	  EQUS "Mismatch", &00
 
 .PrvDisBadDate
-	  JSR PrvDis								;switch out private RAM
+	  PRVDIS								;switch out private RAM
             JSR RaiseError								;Goto error handling, where calling address is pulled from stack
 
             EQUB &80
 	  EQUS "Bad date", &00
 
 .PrvDisBadTime
-	  JSR PrvDis								;switch out private RAM
+	  PRVDIS								;switch out private RAM
             JSR RaiseError								;Goto error handling, where calling address is pulled from stack
 
             EQUB &80
@@ -8828,7 +8839,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             JSR initDateBufferAndEmitTimeAndDate								;format text for output to screen?
             JSR printDateBuffer								;output TIME & DATE data from address &8000 to screen
 .PrvDisExitAndClaimServiceCall
-            JSR PrvDis								;switch out private RAM
+            PRVDIS								;switch out private RAM
             JMP ExitAndClaimServiceCall								;Exit Service Call								;
 			
 .setTime    INY
@@ -8865,7 +8876,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             JSR initDateBufferAndEmitTimeAndDate								;format text for output to screen?
             JSR printDateBuffer								;output DATE data from address &8000 to screen
 .PrvDisexitSc
-            JSR PrvDis								;switch out private RAM
+            PRVDIS								;switch out private RAM
             JMP ExitAndClaimServiceCall								;Exit Service Call								;
 			
 .setDate    INY
@@ -8968,7 +8979,7 @@ column = prvC
             LDA dayOfWeek
             CMP #daysPerWeek + 1
             BCC rowLoop
-            JSR PrvDis								;switch out private RAM
+            PRVDIS								;switch out private RAM
             JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
@@ -8979,7 +8990,7 @@ column = prvC
             BCC LB62D
             PLP
             BCC LB62A
-            JSR PrvDis								;switch out private RAM
+            PRVDIS								;switch out private RAM
             JMP GenerateSyntaxErrorForTransientCommandIndex
 			
 .LB62A      JMP PrvDisBadTime
@@ -9068,7 +9079,7 @@ column = prvC
             LDA #'R'
             JSR OSWRCH								;write to screen
 .LB6E0      JSR OSNEWL								;new line
-.LB6E3      JSR PrvDis								;switch out private RAM
+.LB6E3      PRVDIS								;switch out private RAM
             JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 			
@@ -9090,7 +9101,7 @@ column = prvC
             STA oswdbtY								;and restore to &F1
             LDA #&0E								;load A register value of most recent OSWORD call (&0E)
             STA oswdbtA								;and restore to &EF
-            JSR PrvDis								;switch out private RAM
+            PRVDIS								;switch out private RAM
 
             JMP unstackTransientCmdSpaceAndExitSC						;restore 8 bytes of data to &A8 from the stack and exit
 }
@@ -9113,7 +9124,7 @@ column = prvC
             STA oswdbtY								;and restore to &F1
             LDA #&49								;load A register value of most recent OSWORD call (&49)
             STA oswdbtA								;and restore to &EF
-            JSR PrvDis								;switch out private RAM
+            PRVDIS								;switch out private RAM
 
 .^unstackTransientCmdSpaceAndExitSC
 	  JSR unstackTransientCmdSpace						;restore 8 bytes of data to &A8 from the stack
@@ -10188,11 +10199,11 @@ ScreenStart = &3000
     PLP
 
     ; Disable shadow RAM.
-    ; SQUASH: I think the next few lines up to and including "JSR PrvDis" could be replaced by
+    ; SQUASH: I think the next few lines up to and including "PRVDIS" could be replaced by
     ; "JSR SFTODOCOMMON1".
     PRVEN
     LDA prvSFTODOMODE:AND_NOT shadowModeOffset:STA prvSFTODOMODE
-    JSR PrvDis
+    PRVDIS
     JSR maybeSwapShadow2
     JMP DisableShadow
 }
@@ -10354,7 +10365,7 @@ ScreenStart = &3000
     STA prvPrintBufferBankList + 3
 .softReset
     JSR purgePrintBuffer
-    JSR PrvDis
+    PRVDIS
     ; Copy the rom access subroutine used by the printer buffer from ROM into RAM.
     LDY #romRomAccessSubroutineEnd - romRomAccessSubroutine - 1
 .SubroutineCopyLoop
