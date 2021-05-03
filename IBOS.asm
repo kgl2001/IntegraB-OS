@@ -3305,11 +3305,10 @@ OriginalOutputDeviceStatus = TransientZP + 1
     JMP ExitAndClaimServiceCall
 }
 
-; SFTODO: This has only one caller
 ; Check next two characters of command line:
-; "NO" => C clear, transientConfigPrefix=1, Y advanced past "NO"
-; "SH" => C clear, transientConfigPrefix=2, Y advanced past "SH"
-; otherwise C set, transientConfigPrefix=0, Y preserved
+;     "NO" => C clear, transientConfigPrefix=1, Y advanced past "NO"
+;     "SH" => C clear, transientConfigPrefix=2, Y advanced past "SH"
+;     otherwise C set, transientConfigPrefix=0, Y preserved
 .ParseNoSh
 {
     TYA:PHA
@@ -3319,7 +3318,7 @@ OriginalOutputDeviceStatus = TransientZP + 1
     LDA #1
 .Match
     STA transientConfigPrefix
-    PLA ; SFTODO WE ARE RETURNING WITH ORIGINAL Y IN *A*
+    PLA ; discard stacked original Y
     CLC
     RTS
 .NotNo
@@ -3329,7 +3328,7 @@ OriginalOutputDeviceStatus = TransientZP + 1
     LDA #2:JMP Match ; SQUASH: "BNE ; always branch"
 .NoMatch
     LDA #0:STA transientConfigPrefix
-    PLA:TAY
+    PLA:TAY ; restore original Y
     SEC
     RTS
 }
