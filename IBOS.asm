@@ -9262,13 +9262,12 @@ Ptr = &A8
     LDA prvOswordBlockOrigAddr + 1:ADC #0:TAY
     LDA #tubeEntryMultibyteHostToParasite:JSR tubeEntry
     LDY #0
-.WriteLoop
+.TubeWriteLoop
     LDA prvDateBuffer,Y
 .Full
     BIT tubeReg3Status:BVC Full
     STA tubeReg3Data
-    INY
-    CPY prvOswordBlockCopy + 1:BNE WriteLoop ; SFTODO: Better label
+    INY:CPY prvDateSFTODO1:BNE TubeWriteLoop
     LDA #tubeEntryRelease + tubeClaimId:JSR tubeEntry
     CLC
     RTS
@@ -9282,9 +9281,9 @@ Ptr = &A8
     STX Ptr
     ; Now copy prvOswordBlockCopy + 1 bytes from FromBase to that address.
     LDY #0
-.LB811
+.HostWriteLoop
     LDA prvDateBuffer,Y:STA (Ptr),Y
-    INY:CPY prvOswordBlockCopy + 1:BNE LB811 ; SFTODO: Better label
+    INY:CPY prvDateSFTODO1:BNE HostWriteLoop
     CLC
     RTS
 }
