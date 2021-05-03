@@ -946,7 +946,7 @@ GUARD	end
 ;*CONFIGURE parameters table
 .ConfParTbl
 t = &80
-    ;     n, char 1, 2, ... n-1	   i  ConfTbl entry		fully expanded text
+    ;     n, char 1, 2, ..., n-1 	   i  ConfTbl entry		fully expanded text
     EQUB  7, t+1, "(D/N)"		;  0  FILE		"<0-15>(D/N)"
     EQUB  5, t+19, "15>"		;  1  LANG		"<0-15>"
     EQUB  6, "<1-8>"		;  2  BAUD          	"<1-8>"
@@ -963,7 +963,7 @@ t = &80
     EQUB  6, t+17, "BOOT"		; 13  BOOT		"/NOBOOT"
     EQUB  5, t+17, "SHX"		; 14  SHX			"/NOSHX"
     EQUB  2, t+5			; 15  OSMODE		"<0-4>"
-    EQUB  5, t+19, "63>"		; 16  -			"<0-63>"
+    EQUB  5, t+19, "63>"		; 16  ALARM		"<0-63>"
     EQUB  4, "/NO"			; 17  -			"/NO"
     EQUB  5, "CAPS"			; 18  -			"CAPS"
     EQUB  4, "<0-"			; 19  -			"<0-"
@@ -1677,133 +1677,148 @@ negateFlag = &B9
 originalCmdPtrY = &BA
 firstDigitCmdPtrY = &BB
 
-; SFTODO: Could we share this fragment?
+; SQUASH: Could we share this fragment?
 .clvRts
-.L8729      CLV
-            RTS
+    CLV
+    RTS
 
 .^convertIntegerDefaultDecimal
-.L872B      LDA #10
+    LDA #10
 .^convertIntegerDefaultBaseA
-.L872D      STA base
-            JSR FindNextCharAfterSpace							;find next character. offset stored in Y
-            BCS clvRts                                                                              ;return with V set if it's a carriage return
-            STY originalCmdPtrY
-            STY firstDigitCmdPtrY
-            LDA #&00
-            STA ConvertIntegerResult
-            STA ConvertIntegerResult + 1
-            STA ConvertIntegerResult + 2
-            STA ConvertIntegerResult + 3
-            STA negateFlag
-            LDA (transientCmdPtr),Y
-            CMP #'-'
-            BNE L8753
-            LDA #&FF
-            STA negateFlag
-.L874E      LDA #10
-            JMP L8766
+    STA base
+    JSR FindNextCharAfterSpace
+    BCS clvRts                                                                              ;return with V set if it's a carriage return
+    STY originalCmdPtrY
+    STY firstDigitCmdPtrY
+    LDA #&00
+    STA ConvertIntegerResult
+    STA ConvertIntegerResult + 1
+    STA ConvertIntegerResult + 2
+    STA ConvertIntegerResult + 3
+    STA negateFlag
+    LDA (transientCmdPtr),Y
+    CMP #'-'
+    BNE L8753
+    LDA #&FF
+    STA negateFlag
+.L874E
+    LDA #10
+    JMP L8766
 			
-.L8753      CMP #'+'
-            BEQ L874E
-            CMP #'&'
-            BNE L8760
-            LDA #&10
-            JMP L8766
+.L8753
+    CMP #'+'
+    BEQ L874E
+    CMP #'&'
+    BNE L8760
+    LDA #&10
+    JMP L8766
 			
-.L8760      CMP #'%'
-            BNE L87B9
-            LDA #2
-.L8766      STA base
-            INY
-            STY firstDigitCmdPtrY
-            JMP L87B9
+.L8760
+    CMP #'%'
+    BNE L87B9
+    LDA #2
+.L8766
+    STA base
+    INY
+    STY firstDigitCmdPtrY
+    JMP L87B9
 			
-.L876E      TAX
-            LDA ConvertIntegerResult
-            STA L00B4
-            STX ConvertIntegerResult
-            LDX #&00
-            LDA ConvertIntegerResult + 1
-            STA L00B5
-            STX ConvertIntegerResult + 1
-            LDA ConvertIntegerResult + 2
-            STA L00B6
-            STX ConvertIntegerResult + 2
-            LDA ConvertIntegerResult + 3
-            STA L00B7
-            STX ConvertIntegerResult + 3
-            LDA base
-            LDX #&08
-.L878D      LSR A
-            BCC L87AD
-            PHA
-            CLC
-            LDA ConvertIntegerResult
-            ADC L00B4
-            STA ConvertIntegerResult
-            LDA ConvertIntegerResult + 1
-            ADC L00B5
-            STA ConvertIntegerResult + 1
-            LDA ConvertIntegerResult + 2
-            ADC L00B6
-            STA ConvertIntegerResult + 2
-            LDA ConvertIntegerResult + 3
-            ADC L00B7
-            STA ConvertIntegerResult + 3
-            PLA
-            BVS L8806
-.L87AD      ASL L00B4
-            ROL L00B5
-            ROL L00B6
-            ROL L00B7
-            DEX
-            BNE L878D
-            INY
-.L87B9      LDA (transientCmdPtr),Y
-            CMP #'Z'+1
-            BCC L87C1
-            AND #&DF                                                                                ;convert to upper case
-.L87C1      SEC
-            SBC #'0'
-            CMP #10
-            BCC L87CE
-            SBC #('A' - 10) - '0'
-            CMP #10
-            BCC L87D2
-.L87CE      CMP base
-            BCC L876E
-.L87D2      BIT negateFlag
-            BPL L87EF
-            SEC
-            LDA #&00
-            SBC ConvertIntegerResult
-            STA ConvertIntegerResult
-            LDA #&00
-            SBC ConvertIntegerResult + 1
-            STA ConvertIntegerResult + 1
-            LDA #&00
-            SBC ConvertIntegerResult + 2
-            STA ConvertIntegerResult + 2
-            LDA #&00
-            SBC ConvertIntegerResult + 3
-            STA ConvertIntegerResult + 3
-.L87EF      CPY firstDigitCmdPtrY
-            BEQ L87F8
-            CLC
-            CLV
-            LDA ConvertIntegerResult
-            RTS
+.L876E
+    TAX
+    LDA ConvertIntegerResult
+    STA L00B4
+    STX ConvertIntegerResult
+    LDX #&00
+    LDA ConvertIntegerResult + 1
+    STA L00B5
+    STX ConvertIntegerResult + 1
+    LDA ConvertIntegerResult + 2
+    STA L00B6
+    STX ConvertIntegerResult + 2
+    LDA ConvertIntegerResult + 3
+    STA L00B7
+    STX ConvertIntegerResult + 3
+    LDA base
+    LDX #&08
+.L878D
+    LSR A
+    BCC L87AD
+    PHA
+    CLC
+    LDA ConvertIntegerResult
+    ADC L00B4
+    STA ConvertIntegerResult
+    LDA ConvertIntegerResult + 1
+    ADC L00B5
+    STA ConvertIntegerResult + 1
+    LDA ConvertIntegerResult + 2
+    ADC L00B6
+    STA ConvertIntegerResult + 2
+    LDA ConvertIntegerResult + 3
+    ADC L00B7
+    STA ConvertIntegerResult + 3
+    PLA
+    BVS GenerateBadParameterIndirect
+.L87AD
+    ASL L00B4
+    ROL L00B5
+    ROL L00B6
+    ROL L00B7
+    DEX
+    BNE L878D
+    INY
+.L87B9
+    LDA (transientCmdPtr),Y
+    CMP #'Z'+1
+    BCC L87C1
+    AND #&DF                                                                                ;convert to upper case
+.L87C1
+    SEC
+    SBC #'0'
+    CMP #10
+    BCC L87CE
+    SBC #('A' - 10) - '0'
+    CMP #10
+    BCC L87D2
+.L87CE
+    CMP base
+    BCC L876E
+.L87D2
+    BIT negateFlag
+    BPL L87EF
+    SEC
+    LDA #&00
+    SBC ConvertIntegerResult
+    STA ConvertIntegerResult
+    LDA #&00
+    SBC ConvertIntegerResult + 1
+    STA ConvertIntegerResult + 1
+    LDA #&00
+    SBC ConvertIntegerResult + 2
+    STA ConvertIntegerResult + 2
+    LDA #&00
+    SBC ConvertIntegerResult + 3
+    STA ConvertIntegerResult + 3
+.L87EF
+    CPY firstDigitCmdPtrY
+    BEQ L87F8
+    CLC
+    CLV
+    LDA ConvertIntegerResult
+    RTS
 			
-.L87F8      LDA #vduBell
-            JSR OSWRCH								;Generate VDU 7 beep
-            LDA #&00
-            LDY originalCmdPtrY
-            SEC
-            BIT rts									;set V
-.rts        RTS
+.L87F8
+    LDA #vduBell
+    JSR OSWRCH								;Generate VDU 7 beep
+    LDA #&00
+    LDY originalCmdPtrY
+    SEC
+    BIT rts									;set V
+.rts
+    RTS
 
-.L8806      JMP GenerateBadParameter
+.GenerateBadParameterIndirect
+    JMP GenerateBadParameter
 }
 
 .GenerateNotFoundError
