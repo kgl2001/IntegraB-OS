@@ -2853,7 +2853,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 .^PrintOnOffOSNEWLExitSC
             JSR PrintOnOff
             JSR OSNEWL
-.exitSCIndirect
+.ExitAndClaimServiceCallIndirect
             JMP ExitAndClaimServiceCall								;Exit Service Call
 
 .GenerateSyntaxErrorIndirect
@@ -2863,7 +2863,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
             BNE turnTubeOn
 	  ; Turn the tube off. SFTODO: How? All we seem to do is re-enter the current(ish) language.
             BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
-            BPL exitSCIndirect							;nothing to do if already off
+            BPL ExitAndClaimServiceCallIndirect							;nothing to do if already off
 	  ; SFTODO: We seem to be using currentLanguageRom if b7 clear, otherwise we take the bank number from romsel (which will be our bank, won't it) - not sure what's going on exactly
             LDA currentLanguageRom
             BPL L8FBF
@@ -2909,7 +2909,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ; SFTODO: Some code in common with disableTube here (OSARGS/filing system reselection), could factor it out
 .enableTube
             BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
-            BMI exitSCIndirect							;nothing to do if already on
+            BMI ExitAndClaimServiceCallIndirect							;nothing to do if already on
             LDA #&FF
             LDX #prvSFTODOTUBE2ISH - prv83
             JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
@@ -3276,45 +3276,33 @@ OriginalOutputDeviceStatus = TransientZP + 1
 {
 ;*CONFIGURE Command
 .^config
-    LDX #serviceConfigure
-    BNE Common
+    LDX #serviceConfigure:BNE Common ; always branch
 
 ;*STATUS Command
 .^status
     LDX #serviceStatus
 .Common
-    JSR FindNextCharAfterSpace							;find next character. offset stored in Y
-    LDA #&FF								;load &FF
-    PHA									;and store
-    LDA (transientCmdPtr),Y							;read character
-    CMP #vduCr								;check for end of line
-    BNE L92CB								;branch if not end of line
-    PLA									;pull &FF
-    LDA #&00								;load &00 instead
-    PHA									;and store
-.L92CB
-    TXA									;move *CONF (*&28) / *STAT (*&29) to A
-    PHA									;and store
-    LDA transientCmdPtr							;copy command location LSB
-    STA osCmdPtr								;to &F2
-    LDA transientCmdPtr + 1							;copy command location MSB
-    STA osCmdPtr + 1								;to &F3
-    PLA									;pull *CONF (*&28) / *STAT (*&29)
-    TAX									;and transfer to X
-    LDA #osbyteIssueServiceRequest
-    JSR OSBYTE
-    PLA
-    BEQ exitSCIndirect
-; SFTODO: Can X be modified by the service call? beebwiki suggests not, but maybe we're extending the protocol or I'm missing something? Documentation on these service calls seems a bit thin on the ground.
-    CPX #&00
-    BEQ exitSCIndirect
+    JSR FindNextCharAfterSpace
+    LDA #&FF:PHA
+    LDA (transientCmdPtr),Y:CMP #vduCr:BNE HaveArgument
+    PLA:LDA #0:PHA
+.HaveArgument
+    TXA:PHA
+    LDA transientCmdPtr:STA osCmdPtr
+    LDA transientCmdPtr + 1:STA osCmdPtr + 1
+    PLA:TAX ; X is serviceConfigure or serviceStatus as appropriate
+    LDA #osbyteIssueServiceRequest:JSR OSBYTE
+    PLA:BEQ ExitAndClaimServiceCallIndirect ; branch if we have no argument
+    ; Documentation on these service calls seems a bit thin on the ground, but it looks as
+    ; though they return with X=0 if a ROM recognised the argument.
+    CPX #0:BEQ ExitAndClaimServiceCallIndirect ; SQUASH: TXA instead of CPX #0
 .^GenerateBadParameter
-    JSR RaiseError								;Goto error handling, where calling address is pulled from stack
+    JSR RaiseError
     EQUB &FE
     EQUS "Bad parameter", &00
 
-.exitSCIndirect
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+.ExitAndClaimServiceCallIndirect ; SQUASH: Re-use the JMP to this above
+    JMP ExitAndClaimServiceCall
 }
 
 ; SFTODO: This has only one caller
@@ -6104,10 +6092,10 @@ osfileBlock = L02EE
             JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA transientRomBankMask + 1
             JSR WriteUserRegAndCheckNextCharI						;Check for Immediate 'I' flag
-            BNE exitSCIndirect1								;Exit if not immediate
+            BNE ExitAndClaimServiceCallIndirect1								;Exit if not immediate
             INY
             JSR insertBanksUsingTransientRomBankMask					;Initialise inserted ROMs
-.exitSCIndirect1
+.ExitAndClaimServiceCallIndirect1
             JMP ExitAndClaimServiceCall								;Exit Service Call
 
 .WriteUserRegAndCheckNextCharI
@@ -6129,10 +6117,10 @@ osfileBlock = L02EE
             JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND L00AF
             JSR WriteUserRegAndCheckNextCharI						;Check for Immediate 'I' flag
-            BNE exitSCIndirect2
+            BNE ExitAndClaimServiceCallIndirect2
             INY
             JSR unplugBanksUsingTransientRomBankMask
-.exitSCIndirect2
+.ExitAndClaimServiceCallIndirect2
             JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
