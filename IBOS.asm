@@ -5252,7 +5252,8 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ; there's a swizzling routine analogous I haven't labelled yet
 ; (adjustPrvOsword43Block-to-be, presumably)
 {
-.L9DDD      LDY prvOswordBlockCopy + 8 ; get low byte of sideways address
+    XASSERT_USE_PRV1
+            LDY prvOswordBlockCopy + 8 ; get low byte of sideways address
             LDA prvOswordBlockCopy + 9 ; get high byte of sideways address
             BIT prvOswordBlockCopy ; test function
             BVC absoluteAddress
@@ -5262,7 +5263,8 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             STY transientOs4243SwrAddr
             STA transientOs4243SwrAddr + 1
 .^getBufferAddressAndLengthFromPrvOswordBlockCopy
-.L9DF2      LDA prvOswordBlockCopy + 2 ; get low byte of main memory address (OSWORD &42) or buffer address (OSWORD &43)
+    XASSERT_USE_PRV1
+            LDA prvOswordBlockCopy + 2 ; get low byte of main memory address (OSWORD &42) or buffer address (OSWORD &43)
             STA transientOs4243MainAddr
             LDA prvOswordBlockCopy + 3 ; get high byte of main memory address (OSWORD &42) or buffer address (OSWORD &43)
             STA transientOs4243MainAddr + 1
@@ -5284,16 +5286,16 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ;this code is relocated to and executed at &03A7
 .testRamTemplate
 {
-.L9E0A	  LDX romselCopy										;Read current ROM number from &F4 and store in X
+      	  LDX romselCopy										;Read current ROM number from &F4 and store in X
             STA romselCopy										;Write new ROM number from A to &F4
             STA romsel									;Write new ROM number from A to &FE30
             LDA romBinaryVersion									;Read contents of &8008
             EOR #&FF									;and XOR with &FF 
             STA romBinaryVersion									;Write XORd data back to &8008
-            JSR variableMainRamSubroutine+L9E37-L9E0A								;Delay 1 before read back
-            JSR variableMainRamSubroutine+L9E37-L9E0A								;Delay 2 before read back
-            JSR variableMainRamSubroutine+L9E37-L9E0A								;Delay 3 before read back
-            JSR variableMainRamSubroutine+L9E37-L9E0A								;Delay 4 before read back
+            JSR variableMainRamSubroutine+L9E37-testRamTemplate								;Delay 1 before read back
+            JSR variableMainRamSubroutine+L9E37-testRamTemplate								;Delay 2 before read back
+            JSR variableMainRamSubroutine+L9E37-testRamTemplate								;Delay 3 before read back
+            JSR variableMainRamSubroutine+L9E37-testRamTemplate								;Delay 4 before read back
             CMP romBinaryVersion									;Does contents of &8008 match what has been written?
             PHP										;Save test
             EOR #&FF									;XOR again with &FF to restore original data
@@ -5311,15 +5313,15 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ;this code is relocated to and executed at &03A7
 .wipeRamTemplate
 {
-.L9E38	  LDX romselCopy
+      	  LDX romselCopy
             STA romselCopy
             STA romsel
             LDA #&00
 .L9E41      STA prv80+&00 ; SFTODO: Change to &8000? I think this is wiping arbitrary banks, not particular private RAM.
-            INC variableMainRamSubroutine+L9E41-L9E38+1								;Self modifying code - increment LSB of STA in line above
+            INC variableMainRamSubroutine+L9E41-wipeRamTemplate+1								;Self modifying code - increment LSB of STA in line above
             BNE L9E41									;Test for overflow
-            INC variableMainRamSubroutine+L9E41-L9E38+2								;Increment MSB of STA in line above
-            BIT variableMainRamSubroutine+L9E41-L9E38+2								;test MSB bit 6 (have we reached &4000?)
+            INC variableMainRamSubroutine+L9E41-wipeRamTemplate+2								;Increment MSB of STA in line above
+            BIT variableMainRamSubroutine+L9E41-wipeRamTemplate+2								;test MSB bit 6 (have we reached &4000?)
             BVC L9E41									;No? Then loop
             LDA romselCopy
             STX romselCopy
@@ -5332,7 +5334,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ;this code is relocated to and executed at &03A7
 .writeRomHeaderTemplate
 {
-.L9E59	  LDX romselCopy
+      	  LDX romselCopy
             STA romselCopy
             STA romsel
             LDY #&0F
@@ -5365,7 +5367,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ;this code is relocated to and executed at &03A7
 .saveSwrTemplate
 {
-.L9E83	  TXA
+      	  TXA
 	  LDX romselCopy
             STA romselCopy
             STA romsel
@@ -5398,7 +5400,7 @@ saveSwrTemplateSavedY = saveSwrTemplateBytesToRead + 1
 ;this code is relocated to and executed at &03A7
 .loadSwrTemplate
 {
-.L9EAE	  TXA
+       	  TXA
             LDX romselCopy
             STA romselCopy
             STA romsel
@@ -5431,20 +5433,20 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 ;this code is relocated to and executed at &03A7
 .mainRamTransferTemplate
 {
-.L9ED9	  TXA									;&03A7
+      	  TXA									;&03A7
             LDX romselCopy									;&03A8
             STA romselCopy									;&03AA
             STA romsel								;&03AC
             CPY #&00								;&03AF
-            BEQ L9EEC								;&03B1
+            BEQ mainRamTransferTemplateLdaStaPair2
 .^mainRamTransferTemplateLdaStaPair1
-.L9EE5      LDA (transientOs4243SwrAddr),Y								;&03B3 - Note this is changed to &AA by code at &9FA4
+            LDA (transientOs4243SwrAddr),Y								;&03B3 - Note this is changed to &AA by code at &9FA4
             STA (transientOs4243MainAddr),Y								;&03B5 - Note this is changed to &A8 by code at &9FA4
             DEY									;&03B7
-            BNE L9EE5								;&03B8
+            BNE mainRamTransferTemplateLdaStaPair1
 
 .^mainRamTransferTemplateLdaStaPair2
-.L9EEC      LDA (transientOs4243SwrAddr),Y								;&03BA - Note this is changed to &AA by code at &9FA4
+            LDA (transientOs4243SwrAddr),Y								;&03BA - Note this is changed to &AA by code at &9FA4
             STA (transientOs4243MainAddr),Y								;&03BC - Note this is changed to &A8 by code at &9FA4
             LDA romselCopy									;&03BE
             STX romselCopy									;&03C0
@@ -5461,7 +5463,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 ; SFTODO: If Y=255 on entry I think we will transfer 256 bytes, but double-check that later.
 .tubeTransferTemplate
 {
-.L9EF9	  TXA
+       	  TXA
             LDX romselCopy
             STA romselCopy
             STA romsel
@@ -5496,8 +5498,8 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 ; SFTODO: The first three bytes of patched code are the same either way, unless
 ; there's another hidden patch we could save three bytes by not patching those.
 .^tubeTransferTemplateWriteSwr
-.L9F29      BIT tubeReg3Status
-            BPL L9F29
+            BIT tubeReg3Status
+            BPL tubeTransferTemplateWriteSwr
             LDA tubeReg3Data
             STA (transientOs4243SwrAddr),Y
             ASSERT P% - tubeTransferTemplateWriteSwr == tubeTransferTemplateReadSwrEnd - tubeTransferTemplateReadSwr
@@ -5506,7 +5508,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 ;relocate &32 bytes of code from address X (LSB) & Y (MSB) to &03A7
 ;This code is called by several routines and relocates the following code:
 ;L9E0A - Test if RAM at bank specified by A is writable
-;L9E38 - Wipe RAM at SWRAM bank specified by A
+;wipeRamTemplate - Wipe RAM at SWRAM bank specified by A
 ;L9E59 - Write ROM Header info to SWRAM bank specified by A
 ;L9E83 - Save RAM at SWRAM bank specified by A to file system
 ;L9EAE - Load RAM to SWRAM bank specified by A from file system
@@ -5516,7 +5518,7 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 .copyYxToVariableMainRamSubroutine
 {
 ptr = &AC ; 2 bytes
-.L9F33      LDA ptr + 1
+            LDA ptr + 1
             PHA
             LDA ptr
             PHA
@@ -5540,7 +5542,8 @@ ptr = &AC ; 2 bytes
 .prepareMainSidewaysRamTransfer
 ; SFTODO: I am assuming prvOswordBlockCopy has always been through adjustPrvOsword42Block when this code is called
 {
-.L9F4E      BIT prvOswordBlockCopy + 5                                                              ;test high bit of 32-bit main memory address
+    XASSERT_USE_PRV1
+            BIT prvOswordBlockCopy + 5                                                              ;test high bit of 32-bit main memory address
             BMI notTube
             BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
             BPL notTube
@@ -5614,7 +5617,7 @@ ptr = &AC ; 2 bytes
 ; SFTODO: "Using..." part of name is perhaps OTT, but it might be important to "remind" us that this tramples over variableMainRamSubroutine - perhaps change later once more code is labelled up
 .testRamUsingVariableMainRamSubroutine
 {
-.L9FC6      TXA
+            TXA
             PHA
             LDX #lo(testRamTemplate)
             LDY #hi(testRamTemplate)
@@ -5632,7 +5635,7 @@ ptr = &AC ; 2 bytes
 
 .copyOswordDetailsToPrv
 {
-.L9FD3      PRVEN								;switch in private RAM
+            PRVEN								;switch in private RAM
             LDA oswdbtX								;get value of X reg
             STA prvOswordBlockOrigAddr							;and save to private memory &8230
             LDA oswdbtY								;get value of Y reg
@@ -5695,7 +5698,9 @@ ptr = &AC ; 2 bytes
 {
 osfileBlock = L02EE
             ; Although OSWORD &43 doesn't use 32-bit addresses, we want to be able to use prepareMainSidewaysRamTransfer to implement OSWORD &43 and that does respect the full 32-bit address, so we need to patch the OSWORD block to indicate the I/O processor for the sideways address.
-.^LA02D      LDA #&FF
+.^LA02D
+    XASSERT_USE_PRV1
+      LDA #&FF
             STA prvOswordBlockCopy + 4                                                    ;SFTODO: what's this? do we ever use it? maybe setting (non-existent) high word of address to host, just in case??
             STA prvOswordBlockCopy + 5                                                    ;SFTODO: ditto
             BIT prvOswordBlockCopy + 7                                                    ;high byte of buffer length
