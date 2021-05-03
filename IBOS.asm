@@ -247,6 +247,7 @@ osbyteReadWriteVduQueueLength = &DA
 osbyteReadWriteStartupOptions = &FF
 
 oswordInputLine = &00
+oswordReadPixel = &09
 
 romBinaryVersion = &8008
 
@@ -9983,19 +9984,19 @@ ibosCNPVIndex = 6
 
 {
 .jmpParentWORDV
-.LBB51      JMP (parentWORDV)
+    JMP (parentWORDV)
 
 .^wordvHandler
-.LBB54	  JSR restoreOrigVectorRegs
-            CMP #&09
-            BNE LBB67
-            JSR setMemsel
-            JSR jmpParentWORDV
-            JSR updateOrigVectorRegs
-            JMP returnFromVectorHandler
-
-.LBB67      LDA #ibosWORDVIndex
-            JMP forwardToParentVectorTblEntry
+    JSR restoreOrigVectorRegs
+    CMP #oswordReadPixel:BNE NotReadPixel
+    ; We need to make sure the video RAM is paged in for the pixel read to work.
+    ; SFTODO: Prob true, but not followed code through precisely yet.
+    JSR setMemsel
+    JSR jmpParentWORDV
+    JSR updateOrigVectorRegs
+    JMP returnFromVectorHandler
+.NotReadPixel
+    LDA #ibosWORDVIndex:JMP forwardToParentVectorTblEntry
 }
 
 {
@@ -10111,18 +10112,16 @@ ScreenStart = &3000
 ; they're called becomes clearer.
 ; SFTODO: This has only one caller
 .^maybeSwapShadow1
-.LBC2D      LDA vduStatus								;get VDU status
-            AND #vduStatusShadow							;test bit 4
-            BEQ SwapShadowIfShxEnabled							;and branch if clear
-            RTS
+    LDA vduStatus:AND #vduStatusShadow:BEQ SwapShadowIfShxEnabled
+    RTS
 
 ; SFTODO: This has only one caller
 .^maybeSwapShadow2
-.LBC34      LDA vduStatus								;get VDU status
-            AND #vduStatusShadow        						;test bit 4
-            ; SQUASH: Rewriting the next two lines as "BEQ some-rts-somewhere:FALLTHROUGH_TO SwapShadowIfShxEnabled" would save a byte.
-            BNE SwapShadowIfShxEnabled							;and branch if clear
-            RTS
+    LDA vduStatus:AND #vduStatusShadow
+    ; SQUASH: Rewriting the next two lines as "BEQ some-rts-somewhere:FALLTHROUGH_TO
+    ; SwapShadowIfShxEnabled" would save a byte.
+    BNE SwapShadowIfShxEnabled
+    RTS
 
 ; If SHX is enabled, swap the contents of main and shadow RAM between &3000-&7FFF.
 ; ENHANCE: If we could speed this up (e.g. by using a buffer in private RAM to swap a page at a
@@ -10205,7 +10204,7 @@ ScreenStart = &3000
 .SFTODOCOMMON1
     PRVEN
     LDA prvSFTODOMODE:AND_NOT shadowModeOffset:STA prvSFTODOMODE
-    JMP PrvDis
+    JMP PrvDis ; SFTODO: Should have PRVDIS-like macro for this case
 }
 
 ; Enter OSMODE 0, *assuming* we are currently in a different OSMODE.
