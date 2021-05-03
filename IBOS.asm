@@ -2820,7 +2820,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 {
 ;*CSAVE Command
 .^csave
-    LDA #osfindOpenOutput:JSR parseFilenameAndOpen:TAY
+    LDA #osfindOpenOutput:JSR ParseFilenameAndOpen:TAY
     LDX #0
 .SaveLoop
     JSR ReadUserReg:JSR OSBPUT
@@ -2829,7 +2829,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 
 ;*CLOAD Command
 .^cload
-    LDA #osfindOpenInput:JSR parseFilenameAndOpen:TAY
+    LDA #osfindOpenInput:JSR ParseFilenameAndOpen:TAY
     LDX #0
 .LoadLoop
     JSR OSBGET:JSR WriteUserReg
@@ -3095,7 +3095,7 @@ LineLengthIncludingCr = &A9
 LineNumber = &AA
 OswordInputLineBlockCopy = &AB ; 5 bytes
 
-    LDA #osfindOpenUpdate:JSR parseFilenameAndOpen
+    LDA #osfindOpenUpdate:JSR ParseFilenameAndOpen
     LDA #0:STA LineNumber
     PRVEN
 
@@ -3165,7 +3165,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 {
 OriginalOutputDeviceStatus = TransientZP + 1
 
-    LDA #osfindOpenInput:JSR parseFilenameAndOpen
+    LDA #osfindOpenInput:JSR ParseFilenameAndOpen
     ; SQUASH: We could just read/write &27C directly
     LDA #osbyteReadWriteOutputDevice:LDX #0:LDY #&FF:JSR OSBYTE
     STA OriginalOutputDeviceStatus
@@ -3194,7 +3194,7 @@ OriginalOutputDeviceStatus = TransientZP + 1
 ;*SPOOLON Command
 .SpoolOn
 {
-    LDA #osfindOpenUpdate:JSR parseFilenameAndOpen:TAY
+    LDA #osfindOpenUpdate:JSR ParseFilenameAndOpen:TAY
     ; SFTODO: Should the next line be LDX #L00AB? X is the address of a four byte zero page
     ; control block; &AB would be a legitimate location (it's transient ZP workspace), but it's
     ; not obvious to me that &AB will *contain* a suitable location, we could trample over
@@ -3212,49 +3212,37 @@ OriginalOutputDeviceStatus = TransientZP + 1
 ;get start and end offset of file name, store at Y & X
 ;convert file name offset to address of file name and store at location defined by X & Y
 ;then open file with file name at location defined by X & Y
-.parseFilenameAndOpen
+.ParseFilenameAndOpen
 {
-.L922B      PHA									;save file mode: input (&40) / output (&80) / update (&C0)
-            JSR L9247								;get start and end of file name offset and store in Y & X
-            CLC
-            TYA									;offset to file name
-            ADC L00A8								;input buffer low address
-            TAX									;and store in X (low byte of address of file name)
-            LDA #&00
-            ADC L00A9								;get input buffer high address and increment if low byte carried
-            TAY									;and store in Y (high byte of address of file name)
-            PLA									;recover file mode: input (&40) / output (&80) / update (&C0)
-            JSR OSFIND								;and open file
-            CMP #&00								;has error occurred?
-            BNE L9244								;no error, so save file handle and exit
-            JMP GenerateNotFoundError								;otherwise error.
-			
-.L9244      STA transientFileHandle								;save file handle to &A8
-            RTS									;and return
-			
-			
-;get start and end of file name offset and store in Y & X
-.^L9247      JSR FindNextCharAfterSpace							;find next character. offset stored in Y
-            LDA (transientCmdPtr),Y							;read character
-            CMP #vduCr								;CR?
-            BNE L9253								;not CR, so jump
-.^L9250      JMP GenerateSyntaxErrorForTransientCommandIndex								;no file name, so error with 'Syntax:'
+    PHA ; save open mode
+    JSR ParseFilename
+    CLC:TYA:ADC transientCmdPtr:TAX
+    LDA #0:ADC transientCmdPtr + 1:TAY
+    PLA:JSR OSFIND:CMP #0:BNE OpenedOK
+    JMP GenerateNotFoundError
+.OpenedOK
+    STA transientFileHandle
+    RTS
 
-.L9253      TYA
-            PHA
-.L9255      LDA (transientCmdPtr),Y							;read character
-            CMP #' '
-            BEQ L9262								;ok. end of file name
-            CMP #vduCr								;check for CR
-            BEQ L9262								;ok. end of file name
-            INY									;otherwise get next character
-            BNE L9255								;loop
-.L9262      TYA
-            TAX
-            INX									;end of file name offset
-            PLA
-            TAY									;start of file name offset
-            RTS
+; Parse filename at (transientCmdPtr),Y, returning with X=index to resume parsing after the
+; filename and Y=index of start of filename.
+.^ParseFilename
+    JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:CMP #vduCr:BNE HaveFilename
+.^GenerateSyntaxErrorForTransientCommandIndexIndirect
+    JMP GenerateSyntaxErrorForTransientCommandIndex
+.HaveFilename
+    TYA:PHA
+.Loop
+    LDA (transientCmdPtr),Y
+    CMP #' ':BEQ EndOfFilename
+    ; SFTODO: Won't we return with X pointing *after* vduCr, which would mean *CREATE will
+    ; parse random junk?
+    CMP #vduCr:BEQ EndOfFilename
+    INY:BNE Loop ; always branch
+.EndOfFilename
+    TYA:TAX:INX ; end of file name offset + 1
+    PLA:TAY ; start of file name offset
+    RTS
 }
 			
 			
@@ -3268,7 +3256,7 @@ OriginalOutputDeviceStatus = TransientZP + 1
 			
 ;*CREATE Command
 {
-.^create		JSR L9247
+.^create		JSR ParseFilename
             CLC
             TYA
             ADC L00A8
@@ -3284,7 +3272,7 @@ OriginalOutputDeviceStatus = TransientZP + 1
             TXA
             TAY
             JSR convertIntegerDefaultHex
-            BCS L9250
+            BCS GenerateSyntaxErrorForTransientCommandIndexIndirect
             LDA L00B0
             STA L02FC
             LDA L00B1
