@@ -9220,30 +9220,30 @@ column = prvC
 
 ;OSWORD &49 (73) - Integra-B calls XY?0 parameter lookup code
 {
-.^oswd49_1	SEC
-            LDA prvOswordBlockCopy							;get XY?0 value
-            SBC #&60								;XY?0 is in range &60-&6F. Convert to &00-&0F for lookup purposes
-            ASL A									;x2 (each entry in lookup table is 2 bytes)
-            TAY
-            LDA oswd49lu+1,Y						;get low byte
-            PHA										;and push
-            LDA oswd49lu,Y							;get high byte
-            PHA										;and push
-.LB7A3	  RTS										;jump to parameter lookup address
+.^oswd49_1
+    XASSERT_USE_PRV1
+    ; prvOswordBlockCopy is a code in the range &60-&6F; we use that to index into oswd49lu and
+    ; transfer control to the relevant handler via RTS.
+    SEC:LDA prvOswordBlockCopy:SBC #&60:ASL A:TAY
+    LDA oswd49lu+1,Y:PHA
+    LDA oswd49lu,Y:PHA
+.Rts
+    RTS
 			
 ;OSWORD &49 (73) - Integra-B calls XY?0 parameter lookup table
-.oswd49lu		EQUW LB899-1							;XY?0=&60: Function TBC
-		EQUW LB891-1							;XY?0=&61: Function TBC
-		EQUW LB89C-1							;XY?0=&62: Function TBC
-		EQUW LB7A3-1							;XY?0=&63: Function TBC - No function?
-		EQUW LB8C6-1							;XY?0=&64: Function TBC
-		EQUW LB8D8-1							;XY?0=&65: Function TBC
-		EQUW LB8DD-1							;XY?0=&66: Function TBC
-		EQUW LB8E2-1							;XY?0=&67: Function TBC
-		EQUW LB8AC-1							;XY?0=&68: Function TBC
-		EQUW LB8B1-1							;XY?0=&69: Function TBC
-		EQUW LB8FC-1							;XY?0=&6A: Function TBC
-		EQUW LB901-1							;XY?0=&6B: Function TBC
+.oswd49lu
+    EQUW LB899-1		;XY?0=&60: Function TBC
+    EQUW LB891-1		;XY?0=&61: Function TBC
+    EQUW LB89C-1		;XY?0=&62: Function TBC
+    EQUW Rts - 1		;XY?0=&63: Function TBC - No function?
+    EQUW LB8C6-1		;XY?0=&64: Function TBC
+    EQUW LB8D8-1		;XY?0=&65: Function TBC
+    EQUW LB8DD-1		;XY?0=&66: Function TBC
+    EQUW LB8E2-1		;XY?0=&67: Function TBC
+    EQUW LB8AC-1		;XY?0=&68: Function TBC
+    EQUW LB8B1-1		;XY?0=&69: Function TBC
+    EQUW LB8FC-1		;XY?0=&6A: Function TBC
+    EQUW LB901-1		;XY?0=&6B: Function TBC
 }
 
 ; SFTODO: Mostly un-decoded
