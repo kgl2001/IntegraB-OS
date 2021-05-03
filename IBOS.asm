@@ -1614,10 +1614,7 @@ padFlag = &B1 ; b7 clear iff "0" should be converted into "pad"
 }
 			
 .convertIntegerDefaultHex
-{
-.L8724      LDA #16
-            JMP convertIntegerDefaultBaseA
-}
+    LDA #16:JMP convertIntegerDefaultBaseA ; SQUASH: "BNE ; always branch"
 
 ; Convert an number expressed in ASCII at (transientCmdPtr),Y into a 32-bit
 ; integer. It may be prefixed with '-' for negative, '&' indicates hex, '%'
