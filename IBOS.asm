@@ -9248,9 +9248,11 @@ column = prvC
 
 ; SFTODO: Mostly un-decoded
 {
+Ptr = &A8
+
 .^LB7BC
     XASSERT_USE_PRV1
-    BIT prvDateSFTODO7:BMI LB7F9
+    BIT prvOswordBlockCopy + 7:BMI LB7F9
     BIT tubePresenceFlag:BPL LB7F9 ; SFTODO: BRANCH IF NO TUBE
 .ClaimLoop
     LDA #tubeEntryClaim + tubeClaimId:JSR tubeEntry:BCC ClaimLoop
@@ -9271,24 +9273,15 @@ column = prvC
     RTS
 			
 .LB7F9
-    LDA prvOswordBlockOrigAddr
-    STA L00A8
-    LDA prvOswordBlockOrigAddr + 1
-    STA L00A9
-    LDY #&04
-    LDA (L00A8),Y
-    TAX
-    INY
-    LDA (L00A8),Y
-    STA L00A9
-    STX L00A8
-    LDY #&00
+    LDA prvOswordBlockOrigAddr:STA Ptr
+    LDA prvOswordBlockOrigAddr + 1:STA Ptr + 1
+    LDY #4:LDA (Ptr),Y:TAX ; SFTODO: magic
+    INY:LDA (Ptr),Y:STA Ptr + 1
+    STX Ptr
+    LDY #0
 .LB811
-    LDA prv80+&00,Y
-    STA (L00A8),Y
-    INY
-    CPY prvOswordBlockCopy + 1
-    BNE LB811
+    LDA prv80+&00,Y:STA (Ptr),Y
+    INY:CPY prvOswordBlockCopy + 1:BNE LB811 ; SFTODO: Better label
     CLC
     RTS
 }
