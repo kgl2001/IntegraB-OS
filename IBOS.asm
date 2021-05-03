@@ -130,7 +130,7 @@ rtcUserBase = &0E
 
 ; These registers are held in private RAM at &83B2-&83FF; this is battery-backed
 ; (as is the whole of private and shadow RAM), so they look just like the above
-; RTC user registers to code accessing them via readUserReg/writeUserReg.
+; RTC user registers to code accessing them via ReadUserReg/WriteUserReg.
 ;Register &32 - &04:	0-2: OSMODE / 3: SHX
 ;Register &35 - &13:	Century
 ;Register &38 - &FF:
@@ -138,11 +138,11 @@ rtcUserBase = &0E
 ;Register &3A - &90:
 ;Register &7F - &7F:	Bit set if RAM located in 32k bank. Default was &0F (lowest 4 x 32k banks). Changed to &7F
 
-; These constants identify user registers for use with readUserReg/writeUserReg;
+; These constants identify user registers for use with ReadUserReg/WriteUserReg;
 ; although some of these will be stored in RTC user registers, this is really an
 ; implementation detail (and an offset of rtcUserBase needs to be applied when
 ; accessing them, which will be handled automatically by
-; readUserReg/writeUserReg if necessary).
+; ReadUserReg/WriteUserReg if necessary).
 userRegLangFile = &05 ; b0-3: FILE, b4-7: LANG
 userRegBankInsertStatus = &06 ; 2 bytes, 1 bit per bank
 userRegModeShadowTV = &0A ; 0-2: MODE / 3: SHADOW / 4: TV interlace / 5-7: TV screen shift
@@ -1813,7 +1813,7 @@ firstDigitCmdPtrY = &BB
 ; worry about being re-entrant, is there a byte of main RAM we could use to stash
 ; X in on entry.
 
-.^readUserReg
+.^ReadUserReg
     CPX #&80
     BCS rts  								;Invalid if Address >=&80
     CPX #&32
@@ -1827,7 +1827,7 @@ firstDigitCmdPtrY = &BB
     JSR ReadRtcRam								;Read data from RTC memory location X into A
     JMP L885B
 
-.^writeUserReg
+.^WriteUserReg
     CPX #&80
     BCS rts  								;Invalid if Address >=&80
     CPX #&32
@@ -2097,7 +2097,7 @@ inputBuf = &700
             ORA romselCopy								;Read current ROM number & save to lower 4 bits (FILE parameter)
 ;	  LDA #&EC								;Force LANG: 14, FILE: 12 in IBOS 1.21 (in place of ORA &F4 in line above)
 .notLangFile
-	  JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
+	  JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
             DEX
             BPL userRegLoop
 
@@ -2146,7 +2146,7 @@ ptr = &00 ; 2 bytes
             LDY #(intDefaultEnd - intDefault) - 0						;Number of entries in lookup table for IntegraB defaults
 .L8A2D	  LDX intDefault-fullResetPrvTemplate+fullResetPrv+&00,Y				;address of relocated intDefault table:		(address for data)
 	  LDA intDefault-fullResetPrvTemplate+fullResetPrv+&01,Y				;address of relocated intDefault table+1:	(data)
-            JSR writeUserReg								;Write IntegraB default value to RTC User RAM
+            JSR WriteUserReg								;Write IntegraB default value to RTC User RAM
             DEY
             DEY
             BPL L8A2D								;Repeat for all 16 values
@@ -2302,7 +2302,7 @@ ptr = &00 ; 2 bytes
             BNE osbyteA2
             PLA
             LDX oswdbtX
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA oswdbtY
             PHA
             JMP ExitAndClaimServiceCall								;Exit Service Call
@@ -2312,7 +2312,7 @@ ptr = &00 ; 2 bytes
             BNE osbyte44
             LDX oswdbtX
             LDA oswdbtY
-            JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
+            JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
             PLA
             LDA oswdbtY
             PHA
@@ -2872,7 +2872,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA #osfindOpenOutput:JSR parseFilenameAndOpen:TAY
     LDX #0
 .SaveLoop
-    JSR readUserReg:JSR OSBPUT
+    JSR ReadUserReg:JSR OSBPUT
     INX:BPL SaveLoop ; write 128 bytes
     BMI CloseAndExit ; always branch
 
@@ -2881,7 +2881,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA #osfindOpenInput:JSR parseFilenameAndOpen:TAY
     LDX #0
 .LoadLoop
-    JSR OSBGET:JSR writeUserReg
+    JSR OSBGET:JSR WriteUserReg
     INX:BPL LoadLoop ; read 128 bytes
 .CloseAndExit
     JSR CloseTransientFileHandle
@@ -3584,10 +3584,10 @@ ENDIF
             STA transientConfigBitMask
             LDA ConfParBit+ConfParBitUserRegOffset,Y
             TAX ; SFTODO: avoid this with LDX blah,Y?
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND transientConfigBitMask
             ORA transientConfigPrefix
-            JMP writeUserReg							;Write to RTC clock User area. X=Addr, A=Data
+            JMP WriteUserReg							;Write to RTC clock User area. X=Addr, A=Data
 }
 
 .getConfigValue
@@ -3596,7 +3596,7 @@ ENDIF
             JSR getShiftedBitMask
             LDA ConfParBit+ConfParBitUserRegOffset,Y
             TAX ; SFTODO: can we just use LDX blah,Y to avoid this?
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND transientConfigBitMask
             STA transientConfigPrefixSFTODO ; SFTODO: Just PHA?
             LDA ConfParBit+1,Y
@@ -3705,7 +3705,7 @@ ENDIF
             JSR PrintADecimalPad
             JSR printSpace								;write ' ' to screen
             LDX #userRegDiscNetBootData							;Register &10 (0: File system disc/net flag / 4: Boot / 5-7: Data )
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LDX #'N'								;'N' - NFS
 	  ; SFTODO: If we're desperate for space using LSR A:BCC would save a byte.
             AND #&01								;Isolate file system bit SFTODO: replace with constant if used elsewhere too (prob is?!)
@@ -3736,11 +3736,11 @@ ENDIF
 .L94DD      CLC
 .L94DE      PHP									;Save File system status bit in Carry flag
             LDX #userRegDiscNetBootData							;Register &10 (0: File system / 4: Boot / 5-7: Data )
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LSR A									;Rotate old File system status bit out of register
             PLP									;Restore new File system status bit from Carry flag
             ROL A									;Rotate new File system status bit in to register
-            JMP writeUserReg							;Write to RTC clock User area. X=Addr, A=Data
+            JMP WriteUserReg							;Write to RTC clock User area. X=Addr, A=Data
 }
 			
 ;Read / Write *CONF. <option> <n> parameters
@@ -3998,7 +3998,7 @@ ENDIF
 
 .setDfsNfsPriority
             LDX #userRegDiscNetBootData							;Register &10 (0: File system disc/net flag / 4: Boot / 5-7: Data )
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ROR A
             ROR A									;Move File system bit to msb
             AND #&80								;and isolate bit
@@ -4010,7 +4010,7 @@ ENDIF
 
 .selectConfiguredFilingSystemAndLanguage
             LDX #userRegLangFile
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&0F								;get *CONFIGURE FILE value
             TAX
 	  ; SFTODO: If the selected filing system is >= our bank, start one bank lower?! This seems odd, although *if* we know we're bank 15, this really just means "start below us" (presumably to avoid infinite recursion)
@@ -4025,7 +4025,7 @@ ENDIF
             BPL enterLangA ; SFTODO: Do we expect this to always branch? Not at all sure.
 .notSoftReset
 	  LDX #userRegLangFile
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             JSR lsrA4								;get *CONFIGURE LANG value
             JMP enterLangA
 			
@@ -4080,13 +4080,13 @@ tmp = &A8
             JMP ExitServiceCallIndirect
 			
 .L96EE      LDX #userRegPrvPrintBufferStart
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LDX #prvPrvPrintBufferStart-prv83                                                       ; SFTODO: not too happy with this format
             JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX lastBreakType
             BEQ softReset
             LDX #userRegOsModeShx							;0-2: OSMODE / 3: SHX
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA
             AND #&07								;mask OSMODE value
             LDX #prvOsMode - prv83							;select OSMODE register
@@ -4101,7 +4101,7 @@ tmp = &A8
 .softReset
 .L9719      JSR IbosSetUp
             LDX #userRegModeShadowTV							;get TV / MODE parameters
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
 	  ; Arithmetic shift A right 5 bits to get a sign-extended version of the TV setting in A.
 	  ; SFTODO: Could we optimise this using technique from http://wiki.nesdev.com/w/index.php/6502_assembly_optimisations#Arithmetic_shift_right?
             PHA									;save value
@@ -4141,7 +4141,7 @@ tmp = &A8
 
 .dontPreserveScreenMode
             LDX #userRegModeShadowTV							;get MODE value - Shadow: bit 3, Mode: bits 0, 1 & 2
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&0F								;Lower nibble only
 	  ; Map the "compressed mode" in the range 0-15 to 0-7 or 128-135.
             CMP #maxMode + 1
@@ -4152,22 +4152,22 @@ tmp = &A8
 .screenModeSet
 	  JSR displayBannerIfRequired
             LDX #userRegKeyboardDelay							;get keyboard auto-repeat delay (cSecs)
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             TAX
             LDA #osbyteSetAutoRepeatDelay						;select keyboard auto-repeat delay
             JSR OSBYTE								;write keyboard auto-repeat delay
             LDX #userRegKeyboardRepeat							;get keyboard auto-repeat rate (cSecs)
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             TAX
             LDA #osbyteSetAutoRepeatPeriod						;select keyboard auto-repeat rate
             JSR OSBYTE								;write keyboard auto-repeat rate
             LDX #userRegPrinterIgnore							;get character ignored by printer
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             TAX
             LDA #osbyteSetPrinterIgnore							;select character ignored by printer
             JSR OSBYTE								;write character ignored by printer
             LDX #userRegTubeBaudPrinter							;get RS485 baud rate for receiving and transmitting data (bits 2,3,4) & printer destination (bit 5)
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             JSR lsrA2								;2 x LSR
             PHA
             AND #&07								;get lower 3 bits
@@ -4187,7 +4187,7 @@ tmp = &A8
             LDA #osbyteSetPrinterType							;select printer destination
             JSR OSBYTE								;write printer destination
             LDX #userRegFdriveCaps
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA
             AND #%00111000								;get CAPS bits
             LDX #&A0								;CAPS Lock Engaged + Shift Enabled?
@@ -4212,7 +4212,7 @@ tmp = &A8
             ASL A
             STA tmp
             LDX #userRegDiscNetBootData							;Register &10 (0: File system / 4: Boot / 5-7: Data )
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA
             LDY #%11001000								;preserve b7, b6 and b3 (boot flag) on soft reset
             LDA lastBreakType
@@ -4263,7 +4263,7 @@ tmp = &A8
             BIT L03A4
             BMI L983D
             LDX #userRegTubeBaudPrinter
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&01 ; mask off tube bit (SFTODO: named constant? or more trouble than it's worth?)
             BNE L982E
             LDA #&FF
@@ -4372,7 +4372,7 @@ ramPresenceFlags = &A8
             LDA #vduBell								;Beep
             JSR OSWRCH								;Write to screen
             LDX #userRegRamPresenceFlags						;Read 'RAM installed in banks' register
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA ramPresenceFlags
             LDX #&07								;Check all 8 32k banks for RAM
             LDA #&00								;Start with 0k RAM
@@ -6148,21 +6148,21 @@ osfileBlock = L02EE
 {
 .^insert    JSR parseRomBankListChecked								;Error check input data
             LDX #userRegBankInsertStatus						;get *INSERT status
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA transientRomBankMask								;update *INSERT status
-            JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
+            JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
             LDX #userRegBankInsertStatus + 1
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA transientRomBankMask + 1
-            JSR writeUserRegAndCheckNextCharI						;Check for Immediate 'I' flag
+            JSR WriteUserRegAndCheckNextCharI						;Check for Immediate 'I' flag
             BNE exitSCIndirect1								;Exit if not immediate
             INY
             JSR insertBanksUsingTransientRomBankMask					;Initialise inserted ROMs
 .exitSCIndirect1
             JMP ExitAndClaimServiceCall								;Exit Service Call
 
-.writeUserRegAndCheckNextCharI
-            JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
+.WriteUserRegAndCheckNextCharI
+            JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
             JSR FindNextCharAfterSpace							;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             AND #&DF								;Capitalise
@@ -6173,13 +6173,13 @@ osfileBlock = L02EE
 .^unplug	  JSR parseRomBankListChecked								;Error check input data
             JSR invertTransientRomBankMask								;Invert all bits in &AE and &AF
             LDX #&06								;INSERT status for ROMS &0F to &08
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND L00AE
-            JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
+            JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
             LDX #&07								;INSERT status for ROMS &07 to &00
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND L00AF
-            JSR writeUserRegAndCheckNextCharI						;Check for Immediate 'I' flag
+            JSR WriteUserRegAndCheckNextCharI						;Check for Immediate 'I' flag
             BNE exitSCIndirect2
             INY
             JSR unplugBanksUsingTransientRomBankMask
@@ -6216,7 +6216,7 @@ osfileBlock = L02EE
 	  LSR A
             TAY
             LDX #userRegRamPresenceFlags						;read RAM installed in bank flag from private &83FF
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND LA34A,Y								;Get data from lookup table
             BNE LA380								;Branch if RAM
             LDA #&20								;' '
@@ -6502,20 +6502,20 @@ osfileBlock = L02EE
             JMP badId
 			
 .^LA513     LDX #userRegBankWriteProtectStatus
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA L00AE
             PLP
             PHP
             BCC LA520
             EOR L00AE
-.LA520      JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
+.LA520      JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
             INX
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA L00AF
             PLP
             BCC LA52E
             EOR L00AF
-.LA52E      JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
+.LA52E      JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
             PRVEN								;switch in private RAM
             JSR LA53D
 .^LA537     JSR PrvDis								;switch out private RAM
@@ -6524,10 +6524,10 @@ osfileBlock = L02EE
 
 {
 .^LA53D      LDX #userRegBankWriteProtectStatus
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA prvTmp
             INX
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHP
             SEI
             LSR A
@@ -6598,10 +6598,10 @@ osfileBlock = L02EE
 .softReset  LDA #&00
             STA L03A4
             LDX #userRegBankInsertStatus
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA transientRomBankMask
             LDX #userRegBankInsertStatus + 1
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA transientRomBankMask + 1
             JSR unplugBanksUsingTransientRomBankMask
 	  ; SFTODO: Next bit of code is either claiming or not claiming the service call based on prvSFTODOTUBEISH; it will return with A=&10 (this call) or 0.
@@ -6742,7 +6742,7 @@ osfileBlock = L02EE
     ; time-base frequency.
     LDX #rtcRegA:JSR ReadRtcRam:AND #rtcRegADV1:JSR WriteRtcRam
     ; Set DSE in register B according to userRegOsModeShx and force SET off.
-    LDX #userRegOsModeShx:JSR readUserReg
+    LDX #userRegOsModeShx:JSR ReadUserReg
     LDX #0
     AND #&10:BEQ NoAutoDSTAdjust ; test auto DST bit of userRegOsModeShx SFTODO: named constant?
     LDX #rtcRegBDSE ; SQUASH: Just do ASSERT rtcRegBDSE == 1:INX
@@ -6772,7 +6772,7 @@ osfileBlock = L02EE
             JSR WriteRtcRam								;Write data from A to RTC memory location X
             LDX #userRegCentury
             LDA prvDateCentury
-            JMP writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
+            JMP WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
 }
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
@@ -6900,7 +6900,7 @@ osfileBlock = L02EE
 {
 .LA7A8      BCS LA7C2
             LDX #userRegAlarm
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&40
             LSR A
             STA L00AE
@@ -8432,7 +8432,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             BNE centuryInA
 .^defaultPrvDateCentury
             LDX #userRegCentury
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
 .centuryInA STA prvDateCentury
             RTS
 }
@@ -8649,7 +8649,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .LB34C		EQUB &0F,&07
 
 .^LB34E      LDX #userRegAlarm
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ASL A
             PHP
             ASL A
@@ -8658,7 +8658,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             ROR A
             PLP
             ROR A
-            JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
+            JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
 
 .^LB35E      SEC
 .^LB35F      LDA romselCopy
@@ -8676,7 +8676,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             BCC LB3CA
 
 	  LDX #userRegAlarm
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PHA									;and save value
             AND #&01								;read first bit (0)
             TAX
@@ -8753,7 +8753,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             BVC LB447
             BPL LB447
             LDX #userRegAlarm
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LSR A
             AND #&20
             STA prv82+&76
@@ -9038,7 +9038,7 @@ column = prvC
             LSR A
             PHP
             LDX #userRegAlarm
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ASL A
             PLP
             ROR A
@@ -9058,11 +9058,11 @@ column = prvC
             BCS LB61B
             PHP
             LDX #userRegAlarm
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             PLP
             BNE LB67C
             AND #&BF
-            JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
+            JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR ReadRtcRam								;Read data from RTC memory location X into A
             AND_NOT rtcRegBPIE OR rtcRegBAIE
@@ -9070,7 +9070,7 @@ column = prvC
             JMP LB6E3
 			
 .LB67C      ORA #&40
-            JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
+            JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR ReadRtcRam								;Read data from RTC memory location X into A
             AND_NOT rtcRegBPIE OR rtcRegBAIE
@@ -9103,7 +9103,7 @@ column = prvC
             AND #rtcRegBAIE
             JSR PrintOnOff
             LDX #userRegAlarm
-            JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
+            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&80
             BEQ LB6E0
             JSR printSpace								;write ' ' to screen
@@ -10088,7 +10088,7 @@ ibosCNPVIndex = 6
     ; userRegHorzTV. This is not exposed in *CONFIGURE/*STATUS, but it *does seem to work if
     ; you use *FX162,54 to write directly to the RTC register. In a modified IBOS this should
     ; probably either be removed to save space or exposed via *CONFIGURE/*STATUS.
-    LDX #userRegHorzTV:JSR readUserReg
+    LDX #userRegHorzTV:JSR ReadUserReg
     CLC:ADC #&62
     LDX currentMode
     CPX #4:BCC crtcHorzDisplayedInA
