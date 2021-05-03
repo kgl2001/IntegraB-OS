@@ -4514,7 +4514,8 @@ ramPresenceFlags = &A8
 ; A=0 on entry means the header should say "RAM", otherwise it will say "ROM". A is also copied into the (unused) second byte of the bank's service entry; SFTODO: I don't know why specifically, but maybe this is just done because that's what the Acorn DFS SRAM utilities do (speculation; I haven't checked).
 .writeRomHeaderAndPatchUsingVariableMainRamSubroutine
 {
-.L99C6	  PHA
+    XASSERT_USE_PRV1
+      	  PHA
 	  LDX #lo(writeRomHeaderTemplate)
 	  LDY #hi(writeRomHeaderTemplate)
 	  JSR copyYxToVariableMainRamSubroutine						;relocate &32 bytes of code from &9E59 to &03A7
@@ -4533,7 +4534,8 @@ ramPresenceFlags = &A8
 {
 ; Search prvSFTODOFOURBANKS for A; if found, remove it, shuffling the elements down so all the non-&FF entries are at the start and are followed by enough &FF entries to fill the list.
 .^removeBankAFromSFTODOFOURBANKS
-.L99E5      LDX #&03
+    XASSERT_USE_PRV1
+            LDX #&03
 .findLoop   CMP prvSFTODOFOURBANKS,X
             BEQ found
             DEX
@@ -4568,7 +4570,8 @@ ramPresenceFlags = &A8
 ; If there's an unused entry, add A to SFTODOFOURBANKS and return with C clear, otherwise return with C set to indicate no room.
 ; SFTODO: This has only one caller
 .^addBankAToSFTODOFOURBANKS
-.L9A18      PHA
+    XASSERT_USE_PRV1
+            PHA
             JSR shuffle
             PLA
             CPX #&04
@@ -4581,7 +4584,8 @@ ramPresenceFlags = &A8
 ; SFTODO: This only has one caller
 .findAInPrvSFTODOFOURBANKS
 {
-.L9A25      LDX #&03
+    XASSERT_USE_PRV1
+            LDX #&03
 .loop       CMP prvSFTODOFOURBANKS,X
             BEQ rts
             DEX
@@ -4735,7 +4739,8 @@ romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" l
 
 {
 .^checkRamBankAndMakeAbsolute
-.L9B18      AND #&7F								;drop the highest bit
+    XASSERT_USE_PRV1
+            AND #&7F								;drop the highest bit
             CMP #maxBank + 1								;check if RAM bank is absolute or pseudo address
             BCC rts
             TAX
@@ -4764,7 +4769,7 @@ romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" l
 {
 pseudoAddressingBankHeaderSize = &10
 pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
-.L9B2E      LDX #&00
+            LDX #&00
 .loop       STY transientOs4243SFTODO
             STA transientOs4243SFTODO + 1
             SEC
@@ -4873,7 +4878,8 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ; SFTODO: This has only one caller
 .adjustPrvOsword42Block
 {
-.L9B93      LDA prvOswordBlockCopy + 7						;ROM number
+    XASSERT_USE_PRV1
+            LDA prvOswordBlockCopy + 7						;ROM number
             PHA
             LDA prvOswordBlockCopy + 6
             STA prvOswordBlockCopy + 7
@@ -4897,7 +4903,8 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ; SFTODO: Returns with C clear in "simple" case, C set in the "mystery" case
 .parseBankNumberIfPresent ; SFTODO: probably imperfect name, will do until the mystery code in middle is cleared up
 {
-.L9BC3      JSR parseBankNumber
+    XASSERT_USE_PRV1
+            JSR parseBankNumber
             BCC parsedOk
             LDA #&FF ; SFTODO: What happens if we have the ROM number set to &FF later on?
 .parsedOk   STA prvOswordBlockCopy + 1						;absolute ROM number
@@ -4920,7 +4927,8 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ; SFTODO: This has only a single caller
 .parseSrsaveLoadFlags
 {
-.L9BE9      LDA #&00
+    XASSERT_USE_PRV1
+            LDA #&00
             STA prvOswordBlockCopy + 6							;low byte of buffer length
             STA prvOswordBlockCopy + 7							;high byte of buffer length
 .L9BF1      JSR FindNextCharAfterSpace							;find next character. offset stored in Y
@@ -4951,7 +4959,8 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ; SFTODO: This has only one caller
 .getSrsaveLoadFilename
 {
-.L9C22      CLC
+    XASSERT_USE_PRV1
+            CLC
             TYA
             ADC transientCmdPtr
             STA prvOswordBlockCopy + 12							;low byte of filename in I/O processor
@@ -4972,7 +4981,9 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 .GenerateSyntaxErrorIndirect
 	  JMP GenerateSyntaxErrorForTransientCommandIndex
 
-.L9C42      JSR convertIntegerDefaultHex
+.L9C42
+    XASSERT_USE_PRV1
+      JSR convertIntegerDefaultHex
             BCS GenerateSyntaxErrorIndirect
             LDA L00B0
             STA prvOswordBlockCopy + 8
