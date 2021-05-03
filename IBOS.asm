@@ -351,6 +351,7 @@ rtcAddress = SHEILA + &38
 rtcData = SHEILA + &3C
 
 tubeEntry = &0406
+tubeEntryMultibyteHostToParasite = &01
 tubeEntryClaim = &C0 ; plus claim ID
 tubeEntryRelease = &80 ; plus claim ID
 ; http://beebwiki.mdfs.net/Tube_Protocol says tube claimant ID &3F is allocated
@@ -358,6 +359,8 @@ tubeEntryRelease = &80 ; plus claim ID
 ; as long as no one else is using it it will probably be fine, because we won't
 ; be trying to claim the tube while a language is starting up.
 tubeClaimId = &3F
+tubeReg3Status = SHEILA + &E4
+tubeReg3Data = SHEILA + &E5
 
 L0000       = &0000
 L0032       = &0032
@@ -5465,10 +5468,10 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             STY variableMainRamSubroutine + (tubeTransferTemplateTransferSize - tubeTransferTemplate)
             LDY #&00
 .^tubeTransferTemplateReadSwr
-.L9F07      BIT SHEILA+&E4
+.L9F07      BIT tubeReg3Status
             BVC L9F07
             LDA (transientOs4243SwrAddr),Y
-            STA SHEILA+&E5
+            STA tubeReg3Data
 .^tubeTransferTemplateReadSwrEnd
             JSR variableMainRamSubroutine + (tubeTransferTemplateRts - tubeTransferTemplate)
             JSR variableMainRamSubroutine + (tubeTransferTemplateRts - tubeTransferTemplate)
@@ -5492,9 +5495,9 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
 ; SFTODO: The first three bytes of patched code are the same either way, unless
 ; there's another hidden patch we could save three bytes by not patching those.
 .^tubeTransferTemplateWriteSwr
-.L9F29      BIT SHEILA+&E4
+.L9F29      BIT tubeReg3Status
             BPL L9F29
-            LDA SHEILA+&E5
+            LDA tubeReg3Data
             STA (transientOs4243SwrAddr),Y
             ASSERT P% - tubeTransferTemplateWriteSwr == tubeTransferTemplateReadSwrEnd - tubeTransferTemplateReadSwr
 }
@@ -5934,9 +5937,9 @@ osfileBlock = L02EE
             LDY #hi(L0100)
             JSR tubeEntry                                                       ;A=0 => multi-byte transfer, parasite to host
             LDY #&00
-.LA16A      BIT SHEILA+&E4
+.LA16A      BIT tubeReg3Status
             BPL LA16A
-            LDA SHEILA+&E5
+            LDA tubeReg3Data
             STA L0700,Y
             CMP #vduCr
             BEQ LA17C
@@ -9247,35 +9250,23 @@ column = prvC
 {
 .^LB7BC
     XASSERT_USE_PRV1
-    BIT prvOswordBlockCopy + 7
-    BMI LB7F9
-    BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
-    BPL LB7F9
-.LB7C6
-    LDA #tubeEntryClaim + tubeClaimId
-    JSR tubeEntry
-    BCC LB7C6
-    CLC
-    LDA prvOswordBlockOrigAddr
-    ADC #&04
-    TAX
-    LDA prvOswordBlockOrigAddr + 1
-    ADC #&00
-    TAY
-    LDA #&01
-    JSR tubeEntry
-    LDY #&00
-.LB7E1
+    BIT prvDateSFTODO7:BMI LB7F9
+    BIT tubePresenceFlag:BPL LB7F9 ; SFTODO: BRANCH IF NO TUBE
+.ClaimLoop
+    LDA #tubeEntryClaim + tubeClaimId:JSR tubeEntry:BCC ClaimLoop
+
+    CLC:LDA prvOswordBlockOrigAddr:ADC #4:TAX ; SFTODO: magic
+    LDA prvOswordBlockOrigAddr + 1:ADC #0:TAY
+    LDA #tubeEntryMultibyteHostToParasite:JSR tubeEntry
+    LDY #0
+.WriteLoop
     LDA prv80+&00,Y
-.LB7E4
-    BIT SHEILA+&E4
-    BVC LB7E4
-    STA SHEILA+&E5
+.Full
+    BIT tubeReg3Status:BVC Full
+    STA tubeReg3Data
     INY
-    CPY prvOswordBlockCopy + 1
-    BNE LB7E1
-    LDA #tubeEntryRelease + tubeClaimId
-    JSR tubeEntry
+    CPY prvOswordBlockCopy + 1:BNE WriteLoop ; SFTODO: Better label
+    LDA #tubeEntryRelease + tubeClaimId:JSR tubeEntry
     CLC
     RTS
 			
