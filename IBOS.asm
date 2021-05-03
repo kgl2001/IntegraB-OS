@@ -1428,23 +1428,17 @@ TmpCommandIndex = &AC
 ;service entry point
 .service
 {
-    PHA										;save service type
-    TXA
-    PHA										;save ROM number
-    TYA
-    PHA										;save ROM parameter
-    TSX
-    LDA L0103,X								;get original A we stacked just above
-    BEQ ExitServiceCall								;restore service call parameters and exit
-    CMP #&05
-    BNE L8635								;Process lookup table if not equal to &05
-    ; We're handling service call 5 - unrecognised interrupt; see if the RTC has raised
-    ; an interrupt.
+    PHA:TXA:PHA:TYA:PHA
+    TSX:LDA L0103,X	; get original A=service call number
+    BEQ ExitServiceCall
+    CMP #5:BNE NotServiceCall5
+    ; We're handling service call 5 - unrecognised interrupt; see if the RTC has raised an
+    ; interrupt and handle it.
     LDX #rtcRegC:JSR ReadRtcRam
     CMP #rtcRegCIRQF:BCC ExitServiceCall
     JMP RtcInterruptHandler
 
-.L8635
+.NotServiceCall5
     LDX #&0B
 .L8637
     CMP srvCallLU,X
