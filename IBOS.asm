@@ -225,6 +225,8 @@ keycodeAt = &47 ; internal keycode for "@"
 keycodeNone = &FF ; internal keycode returned if no key is pressed
 
 osargsReadFilingSystemNumber = 0
+osargsWritePtr = 1
+osargsReadExtent = 2
 
 osbyteSelectOutputDevice = &03
 osbyteSetPrinterType = &05
@@ -245,6 +247,7 @@ osbyteReadWriteOshwm = &B4
 osbyteWriteSheila = &97
 osbyteExamineBufferStatus = &98
 osbyteReadWriteAciaRegister = &9C
+osbyteReadWriteSpoolFileHandle = &C7
 osbyteReadWriteBreakEscapeEffect = &C8
 osbyteReadWriteKeyboardStatus = &CA
 osbyteEnableDisableStartupMessage = &D7
@@ -902,7 +905,7 @@ GUARD	end
 		EQUW append-1							;address of *APPEND command
 		EQUW create-1							;address of *CREATE command
 		EQUW print-1							;address of *PRINT command
-		EQUW spool-1							;address of *SPOOLON command
+		EQUW SpoolOn-1							;address of *SPOOLON command
 		EQUW srwipe-1							;address of *SRWIPE command
 		EQUW srdata-1							;address of *SRDATA command
 		EQUW srrom-1							;address of *SRROM command
@@ -3189,20 +3192,20 @@ OriginalOutputDeviceStatus = TransientZP + 1
 }
 			
 ;*SPOOLON Command
+.SpoolOn
 {
-.^spool      LDA #osfindOpenUpdate								;open file for update
-            JSR parseFilenameAndOpen								;get address of file name and open file
-            TAY
-            LDX L00AB
-            LDA #&02
-            JSR OSARGS
-            LDA #&01
-            JSR OSARGS
-            LDA #&C7
-            LDX L00A8
-            LDY #&00
-            JSR OSBYTE
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+    LDA #osfindOpenUpdate:JSR parseFilenameAndOpen:TAY
+    ; SFTODO: Should the next line be LDX #L00AB? X is the address of a four byte zero page
+    ; control block; &AB would be a legitimate location (it's transient ZP workspace), but it's
+    ; not obvious to me that &AB will *contain* a suitable location, we could trample over
+    ; anything if it is arbitrary. In *practice* &AB might (from playing in b-em, not analysing
+    ; code) contain &81, which would mean we're trampling over language ZP workspace but we'll
+    ; get away with it in BASIC as that's part of the user ZP.
+    LDX L00AB:LDA #osargsReadExtent:JSR OSARGS
+    LDA #osargsWritePtr:JSR OSARGS
+    ; SQUASH: We could just poke the OS workspace directly at &257.
+    LDA #osbyteReadWriteSpoolFileHandle:LDX transientFileHandle:LDY #0:JSR OSBYTE
+    JMP ExitAndClaimServiceCall
 }
 			
 			
