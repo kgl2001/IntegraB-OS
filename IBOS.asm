@@ -10493,18 +10493,14 @@ ScreenStart = &3000
 }
 
 ; SQUASH: This has only a single caller
+; SQUASH: Use decrement-by-one technique from http://www.obelisk.me.uk/6502/algorithms.html
 .DecrementPrintBufferFree
 {
-.LBF43      SEC
-            LDA prvPrintBufferFreeLow
-            SBC #&01
-            STA prvPrintBufferFreeLow
-            LDA prvPrintBufferFreeMid
-            SBC #&00
-            STA prvPrintBufferFreeMid
-            BCS LBF59
-            DEC prvPrintBufferFreeHigh
-.LBF59      RTS
+    SEC
+    LDA prvPrintBufferFreeLow:SBC #1:STA prvPrintBufferFreeLow
+    LDA prvPrintBufferFreeMid:SBC #0:STA prvPrintBufferFreeMid
+    DECCC prvPrintBufferFreeHigh
+    RTS
 }
 
 ;code relocated to &0380
