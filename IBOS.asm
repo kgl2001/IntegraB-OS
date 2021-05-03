@@ -4830,7 +4830,8 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ; SFTODO: Could this be rewritten more compactly as a loop?
 ; SFTODO: This only has one caller
 {
-.L9B50      LDA prvOswordBlockCopy + 1
+    XASSERT_USE_PRV1
+            LDA prvOswordBlockCopy + 1
             STA prvOswordBlockCopy + 12
             LDA prvOswordBlockCopy + 2
             STA prvOswordBlockCopy + 13
@@ -5732,13 +5733,11 @@ osfileBlock = L02EE
             LDA osfileBlock + osfileReadInformationLengthOffset + 1
             STA prvOswordBlockCopy + 11                                                   ;high byte of data length
 .readFromSwr
-.LA083      RTS
+            RTS
 }
 
 .GenerateNotFoundErrorIndirect
-{
-.LA084      JMP GenerateNotFoundError
-}
+    JMP GenerateNotFoundError
 
 ; Open file pointed to by prvOswordBlockCopy in OSFIND mode A, generating a "Not Found" error if it fails.
 ; After a successful call file handle is stored at L02EE.
@@ -5746,7 +5745,8 @@ osfileBlock = L02EE
 ; file-opening calls (e.g. *CREATE) in IBOS
 .openFile
 {
-.LA087      LDX prvOswordBlockCopy + 12                                                   ;low byte of filename in I/O processor
+    XASSERT_USE_PRV1
+            LDX prvOswordBlockCopy + 12                                                   ;low byte of filename in I/O processor
             LDY prvOswordBlockCopy + 13                                                   ;high byte of filename in I/O processor
             JSR OSFIND
             CMP #&00
@@ -5787,7 +5787,9 @@ osfileBlock = L02EE
 {
 	  JSR copyOswordDetailsToPrv						;copy osword42 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
             JSR adjustPrvOsword42Block						;convert pseudo RAM bank to absolute and shuffle parameter block
-.^LA0A6      JSR getAddressesAndLengthFromPrvOswordBlockCopy
+.^LA0A6
+    XASSERT_USE_PRV1
+       JSR getAddressesAndLengthFromPrvOswordBlockCopy
             BCS LA0B1 ; SFTODO: I don't believe this branch can ever be taken
             JSR prepareMainSidewaysRamTransfer
             JSR doTransfer
@@ -5804,7 +5806,8 @@ osfileBlock = L02EE
 ; SFTODO: Do any callers actually use A/Y on return? My initial trace through OSWORD &43 load-via-small-buffer suggests that code doesn't, just the carry flag. OK, decreaseDataLengthAndAdjustBufferLength does use the A/Y return values, which suggests to me there may be a bug if we can go down the LA0D4 branch (*probably* happens if buffer is not a whole number of pages, but not thought through in detail)
 .SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
 {
-.LA0BF      SEC
+    XASSERT_USE_PRV1
+            SEC
             LDA prvOswordBlockCopy + 10                                                   ;low byte of "data length", actually buffer length
             SBC prvOswordBlockCopy + 6                                                    ;low byte of buffer length
             PHP
@@ -5832,7 +5835,8 @@ osfileBlock = L02EE
 ; Returns with carry set iff there's no more data to transfer ("data length" is 0).
 .decreaseDataLengthAndAdjustBufferLength
 {
-.LA0DC      LDA prvOswordBlockCopy + 10                                                  ;low byte of "data length", actually buffer length
+    XASSERT_USE_PRV1
+            LDA prvOswordBlockCopy + 10                                                  ;low byte of "data length", actually buffer length
             ORA prvOswordBlockCopy + 11                                                   ;high byte of "data length", actually buffer length
             BEQ LA108
             ; SFTODO: Can this go wrong if the result is negative? We don't check carry after calling SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength. Maybe this can't happen, but not immediately obvious.
@@ -5843,7 +5847,8 @@ osfileBlock = L02EE
             BCS remainingDataLargerThanBuffer
             ; The remaining data will fit in the buffer, so shrink the buffer length so we transfer exactly the right amount of data on the next chunk.
 .^copySFTODOWouldBeDataLengthOverBufferLengthAndZeroWouldBeDataLength
-.LA0F2      LDA prvOswordBlockCopy + 10                                                  ;low byte of "data length", actually buffer length
+    XASSERT_USE_PRV1
+            LDA prvOswordBlockCopy + 10                                                  ;low byte of "data length", actually buffer length
             STA prvOswordBlockCopy + 6                                                    ;low byte of buffer length
             LDA prvOswordBlockCopy + 11                                                   ;high byte of "data length", actually buffer length
             STA prvOswordBlockCopy + 7                                                    ;high byte of buffer length
@@ -5863,7 +5868,8 @@ osfileBlock = L02EE
 ; SFTODO: This sets up an OSGBPB block and calls OSGBPB, A is OSGBPB reason code on entry
 .doOsgbpbForOsword
 {
-.LA10A      PHA
+    XASSERT_USE_PRV1
+            PHA
             LDA prvOswordBlockCopy + 2                                                    ;low byte of buffer address
             STA L02EF                                                                     ;low byte of 32-bit data address
             LDA prvOswordBlockCopy + 3                                                    ;high byte of buffer address
@@ -5908,6 +5914,7 @@ osfileBlock = L02EE
 ; SFTODO: I am thinking I probably need to set up a few example OSWORD &43 calls on paper and trace through the code to see what it would do in that concrete situation - the possible bug in the data length is making it extremely hard to think about this in the abstract
 .osword43
 {
+    XASSERT_USE_PRV1
 	  JSR copyOswordDetailsToPrv					;copy osword43 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
             JSR adjustPrvOsword43Block					;convert pseudo RAM bank to absolute and shuffle parameter block
             BIT tubePresenceFlag					;check for Tube - &00: not present, &ff: present
@@ -5969,7 +5976,8 @@ osfileBlock = L02EE
             STA prvOswordBlockCopy + 13
 .noTube
 .^osword43Internal
-.LA18B      JSR adjustOsword43LengthAndBuffer
+    XASSERT_USE_PRV1
+            JSR adjustOsword43LengthAndBuffer
             LDA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
             ORA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
             BNE bufferLengthNotZero
@@ -6127,7 +6135,7 @@ osfileBlock = L02EE
 
 .parseRomBankListChecked
 {
-.LA2E4      JSR parseRomBankList
+            JSR parseRomBankList
             BCC rts
             BVC GenerateSyntaxErrorIndirect
 .^badId
@@ -6290,7 +6298,7 @@ osfileBlock = L02EE
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be used to indicate "everything but the listed banks". Return with C set iff at least one bit of transientRomBankMask is set.
 .parseRomBankList
 {
-.LA40C      LDA #&00
+            LDA #&00
             STA transientRomBankMask
             STA transientRomBankMask + 1
 .LA412      JSR parseBankNumber
@@ -6322,7 +6330,7 @@ osfileBlock = L02EE
 ; SFTODO: I suspect this is creating some sort of ROM bank mask, but that is speculation at moment so label may be misleading.
 .createRomBankMask
 {
-.LA433      PHA
+            PHA
             LDA #&00
             STA transientRomBankMask
             STA transientRomBankMask + 1
@@ -6358,7 +6366,7 @@ osfileBlock = L02EE
 .parseBankNumber
 {
 ; SFTODO: Would it be more compact to check for W-Z *first*, then use convertIntegerDefaultHex? This might only work if we do a "proper" upper case conversion, not sure.
-.LA458      JSR FindNextCharAfterSpace								;find next character. offset stored in Y
+            JSR FindNextCharAfterSpace								;find next character. offset stored in Y
             BCS endOfLine
             LDA (transientCmdPtr),Y
             CMP #','
@@ -6402,10 +6410,10 @@ osfileBlock = L02EE
 {
 ; SFTODO: This only has one caller - probably irrelevant given we also have LA49C entry point
 .^createRomBankMaskAndInsertBanks
-.LA499      JSR createRomBankMask
+            JSR createRomBankMask
 ;Read ROM Type from ROM header for ROMs with a 1 bit in transientRomBankMask and save to ROM Type Table and Private RAM; used to immediately *INSERT a ROM without waiting for BREAK.
 .^insertBanksUsingTransientRomBankMask
-.LA49C      PRVEN								;switch in private RAM
+            PRVEN								;switch in private RAM
 
 
             LDY #maxBank
@@ -6435,7 +6443,7 @@ osfileBlock = L02EE
 ;Set bytes in ROM Type Table to 0 for banks with a 0 bit in transientRomBankMask; other banks are not touched.
 .unplugBanksUsingTransientRomBankMask
 {
-.LA4C5      LDY #maxBank
+            LDY #maxBank
 .unplugLoop ASL transientRomBankMask
             ROL transientRomBankMask + 1
             BCS skipBank
@@ -6448,16 +6456,10 @@ osfileBlock = L02EE
 			
 ;Invert all bits in &AE and &AF
 .invertTransientRomBankMask
-{
-.LA4D6      LDA transientRomBankMask
-            EOR #&FF
-            STA transientRomBankMask
-            LDA transientRomBankMask + 1
-            EOR #&FF
-            STA transientRomBankMask + 1
-            RTS
-}
-			
+    LDA transientRomBankMask:EOR #&FF:STA transientRomBankMask
+    LDA transientRomBankMask + 1:EOR #&FF:STA transientRomBankMask + 1
+    RTS
+
 
 ;Assign default pseudo RAM banks to absolute RAM banks
 ;For OSMODEs, 0, 1, 3, 4 & 5: W..Z = 4..7
@@ -6522,7 +6524,9 @@ osfileBlock = L02EE
 }
 
 {
-.^LA53D      LDX #userRegBankWriteProtectStatus
+.^LA53D
+     XASSERT_USE_PRV1
+      LDX #userRegBankWriteProtectStatus
             JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             STA prvTmp
             INX
@@ -6547,7 +6551,8 @@ osfileBlock = L02EE
 
 ;SPOOL/EXEC file closure warning - Service call 10 SFTODO: I *suspect* we are using this as a "part way through reset" service call rather than for its nominal purpose - have a look at OS 1.2 disassembly and see when this is actually generated. Do filing systems or anything issue it during "normal" operation? (e.g. if you do "*EXEC" with no argument.)
 {
-.^service10 SEC
+.^service10
+    SEC
             JSR SFTODOALARMSOMETHING
             BCS LA570
             JMP softReset ; SFTODO: Rename this label given its use here?
