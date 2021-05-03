@@ -8649,7 +8649,8 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .LB34A		EQUB &06,&0E
 .LB34C		EQUB &0F,&07
 
-.^LB34E      LDX #userRegAlarm
+.^LB34E
+      LDX #userRegAlarm
             JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ASL A
             PHP
@@ -8660,9 +8661,10 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             PLP
             ROR A
             JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
-
 .^LB35E      SEC
-.^LB35F      LDA romselCopy
+.^LB35F
+    XASSERT_USE_PRV1
+      LDA romselCopy
             PHA
             LDA ramselCopy
             PHA
@@ -8833,25 +8835,22 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 }
 
 .PrvDisMismatch
-      	  PRVDIS								;switch out private RAM
-            JSR RaiseError								;Goto error handling, where calling address is pulled from stack
-
-            EQUB &80
-  	  EQUS "Mismatch", &00
+    PRVDIS
+    JSR RaiseError
+    EQUB &80
+    EQUS "Mismatch", &00
 
 .PrvDisBadDate
-	  PRVDIS								;switch out private RAM
-            JSR RaiseError								;Goto error handling, where calling address is pulled from stack
-
-            EQUB &80
-	  EQUS "Bad date", &00
+    PRVDIS
+    JSR RaiseError
+    EQUB &80
+    EQUS "Bad date", &00
 
 .PrvDisBadTime
-	  PRVDIS								;switch out private RAM
-            JSR RaiseError								;Goto error handling, where calling address is pulled from stack
-
-            EQUB &80
-	  EQUS "Bad time", &00
+    PRVDIS
+    JSR RaiseError
+    EQUB &80
+    EQUS "Bad time", &00
 
 ;*TIME Command
 {
@@ -9150,6 +9149,7 @@ column = prvC
     BCS Success
     JSR oswordrs ; restore the OSWORD block if we failed
 .Success
+    ; Restore A/X/Y. SQUASH: Will we have modified X/Y?
     LDA prvOswordBlockOrigAddr:STA oswdbtX
     LDA prvOswordBlockOrigAddr + 1:STA oswdbtY
     LDA #&49:STA oswdbtA
