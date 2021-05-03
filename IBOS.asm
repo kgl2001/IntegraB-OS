@@ -1821,57 +1821,45 @@ firstDigitCmdPtrY = &BB
     RTS
 }
 
-;write data to Private RAM &83xx (Addr = X, Data = A)
-.WritePrivateRam8300X
 {
-.L8864      PHP
-            SEI
-            JSR switchInPrivateRAM
-            STA prv83,X								;write data to Private RAM (Addr = X, Data = A)
-            PHA
-            JMP switchOutPrivateRAM
-}
+; Write data to Private RAM &83xx (Addr = X, Data = A)
+.^WritePrivateRam8300X
+    PHP:SEI
+    JSR SwitchInPrivateRAM
+    STA prv83,X
+    PHA
+    JMP SwitchOutPrivateRAM
 
-;read data from Private RAM &83xx (Addr = X, Data = A)
-.ReadPrivateRam8300X
-{
-.L8870      PHP
-            SEI
-            JSR switchInPrivateRAM
-            LDA prv83,X								;read data from Private RAM (Addr = X, Data = A)
-            PHA
-            ; SFTODO: We could move switchOutPrivateRAM just after this code and
-            ; fall through to it, saving three bytes.
-            JMP switchOutPrivateRAM
-}
+; Read data from Private RAM &83xx (Addr = X, Data = A)
+.^ReadPrivateRam8300X
+    PHP:SEI
+    JSR SwitchInPrivateRAM
+    LDA prv83,X
+    PHA
+    ; SQUASH: We could move SwitchOutPrivateRAM just after this code and fall through to it.
+    JMP SwitchOutPrivateRAM
 
-;Switch in Private RAM
-.switchInPrivateRAM
-{
-.L887C      PHA
-            LDA ramselCopy
-            AND #ramselShen
-            ORA #ramselPrvs1
-            STA ramsel							;retain value of ramselCopy so it can be restored after read / write operation complete
-            LDA romselCopy
-            ORA #romselPrvEn
-            STA romsel							;retain value of &F4 so it can be restored after read / write operation complete
-            PLA
-            RTS
-}
+; Switch in Private RAM
+.SwitchInPrivateRAM
+    PHA
+    ; SFTODO: Shouldn't we be updating ramselCopy and romselCopy here? I know we have
+    ; interrupts disabled but is there no risk of an NMI?
+    LDA ramselCopy:AND #ramselShen:ORA #ramselPrvs1:STA ramsel
+    LDA romselCopy:ORA #romselPrvEn:STA romsel
+    PLA
+    RTS
 
-;Switch out Private RAM
-.switchOutPrivateRAM
-{
-.L8890      LDA romselCopy
-            STA romsel							;restore using value retained in &F4
-            LDA ramselCopy
-            STA ramsel							;restore using value retained in ramselCopy
-            PLA
-            PLP
-            PHA
-            PLA
-            RTS
+; Switch out Private RAM; this is not a subroutine and it expects to PLA:PLP values stacked by
+; the caller.
+.SwitchOutPrivateRAM
+    ; SFTODO: See SwitchInPrivateRAM; are we taking a chance here with NMIs?
+    LDA romselCopy:STA romsel
+    LDA ramselCopy:STA ramsel
+    PLA
+    PLP
+    PHA
+    PLA
+    RTS
 }
 
 .stackTransientCmdSpace
