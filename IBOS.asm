@@ -1845,8 +1845,8 @@ firstDigitCmdPtrY = &BB
 
 .SwitchInPrivateRAM
     PHA
-    ; SFTODO: Shouldn't we be updating ramselCopy and romselCopy here? I know we have
-    ; interrupts disabled but is there no risk of an NMI?
+    ; SFTODO: Shouldn't we be updating ramselCopy and (especially) romselCopy here? I know we
+    ; have interrupts disabled but is there no risk of an NMI?
     LDA ramselCopy:AND #ramselShen:ORA #ramselPrvs1:STA ramsel
     LDA romselCopy:ORA #romselPrvEn:STA romsel
     PLA
