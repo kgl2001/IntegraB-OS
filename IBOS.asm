@@ -3615,27 +3615,27 @@ ENDIF
 }
 
 
+; SQUASH: If we moved this block just before L932E we could "BXX L932E ; always branch" instead
+; of having to JMP.
 {
-.L950B		EQUB &04,&02,&01
+.L950B
+    EQUB &04,&02,&01
 
-.^Conf3	  BCS L9528
-            JSR GetConfigValue
-            LSR A
-            BCS L9523
-            LSR A
-            BCS L951E
-            LDA #&00
-            JMP L932E
+.^Conf3
+    BCS Conf3Write
+    JSR GetConfigValue
+    LSR A:BCS L9523
+    LSR A:BCS L951E
+    LDA #0:JMP L932E
+.L951E
+    LDA #1:JMP L932E
+.L9523
+    LDA #2:JMP L932E
 			
-.L951E      LDA #&01
-            JMP L932E
-			
-.L9523      LDA #&02
-            JMP L932E
-			
-.L9528      LDX transientConfigPrefixSFTODO
-	  LDA L950B,X
-            JMP SetConfigValueA
+.Conf3Write
+    LDX transientConfigPrefixSFTODO
+    LDA L950B,X
+    JMP SetConfigValueA
 }
 
 {
