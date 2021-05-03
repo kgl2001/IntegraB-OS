@@ -3406,47 +3406,46 @@ ConfParBitBitCountOffset = 2
     EQUB %01111111
 
 
-.shiftALeftByX
+.ShiftALeftByX
 {
-.L93B1      CPX #&00
-            BEQ rts
-.L93B5      ASL A
-            DEX
-            BNE L93B5
-.rts        RTS
+    CPX #0:BEQ Rts
+.Loop
+    ASL A
+    DEX:BNE Loop
+.Rts
+    RTS
 }
 IF FALSE
-; SFTODO: Saves two bytes, but doesn't guarantee X=0 on return - that may well not matter
-.shiftALeftByXAlternate
+; SQUASH: Saves two bytes, but doesn't guarantee X=0 on return - that may well not matter
+.ShiftALeftByXAlternate
 {
-.loop	  DEX
-	  BMI rts ; e.g. there's one at L93C2
-	  ASL A
-	  JMP loop
+.Loop
+    DEX:BMI Rts ; e.g. there's one at L93C2
+    ASL A
+    JMP Loop
 }
 ENDIF
 
-; SFTODO: This only has a single caller
-.shiftARightByX
+; SQUASH: This only has a single caller
+; SQUASH: Use similar code to ShiftALeftByXAlternate above?
+.ShiftARightByX
 {
-.L93BA      CPX #&00
-            BEQ L93C2
-.L93BE      LSR A
-            DEX
-            BNE L93BE
-.L93C2      RTS
+    CPX #0:BEQ Rts
+.Loop
+    LSR A
+    DEX:BNE Loop
+.Rts
+    RTS
 }
 
 .setYToTransientCmdIdxTimes3
-{
-.L93C3      LDA transientCommandIndex
-            ASL A
-            ADC transientCommandIndex
-            TAY
-            RTS
-}
+    LDA transientCommandIndex
+    ASL A
+    ADC transientCommandIndex
+    TAY
+    RTS
 
-.getShiftedBitMask
+.GetShiftedBitMask
 {
 .L93CA      LDA ConfParBit+ConfParBitBitCountOffset,Y
             AND #&7F ; SFTODO: so what does b7 signify?
@@ -3456,7 +3455,7 @@ ENDIF
             LDA ConfParBit+ConfParBitStartBitOffset,Y
             TAX ; SFTODO: we could just do LDX ...,Y in previous instruction, couldn't we?
             LDA transientConfigBitMask ; SFTODO: use PLA?
-            JSR shiftALeftByX
+            JSR ShiftALeftByX
             STA transientConfigBitMask
             RTS
 }
@@ -3465,11 +3464,11 @@ ENDIF
 {
 .L93E1      STA transientConfigPrefix
 .^L93E3     JSR setYToTransientCmdIdxTimes3
-            JSR getShiftedBitMask
+            JSR GetShiftedBitMask
             LDA ConfParBit+1,Y
             TAX ; SQUASH: LDX blah,Y?
             LDA transientConfigPrefix
-            JSR shiftALeftByX
+            JSR ShiftALeftByX
             AND transientConfigBitMask
             STA transientConfigPrefix
             LDA transientConfigBitMask
@@ -3486,7 +3485,7 @@ ENDIF
 .getConfigValue
 {
 .L940A      JSR setYToTransientCmdIdxTimes3
-            JSR getShiftedBitMask
+            JSR GetShiftedBitMask
             LDA ConfParBit+ConfParBitUserRegOffset,Y
             TAX ; SQUASH: can we just use LDX blah,Y to avoid this?
             JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
@@ -3495,7 +3494,7 @@ ENDIF
             LDA ConfParBit+1,Y
             TAX ; SQUASH: LDX blah,Y
             LDA transientConfigPrefixSFTODO ; SFTODO: Just PLA?
-            JSR shiftARightByX
+            JSR ShiftARightByX
             STA transientConfigPrefixSFTODO
             RTS
 }
