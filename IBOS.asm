@@ -1563,54 +1563,57 @@ TmpCommandIndex = &AC
 Pad = &B0 ; character output in place of leading zeros
 PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
 
-.L86DE      PHA
-            LDA #&00
-            STA PadFlag
-            BCS NoPadding ; we use NUL for Padding, which has the same effect
-            LDA #' '
-.NoPadding  STA Pad
-            PLA
-            PHA
+    PHA
+    LDA #0
+    STA PadFlag
+    BCS NoPadding ; we use NUL for padding, which has the same effect
+    LDA #' '
+.NoPadding
+    STA Pad
+    PLA
+    PHA
 
-            LDX #0 ; SFTODO: change to LDX #&FF and get rid of DEX/INX stuff?
-            SEC
+    LDX #0 ; SFTODO: change to LDX #&FF and get rid of DEX/INX stuff?
+    SEC
 .HundredsLoop
-            SBC #100
-            INX
-            BCS HundredsLoop
-            ADC #100
-            JSR PrintDigit
+    SBC #100
+    INX
+    BCS HundredsLoop
+    ADC #100
+    JSR PrintDigit
 
-            LDX #0 ; SFTODO: change to LDX #&FF and get rid of DEX/INX stuff?
-            SEC
+    LDX #0 ; SFTODO: change to LDX #&FF and get rid of DEX/INX stuff?
+    SEC
 .TensLoop
-            SBC #10
-            INX
-            BCS TensLoop
-            ADC #10
-            JSR PrintDigit
+    SBC #10
+    INX
+    BCS TensLoop
+    ADC #10
+    JSR PrintDigit
 
-            TAX
-            INX ; SFTODO: optimisable?
-            DEC PadFlag
-            JSR PrintDigit
-            PLA
-            RTS
+    TAX
+    INX ; SFTODO: optimisable?
+    DEC PadFlag
+    JSR PrintDigit
+    PLA
+    RTS
 			
 .PrintDigit
-            PHA
-            DEX ; SFTODO: optimisable?
-            LDA Pad
-            CPX #&00 ; SFTODO: Could get rid of this if LDA moved before DEX
-            BNE NotZero
-            BIT PadFlag
-            BPL PrintPad
-.NotZero    DEC PadFlag
-            TXA
-            ORA #'0'								;Convert binary number to ASCII number
-.PrintPad   JSR OSWRCH								;Write number to screen
-            PLA
-            RTS
+    PHA
+    DEX ; SFTODO: optimisable?
+    LDA Pad
+    CPX #&00 ; SFTODO: Could get rid of this if LDA moved before DEX
+    BNE NotZero
+    BIT PadFlag
+    BPL PrintPad
+.NotZero
+    DEC PadFlag
+    TXA
+    ORA #'0'								;Convert binary number to ASCII number
+.PrintPad
+    JSR OSWRCH
+    PLA
+    RTS
 }
 			
 .convertIntegerDefaultHex
