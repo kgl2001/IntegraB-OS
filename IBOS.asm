@@ -1926,79 +1926,58 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
 
 ;Set BRK Vector
 .^setBrkv
-.L88D7      LDA #brkvHandler MOD &100
-            STA BRKVL
-            LDA #brkvHandler DIV &100
-            STA BRKVH
-            RTS
+    LDA #lo(brkvHandler):STA BRKVL
+    LDA #hi(brkvHandler):STA BRKVH
+    RTS
 
 ; SFTODO: Start of this code is same as L8969 - could we save a few bytes by (e.g.) setting osErrorPtr to &8000 here and testing for that in BRKV handler and skipping the error printing code in that case?
 .NormalLanguageStartUp
-.L88E2      CLI
-            CLD
-            LDX #&FF
-            TXS
-            JSR setBrkv								;Set BRK Vector to &8969
-            LDA lastBreakType								;Read current language ROM number
-            BNE L88F2
-            JMP cmdLoop
+    CLI
+    CLD
+    LDX #&FF:TXS
+    JSR setBrkv
+    LDA lastBreakType:BNE NotSoftReset
+    JMP cmdLoop ; SQUASH: "BEQ ; always branch", and then we can just fall through to NotSoftReset
+.NotSoftReset
+    LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeAt:BEQ atPressed
+    JMP cmdLoop ; SQUASH: "BEQ ; always branch" and fall through to atPressed
 
-.L88F2      LDA #osbyteKeyboardScanFrom10
-            JSR OSBYTE								;Perform key scan
-            CPX #keycodeAt								;Is the @ key being pressed?
-            BEQ atPressed
-            JMP cmdLoop
-			
-.atPressed  LDA #osbyteReadWriteBreakEscapeEffect								;Start of RESET routine
-            LDX #&02								;Memory cleared on next reset, ESCAPE disabled
-            LDY #&00
-            JSR OSBYTE
-            LDX #&00								;Write 'System Reset' text to screen
-.promptLoop LDA resetPrompt,X
-            BEQ promptDone
-            JSR OSASCI
-            INX
-            BNE promptLoop
+    ; Implement IBOS reset when @ held down during (non-soft) reset.
+.atPressed
+    LDA #osbyteReadWriteBreakEscapeEffect:LDX #2:LDY #0:JSR OSBYTE ; Memory cleared on next reset, ESCAPE disabled
+    LDX #0
+.promptLoop
+    LDA resetPrompt,X:BEQ promptDone
+    JSR OSASCI
+    INX:BNE promptLoop ; always branch
 .promptDone
+    ; Wait until @ is released, flush the keyboard buffer and read user response to prompt.
 .releaseAtLoop
-	  LDA #osbyteKeyboardScanFrom10
-            JSR OSBYTE								;Perform key scan
-            CPX #keycodeAt								;Is the @ key being pressed?
-            BEQ releaseAtLoop								;Repeat until no longer being pressed
-            LDA #osbyteFlushSelectedBuffer
-            LDX #bufNumKeyboard
-            JSR OSBYTE								;Flush keyboard buffer
-            CLI
-            JSR OSRDCH								;Read keyboard
-            PHA
-            LDA #osbyteAcknowledgeEscape
-            JSR OSBYTE								;Was ESC pressed?
-            PLA
-            AND #CapitaliseMask								;Capitalise
-            CMP #'Y'								;Was Y pressed?
-            BNE L8943								;No? Clear screen, then NLE
-            LDX #(yesStringEnd - yesString) - 1
-.yesLoop    LDA yesString,X								;Yes? Write 'Yes' to screen
-            JSR OSWRCH
-            DEX
-            BPL yesLoop
-            JMP fullReset								;Initiate Full Reset
-			
-.L8943      LDA #vduCls
-            JSR OSWRCH								;Clear Screen
-            JMP nle									;Enter NLE
+    LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeAt:BEQ releaseAtLoop
+    LDA #osbyteFlushSelectedBuffer:LDX #bufNumKeyboard:JSR OSBYTE
+    CLI
+    JSR OSRDCH:PHA
+    LDA #osbyteAcknowledgeEscape:JSR OSBYTE
+    PLA:AND #CapitaliseMask:CMP #'Y':BNE NotYes
+    LDX #(yesStringEnd - yesString) - 1
+.yesLoop
+    LDA yesString,X:JSR OSWRCH:DEX:BPL yesLoop
+    JMP fullReset ; SQUASH: any chance of falling through?
+.NotYes
+    LDA #vduCls:JSR OSWRCH
+    JMP nle
 
-.yesString  EQUS &0D, "seY"
+.yesString
+    EQUS vduCr, "seY"
 .yesStringEnd
 .resetPrompt
-	  EQUS "System Reset", &0D, &0D, "Go (Y/N) ? ", &00
+    EQUS "System Reset", vduCr, vduCr, "Go (Y/N) ? ", 0
 
 ;BRK vector entry point
 .brkvHandler
 ; SFTODO: Use of L0700 in next line is potentially iffy, but I suspect this is used only when we're in NLE when IBOS *is* current language, so that would be fine
 inputBuf = &700
-.L8969	  LDX #&FF								;Break Vector routine
-	  TXS
+    LDX #&FF:TXS
             CLI
             CLD
 	  ; Clear the VDU queue, so (e.g.) the first few characters of output
