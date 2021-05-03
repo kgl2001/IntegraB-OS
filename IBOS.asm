@@ -700,7 +700,8 @@ MACRO FALLTHROUGH_TO label
 ENDMACRO
 
 ; This macro wraps "JSR PrvEn" with a sanity check that the code calling it won't be hidden by
-; paging in PRVS1.
+; paging in PRVS1. (This isn't foolproof; "P%=&8500:PRVEN:JSR &8100" would be buggy but not
+; caught.)
 MACRO PRVEN ; SFTODO: Rename to indicate this is PRVS1 only? Also perhaps put a verb in the name?
     ASSERT P% >= &8400
     JSR PrvEn
