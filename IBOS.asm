@@ -3270,45 +3270,48 @@ OriginalOutputDeviceStatus = TransientZP + 1
     JMP ExitAndClaimServiceCall
 
 ; *CONFIGURE and *STATUS simply issue the corresponding service calls, so the
-; bulk of their implementation is in the service call handlers. This means that
-; third-party ROMs which support these service calls will get a chance to add
-; their own *CONFIGURE and *STATUS options, just as they could on a Master.
+; bulk of their implementation is in the service call handlers. This means that third-party
+; ROMs which support these service calls will get a chance to add their own *CONFIGURE and
+; *STATUS options, just as they could on a Master.
 {
 ;*CONFIGURE Command
-.^config    LDX #serviceConfigure
-            BNE L92BB
+.^config
+    LDX #serviceConfigure
+    BNE Common
 
 ;*STATUS Command
-.^status	  LDX #serviceStatus
-.L92BB      JSR FindNextCharAfterSpace							;find next character. offset stored in Y
-            LDA #&FF								;load &FF
-            PHA									;and store
-            LDA (transientCmdPtr),Y							;read character
-            CMP #vduCr								;check for end of line
-            BNE L92CB								;branch if not end of line
-            PLA									;pull &FF
-            LDA #&00								;load &00 instead
-            PHA									;and store
-.L92CB      TXA									;move *CONF (*&28) / *STAT (*&29) to A
-            PHA									;and store
-            LDA transientCmdPtr							;copy command location LSB
-            STA osCmdPtr								;to &F2
-            LDA transientCmdPtr + 1							;copy command location MSB
-            STA osCmdPtr + 1								;to &F3
-            PLA									;pull *CONF (*&28) / *STAT (*&29)
-            TAX									;and transfer to X
-            LDA #osbyteIssueServiceRequest
-            JSR OSBYTE
-            PLA
-            BEQ exitSCIndirect
-	  ; SFTODO: Can X be modified by the service call? beebwiki suggests not, but maybe we're extending the protocol or I'm missing something? Documentation on these service calls seems a bit thin on the ground.
-            CPX #&00
-            BEQ exitSCIndirect
+.^status
+    LDX #serviceStatus
+.Common
+    JSR FindNextCharAfterSpace							;find next character. offset stored in Y
+    LDA #&FF								;load &FF
+    PHA									;and store
+    LDA (transientCmdPtr),Y							;read character
+    CMP #vduCr								;check for end of line
+    BNE L92CB								;branch if not end of line
+    PLA									;pull &FF
+    LDA #&00								;load &00 instead
+    PHA									;and store
+.L92CB
+    TXA									;move *CONF (*&28) / *STAT (*&29) to A
+    PHA									;and store
+    LDA transientCmdPtr							;copy command location LSB
+    STA osCmdPtr								;to &F2
+    LDA transientCmdPtr + 1							;copy command location MSB
+    STA osCmdPtr + 1								;to &F3
+    PLA									;pull *CONF (*&28) / *STAT (*&29)
+    TAX									;and transfer to X
+    LDA #osbyteIssueServiceRequest
+    JSR OSBYTE
+    PLA
+    BEQ exitSCIndirect
+; SFTODO: Can X be modified by the service call? beebwiki suggests not, but maybe we're extending the protocol or I'm missing something? Documentation on these service calls seems a bit thin on the ground.
+    CPX #&00
+    BEQ exitSCIndirect
 .^GenerateBadParameter
-.L92E3      JSR RaiseError								;Goto error handling, where calling address is pulled from stack
-
-	  EQUB &FE
-	  EQUS "Bad parameter", &00
+    JSR RaiseError								;Goto error handling, where calling address is pulled from stack
+    EQUB &FE
+    EQUS "Bad parameter", &00
 
 .exitSCIndirect
             JMP ExitAndClaimServiceCall								;Exit Service Call
