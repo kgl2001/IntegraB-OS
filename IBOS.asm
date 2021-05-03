@@ -297,7 +297,7 @@ variableMainRamSubroutineMaxSize = &32 ; SFTODO: ASSERT ALL THE SUBROUTINES ARE 
 ; SFTODO: Not sure about "transient" prefix, that's sort of for the &A8 block,
 ; but want to convey the transient-use-ness.
 ; SFTODO: Named constants for the 0/1/2 values?
-transientConfigPrefix = &BD ; 0=none, 1="NO", 2="SH" - see parseNoSh
+transientConfigPrefix = &BD ; 0=none, 1="NO", 2="SH" - see ParseNoSh
 transientConfigPrefixSFTODO = &BD; SFTODO: I suspect these uses aren't the same as previous one and should be renamed - I haven't necessarily found all cases where this versino is being used - I think this version is used to hold a config value read from a user register
 transientConfigBitMask = &BC
 
@@ -3310,43 +3310,28 @@ OriginalOutputDeviceStatus = TransientZP + 1
 ; "NO" => C clear, transientConfigPrefix=1, Y advanced past "NO"
 ; "SH" => C clear, transientConfigPrefix=2, Y advanced past "SH"
 ; otherwise C set, transientConfigPrefix=0, Y preserved
-.parseNoSh
+.ParseNoSh
 {
-.L92F8      TYA
-            PHA
-            LDA (transientCmdPtr),Y
-            AND #CapitaliseMask
-            CMP #'N'
-            BNE L9313
-            INY
-            LDA (transientCmdPtr),Y
-            AND #CapitaliseMask
-            CMP #'O'
-            BNE L9326
-            INY
-            LDA #&01
-.^L930E     STA transientConfigPrefix
-            PLA
-            CLC
-            RTS
-			
-.L9313      CMP #'S'
-            BNE L9326
-            INY
-            LDA (transientCmdPtr),Y
-            AND #CapitaliseMask
-            CMP #'H'
-            BNE L9326
-            INY
-            LDA #&02
-            JMP L930E
-			
-.L9326      LDA #&00
-            STA transientConfigPrefix
-            PLA
-            TAY
-            SEC
-            RTS
+    TYA:PHA
+    LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'N':BNE NotNo
+    INY:LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'O':BNE NoMatch
+    INY
+    LDA #1
+.Match
+    STA transientConfigPrefix
+    PLA ; SFTODO WE ARE RETURNING WITH ORIGINAL Y IN *A*
+    CLC
+    RTS
+.NotNo
+    CMP #'S':BNE NoMatch
+    INY:LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'H':BNE NoMatch
+    INY
+    LDA #2:JMP Match ; SQUASH: "BNE ; always branch"
+.NoMatch
+    LDA #0:STA transientConfigPrefix
+    PLA:TAY
+    SEC
+    RTS
 }
 
 {
@@ -3553,7 +3538,7 @@ ENDIF
             JSR SearchKeywordTable
             BCC optionRecognised
             TAY
-            JSR parseNoSh
+            JSR ParseNoSh
             BCS notNoSh
             TYA
             JSR ConfRef
