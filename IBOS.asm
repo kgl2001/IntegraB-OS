@@ -203,6 +203,8 @@ romPrivateWorkspaceTable = &0DF0
 
 romTypeSrData = 2 ; ROM type byte used for banks allocated to pseudo-addressing via *SRDATA
 
+CapitaliseMask = &DF
+
 osBrkStackPointer = &F0
 osCmdPtr = &F2
 osErrorPtr = &FD
@@ -1055,7 +1057,7 @@ MinimumAbbreviationLength = 3 ; including the "." which indicates an abbreviatio
     ; Capitalise A; &60 is '£' but we're really trying to avoid mangling non-alphabetic
     ; characters with the AND here. (In particular, '.' AND &DF is &0E.)
     CMP #&60:BCC NotLowerCase
-    AND #&DF
+    AND #CapitaliseMask
 .NotLowerCase
     CMP (transientTblPtr),Y:BNE NotSimpleMatch
     INY:CPY KeywordLength:BEQ Match
@@ -1378,7 +1380,7 @@ TmpCommandIndex = &AC
     JSR CmdRef:JSR SearchKeywordTable:BCC RunCommand
     ; We didn't find a match, so see if there's an "I" prefix (case-insensitive) and if so try
     ; without that.
-    TAY:LDA (transientCmdPtr),Y:AND #&DF:CMP #'I':BNE NoIPrefix
+    TAY:LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'I':BNE NoIPrefix
     INY ; skip the "I"
     TYA:JSR CmdRef:JSR SearchKeywordTable:BCC RunCommand
 .ExitServiceCallIndirect
@@ -1389,7 +1391,7 @@ TmpCommandIndex = &AC
     ; Check to see if this is "*X*" or "*S*".
     INY:LDA (transientCmdPtr),Y ; read the second character
     CMP #'*':BNE ExitServiceCallIndirect
-    DEY:LDA (transientCmdPtr),Y:AND #&DF ; read and capitalise the first character
+    DEY:LDA (transientCmdPtr),Y:AND #CapitaliseMask ; read and capitalise the first character
     CMP #'X':BNE NotX
     JMP commandX
 .NotX
@@ -1563,8 +1565,8 @@ TmpCommandIndex = &AC
 .ParseOnOff
 {
     JSR FindNextCharAfterSpace
-    LDA (transientCmdPtr),Y:AND #&DF:CMP #'O':BNE Invalid
-    INY:LDA (transientCmdPtr),Y:AND #&DF:CMP #'N':BNE NotOn
+    LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'O':BNE Invalid
+    INY:LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'N':BNE NotOn
     INY
     LDA #&FF
     CLC
@@ -1572,7 +1574,7 @@ TmpCommandIndex = &AC
 .NotOn
     CMP #'F':BNE Invalid
     ; We will accept "OF" to mean "OFF", but if the second "F" is present we skip over it.
-    INY:LDA (transientCmdPtr),Y:AND #&DF:CMP #'F':BNE Off
+    INY:LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'F':BNE Off
     INY
 .Off
     LDA #0
@@ -1707,13 +1709,12 @@ firstDigitCmdPtrY = &BB
     CMP #'&':BNE NotHex
     LDA #16:JMP BaseInA ; SQUASH: "BNE ; always branch"
 .NotHex
-    CMP #'%':BNE L87B9
+    CMP #'%':BNE ParseDigit
     LDA #2
 .BaseInA
     STA base
-    INY
-    STY firstDigitCmdPtrY
-    JMP L87B9
+    INY:STY firstDigitCmdPtrY
+    JMP ParseDigit ; SQUASH: "BNE ; always branch"?
 			
 .L876E
     TAX
@@ -1759,12 +1760,10 @@ firstDigitCmdPtrY = &BB
     DEX
     BNE L878D
     INY
-.L87B9
-    LDA (transientCmdPtr),Y
-    CMP #'Z'+1
-    BCC L87C1
-    AND #&DF                                                                                ;convert to upper case
-.L87C1
+.ParseDigit
+    LDA (transientCmdPtr),Y:CMP #'Z'+1:BCC NotLowerCase
+    AND #CapitaliseMask                                                                                ;convert to upper case
+.NotLowerCase
     SEC
     SBC #'0'
     CMP #10
@@ -2003,7 +2002,7 @@ firstDigitCmdPtrY = &BB
             LDA #osbyteAcknowledgeEscape
             JSR OSBYTE								;Was ESC pressed?
             PLA
-            AND #&DF								;Capitalise
+            AND #CapitaliseMask								;Capitalise
             CMP #'Y'								;Was Y pressed?
             BNE L8943								;No? Clear screen, then NLE
             LDX #(yesStringEnd - yesString) - 1
@@ -3415,12 +3414,12 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 .L92F8      TYA
             PHA
             LDA (transientCmdPtr),Y
-            AND #&DF
+            AND #CapitaliseMask
             CMP #'N'
             BNE L9313
             INY
             LDA (transientCmdPtr),Y
-            AND #&DF
+            AND #CapitaliseMask
             CMP #'O'
             BNE L9326
             INY
@@ -3434,7 +3433,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
             BNE L9326
             INY
             LDA (transientCmdPtr),Y
-            AND #&DF
+            AND #CapitaliseMask
             CMP #'H'
             BNE L9326
             INY
@@ -3731,7 +3730,7 @@ ENDIF
             TAY
             JSR FindNextCharAfterSpace							;find next character. offset stored in Y
             LDA (transientCmdPtr),Y							;Read File system type
-            AND #&DF								;Capitalise
+            AND #CapitaliseMask								;Capitalise
             CMP #'N'								;Is 'N' - NFS
             BEQ L94DD								;CLC then write to register
             CMP #'D'								;Is 'D' - NFS
@@ -4943,7 +4942,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             LDA (transientCmdPtr),Y
             CMP #vduCr
             BEQ rts  								;Yes? Then jump to end
-            AND #&DF								;Capitalise
+            AND #CapitaliseMask								;Capitalise
             CMP #'Q'								;'Q'
             BNE L9C07								;No? Goto next check
             LDA #&80								;set bit 7
@@ -6202,7 +6201,7 @@ osfileBlock = L02EE
             JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
             JSR FindNextCharAfterSpace							;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
-            AND #&DF								;Capitalise
+            AND #CapitaliseMask								;Capitalise
             CMP #'I'								;and check for 'I' (Immediate)
             RTS
 
@@ -6405,7 +6404,7 @@ osfileBlock = L02EE
 .LA464      JSR convertIntegerDefaultDecimal
             BCC parsedDecimalOK
             LDA (transientCmdPtr),Y
-            AND #&DF                                                                                ;convert to upper case (imperfect but presumably good enough)
+            AND #CapitaliseMask                                                                                ;convert to upper case (imperfect but presumably good enough)
             CMP #'F'+1
             BCS LA47A
             CMP #'A'
@@ -7402,7 +7401,7 @@ maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
             TAX									;move calText offset for current month / day to X
             LDY transientDateBufferIndex						;get buffer pointer
             LDA calText,X								;get first letter
-            AND #&DF								;capitalise this letter
+            AND #CapitaliseMask								;capitalise this letter
             JMP charInA
 			
 .loop       LDA calText,X								;get subsequent letters
@@ -7482,12 +7481,12 @@ unitsChar = prv82 + &4F
             LDY transientDateBufferIndex						;get buffer pointer
             LDA dateSuffixes,X							;get 1st character from table + offset
             BCC noCaps1								;don't capitalise
-            AND #&DF								;capitalise
+            AND #CapitaliseMask								;capitalise
 .noCaps1    STA (transientDateBufferPtr),Y						;store at buffer &XY?Y
             INY									;increase buffer pointer
             LDA dateSuffixes+1,X							;get 2nd character from table + offset
             BCC noCaps2								;don't capitalise
-            AND #&DF								;capitalise
+            AND #CapitaliseMask								;capitalise
 .noCaps2    JMP emitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
 
 ;Split number in register A into 10s and 1s, characterise and store 1s in &824F and 10s in &824E
@@ -9090,7 +9089,7 @@ column = prvC
             JSR copyPrvAlarmToRtc
             JSR FindNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
-            AND #&DF                                                                                ; convert to upper case (imperfectly)
+            AND #CapitaliseMask                                                                                ; convert to upper case (imperfectly)
             CMP #'R'
             PHP
             PLA
