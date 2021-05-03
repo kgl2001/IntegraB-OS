@@ -9165,21 +9165,23 @@ column = prvC
 			
 ;Save OSWORD XY entry table
 {
-.^oswordsv	LDA prvOswordBlockOrigAddr
-            STA L00AE
-            LDA prvOswordBlockOrigAddr + 1
-            STA L00AF
-            LDY #&0F
-.oswordsva	LDA (L00AE),Y
-            STA prvOswordBlockCopy,Y
-            DEY
-            BPL oswordsva
-            RTS
+Ptr = &AE
+
+.^oswordsv ; SFTODO: rename
+    XASSERT_USE_PRV1
+    LDA prvOswordBlockOrigAddr:STA Ptr
+    LDA prvOswordBlockOrigAddr + 1:STA Ptr + 1
+    LDY #prvOswordBlockCopySize - 1
+.Loop
+    LDA (Ptr),Y:STA prvOswordBlockCopy,Y
+    DEY:BPL Loop
+    RTS
 }
 			
 ;Restore OSWORD XY entry table
 {
-Ptr = &AE ; SFTODO: is this local or do our callers use it?
+Ptr = &AE
+
 .^oswordrs ; SFTODO: rename
     XASSERT_USE_PRV1
     LDA prvOswordBlockOrigAddr:STA Ptr
