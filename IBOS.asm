@@ -5995,7 +5995,7 @@ osfileBlock = L02EE
             ; picture.
             LDA prvOswordBlockCopy + 10                                                             ;low byte of buffer length (SFTODO: bug? see adjustPrvOsword43Block)
             STA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
-            LDA prvOswordBlockCopy + 11                                                             ;high byte of buffer length (SFTODO: bug? see adjustProvOsword43Block)
+            LDA prvOswordBlockCopy + 11                                                             ;high byte of buffer length (SFTODO: bug? see adjustPrvOsword43Block)
             STA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
             PLA
             JSR openFile
@@ -9179,22 +9179,22 @@ column = prvC
 			
 ;Restore OSWORD XY entry table
 {
-.^oswordrs	LDA prvOswordBlockOrigAddr
-            STA L00AE
-            LDA prvOswordBlockOrigAddr + 1
-            STA L00AF
-            LDY #&0F
-.oswordrsa	LDA prvOswordBlockCopy,Y
-            STA (L00AE),Y
-			DEY
-            BPL oswordrsa
-            RTS
+Ptr = &AE ; SFTODO: is this local or do our callers use it?
+.^oswordrs ; SFTODO: rename
+    XASSERT_USE_PRV1
+    LDA prvOswordBlockOrigAddr:STA Ptr
+    LDA prvOswordBlockOrigAddr + 1:STA Ptr + 1
+    LDY #prvOswordBlockCopySize - 1
+.Loop
+    LDA prvOswordBlockCopy,Y:STA (Ptr),Y
+    DEY:BPL Loop
+    RTS
 }
 			
 {
 .^ClearPrvOswordBlockCopy
     XASSERT_USE_PRV1
-    LDY #15 ; SFTODO: mild magic
+    LDY #prvOswordBlockCopySize - 1
     LDA #0
 .Loop
     STA prvOswordBlockCopy,Y
@@ -9248,7 +9248,7 @@ column = prvC
 }
 
 ; SFTODO: Mostly un-decoded
-; SFTODO: *Roughly* speaking this is copying provOswordBlockCopy+1 bytes of data from prvDateBuffer to the 32-bit address at prvOswordBlockOrigAddr+4 in a tube-aware way, although we also have the option use b7 of prvOswordBlockCopy+7 to explicitly ignore tube.
+; SFTODO: *Roughly* speaking this is copying prvOswordBlockCopy+1 bytes of data from prvDateBuffer to the 32-bit address at prvOswordBlockOrigAddr+4 in a tube-aware way, although we also have the option use b7 of prvOswordBlockCopy+7 to explicitly ignore tube.
 .CopyPrvDateBuffer ; SFTODO: probably not ideal name but will do for now
 {
 Ptr = &A8
