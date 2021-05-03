@@ -1887,16 +1887,14 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
     RTS
 }
 
-.stackTransientCmdSpace ; SFTODO: RENAME "SAVE"?
+.SaveTransientZP
 {
     LDX #TransientZPSize - 1
 .Loop
-    LDA TransientZP,X
-    PHA
+    LDA TransientZP,X:PHA
     DEX:BPL Loop
     ; Copy our caller's return address onto the top of the stack so we can return successfully.
     ; SQUASH: Can't we do TSX:LDA thinkcarefully,X:PHA:LDA thinkcarefully,X:PHA:RTS?
-    ; SQUASH: Could we do TSX:JMP (thinkcarefully,X)?
     PHA:PHA:TSX
     LDA L0103 + TransientZPSize,X:STA L0101,X
     LDA L0104 + TransientZPSize,X:STA L0102,X
@@ -1904,22 +1902,19 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
 }
 
 ; SFTODO: This currently only has one caller and could be inlined.
-.unstackTransientCmdSpace
+.RestoreTransientZP
 {
-.L88B8      TSX
-            LDA L0101,X
-            STA L010B,X
-            LDA L0102,X
-            STA L010C,X
-            PLA
-            PLA
-            LDX #&00
-.L88C9      PLA
-            STA L00A8,X
-            INX
-            CPX #&08
-            BCC L88C9
-            RTS
+    ; Move the return address pushed by our caller over the one beneath the saved copy of TransientZP.
+    ; SQUASH: Can't do we TSX:PLA:STA thinkcarefully,X:PLA:STA thinkcarefully,X?
+    TSX
+    LDA L0101,X:STA L0103 + TransientZPSize,X
+    LDA L0102,X:STA L0104 + TransientZPSize,X
+    PLA:PLA
+    LDX #0
+.Loop
+    PLA:STA TransientZP,X
+    INX:CPX #TransientZPSize:BCC Loop
+    RTS
 }
 						
 ;Unconfirmed language entry point
@@ -9153,7 +9148,7 @@ column = prvC
 			
 ;OSWORD &0E (14) Read real time clock
 {
-.^osword0e	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
+.^osword0e	JSR SaveTransientZP						;save 8 bytes of data from &A8 onto the stack
             PRVEN								;switch in private RAM
             LDA oswdbtX								;get X register value of most recent OSWORD call
             STA prvOswordBlockOrigAddr							;and save to &8230
@@ -9171,13 +9166,13 @@ column = prvC
             STA oswdbtA								;and restore to &EF
             PRVDIS								;switch out private RAM
 
-            JMP unstackTransientCmdSpaceAndExitSC						;restore 8 bytes of data to &A8 from the stack and exit
+            JMP RestoreTransientZPAndExitSC						;restore 8 bytes of data to &A8 from the stack and exit
 }
 			
 ;OSWORD &49 (73) - Integra-B calls
 {
 .^osword49
-    JSR stackTransientCmdSpace
+    JSR SaveTransientZP
     PRVEN
     LDA oswdbtX:STA prvOswordBlockOrigAddr
     LDA oswdbtY:STA prvOswordBlockOrigAddr + 1
@@ -9191,8 +9186,8 @@ column = prvC
     LDA prvOswordBlockOrigAddr + 1:STA oswdbtY
     LDA #&49:STA oswdbtA
     PRVDIS
-.^unstackTransientCmdSpaceAndExitSC
-    JSR unstackTransientCmdSpace
+.^RestoreTransientZPAndExitSC
+    JSR RestoreTransientZP
     JMP ExitAndClaimServiceCall
 }
 			
