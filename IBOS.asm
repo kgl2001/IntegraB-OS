@@ -1430,16 +1430,15 @@ TmpCommandIndex = &AC
 {
     PHA:TXA:PHA:TYA:PHA
     TSX:LDA L0103,X	; get original A=service call number
-    BEQ ExitServiceCall
+    BEQ ExitServiceCall ; do nothing if call has been claimed already
     CMP #5:BNE NotServiceCall5
     ; We're handling service call 5 - unrecognised interrupt; see if the RTC has raised an
     ; interrupt and handle it.
     LDX #rtcRegC:JSR ReadRtcRam
     CMP #rtcRegCIRQF:BCC ExitServiceCall
     JMP RtcInterruptHandler
-
 .NotServiceCall5
-    LDX #&0B
+    LDX #(srvCallLUEnd - srvCallLU) - 1
 .L8637
     CMP srvCallLU,X
     BEQ L864E
@@ -1484,6 +1483,7 @@ TmpCommandIndex = &AC
     EQUB &06								;Break - Service call &06
     EQUB &08								;Unrecognised OSWORD call
     EQUB &07								;Unrecognised OSBYTE call
+.srvCallLUEnd
 
 ;Service call execute address lookup table
 .srvAddrLU
