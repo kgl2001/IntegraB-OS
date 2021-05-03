@@ -1673,38 +1673,59 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
 ; save it somewhere first? Even so, seems less than ideal - what if an interrupt
 ; occurs?
 ; SFTODO: Any chance of shrinking this code using loops to work on the 4-byte values?
+
+; Parse a 32-bit integer from (transientCmdPtr),Y. The following prefixes are
+; recognised:
+;     "-"  negative decimal
+;     "+"  positive decimal
+;     "&"  hexadecimal
+;     "%"  binary
+; The default base is controlled by which of the entry points below is used.
+;
+; On exit:
+;     Y is advanced past whatever was parsed; an invalid digit stops parsing but
+;     is not treated as an error.
+;
+;     C is clear iff an integer was parsed; more precisely:
+;     C V
+;     0 0 => integer parsed, result in ConvertIntegerResult, low byte in A and flags reflect A
+;     0 1 => not possible
+;     1 0 => input was empty, nothing to parse
+;     1 1 => input not empty but nothing was parsed (we will have beeped)
+;            ConvertIntegerResult and A will be 0 but flags will not reflect A
 {
-base = &B8
-negateFlag = &B9
-originalCmdPtrY = &BA
-firstDigitCmdPtrY = &BB
+Base = &B8
+NegateFlag = &B9
+OriginalCmdPtrY = &BA
+FirstDigitCmdPtrY = &BB
 
 ; SQUASH: Could we share this fragment?
 .NothingToConvert
+    ; Carry is already set
     CLV
     RTS
 
 .^convertIntegerDefaultDecimal
     LDA #10
 .^convertIntegerDefaultBaseA
-    STA base
+    STA Base
     JSR FindNextCharAfterSpace:BCS NothingToConvert ; branch if carriage return
-    STY originalCmdPtrY
-    STY firstDigitCmdPtrY
+    STY OriginalCmdPtrY
+    STY FirstDigitCmdPtrY
     LDA #0
     STA ConvertIntegerResult
     STA ConvertIntegerResult + 1
     STA ConvertIntegerResult + 2
     STA ConvertIntegerResult + 3
-    STA negateFlag
+    STA NegateFlag
     LDA (transientCmdPtr),Y:CMP #'-':BNE NotNegative
     LDA #&FF
-    STA negateFlag
+    STA NegateFlag
     ; '-' implies decimal.
 .Decimal
     LDA #10:JMP BaseInA ; SQUASH: "BNE ; always branch"
 .NotNegative
-    ; Check for prefixes which indicate a particular base, overriding the default.
+    ; Check for prefixes which indicate a particular Base, overriding the default.
     CMP #'+':BEQ Decimal
     CMP #'&':BNE NotHex
     LDA #16:JMP BaseInA ; SQUASH: "BNE ; always branch"
@@ -1712,8 +1733,8 @@ firstDigitCmdPtrY = &BB
     CMP #'%':BNE ParseDigit
     LDA #2
 .BaseInA
-    STA base
-    INY:STY firstDigitCmdPtrY
+    STA Base
+    INY:STY FirstDigitCmdPtrY
     JMP ParseDigit ; SQUASH: "BNE ; always branch"?
 			
 .ValidDigit
@@ -1731,7 +1752,7 @@ firstDigitCmdPtrY = &BB
     LDA ConvertIntegerResult + 3
     STA L00B7
     STX ConvertIntegerResult + 3
-    LDA base
+    LDA Base
     LDX #&08
 .L878D
     LSR A
@@ -1768,17 +1789,17 @@ firstDigitCmdPtrY = &BB
     SBC #('A' - 10) - '0' ; Set A = original ASCII code - 'A' + 10, so 'A' => 10, 'B' = 11, etc
     CMP #10:BCC InvalidDigit
 .DigitConverted
-    CMP base:BCC ValidDigit
+    CMP Base:BCC ValidDigit
 .InvalidDigit
     ; We stop parsing when we see an invalid digit but we don't consider it an error as such. SFTODO: I think this is true, but check
-    BIT negateFlag:BPL DontNegate
+    BIT NegateFlag:BPL DontNegate
     SEC
     LDA #0:SBC ConvertIntegerResult    :STA ConvertIntegerResult
     LDA #0:SBC ConvertIntegerResult + 1:STA ConvertIntegerResult + 1
     LDA #0:SBC ConvertIntegerResult + 2:STA ConvertIntegerResult + 2
     LDA #0:SBC ConvertIntegerResult + 3:STA ConvertIntegerResult + 3
 .DontNegate
-    CPY firstDigitCmdPtrY:BEQ NothingParsed
+    CPY FirstDigitCmdPtrY:BEQ NothingParsed
     CLC
     CLV
     LDA ConvertIntegerResult
@@ -1786,10 +1807,10 @@ firstDigitCmdPtrY = &BB
 .NothingParsed
     LDA #vduBell:JSR OSWRCH
     LDA #0
-    LDY originalCmdPtrY
+    LDY OriginalCmdPtrY
     SEC
-    BIT rts ; set V
-.rts
+    BIT Rts ; set V
+.Rts
     RTS
 
 .GenerateBadParameterIndirect
