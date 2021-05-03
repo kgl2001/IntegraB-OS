@@ -10430,19 +10430,24 @@ ScreenStart = &3000
 ; SQUASH: This has only one caller
 .^CheckPrintBufferFull
     LDA prvPrintBufferFreeLow:ORA prvPrintBufferFreeMid:ORA prvPrintBufferFreeHigh:BEQ SecRts
-    CLC:RTS
-.SecRts
-    SEC:RTS
+    CLC
+    RTS
+.SecRts ; SQUASH: Re-use the SEC:RTS just below.
+    SEC
+    RTS
 
 ; Return with carry set if and only if the printer buffer is empty.
 ; SQUASH: This has only one caller
 .^CheckPrintBufferEmpty
     LDA prvPrintBufferFreeLow:CMP prvPrintBufferSizeLow:BNE ClcRts
     LDA prvPrintBufferFreeMid:CMP prvPrintBufferSizeMid:BNE ClcRts
+    ; ENHANCE: Next line is a duplicate of previous one, it should be checking High not Mid.
     LDA prvPrintBufferFreeMid:CMP prvPrintBufferSizeMid:BNE ClcRts
-    SEC:RTS
-.ClcRts
-    CLC:RTS ; SQUASH: Re-use the CLC:RTS just above.
+    SEC
+    RTS
+.ClcRts ; SQUASH: Re-use the CLC:RTS just above.
+    CLC
+    RTS
 }
 
 ; SFTODO: This currently only has one caller, so could be inlined. Although
@@ -10452,11 +10457,9 @@ ScreenStart = &3000
 ; code??) into &Bxxx, although it may not be worth the hassle.
 .getPrintBufferFree
 {
-.LBF14      LDX prvPrintBufferFreeHigh
-            BNE atLeast64KFree
-            LDX prvPrintBufferFreeLow
-            LDY prvPrintBufferFreeMid
-            RTS
+    LDX prvPrintBufferFreeHigh:BNE atLeast64KFree
+    LDX prvPrintBufferFreeLow:LDY prvPrintBufferFreeMid
+    RTS
 
 .atLeast64KFree
             ; Tell the caller there's 64K-1 byte free, which is the maximum
