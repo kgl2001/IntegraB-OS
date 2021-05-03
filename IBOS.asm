@@ -1372,37 +1372,31 @@ TmpCommandIndex = &AC
 .service09
 {
     JSR setTransientCmdPtr
-    LDA (transientCmdPtr),Y
-    CMP #vduCr
-    BNE checkArgument
-    ; This is *HELP with no argument
+    LDA (transientCmdPtr),Y:CMP #vduCr:BNE CheckArgument
+
+    ; This is *HELP with no argument.
     LDX #ibosSubTblHelpNoArgument
-.showHelpX
-    TXA
-    PHA
+.ShowHelpX
+    TXA:PHA ; save X, the ibosRefSubTblA entry to show
+    ; Show our ROM title and version.
     JSR OSNEWL
     LDX #title - romHeader
-.titleVersionLoop
-    LDA romHeader,X
-    BNE printChar
-    LDA #' '
-.printChar
+.TitleVersionLoop
+    LDA romHeader,X:BNE PrintChar
+    LDA #' ' ; convert 0 bytes in ROM header to spaces
+.PrintChar
     JSR OSWRCH
-    INX
-    CPX copyrightOffset
-    BNE titleVersionLoop
+    INX:CPX copyrightOffset:BNE TitleVersionLoop
     JSR OSNEWL
+    ; Now show the selected ibosRefSubTblA entry.
     PLA
-    JSR ibosRef ; SFTODO: redundant? DynamicSyntaxGenerationForIbosSubTblA does this itself
+    JSR ibosRef ; SQUASH: Redundant; DynamicSyntaxGenerationForIbosSubTblA does this itself
     JSR DynamicSyntaxGenerationForIbosSubTblA
     JMP ExitServiceCallIndirect
 
-.checkArgument
-    ; See if the *HELP argument is one of the ones we recognise and show it if it is.
-    JSR ibosRef
-    LDA #&00
-    JSR SearchKeywordTable ; SFTODO: maybe rename this to indicate we're not always searching "commands"?
-    BCC showHelpX
+.CheckArgument
+    ; This is *HELP with an argument; see if we recognise the argument and show it if we do.
+    JSR ibosRef:LDA #0:JSR SearchKeywordTable:BCC ShowHelpX
 .ExitServiceCallIndirect
     JMP ExitServiceCall
 }
