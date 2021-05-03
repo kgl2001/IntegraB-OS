@@ -1327,7 +1327,7 @@ TabColumn = 12
 TmpCommandTailOffset = &AD
 TmpCommandIndex = &AC
 
-    JSR setTransientCmdPtr
+    JSR SetTransientCmdPtr
     JSR CmdRef:JSR SearchKeywordTable:BCC RunCommand
     ; We didn't find a match, so see if there's an "I" prefix (case-insensitive) and if so try
     ; without that.
@@ -1377,7 +1377,7 @@ TmpCommandIndex = &AC
 ;*HELP Service Call
 .service09
 {
-    JSR setTransientCmdPtr
+    JSR SetTransientCmdPtr
     LDA (transientCmdPtr),Y:CMP #vduCr:BNE CheckArgument
 
     ; This is *HELP with no argument.
@@ -1408,18 +1408,12 @@ TmpCommandIndex = &AC
 }
 
 ; Return with A=Y=0 and (transientCmdPtr),Y accessing the same byte as (osCmdPtr),Y on entry.
-.setTransientCmdPtr
+.SetTransientCmdPtr
 {
-.L85FE      CLC
-            TYA									;offset used with osCmdPtr to access next character SFTODO: earlier comment called this "length", I don't think that's right (at least in case of service call 4) but it may be this does act as a kind of length in some other context, so keeping this note around until I've been through all the callers
-            ADC osCmdPtr			
-            STA transientCmdPtr							;end of command parameter lo byte
-            LDA osCmdPtr + 1
-            ADC #&00
-            STA transientCmdPtr + 1							;end of command parameter hi byte
-            LDA #&00								;A=0
-            TAY									;Y=0
-            RTS
+    CLC:TYA:ADC osCmdPtr:STA transientCmdPtr
+    LDA osCmdPtr + 1:ADC #0:STA transientCmdPtr + 1
+    LDA #0:TAY
+    RTS
 }
 			
 ; SFTODO: I haven't traced through this code yet, but I infer that it's reponsible for printing "Syntax: " followed by the *HELP definition of the command.
@@ -3652,7 +3646,7 @@ ENDIF
 ;Service call &28: *CONFIGURE Command
 .^service28 SEC
 .L943A      PHP
-            JSR setTransientCmdPtr
+            JSR SetTransientCmdPtr
             LDA (transientCmdPtr),Y
             CMP #vduCr
             BNE optionSpecified
