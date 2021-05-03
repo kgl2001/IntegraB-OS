@@ -1698,7 +1698,7 @@ Base = &B8
 NegateFlag = &B9
 OriginalCmdPtrY = &BA
 FirstDigitCmdPtrY = &BB
-SFTODOOTHER = &B4 ; 4 bytes
+Tmp = &B4 ; 4 bytes
 
 ; SQUASH: Could we share this fragment?
 .NothingToConvert
@@ -1739,33 +1739,35 @@ SFTODOOTHER = &B4 ; 4 bytes
     JMP ParseDigit ; SQUASH: "BNE ; always branch"?
 			
 .ValidDigitInA
-    ; Set SFTODOOTHER = ConvertIntegerResult and ConvertIntegerResult = sign-extended(digit)
+    ; Set ConvertIntegerResult = ConvertIntegerResult * Base + digit.
+    ; Step 1) Set Tmp = ConvertIntegerResult and ConvertIntegerResult = digit.
     TAX
-    LDA ConvertIntegerResult:STA SFTODOOTHER
+    LDA ConvertIntegerResult:STA Tmp
     STX ConvertIntegerResult
     LDX #0
-    LDA ConvertIntegerResult + 1:STA SFTODOOTHER + 1
+    LDA ConvertIntegerResult + 1:STA Tmp + 1
     STX ConvertIntegerResult + 1
-    LDA ConvertIntegerResult + 2:STA SFTODOOTHER + 2
+    LDA ConvertIntegerResult + 2:STA Tmp + 2
     STX ConvertIntegerResult + 2
-    LDA ConvertIntegerResult + 3:STA SFTODOOTHER + 3
+    LDA ConvertIntegerResult + 3:STA Tmp + 3
     STX ConvertIntegerResult + 3
+    ; Step 2) Set ConvertIntegerResult += Tmp * Base.
     LDA Base
     LDX #8
-.L878D
+.MultiplyLoop
     LSR A
-    BCC L87AD
+    BCC ZeroBit
     PHA
     CLC
-    LDA ConvertIntegerResult    :ADC SFTODOOTHER    :STA ConvertIntegerResult
-    LDA ConvertIntegerResult + 1:ADC SFTODOOTHER + 1:STA ConvertIntegerResult + 1
-    LDA ConvertIntegerResult + 2:ADC SFTODOOTHER + 2:STA ConvertIntegerResult + 2
-    LDA ConvertIntegerResult + 3:ADC SFTODOOTHER + 3:STA ConvertIntegerResult + 3
+    LDA ConvertIntegerResult    :ADC Tmp    :STA ConvertIntegerResult
+    LDA ConvertIntegerResult + 1:ADC Tmp + 1:STA ConvertIntegerResult + 1
+    LDA ConvertIntegerResult + 2:ADC Tmp + 2:STA ConvertIntegerResult + 2
+    LDA ConvertIntegerResult + 3:ADC Tmp + 3:STA ConvertIntegerResult + 3
     PLA
     BVS GenerateBadParameterIndirect
-.L87AD
-    ASL SFTODOOTHER:ROL SFTODOOTHER + 1:ROL SFTODOOTHER + 2:ROL SFTODOOTHER + 3
-    DEX:BNE L878D
+.ZeroBit
+    ASL Tmp:ROL Tmp + 1:ROL Tmp + 2:ROL Tmp + 3
+    DEX:BNE MultiplyLoop
     INY
 .ParseDigit
     LDA (transientCmdPtr),Y:CMP #'Z'+1:BCC NotLowerCase
