@@ -9247,7 +9247,9 @@ column = prvC
 }
 
 ; SFTODO: Mostly un-decoded
+; SFTODO: *Roughly* speaking this is copying provOswordBlockCopy+1 bytes of data from prv80+&00 to the 32-bit address at prvOswordBlockOrigAddr+4 in a tube-aware way, although we also have the option use b7 of prvOswordBlockCopy+7 to explicitly ignore tube.
 {
+FromBase = prv80+&00 ; SFTODO: better label, depending on how this is used
 Ptr = &A8
 
 .^LB7BC
@@ -9262,7 +9264,7 @@ Ptr = &A8
     LDA #tubeEntryMultibyteHostToParasite:JSR tubeEntry
     LDY #0
 .WriteLoop
-    LDA prv80+&00,Y
+    LDA FromBase,Y
 .Full
     BIT tubeReg3Status:BVC Full
     STA tubeReg3Data
@@ -9273,14 +9275,16 @@ Ptr = &A8
     RTS
 			
 .LB7F9
+    ; Make Ptr point to the address at offset 4..5 in the original OSWORD block.
     LDA prvOswordBlockOrigAddr:STA Ptr
     LDA prvOswordBlockOrigAddr + 1:STA Ptr + 1
     LDY #4:LDA (Ptr),Y:TAX ; SFTODO: magic
     INY:LDA (Ptr),Y:STA Ptr + 1
     STX Ptr
+    ; Now copy prvOswordBlockCopy + 1 bytes from FromBase to that address.
     LDY #0
 .LB811
-    LDA prv80+&00,Y:STA (Ptr),Y
+    LDA FromBase,Y:STA (Ptr),Y
     INY:CPY prvOswordBlockCopy + 1:BNE LB811 ; SFTODO: Better label
     CLC
     RTS
