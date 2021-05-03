@@ -192,6 +192,7 @@ ConvertIntegerResult = FilingSystemWorkspace ; 4 bytes
 vduStatus = &D0
 vduStatusShadow = &10
 vduGraphicsCharacterCell = &D6 ; 2 bytes
+osEscapeFlag = &FF
 romActiveLastBrk = &024A
 negativeVduQueueSize = &026A
 tubePresenceFlag = &027A ; SFTODO: allmem says 0=inactive, is there actually a specific bit or value for active? what does this code rely on?
@@ -2019,11 +2020,11 @@ InputBufSize = 256
     DEY:BPL CopyLoop
     LDA #oswordInputLine:LDX #lo(L0100):LDY #hi(L0100):JSR OSWORD
     ; SQUASH: could we BCC a nearby RTS and just fall through to acknowledge...?
-    BCS acknowledgeEscapeAndGenerateErrorIndirect
+    BCS AcknowledgeEscapeAndGenerateErrorIndirect
     RTS
 
-.acknowledgeEscapeAndGenerateErrorIndirect
-.L89BF      JMP acknowledgeEscapeAndGenerateError
+.AcknowledgeEscapeAndGenerateErrorIndirect
+.L89BF      JMP AcknowledgeEscapeAndGenerateError
 }
 
 ;Start of full reset
@@ -3154,40 +3155,34 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
     LDA #' ':JMP OSWRCH
 }
 			
-;*PRINT Command
+; *PRINT command
+; Note that this sends the file to the printer, *unlike* the Master *PRINT command which is
+; like *TYPE but without control code pretty-printing.
 .print
 {
     LDA #osfindOpenInput:JSR parseFilenameAndOpen
     ; SQUASH: We could just read/write &27C directly
     LDA #osbyteReadWriteCharacterOutputDeviceStatus:LDX #0:LDY #&FF:JSR OSBYTE
     STA L00A9
+    ; Disable screen drivers, enable printer, disable *SPOOL
     LDA #osbyteSelectOutputDevice:LDX #%00011010:LDY #0:JSR OSBYTE
-.L91D7
-    BIT L00FF
-    BMI L91EE
-    LDY L00A8
-    JSR OSBGET
-    BCS L91E8
+.Loop
+    BIT osEscapeFlag:BMI Escape
+    LDY L00A8:JSR OSBGET:BCS Eof
     JSR OSASCI
-    JMP L91D7
-			
-.L91E8
-    JSR L9201
+    JMP Loop
+.Eof
+    JSR CleanUp
     JMP ExitAndClaimServiceCall
-			
-.L91EE
-    JSR L9201
-.^acknowledgeEscapeAndGenerateError
+.Escape
+    JSR CleanUp
+.^AcknowledgeEscapeAndGenerateError
     LDA #osbyteAcknowledgeEscape:JSR OSBYTE
     JSR RaiseError
     EQUB &11
     EQUS "Escape", &00
-
-.L9201
-    LDA #&03
-    LDX L00A9
-    LDY #&00
-    JSR OSBYTE
+.CleanUp
+    LDA #osbyteSelectOutputDevice:LDX L00A9:LDY #0:JSR OSBYTE
     JMP CloseTransientFileHandle
 }
 			
