@@ -3895,9 +3895,11 @@ tmp = &A8
     AND #8:BEQ ShxInA
     LDA #&FF
 .ShxInA
-    LDX #prvShx - prv83:JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+    LDX #prvShx - prv83:JSR WritePrivateRam8300X
 .SoftReset
     JSR IbosSetUp
+
+    ; Implement the *CONFIGURE TV setting.
     LDX #userRegModeShadowTV:JSR ReadUserReg
     ; Arithmetic shift A right 5 bits to get a sign-extended version of the TV setting in A.
     ; SQUASH: Could we optimise this using technique from http://wiki.nesdev.com/w/index.php/6502_assembly_optimisations#Arithmetic_shift_right?
@@ -3910,11 +3912,12 @@ tmp = &A8
     DEX:BNE ShiftLoop
     PLP
     TAX
-    PLA:AND #&10:BEQ interlaceInA
+    PLA:AND #&10:BEQ InterlaceInA
     LDA #1
-.interlaceInA
+.InterlaceInA
     TAY
     LDA #osbyteTV:JSR OSBYTE
+
 	  ; Set the screen mode. On a soft reset we preserve the last selected
 	  ; mode (like the Master), unless we're in OSMODE 0; on other resets
 	  ; we select the *CONFIGUREd mode.
