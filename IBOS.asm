@@ -1555,25 +1555,22 @@ TmpCommandIndex = &AC
     LDA #'F':JSR OSWRCH:JMP OSWRCH
 }
 			
-;Convert binary number in A to numeric characters and write characters to screen
-;C set on entry means left pad to three characters with spaces, clear means no padding. SFTODO: Not sure that's right - see how this is used in "buffer"
-;A is preserved
+; Print A in decimal. C set on entry means no padding, C clear means right align with spaces in
+; a three character field. A is preserved.
 .PrintADecimal
 {
 Pad = &B0 ; character output in place of leading zeros
 PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
 
     PHA
-    LDA #0
-    STA PadFlag
+    LDA #0:STA PadFlag
     BCS NoPadding ; we use NUL for padding, which has the same effect
     LDA #' '
 .NoPadding
     STA Pad
-    PLA
-    PHA
+    PLA:PHA
 
-    LDX #0 ; SFTODO: change to LDX #&FF and get rid of DEX/INX stuff?
+    LDX #0 ; SQUASH: change to LDX #&FF and get rid of DEX/INX stuff?
     SEC
 .HundredsLoop
     SBC #100
@@ -1582,7 +1579,7 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
     ADC #100
     JSR PrintDigit
 
-    LDX #0 ; SFTODO: change to LDX #&FF and get rid of DEX/INX stuff?
+    LDX #0 ; SQUASH: change to LDX #&FF and get rid of DEX/INX stuff?
     SEC
 .TensLoop
     SBC #10
@@ -1592,7 +1589,7 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
     JSR PrintDigit
 
     TAX
-    INX ; SFTODO: optimisable?
+    INX ; SQUASH: optimisable?
     DEC PadFlag
     JSR PrintDigit
     PLA
@@ -1600,16 +1597,14 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
 			
 .PrintDigit
     PHA
-    DEX ; SFTODO: optimisable?
+    DEX ; SQUASH: optimisable?
     LDA Pad
-    CPX #&00 ; SFTODO: Could get rid of this if LDA moved before DEX
+    CPX #0 ; SQUASH: Could get rid of this if LDA moved before DEX
     BNE NotZero
-    BIT PadFlag
-    BPL PrintPad
+    BIT PadFlag:BPL PrintPad
 .NotZero
     DEC PadFlag
-    TXA
-    ORA #'0'								;Convert binary number to ASCII number
+    TXA:ORA #'0'
 .PrintPad
     JSR OSWRCH
     PLA
