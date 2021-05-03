@@ -951,7 +951,7 @@ t = &80
     ASSERT P% = ibosRef + ParameterTableOffset
     EQUW ibosParTbl							;Start of IBOS options parameters lookup table (there are no parameters!)
     ; SQUASH: I am not sure we actually need the next pointer, if we make the suggested SQUASH:
-    ; change in DynamicSyntaxGenerationForIbosSubTblA.
+    ; change in DynamicSyntaxGenerationForIbosHelpTableA.
     ASSERT P% = ibosRef + CmdTblPtrOffset
     EQUW ibosHelpTable							;Start of IBOS sub option reference lookup table
 
@@ -1062,7 +1062,7 @@ MinimumAbbreviationLength = 3 ; including the "." which indicates an abbreviatio
     RTS
 }
 
-.DynamicSyntaxGenerationForIbosSubTblA
+.DynamicSyntaxGenerationForIbosHelpTableA
 {
 FirstEntry = &A8
 LastEntry = &A9
@@ -1412,8 +1412,8 @@ TmpCommandIndex = &AC
     JSR OSNEWL
     ; Now show the selected ibosRefSubTblA entry.
     PLA
-    JSR ibosRef ; SQUASH: Redundant; DynamicSyntaxGenerationForIbosSubTblA does this itself
-    JSR DynamicSyntaxGenerationForIbosSubTblA
+    JSR ibosRef ; SQUASH: Redundant; DynamicSyntaxGenerationForIbosHelpTableA does this itself
+    JSR DynamicSyntaxGenerationForIbosHelpTableA
     JMP ExitServiceCallIndirect
 
 .CheckArgument
@@ -3606,8 +3606,8 @@ ENDIF
             BCC statusAll
 	  ; This is *CONFIGURE with no option, so show the supported options.
             LDA #ibosHelpTableConfigureList
-            JSR ibosRef ; SFTODO: Redundant? DynamicSyntaxGenerationForIbosSubTblA does JSR ibosRef itself...
-            JSR DynamicSyntaxGenerationForIbosSubTblA
+            JSR ibosRef ; SFTODO: Redundant? DynamicSyntaxGenerationForIbosHelpTableA does JSR ibosRef itself...
+            JSR DynamicSyntaxGenerationForIbosHelpTableA
             JMP ExitServiceCall								;restore service call parameters and exit
 			
 .optionSpecified
