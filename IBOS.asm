@@ -3478,26 +3478,26 @@ ENDIF
 }
 			
 ; SFTODO: This code saves transientCommandIndex (&AA) across call to ConfRefDynamicSyntaxGenerationForTransientCmdIdx, but it superficially looks as though ConfRefDynamicSyntaxGenerationForTransientCmdIdx preserves it itself, so the code to preserve here may be redundant.
-.printConfigNameAndGetValue ; SFTODO: name is a bit of a guess as I still haven't been through the "dynamic syntax generation" (which is presumably slightly misnamed at least, as at least some of our callers would just want the option name with no other fluff) code properly
+.PrintConfigNameAndGetValue ; SFTODO: name is a bit of a guess as I still haven't been through the "dynamic syntax generation" (which is presumably slightly misnamed at least, as at least some of our callers would just want the option name with no other fluff) code properly
 {
-.L9427      LDA transientCommandIndex
-            PHA
-            JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
-            PLA
-            STA transientCommandIndex
-            JSR GetConfigValue
-            LDA transientConfigPrefix
-            RTS
+    LDA transientCommandIndex:PHA
+    JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
+    PLA:STA transientCommandIndex
+    JSR GetConfigValue
+    LDA transientConfigPrefix
+    RTS
 }
 
 {
-;Service call &29: *STATUS Command
-.^service29 CLC
-            BCC L943A
+; Service call &29: *STATUS Command
+.^service29
+    CLC:BCC Common ; always branch
 
-;Service call &28: *CONFIGURE Command
-.^service28 SEC
-.L943A      PHP
+; Service call &28: *CONFIGURE Command
+.^service28
+    SEC
+.Common
+    PHP
             JSR SetTransientCmdPtr
             LDA (transientCmdPtr),Y
             CMP #vduCr
@@ -3571,7 +3571,7 @@ ENDIF
  	  BCS Conf0Write
 
 ;Read *CONF. FILE parameters from RTC register and write to screen
-            JSR printConfigNameAndGetValue
+            JSR PrintConfigNameAndGetValue
             JSR PrintADecimalPad
             JSR printSpace								;write ' ' to screen
             LDX #userRegDiscNetBootData							;Register &10 (0: File system disc/net flag / 4: Boot / 5-7: Data )
@@ -3617,7 +3617,7 @@ ENDIF
 .Conf1
 {
 	  BCS Conf1Write
-            JSR printConfigNameAndGetValue
+            JSR PrintConfigNameAndGetValue
             JMP PrintADecimalPadNewline
 			
 .Conf1Write
