@@ -703,11 +703,25 @@ MACRO FALLTHROUGH_TO label
     ASSERT P% == label
 ENDMACRO
 
+; This macro is for use in subroutines which are going to directly access PRV1, and which
+; therefore must not be located in that region of this ROM.
+; SFTODO: Use this everywhere appropriate, at the moment I've just sprinkled a few calls in.
+; SFTODO: We could also have a debug build option where this calls a debug subroutine to
+; check PRV1 is paged in.
+MACRO XASSERT_USE_PRV1
+    ASSERT P% >= prv1End
+ENDMACRO
+
+; SFTODO: Document? Use? Dlete?
+MACRO XASSERT_USE_PRV8
+    ASSERT P% < prv8Start OR P% >= prv8End
+ENDMACRO
+
 ; This macro wraps "JSR PrvEn" with a sanity check that the code calling it won't be hidden by
 ; paging in PRVS1. (This isn't foolproof; "P%=&8500:PRVEN:JSR &8100" would be buggy but not
 ; caught.)
 MACRO PRVEN ; SFTODO: Rename to indicate this is PRVS1 only? Also perhaps put a verb in the name?
-    ASSERT P% >= prv1End
+    XASSERT_USE_PRV1
     JSR PrvEn
 ENDMACRO
 
@@ -715,14 +729,14 @@ ENDMACRO
 ; paging in PRVS1. This isn't likely to catch anything which wouldn't be caught by PRVEN, but
 ; it just might.
 MACRO PRVDIS ; SFTODO: Rename to indicate this is PRVS1 only? Also perhaps put a verb in the name?
-    ASSERT P% >= prv1End
+    XASSERT_USE_PRV1
     JSR PrvDis
 ENDMACRO
 
 ; As PRVEN, but for paging in PRVS1 and PRVS8.
 MACRO PRVS81EN ; SFTODO: Better name?
-    PRINT ~P%
-    ASSERT (P% >= prv1End AND P% < prv8Start) OR (P% >= prv8End)
+    XASSERT_USE_PRV1
+    XASSERT_USE_PRV8
     JSR pageInPrvs81
 ENDMACRO
 
@@ -10467,6 +10481,7 @@ ScreenStart = &3000
 ; (or just all INSV/CNPV/REMV code??) into &Bxxx, although it may not be worth the hassle.
 .GetPrintBufferFree
 {
+    XASSERT_USE_PRV1
     LDX prvPrintBufferFreeHigh:BNE AtLeast64KFree
     LDX prvPrintBufferFreeLow:LDY prvPrintBufferFreeMid
     RTS
@@ -10478,6 +10493,7 @@ ScreenStart = &3000
 
 ; SQUASH: This currently only has one caller.
 .GetPrintBufferUsed
+    XASSERT_USE_PRV1
 ; SFTODO: Won't this incorrectly return 0 if a 64K buffer is entirely full? Do
 ; we prevent this happening somehow? This could be tested fairly easily by
 ; simply having no printer connected/turned on, setting a 64K buffer, writing
@@ -10493,6 +10509,7 @@ ScreenStart = &3000
 ; SQUASH: This has only a single caller
 .IncrementPrintBufferFree
 {
+    XASSERT_USE_PRV1
     INC prvPrintBufferFreeLow
     BNE NoCarry ; ENHANCE: Would be clearer to just BNE Rts
     INC prvPrintBufferFreeMid
@@ -10506,6 +10523,7 @@ ScreenStart = &3000
 ; SQUASH: This has only a single caller
 ; SQUASH: Use decrement-by-one technique from http://www.obelisk.me.uk/6502/algorithms.html
 .DecrementPrintBufferFree
+    XASSERT_USE_PRV1
     SEC
     LDA prvPrintBufferFreeLow:SBC #1:STA prvPrintBufferFreeLow
     LDA prvPrintBufferFreeMid:SBC #0:STA prvPrintBufferFreeMid
@@ -10559,6 +10577,7 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
 }
 
 .PurgePrintBuffer
+    XASSERT_USE_PRV1
     LDA #0:STA prvPrintBufferWritePtr:STA prvPrintBufferReadPtr
     LDA prvPrintBufferBankStart:STA prvPrintBufferWritePtr + 1:STA prvPrintBufferReadPtr + 1
     LDA prvPrintBufferFirstBankIndex:STA prvPrintBufferWriteBankIndex:STA prvPrintBufferReadBankIndex
@@ -10573,7 +10592,7 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
 {
     ; SQUASH: We could change "BCC Rts" below to use the RTS above and make the JSR:RTS a JMP.
     LDX #prvPrvPrintBufferStart - prv83:JSR ReadPrivateRam8300X
-    CMP #&90:BCC UseAC
+    CMP #hi(prv8Start):BCC UseAC
     CMP #&AC:BCC Rts
 .UseAC
     LDA #&AC:JSR WritePrivateRam8300X
