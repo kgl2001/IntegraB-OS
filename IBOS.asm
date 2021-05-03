@@ -1791,7 +1791,7 @@ firstDigitCmdPtrY = &BB
     PLA
     RTS
 
-; Read/write A from/to user register X. X is preserved on exit.
+; Read/write A from/to user register X. A, X and Y are preserved.
 ; For X<=&31, the user register is held in RTC register X+rtcUserBase.
 ; For &32<=X<=&7F, the user register is held in private RAM at &8380+X.
 ; For X>=&80, these subroutines do nothing.
@@ -1804,7 +1804,7 @@ firstDigitCmdPtrY = &BB
     CLC:TXA:ADC #rtcUserBase:TAX
     PLA
     JSR ReadRtcRam
-    JMP Common
+    JMP CommonEnd
 .^WriteUserReg
     CPX #&80:BCS Rts ; no-op for X>=&80
     CPX #&32:BCS WritePrivateRam
@@ -1812,7 +1812,7 @@ firstDigitCmdPtrY = &BB
     CLC:TXA:ADC #rtcUserBase:TAX
     PLA
     JSR WriteRtcRam
-.Common
+.CommonEnd
     PHA
     TXA:SEC:SBC #rtcUserBase:TAX ; restore original X
     PLA
