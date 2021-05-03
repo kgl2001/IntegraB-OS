@@ -1772,82 +1772,52 @@ firstDigitCmdPtrY = &BB
     EQUS "Not found", &00
 
 {
-;Condition then read from Private RAM &83xx (Addr = X, Data = A)
-.L8817
+.ReadPrivateRam
     JSR SetXMsb
     JSR ReadPrivateRam8300X
-    JMP L8826
-			
-;Condition then write to Private RAM &83xx (Addr = X, Data = A)
-.L8820
+    JMP ClearXMsb
+.WritePrivateRam
     JSR SetXMsb
     JSR WritePrivateRam8300X
-
-;Clear msb of Addr (Addr = Addr & &7F)			
-.L8826
+.ClearXMsb
     PHA
-    TXA
-    AND #&7F
-    TAX
+    TXA:AND #&7F:TAX
     PLA
     RTS
 
-;Set msb of Addr (Addr = Addr OR &80)
 .SetXMsb
     PHA
-    TXA
-    ORA #&80
-    TAX
+    TXA:ORA #&80:TAX
     PLA
     RTS
 
 ; Read/write A from/to user register X. X is preserved on exit.
-; For X<=&31, the user register is held in RTC register X+&0E.
+; For X<=&31, the user register is held in RTC register X+rtcUserBase.
 ; For &32<=X<=&7F, the user register is held in private RAM at &8380+X.
 ; For X>=&80, these subroutines do nothing.
 ; SFTODO: Does the code rely on that behaviour for X>=&80?
-; SFTODO: These two routines start off very similar, can we share code?
-; SFTODO: A fair amount of the code/complexity here is preserving X. Do callers
-; need this/could they be easily changed not to need it? If we don't have to
-; worry about being re-entrant, is there a byte of main RAM we could use to stash
-; X in on entry.
-
+; SQUASH: These two routines start off very similar, can we share code?
 .^ReadUserReg
-    CPX #&80
-    BCS rts  								;Invalid if Address >=&80
-    CPX #&32
-    BCS L8817								;Read from Private RAM if Address >&32 and <&80
+    CPX #&80:BCS Rts ; no-op for X>=&80
+    CPX #&32:BCS ReadPrivateRam
     PHA
-    CLC
-    TXA
-    ADC #rtcUserBase								;Increment address by &0E bytes. First &0E bytes are for the RTC data
-    TAX
+    CLC:TXA:ADC #rtcUserBase:TAX
     PLA
-    JSR ReadRtcRam								;Read data from RTC memory location X into A
-    JMP L885B
-
+    JSR ReadRtcRam
+    JMP Common
 .^WriteUserReg
-    CPX #&80
-    BCS rts  								;Invalid if Address >=&80
-    CPX #&32
-    BCS L8820								;Write to Private RAM if Address >&32 and <&80
+    CPX #&80:BCS Rts ; no-op for X>=&80
+    CPX #&32:BCS WritePrivateRam
     PHA
-    CLC
-    TXA
-    ADC #rtcUserBase								;Increment address by &0E bytes. First &0E bytes are for the RTC data
-    TAX
+    CLC:TXA:ADC #rtcUserBase:TAX
     PLA
-    JSR WriteRtcRam								;Write data from A to RTC memory location X
-			
-.L885B
+    JSR WriteRtcRam
+.Common
     PHA
-    TXA
-    SEC
-    SBC #rtcUserBase								;Restore address by reducing address by &0E bytes. First &0E bytes are for the RTC data
-    TAX
+    TXA:SEC:SBC #rtcUserBase:TAX ; restore original X
     PLA
-    CLC
-.rts
+    CLC ; SQUASH: Do any callers rely on this?
+.Rts
     RTS
 }
 
