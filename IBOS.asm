@@ -3638,39 +3638,36 @@ ENDIF
     JMP SetConfigValueA
 }
 
+.Conf6
 {
-.^Conf6	  BCS Conf6Write
-            JSR GetConfigValue
-            LDA ConfParBit+2,Y
-            ASL A
-            LDA #&00
-            ROL A
-            EOR transientConfigPrefixSFTODO
-            JMP L932E
+    BCS Conf6Write
+    JSR GetConfigValue
+    LDA ConfParBit + 2,Y
+    ASL A:LDA #0:ROL A
+    EOR transientConfigPrefixSFTODO
+    JMP L932E
 			
-.Conf6Write JSR SetYToTransientCmdIdxTimes3
-            LDA ConfParBit+2,Y
-            ASL A
-            LDA #&00
-            ROL A
-            EOR transientConfigPrefixSFTODO
-            JMP SetConfigValueA
+.Conf6Write
+    JSR SetYToTransientCmdIdxTimes3
+    ; SQUASH: Next few lines are common to read case above, factor out?
+    LDA ConfParBit + 2,Y
+    ASL A:LDA #0:ROL A
+    EOR transientConfigPrefixSFTODO
+    JMP SetConfigValueA
 }
 
+.Conf2
 {
-.^Conf2     BCS Conf2Write
-            JSR GetConfigValue
-            PHA
-            JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
-            PLA
-            CLC
-            ADC #&01
-            JMP PrintADecimalPadNewline
+    BCS Conf2Write
+    JSR GetConfigValue
+    PHA:JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx:PLA
+    CLC:ADC #1
+    JMP PrintADecimalPadNewline
 
-.Conf2Write JSR ConvertIntegerDefaultDecimalChecked
-            SEC
-            SBC #&01
-            JMP SetConfigValueA
+.Conf2Write
+    JSR ConvertIntegerDefaultDecimalChecked
+    SEC:SBC #1
+    JMP SetConfigValueA
 }
 
 {
