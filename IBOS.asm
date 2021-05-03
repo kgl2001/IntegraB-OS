@@ -3624,12 +3624,12 @@ ENDIF
 .^Conf3
     BCS Conf3Write
     JSR GetConfigValue
-    LSR A:BCS L9523
-    LSR A:BCS L951E
-    LDA #0:JMP L932E
-.L951E
-    LDA #1:JMP L932E
-.L9523
+    LSR A:BCS ShCaps
+    LSR A:BCS NoCaps
+    LDA #0:JMP L932E ; CAPS SQUASH: We could omit LDA #0 and JMP into L932E after JSR PrintNoSh
+.NoCaps
+    LDA #1:JMP L932E ; NOCAPS
+.ShCaps
     LDA #2:JMP L932E
 			
 .Conf3Write
