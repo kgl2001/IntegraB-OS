@@ -700,6 +700,13 @@ MACRO FALLTHROUGH_TO label
     ASSERT P% == label
 ENDMACRO
 
+; This macro wraps "JSR PrvEn" with a sanity check that the code calling it won't be hidden by
+; paging in PRVS1.
+MACRO PRVEN ; SFTODO: Rename to indicate this is PRVS1 only? Also perhaps put a verb in the name?
+    ASSERT P% >= &8400
+    JSR PrvEn
+ENDMACRO
+
 ORG	&8000
 GUARD	&C000
 .start
@@ -2201,7 +2208,7 @@ ptr = &00 ; 2 bytes
 {
 .^L8A7B	  PHP
 	  SEI
-	  JSR PrvEn								;switch in private RAM
+	  PRVEN								;switch in private RAM
             TXA ; SFTODO: Just do STX in next line and avoid this? *Or* maybe rely on the fact we have this value in X to avoid needing to load this later
             STA prv82+&53
             LDA ramselCopy
@@ -2439,7 +2446,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 ;Checks for ? parameter and prints out details;
 ;Checks for blank and clears table
 {
-.^boot      JSR PrvEn								;switch in private RAM
+.^boot      PRVEN								;switch in private RAM
             LDA (transientCmdPtr),Y
             CMP #'?'
             BEQ L8C26								;Print *BOOT parameters
@@ -2521,7 +2528,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             JMP PrintOnOffOSNEWLExitSC
 
-.purgeNow   JSR PrvEn 								;switch in private RAM
+.purgeNow   PRVEN 								;switch in private RAM
             JSR purgePrintBuffer
             JMP PrvDisExitAndClaimServiceCall
 
@@ -2542,7 +2549,7 @@ TmpBankCount = L00AC
 TmpTransientCmdPtrOffset = L00AD
 TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 
-    JSR PrvEn
+    PRVEN
     LDA prvOsMode:BNE NotOsMode0 ; the buffer isn't available in OSMODE 0
     JSR RaiseError
     EQUB &80
@@ -2801,7 +2808,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     CMP #0:BEQ SetOsMode0
     CMP #6:BCS GenerateBadParameterIndirect
     PHA
-    JSR PrvEn
+    PRVEN
     LDA prvOsMode:BEQ CurrentlyInOsMode0
     PLA:STA prvOsMode
 .CommonEnd
@@ -2813,7 +2820,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     JMP GenerateBadParameter
 
 .SetOsMode0
-    JSR PrvEn
+    PRVEN
     LDA prvOsMode:BEQ CommonEnd ; nothing to do as we're already in OSMODE 0
     JSR GenerateErrorIfPrinterBufferNotEmpty
     LDA #0:STA prvOsMode
@@ -3141,7 +3148,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 
     LDA #osfindOpenUpdate:JSR parseFilenameAndOpen
     LDA #0:STA LineNumber
-    JSR PrvEn
+    PRVEN
 
     ; Start by showing the existing contents of the file we're *APPENDing to.
 .ShowLineLoop
@@ -3945,7 +3952,7 @@ ENDIF
             BPL L9611
             JMP L964C
 			
-.L9611      JSR PrvEn								;switch in private RAM
+.L9611      PRVEN								;switch in private RAM
             LDX lastBreakType								;get last Break type
             CPX #&01								;power on break?
             BNE notPowerOnStarBoot							;branch if not
@@ -4287,7 +4294,7 @@ tmp = &A8
             LDA #&00
             STA ramselCopy
             STA ramsel
-            JSR PrvEn								;switch in private RAM
+            PRVEN								;switch in private RAM
             PLA
             RTS
 
@@ -4411,7 +4418,7 @@ ramPresenceFlags = &A8
 ; SFTODO: There are a few cases where we JMP to osbyteXXInternal, if we rearranged the code a little (could always use macros to maintain readability, if that's a factor) we could probably save some JMPs
 .osbyte44Internal
 {
-.L9928	  JSR PrvEn								;switch in private RAM
+.L9928	  PRVEN								;switch in private RAM
             PHP
             SEI
             LDA #&00
@@ -4441,7 +4448,7 @@ ramPresenceFlags = &A8
 ;OSBYTE &45 (69) - Test PSEUDO/Absolute usage (http://beebwiki.mdfs.net/OSBYTE_%2645)
 .osbyte45Internal
 {
-.L995C      JSR PrvEn								;switch in private RAM
+.L995C      PRVEN								;switch in private RAM
             PHP
             SEI
             LDA #&00
@@ -4471,7 +4478,7 @@ ramPresenceFlags = &A8
 .srwipe
 {
 	  JSR parseRomBankListChecked2
-            JSR PrvEn								;switch in private RAM
+            PRVEN								;switch in private RAM
             LDX #&00
 .bankLoop   ROR transientRomBankMask + 1
             ROR transientRomBankMask
@@ -4593,7 +4600,7 @@ ramPresenceFlags = &A8
             BEQ showStatus
 	  ; Select the first four suitable banks from the list provided and store them at prvPseudoBankNumbers.
             JSR parseRomBankList
-            JSR PrvEn								;switch in private RAM
+            PRVEN								;switch in private RAM
             LDX #&00
             LDY #&00
 .bankLoop   ROR transientRomBankMask + 1
@@ -4632,7 +4639,7 @@ ramPresenceFlags = &A8
 
 .showStatus
             CLC
-            JSR PrvEn								;switch in private RAM
+            PRVEN								;switch in private RAM
             LDY #&00
 .showLoop   CLC
             TYA
@@ -4670,7 +4677,7 @@ ramPresenceFlags = &A8
             CLC
 .common     PHP
             JSR parseRomBankListChecked2
-            JSR PrvEn								;switch in private RAM
+            PRVEN								;switch in private RAM
             LDX #&00
 .bankLoop   ROR transientRomBankMask + 1
             ROR transientRomBankMask
@@ -5053,12 +5060,12 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 
 {
 ;*SRREAD Command
-.^srread	  JSR PrvEn								;switch in private RAM
+.^srread	  PRVEN								;switch in private RAM
             LDA #&00
             JMP L9CDF
 			
 ;*SRWRITE Command
-.^srwrite	  JSR PrvEn								;switch in private RAM
+.^srwrite	  PRVEN								;switch in private RAM
             LDA #&80
 .L9CDF      STA prvOswordBlockCopy
             LDA #&00
@@ -5628,7 +5635,7 @@ ptr = &AC ; 2 bytes
 
 .copyOswordDetailsToPrv
 {
-.L9FD3      JSR PrvEn								;switch in private RAM
+.L9FD3      PRVEN								;switch in private RAM
             LDA oswdbtX								;get value of X reg
             STA prvOswordBlockOrigAddr							;and save to private memory &8230
             LDA oswdbtY								;get value of Y reg
@@ -5641,7 +5648,7 @@ ptr = &AC ; 2 bytes
             RTS
 }
 			
-; SFTODO: Could we move JSR PrvEn to L9FF8 before the STA and save three bytes by not duplicating it for srsave and srload? Note that PrvEn preserves A.
+; SFTODO: Could we move PRVEN to L9FF8 before the STA and save three bytes by not duplicating it for srsave and srload? Note that PrvEn preserves A.
 {
 ; SFTODO: *SRSAVE seems quite badly broken, I think because of problems with
 ; OSWORD &43.
@@ -5650,12 +5657,12 @@ ptr = &AC ; 2 bytes
 ; generates a "Bad address" error.
 ; SFTODO: Ken has pointed out those commands are (using Integra-B *SRSAVE conventions) trying to save one byte past the end of sideways RAM, hence "Bad address". I don't know if we should consider changing this to be more Acorn DFS SRAM utils-like in a new version of IBOS or not, but those actual commands do work fine if the end address is fixed. (We could potentially quibble about whether it's right that one of those error-generating command creates an empty file and the other doesn't, but I don't think this is a big deal, and I have no idea what Acorn DFS does either.)
 ;*SRSAVE Command
-.^srsave	  JSR PrvEn								;switch in private RAM
+.^srsave	  PRVEN								;switch in private RAM
             LDA #&00								;function "save absolute"
             JMP L9FF8
 			
 ;*SRLOAD Command
-.^srload	  JSR PrvEn								;switch in private RAM
+.^srload	  PRVEN								;switch in private RAM
             LDA #&80								;function "load absolute"
 .L9FF8      STA prvOswordBlockCopy
             JSR getSrsaveLoadFilename
@@ -6053,7 +6060,7 @@ osfileBlock = L02EE
             BCC LA240 ; SFTODO: always branch? At least during an official user-called OSWORD &43 we will, as low bit should always be 0 according to e.g. Master Ref Manual
             LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number
             JSR createRomBankMaskAndInsertBanks
-.LA240      JSR PrvEn								;switch in private RAM
+.LA240      PRVEN								;switch in private RAM
             LSR prvOswordBlockCopy
             ; SFTODO: And again, we're testing what was b1 of 'function' before we started shifting - why? Is this an internal flag?
             BCC PrvDisexitScIndirect
@@ -6225,14 +6232,14 @@ osfileBlock = L02EE
             BEQ LA38D								;jump to write to screen
             LDA #'P'								;'P' (Protected)
 .LA38D      JSR OSWRCH								;write to screen
-            JSR PrvEn								;switch in private RAM
+            PRVEN								;switch in private RAM
             LDX L00AA								;Get ROM Number
             LDA romTypeTable,X								;get ROM Type
             LDY #' '								;' '
             AND #&FE								;bit 0 of ROM Type is undefined, so mask out
             BNE LA3BC								;if any other bits set, then ROM exists so skip code for Unplugged ROM check, and get and write ROM details
             LDY #&55								;'U' (Unplugged)
-            JSR PrvEn								;switch in private RAM
+            PRVEN								;switch in private RAM
             LDA prvRomTypeTableCopy,X;								;get backup copy of ROM Type
             JSR PrvDis								;switch out private RAM
             BNE LA3BC								;if any bits set, then unplugged ROM exists so get and write ROM details
@@ -6402,7 +6409,7 @@ osfileBlock = L02EE
 .LA499      JSR createRomBankMask
 ;Read ROM Type from ROM header for ROMs with a 1 bit in transientRomBankMask and save to ROM Type Table and Private RAM; used to immediately *INSERT a ROM without waiting for BREAK.
 .^insertBanksUsingTransientRomBankMask
-.LA49C      JSR PrvEn								;switch in private RAM
+.LA49C      PRVEN								;switch in private RAM
 
 
             LDY #maxBank
@@ -6463,7 +6470,7 @@ osfileBlock = L02EE
 ; SFTODO: The OSMODE 2 behaviour seems weird; surely we *don't* have SWR in banks 12-15 (isn't IBOS in bank 15, for a start?), so while this is nominally B+-compatible (although not even that; doesn't the B+ have SWR in banks 0, 1, 12, 13 or something like that?), as soon as any softwre actually tries to work with these banks, won't it break? Maybe I'm missing something...
 .assignDefaultPseudoRamBanks
 {
-.LA4E3      JSR PrvEn								;switch in private RAM
+.LA4E3      PRVEN								;switch in private RAM
             LDA prvOsMode								;read OSMODE
             LDX #&03								;a total of 4 pseudo banks
             LDY #&07								;for osmodes other than 2, absolute banks are 4..7
@@ -6512,7 +6519,7 @@ osfileBlock = L02EE
             BCC LA52E
             EOR L00AF
 .LA52E      JSR writeUserReg								;Write to RTC clock User area. X=Addr, A=Data
-            JSR PrvEn								;switch in private RAM
+            PRVEN								;switch in private RAM
             JSR LA53D
 .^LA537     JSR PrvDis								;switch out private RAM
             JMP ExitAndClaimServiceCall								;Exit Service Call
@@ -6553,7 +6560,7 @@ osfileBlock = L02EE
             AND #ramselShen
             STA ramselCopy
 
-            JSR PrvEn								;switch in private RAM
+            PRVEN								;switch in private RAM
 
             JSR LA53D
 
@@ -8850,7 +8857,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 
 ;*TIME Command
 {
-.^time      JSR PrvEn								;switch in private RAM
+.^time      PRVEN								;switch in private RAM
             LDA (transientCmdPtr),Y							;read first character of command parameter
             CMP #'='								;check for '='
             BEQ setTime								;if '=' then set time, else read time
@@ -8879,7 +8886,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 
 ;*DATE Command
 {
-.^date	  JSR PrvEn								;switch in private RAM
+.^date	  PRVEN								;switch in private RAM
             LDA (transientCmdPtr),Y							;read first character of command parameter
             CMP #'='								;check for '='
             BEQ setDate								;if '=' then set date, else read date
@@ -8921,7 +8928,7 @@ dayOfWeek = prvA ; this is also the row number
 cellIndex = prvB ; current element in the 42-element structure generated by generateInternalCalendar
 column = prvC
 
-.^calend    JSR PrvEn								;switch in private RAM
+.^calend    PRVEN								;switch in private RAM
 	  ; SFTODO: Can we share the next few lines of code with *DATE?
             JSR dateCalculation
             BCC calculationOk
@@ -9041,7 +9048,7 @@ column = prvC
             JMP LB67C
 			
 ;*ALARM Command
-.^alarm     JSR PrvEn								;switch in private RAM
+.^alarm     PRVEN								;switch in private RAM
             LDA (transientCmdPtr),Y
             CMP #'='
             CLC
@@ -9113,7 +9120,7 @@ column = prvC
 ;OSWORD &0E (14) Read real time clock
 {
 .^osword0e	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
-            JSR PrvEn								;switch in private RAM
+            PRVEN								;switch in private RAM
             LDA oswdbtX								;get X register value of most recent OSWORD call
             STA prvOswordBlockOrigAddr							;and save to &8230
             LDA oswdbtY								;get Y register value of most recent OSWORD call
@@ -9136,7 +9143,7 @@ column = prvC
 ;OSWORD &49 (73) - Integra-B calls
 {
 .^osword49	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
-            JSR PrvEn								;switch in private RAM
+            PRVEN								;switch in private RAM
             LDA oswdbtX								;get X register value of most recent OSWORD call
             STA prvOswordBlockOrigAddr							;and save to &8230
             LDA oswdbtY								;get Y register value of most recent OSWORD call
@@ -10201,7 +10208,7 @@ ScreenStart = &3000
     LDA #ModeChangeStateNone:STA ModeChangeState
     LDA #1:STA osShadowRamFlag
 .SFTODOCOMMON1
-    JSR PrvEn
+    PRVEN
     LDA prvSFTODOMODE:AND_NOT shadowModeOffset:STA prvSFTODOMODE
     JMP PrvDis
 }
@@ -10228,7 +10235,7 @@ ScreenStart = &3000
     ; Disable shadow RAM.
     ; SQUASH: I think the next few lines up to and including "JSR PrvDis" could be replaced by
     ; "JSR SFTODOCOMMON1".
-    JSR PrvEn
+    PRVEN
     LDA prvSFTODOMODE:AND_NOT shadowModeOffset:STA prvSFTODOMODE
     JSR PrvDis
     JSR maybeSwapShadow2
@@ -10340,7 +10347,7 @@ ScreenStart = &3000
 
 .IsPrinterBuffer
     LDA ramselCopy:PHA
-    JSR PrvEn
+    PRVEN
     TSX:LDA L0107,X:AND #flagV:BEQ Count ; test V in stacked flags from caller
     ; We're purging the buffer.
     LDX #prvPrintBufferPurgeOption - prv83:JSR readPrivateRam8300X:BEQ PurgeOff
@@ -10374,7 +10381,7 @@ ScreenStart = &3000
     LDX lastBreakType:BEQ softReset
     ; On hard break or power-on reset, set up the printer buffer so it uses private RAM from
     ; prvPrvPrintBufferStart onwards.
-    JSR PrvEn
+    PRVEN
     LDA #0
     STA prvPrintBufferSizeLow
     STA prvPrintBufferSizeHigh
