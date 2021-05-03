@@ -6697,7 +6697,7 @@ osfileBlock = L02EE
 {
     ; Force DV2/1/0 in register A on; this temporarily stops the RTC clock while we set it.
     LDX #rtcRegA:JSR ReadRtcRam:ORA #rtcRegADV2 OR rtcRegADV1 OR rtcRegADV0:JSR WriteRtcRam
-    ; Force SET (set mode), DM (binary mode) and 2412 (24 hour mode) on in register B ad
+    ; Force SET (set mode), DM (binary mode) and 2412 (24 hour mode) on in register B and
     ; force SQWE (square wave enable) and DSE (auto daylight savings adjust) off.
     LDX #rtcRegB:JSR ReadRtcRam
     AND_NOT rtcRegBSET OR rtcRegBSQWE OR rtcRegBDM OR rtcRegB2412 OR rtcRegBDSE
