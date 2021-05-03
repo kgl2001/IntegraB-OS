@@ -539,6 +539,7 @@ prvPrintBufferBankEnd   = prv82 + &0E
 ; printer buffer; it's 0 if there's no buffer or the buffer is in private RAM.
 ; SQUASH: This seems to be write-only.
 prvPrintBufferBankCount = prv82 + &0F
+MaxPrintBufferSwrBanks = 4
 ; prvPrintBufferBankList is a 4 byte list of private/sideways RAM banks used by
 ; the printer buffer. If there are less than 4 banks, the unused entries will be
 ; &FF. If the buffer is in private RAM, the first entry will be &4X where X is
@@ -2509,7 +2510,6 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 ; SFTODO: "*BUFFER OFF" (at least on b-em) seems to generate an empty error message - this isn't a valid command, but this behaviour doesn't seem right
 .buffer
 {
-MaxSwrBanks = 4
 TmpBankCount = L00AC
 TmpTransientCmdPtrOffset = L00AD
 TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
@@ -2531,7 +2531,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 
 .BankCountParsedOK
 {
-    CMP #MaxSwrBanks + 1:BCC BankCountInA
+    CMP #MaxPrintBufferSwrBanks + 1:BCC BankCountInA
     JMP GenerateBadParameter
 .BankCountInA
     PHA
@@ -2542,7 +2542,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 .BankTestLoop
     JSR TestForEmptySwrInBankY:BCS NotEmptySwr
     TYA:STA prvPrintBufferBankList,X
-    INX:CPX #MaxSwrBanks:BEQ MaxBanksFound
+    INX:CPX #MaxPrintBufferSwrBanks:BEQ MaxBanksFound
 .NotEmptySwr
     INY:CPY #maxBank + 1:BNE BankTestLoop
 .MaxBanksFound
@@ -2553,7 +2553,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     TAX
     LDA #&FF ; SFTODO: named constant for this (in lots of places)?
 .DisableUnwantedBankLoop
-    CPX #MaxSwrBanks:BCS prvPrintBufferBankListInitialised
+    CPX #MaxPrintBufferSwrBanks:BCS prvPrintBufferBankListInitialised
     STA prvPrintBufferBankList,X
     INX:BNE DisableUnwantedBankLoop ; always branch
 .prvPrintBufferBankListInitialised
@@ -2577,9 +2577,9 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     BCS prvPrintBufferBankListInitialised2 ; stop parsing if bank number is invalid
     TAY:JSR TestForEmptySwrInBankY:TYA:BCS NotEmptySwrBank
     ; SQUASH: INC TmpBankCount:LDX TmpBankCount:STA prvPrintBufferBankList-1,X:...:CPX
-    ; #MaxSwrBanks+1? Or initialise TmpBankCount to &FF?
+    ; #MaxPrintBufferSwrBanks+1? Or initialise TmpBankCount to &FF?
     LDX TmpBankCount:STA prvPrintBufferBankList,X:INX:STX TmpBankCount
-    CPX #MaxSwrBanks:BEQ prvPrintBufferBankListInitialised2
+    CPX #MaxPrintBufferSwrBanks:BEQ prvPrintBufferBankListInitialised2
 .NotEmptySwrBank
     LDY TmpTransientCmdPtrOffset
     JMP ParseUserBankListLoop
@@ -2635,7 +2635,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     CLC:LDA prvPrintBufferSizeMid:ADC #&40:STA prvPrintBufferSizeMid ; SFTODO: mildly magic
     ; SQUASH: INCCS prvprintBufferSizeHigh
     LDA prvPrintBufferSizeHigh:ADC #0:STA prvPrintBufferSizeHigh
-    INX:CPX #MaxSwrBanks:BNE CountBankLoop
+    INX:CPX #MaxPrintBufferSwrBanks:BNE CountBankLoop
     DEX
 .AllBanksCounted
     LDA #&80:STA prvPrintBufferBankStart ; SFTODO: mildly magic
@@ -2662,7 +2662,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA prvPrintBufferBankList,Y:BMI AllBanksShown
     SEC:JSR PrintADecimal
     LDA #',':JSR OSWRCH
-    INY:CPY #MaxSwrBanks:BNE ShowBankLoop
+    INY:CPY #MaxPrintBufferSwrBanks:BNE ShowBankLoop
 .AllBanksShown
     LDA #vduDel:JSR OSWRCH ; delete the last ',' that was just printed
 .*OSNEWLPrvDisExitAndClaimServiceCall
@@ -10104,6 +10104,7 @@ ScreenStart = &3000
 ; time, instead of having to toggle MEMSEL twice per byte of screen memory), we could encourage
 ; having SHX enabled (e.g. make it the default). Acorn shadow RAM on the B+ and M128 always
 ; behaves as if SHX is enabled, so having it on reduces scope for surprise program corruption.
+; (It's not as large as I'd like, but &80xx is probably available for use here.)
 .SwapShadowIfShxEnabled
     LDX #prvShx - prv83:JSR ReadPrivateRam8300X:BEQ Rts ; nothing to do if SHX off
     ; Blank out the screen while we're copying data around. There's a mode change pending in
@@ -10394,42 +10395,38 @@ ScreenStart = &3000
 }
 
 {
-; Advance prvPrintBufferReadPtr by one, wrapping round at the end of each bank
-; and wrapping round at the end of the bank list.
-; SFTODO: This has only one caller
+; Advance prvPrintBufferReadPtr by one, wrapping round at the end of each bank and wrapping
+; round at the end of the bank list.
 .^AdvancePrintBufferReadPtr
-.LBEB2      LDX #prvPrintBufferReadPtrIndex
-            ASSERT prvPrintBufferReadPtrIndex != 0:BNE LBEB8 ; always branch
-; Advance prvPrintBufferWritePtr by one, wrapping round at the end of each bank
-; and wrapping round at the end of the bank list.
-; SFTODO: This has only one caller
+    LDX #prvPrintBufferReadPtrIndex
+    ASSERT prvPrintBufferReadPtrIndex != 0:BNE Common ; always branch
+
+; Advance prvPrintBufferWritePtr by one, wrapping round at the end of each bank and wrapping
+; round at the end of the bank list.
 .^AdvancePrintBufferWritePtr
-.LBEB6      LDX #prvPrintBufferWritePtrIndex
-.LBEB8      INC prvPrintBufferPtrBase,X
-            BNE LBEE8
-            INC prvPrintBufferPtrBase + 1,X
-            LDA prvPrintBufferPtrBase + 1,X
-            CMP prvPrintBufferBankEnd
-            BCC LBEE8
-            LDY prvPrintBufferPtrBase + 2,X
-            INY
-            CPY #&04
-            BCC LBED2
-            LDY #&00
-.LBED2      LDA prvPrintBufferBankList,Y
-            BPL LBED9
-            ; Top bit of this bank number is set, so it's going to be $FF
-            ; indicating an invalid bank; wrap round to the first bank.
-            LDY #&00
-.LBED9      TYA
-            STA prvPrintBufferPtrBase + 2,X
-            ; SFTODO: Are the next two lines redundant? I think we can only get
-            ; here if INC prvPrintBufferPtrBase,X above left this value zero.
-            LDA #&00
-            STA prvPrintBufferPtrBase,X
-            LDA prvPrintBufferBankStart
-            STA prvPrintBufferPtrBase + 1,X
-.LBEE8      RTS
+    LDX #prvPrintBufferWritePtrIndex
+.Common
+    INC prvPrintBufferPtrBase,X:BNE Rts
+    INC prvPrintBufferPtrBase + 1,X
+    LDA prvPrintBufferPtrBase + 1,X:CMP prvPrintBufferBankEnd:BCC Rts
+    LDY prvPrintBufferPtrBase + 2,X:INY:CPY #4:BCC LBED2 ; SFTODO: magic?
+    LDY #0
+.LBED2
+    LDA prvPrintBufferBankList,Y:BPL ValidBank
+    ; Top bit of this bank number is set, so it's going to be $FF indicating an invalid bank;
+    ; wrap round to the first bank.
+    LDY #&00
+.ValidBank
+    TYA
+    STA prvPrintBufferPtrBase + 2,X
+    ; SFTODO: Are the next two lines redundant? I think we can only get
+    ; here if INC prvPrintBufferPtrBase,X above left this value zero.
+    LDA #&00
+    STA prvPrintBufferPtrBase,X
+    LDA prvPrintBufferBankStart
+    STA prvPrintBufferPtrBase + 1,X
+.Rts
+    RTS
 }
 
 ; SFTODO: This has only one caller
