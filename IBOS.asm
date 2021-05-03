@@ -3333,30 +3333,27 @@ OriginalOutputDeviceStatus = TransientZP + 1
     RTS
 }
 
+.L932E
 {
-.^L932E      JSR L9337
-            JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
-            JMP OSNEWL
-			
-.L9337      CMP #&00
-            BNE L933C
-            RTS
+    JSR PrintNoSh
+    JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
+    JMP OSNEWL
 
-.L933C      CMP #&02								;If &02 then write 'SH' otherwise write 'NO' in front of CAPS
-            BEQ L934A
-            LDA #'N'
-            JSR OSWRCH
-            LDA #'O'
-            JMP OSWRCH
-			
-.L934A      LDA #'S'
-            JSR OSWRCH
-            LDA #'H'
-            JMP OSWRCH
+; Inverse of ParseNoSh; prints "" (A=0), "NO" (A=1) or "SH" (A=2).
+.PrintNoSh
+    CMP #0:BNE Not0 ; SQUASH: TAX instead of CMP #0, BEQ to a nearby RTS
+    RTS
+.Not0
+    CMP #2:BEQ Sh
+    LDA #'N':JSR OSWRCH
+    LDA #'O':JMP OSWRCH
+.Sh
+    LDA #'S':JSR OSWRCH
+    LDA #'H':JMP OSWRCH
 }
 
-;*Configure paramters are stored using the following format
-;EQUB Register,Start Bit,Number of Bits
+; *Configure parameters are stored using the following format
+; EQUB Register,Start Bit,Number of Bits
 ConfParBitUserRegOffset = 0
 ConfParBitStartBitOffset = 1
 ConfParBitBitCountOffset = 2
