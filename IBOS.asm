@@ -249,7 +249,7 @@ osbyteReadWriteBreakEscapeEffect = &C8
 osbyteReadWriteKeyboardStatus = &CA
 osbyteEnableDisableStartupMessage = &D7
 osbyteReadWriteVduQueueLength = &DA
-osbyteReadWriteCharacterOutputDeviceStatus = &EC
+osbyteReadWriteOutputDevice = &EC
 osbyteReadWriteStartupOptions = &FF
 
 oswordInputLine = &00
@@ -3160,15 +3160,17 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 ; like *TYPE but without control code pretty-printing.
 .print
 {
+OriginalOutputDeviceStatus = TransientZP + 1
+
     LDA #osfindOpenInput:JSR parseFilenameAndOpen
     ; SQUASH: We could just read/write &27C directly
-    LDA #osbyteReadWriteCharacterOutputDeviceStatus:LDX #0:LDY #&FF:JSR OSBYTE
-    STA L00A9
+    LDA #osbyteReadWriteOutputDevice:LDX #0:LDY #&FF:JSR OSBYTE
+    STA OriginalOutputDeviceStatus
     ; Disable screen drivers, enable printer, disable *SPOOL
     LDA #osbyteSelectOutputDevice:LDX #%00011010:LDY #0:JSR OSBYTE
 .Loop
     BIT osEscapeFlag:BMI Escape
-    LDY L00A8:JSR OSBGET:BCS Eof
+    LDY transientFileHandle:JSR OSBGET:BCS Eof
     JSR OSASCI
     JMP Loop
 .Eof
@@ -3182,7 +3184,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
     EQUB &11
     EQUS "Escape", &00
 .CleanUp
-    LDA #osbyteSelectOutputDevice:LDX L00A9:LDY #0:JSR OSBYTE
+    LDA #osbyteSelectOutputDevice:LDX OriginalOutputDeviceStatus:LDY #0:JSR OSBYTE
     JMP CloseTransientFileHandle
 }
 			
@@ -3257,7 +3259,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 .CloseTransientFileHandle
 {
 .L9268      LDA #osfindClose
-            LDY L00A8
+            LDY transientFileHandle
             JMP OSFIND
 }
 			
