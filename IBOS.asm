@@ -9252,7 +9252,7 @@ column = prvC
 Ptr = &A8
 AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 
-.^LB7BC
+.^CopyPrvDateBuffer
     XASSERT_USE_PRV1
     ; SFTODO: Is the next line technically incorrect? We should probably only write to the host
     ; if the high word is &FFFF, not just if the high bit of the high word is set.
@@ -9394,7 +9394,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     LDA #lo(prvDateBuffer):STA prvDateSFTODO4
     LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
     JSR initDateBufferAndEmitTimeAndDate
-    JMP LB7BC
+    JMP CopyPrvDateBuffer
 			
 ;XY?0=&68
 ;OSWORD &49 (73) - Integra-B calls
@@ -9411,7 +9411,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
     JSR generateInternalCalendar
     LDA #42:STA prvDateSFTODO1 ; SFTODO: magic (=42=max size of resulting buffer - see generateInternalCalendar - ?)
-    JMP LB7BC
+    JMP CopyPrvDateBuffer
 			
 ;XY?0=&64
 ;OSWORD &49 (73) - Integra-B calls
