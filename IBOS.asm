@@ -1500,7 +1500,7 @@ TmpCommandIndex = &AC
 {
     JSR PrvDis
     PLA:STA osErrorPtr:PLA:STA osErrorPtr + 1
-    LDY #1
+    LDY #1 ; start at 1 because RTS pushes return address - 1 onto stack
 .CopyLoop
     LDA (osErrorPtr),Y:STA L0100,Y
     BEQ CopyDone
