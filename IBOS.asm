@@ -3808,74 +3808,60 @@ ENDIF
     JMP SelectFirstFilingSystemROMLessEqualXAndLanguage
 .NoKeyPressed
 
-    LDA lastBreakType:BNE notSoftReset1
+    ; SFTODO: Why do we have two different "ways" to call SetDfsNfsPriority?
+    LDA lastBreakType:BNE NotSoftReset1
     LDX #prvSFTODOFILEISH - prv83:JSR ReadPrivateRam8300X
-    PHA ; SFTODO: Why can't we just do the read from &8343 *after* JSR setDfsNfsPriority and avoid this PHA/PLA?
-    JSR setDfsNfsPriority
+    PHA ; SFTODO: Why can't we just do the read from &8343 *after* JSR SetDfsNfsPriority and avoid this PHA/PLA?
+    JSR SetDfsNfsPriority
     PLA
     AND #&7F
     TAX
     CPX romselCopy:BCC SelectFirstFilingSystemROMLessEqualXAndLanguage
-.notSoftReset1
-    JSR setDfsNfsPriority
-    JMP selectConfiguredFilingSystemAndLanguage
+.NotSoftReset1
+    JSR SetDfsNfsPriority
+    JMP SelectConfiguredFilingSystemAndLanguage
 
-.setDfsNfsPriority
-    LDX #userRegDiscNetBootData
-    JSR ReadUserReg
-    ROR A
-    ROR A
-    AND #&80
-    TAX
-    LDA #osbyteReadWriteStartupOptions
-    LDY #&7F
-    JSR OSBYTE
+.SetDfsNfsPriority
+    LDX #userRegDiscNetBootData:JSR ReadUserReg
+    ROR A:ROR A:AND #&80:TAX
+    LDA #osbyteReadWriteStartupOptions:LDY #&7F:JSR OSBYTE ; SQUASH: JMP OSBYTE
     RTS
 
-.selectConfiguredFilingSystemAndLanguage
+.SelectConfiguredFilingSystemAndLanguage
     LDX #userRegLangFile:JSR ReadUserReg:AND #&0F:TAX ; get *CONFIGURE FILE value
     ; SFTODO: If the selected filing system is >= our bank, start one bank lower?! This seems odd, although *if* we know we're bank 15, this really just means "start below us" (presumably to avoid infinite recursion)
     CPX romselCopy:BCC SelectFirstFilingSystemROMLessEqualXAndLanguage
     DEX
 .SelectFirstFilingSystemROMLessEqualXAndLanguage
-            JSR passServiceCallToROMsLessEqualX
-            LDA lastBreakType
-            BNE notSoftReset
-            LDA currentLanguageRom
-            BPL enterLangA ; SFTODO: Do we expect this to always branch? Not at all sure.
-.notSoftReset
-	  LDX #userRegLangFile
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            JSR lsrA4								;get *CONFIGURE LANG value
-            JMP enterLangA
+    JSR PassServiceCallToROMsLessEqualX
+    LDA lastBreakType:BNE NotSoftReset2
+    LDA currentLanguageRom:BPL EnterLangA ; SFTODO: Do we expect this to always branch? Not at all sure.
+.NotSoftReset2
+    LDX #userRegLangFile:JSR ReadUserReg:JSR lsrA4 ; get *CONFIGURE LANG value
+    JMP EnterLangA
 			
-.noTube     LDA romselCopy
-.enterLangA TAX
-            LDA romTypeTable,X
-            ROL A
-            BPL noLanguageEntry
-            JMP LDBE6								;OSBYTE 142 - ENTER LANGUAGE ROM AT &8000 (http://mdfs.net/Docs/Comp/BBC/OS1-20/D940) - we enter one byte early so carry is clear, which might indicate "initialisation" (this based on that mdfs.net page; I can't find anything about this in a quick look at other documentation)
+.NoTube
+    LDA romselCopy
+.EnterLangA
+    TAX
+    LDA romTypeTable,X:ROL A:BPL NoLanguageEntry
+    JMP LDBE6 ;OSBYTE 142 - ENTER LANGUAGE ROM AT &8000 (http://mdfs.net/Docs/Comp/BBC/OS1-20/D940) - we enter one byte early so carry is clear, which might indicate "initialisation" (this based on that mdfs.net page; I can't find anything about this in a quick look at other documentation)
 
-.noLanguageEntry
-            BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
-            BPL noTube
-            LDA #&00
-            CLC
-            JMP L0400								;assume there is code within this ROM that is being relocated to &0400???
+.NoLanguageEntry
+    BIT tubePresenceFlag:BPL NoTube
+    ; SFTODO!?
+    LDA #0
+    CLC
+    JMP L0400 ; SFTODO: assume there is code within this ROM that is being relocated to &0400???
 
 ; SFTODO: This has only one caller
-.passServiceCallToROMsLessEqualX
-.L96BC      TXA
-            PHA
-            TSX
-            LDA L0104,X								;get Y from the service call
-            TAY ; SFTODO: Just use LDY L0104,X to load directly?
-            PLA
-            TAX
-            LDA romselCopy
-            PHA
-            LDA #&03								;service call number
-            JMP LF16E								;OSBYTE 143 - Pass service commands to sideways ROMs (http://mdfs.net/Docs/Comp/BBC/OS1-20/F135), except we enter partway through to start at bank X not bank 15
+.PassServiceCallToROMsLessEqualX
+    TXA:PHA
+    TSX:LDA L0104,X:TAY ; get Y from the service call SQUASH: Just use LDY L0104,X to load directly?
+    PLA:TAX
+    LDA romselCopy:PHA
+    LDA #3 ; this service call number
+    JMP LF16E ; OSBYTE 143 - Pass service commands to sideways ROMs (http://mdfs.net/Docs/Comp/BBC/OS1-20/F135), except we enter partway through to start at bank X not bank 15
 }
 
 ;Absolute workspace claim - Service call &01
@@ -5763,7 +5749,7 @@ osfileBlock = L02EE
 	  JSR copyOswordDetailsToPrv					;copy osword43 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
             JSR adjustPrvOsword43Block					;convert pseudo RAM bank to absolute and shuffle parameter block
             BIT tubePresenceFlag					;check for Tube - &00: not present, &ff: present
-            BPL noTube 						;branch if tube not present
+            BPL NoTube 						;branch if tube not present
 .LA146      LDA #tubeEntryClaim + tubeClaimId				;tube present code
             JSR tubeEntry
             BCC LA146
@@ -5819,7 +5805,7 @@ osfileBlock = L02EE
             STA prvOswordBlockCopy + 12
             LDA #hi(L0700)
             STA prvOswordBlockCopy + 13
-.noTube
+.NoTube
 .^osword43Internal
     XASSERT_USE_PRV1
             JSR adjustOsword43LengthAndBuffer
