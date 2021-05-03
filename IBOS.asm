@@ -3874,8 +3874,8 @@ tmp = &A8
     ; SQUASH: I think this code is high enough in the IBOS ROM we don't need to be indirecting
     ; via WritePrivateRam8300X and could just set PRV1 and access directly?
     LDA #0:STA ramselCopy:STA ramsel ; shadow off SFTODO?
-    LDX #7								;start at address 7
-    LDA #&FF								;set data to &FF
+    LDX #7
+    LDA #&FF
 .WriteLoop
     JSR WritePrivateRam8300X
     DEX:BNE WriteLoop
@@ -3886,47 +3886,35 @@ tmp = &A8
 .L96EE
     LDX #userRegPrvPrintBufferStart:JSR ReadUserReg
     LDX #prvPrvPrintBufferStart-prv83:JSR WritePrivateRam8300X
-            LDX lastBreakType
-            BEQ softReset
-            LDX #userRegOsModeShx							;0-2: OSMODE / 3: SHX
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            PHA
-            AND #&07								;mask OSMODE value
-            LDX #prvOsMode - prv83							;select OSMODE register
-            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-            JSR assignDefaultPseudoRamBanks						;Assign default pseudo RAM banks to absolute RAM banks
-            PLA
-            AND #&08								;mask off SHX bit
-            BEQ shxInA
-            LDA #&FF
-.shxInA     LDX #prvShx - prv83							;select SHX register (&08: On, &FF: Off)
-            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-.softReset
-.L9719      JSR IbosSetUp
-            LDX #userRegModeShadowTV							;get TV / MODE parameters
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-	  ; Arithmetic shift A right 5 bits to get a sign-extended version of the TV setting in A.
-	  ; SFTODO: Could we optimise this using technique from http://wiki.nesdev.com/w/index.php/6502_assembly_optimisations#Arithmetic_shift_right?
-            PHA									;save value
-            ROL A									;move msb to carry
-            PHP									;save msb
-            ROR A									;move bit from carry back to msb
-            LDX #&05								;set counter to 5: move bits 8-5 to 3-0. Pad upper bits with msb
-.shiftLoop  PLP									;recover msb
-            PHP									;and save again
-            ROR A									;store bit to msb
-            DEX
-            BNE shiftLoop								;loop for 5
-            PLP
-            TAX									;then save TV setting in X
-            PLA									;recover parameter &0A value
-            AND #&10								;is bit 4 set (TV interlace)?
-            BEQ interlaceInA								;no? then jump to set Y=0
-            LDA #&01								;else set Y=1
+    LDX lastBreakType:BEQ SoftReset
+    LDX #userRegOsModeShx:JSR ReadUserReg
+    PHA
+    AND #7:LDX #prvOsMode - prv83:JSR WritePrivateRam8300X
+    JSR assignDefaultPseudoRamBanks
+    PLA
+    AND #8:BEQ ShxInA
+    LDA #&FF
+.ShxInA
+    LDX #prvShx - prv83:JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+.SoftReset
+    JSR IbosSetUp
+    LDX #userRegModeShadowTV:JSR ReadUserReg
+    ; Arithmetic shift A right 5 bits to get a sign-extended version of the TV setting in A.
+    ; SQUASH: Could we optimise this using technique from http://wiki.nesdev.com/w/index.php/6502_assembly_optimisations#Arithmetic_shift_right?
+    PHA
+    ROL A:PHP:ROR A ; save sign bit on stack
+    LDX #5
+.ShiftLoop
+    PLP:PHP ; peek sign bit from stack
+    ROR A
+    DEX:BNE ShiftLoop
+    PLP
+    TAX
+    PLA:AND #&10:BEQ interlaceInA
+    LDA #1
 .interlaceInA
-	  TAY									;set Y=0
-            LDA #osbyteTV								;select *TV X,Y
-            JSR OSBYTE								;execute *TV X,Y
+    TAY
+    LDA #osbyteTV:JSR OSBYTE
 	  ; Set the screen mode. On a soft reset we preserve the last selected
 	  ; mode (like the Master), unless we're in OSMODE 0; on other resets
 	  ; we select the *CONFIGUREd mode.
@@ -4064,7 +4052,7 @@ tmp = &A8
             BIT prvSFTODOTUBEISH
             BMI L9836
             LDA lastBreakType
-            BEQ softReset
+            BEQ SoftReset
             BIT L03A4
             BMI L983D
             LDX #userRegTubeBaudPrinter
@@ -4073,7 +4061,7 @@ tmp = &A8
             BNE L982E
             LDA #&FF
 .L982E      STA prvSFTODOTUBE2ISH
-.softReset  BIT prvSFTODOTUBE2ISH
+.SoftReset  BIT prvSFTODOTUBE2ISH
 	  BPL L983D
 .L9836      PLA
             JSR PRVDISStaRamsel
@@ -4173,7 +4161,7 @@ ramPresenceFlags = &A8
             DEX									;Next Character
             BPL bannerLoop2								;Loop
             LDA lastBreakType								;Check Break status. 0=soft, 1=power up, 2=hard
-            BEQ softReset								;No Beep and don't write amount of Memory to screen
+            BEQ SoftReset								;No Beep and don't write amount of Memory to screen
             LDA #vduBell								;Beep
             JSR OSWRCH								;Write to screen
             LDX #userRegRamPresenceFlags						;Read 'RAM installed in banks' register
@@ -4204,7 +4192,7 @@ ramPresenceFlags = &A8
 .printKAndNewline
             LDA #'K'
             JSR OSWRCH								;Write to screen
-.softReset  JSR OSNEWL								;New Line
+.SoftReset  JSR OSNEWL								;New Line
             BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
             BMI rts
             JMP OSNEWL								;New Line
@@ -6383,7 +6371,7 @@ osfileBlock = L02EE
     SEC
             JSR SFTODOALARMSOMETHING
             BCS LA570
-            JMP softReset ; SFTODO: Rename this label given its use here?
+            JMP SoftReset ; SFTODO: Rename this label given its use here?
 			
 .LA570      LDA ramselCopy
             AND #ramselShen
@@ -6403,11 +6391,11 @@ osfileBlock = L02EE
             PRVDIS								;switch out private RAM
 
             LDX lastBreakType
-            BEQ softReset
+            BEQ SoftReset
             LDA #osbyteKeyboardScanFrom10
             JSR OSBYTE
             CPX #keycodeAt
-            BNE softReset ; SFTODO: Rename label given use here?
+            BNE SoftReset ; SFTODO: Rename label given use here?
             LDA #&00
             STA L0287
             LDA #&FF
@@ -6427,7 +6415,7 @@ osfileBlock = L02EE
             JMP finish
 
 	  ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
-.softReset  LDA #&00
+.SoftReset  LDA #&00
             STA L03A4
             LDX #userRegBankInsertStatus
             JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
@@ -10202,7 +10190,7 @@ ScreenStart = &3000
 ; command), could it be factored out?
 .InitPrintBuffer
 {
-    LDX lastBreakType:BEQ softReset
+    LDX lastBreakType:BEQ SoftReset
     ; On hard break or power-on reset, set up the printer buffer so it uses private RAM from
     ; prvPrvPrintBufferStart onwards.
     PRVEN
@@ -10221,7 +10209,7 @@ ScreenStart = &3000
     STA prvPrintBufferBankList + 1
     STA prvPrintBufferBankList + 2
     STA prvPrintBufferBankList + 3
-.softReset
+.SoftReset
     JSR PurgePrintBuffer
     PRVDIS
     ; Copy the rom access subroutine used by the printer buffer from ROM into RAM.
