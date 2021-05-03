@@ -3395,8 +3395,15 @@ ConfParBitBitCountOffset = 2
 		EQUW Conf1-1							;ALARM <0-63>		Type 1: Number starting 0
 
 ; bitMaskTable[X] contains bit mask for an n-bit value; X=0 is used to represent the mask for an 8-bit value.
-.bitMaskTable       EQUB &FF,&01,&03,&07
-		EQUB &0F,&1F,&3F,&7F
+.bitMaskTable
+    EQUB %11111111
+    EQUB %00000001
+    EQUB %00000011
+    EQUB %00000111
+    EQUB %00001111
+    EQUB %00011111
+    EQUB %00111111
+    EQUB %01111111
 
 
 .shiftALeftByX
