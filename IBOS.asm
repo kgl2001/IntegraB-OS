@@ -1740,18 +1740,14 @@ SFTODOOTHER = &B4 ; 4 bytes
 			
 .ValidDigit
     TAX
-    LDA ConvertIntegerResult
-    STA SFTODOOTHER
+    LDA ConvertIntegerResult:STA SFTODOOTHER
     STX ConvertIntegerResult
     LDX #&00
-    LDA ConvertIntegerResult + 1
-    STA SFTODOOTHER + 1
+    LDA ConvertIntegerResult + 1:STA SFTODOOTHER + 1
     STX ConvertIntegerResult + 1
-    LDA ConvertIntegerResult + 2
-    STA SFTODOOTHER + 2
+    LDA ConvertIntegerResult + 2:STA SFTODOOTHER + 2
     STX ConvertIntegerResult + 2
-    LDA ConvertIntegerResult + 3
-    STA SFTODOOTHER + 3
+    LDA ConvertIntegerResult + 3:STA SFTODOOTHER + 3
     STX ConvertIntegerResult + 3
     LDA Base
     LDX #&08
@@ -1760,25 +1756,17 @@ SFTODOOTHER = &B4 ; 4 bytes
     BCC L87AD
     PHA
     CLC
-    LDA ConvertIntegerResult
-    ADC L00B4
-    STA ConvertIntegerResult
-    LDA ConvertIntegerResult + 1
-    ADC L00B5
-    STA ConvertIntegerResult + 1
-    LDA ConvertIntegerResult + 2
-    ADC L00B6
-    STA ConvertIntegerResult + 2
-    LDA ConvertIntegerResult + 3
-    ADC L00B7
-    STA ConvertIntegerResult + 3
+    LDA ConvertIntegerResult    :ADC SFTODOOTHER    :STA ConvertIntegerResult
+    LDA ConvertIntegerResult + 1:ADC SFTODOOTHER + 1:STA ConvertIntegerResult + 1
+    LDA ConvertIntegerResult + 2:ADC SFTODOOTHER + 2:STA ConvertIntegerResult + 2
+    LDA ConvertIntegerResult + 3:ADC SFTODOOTHER + 3:STA ConvertIntegerResult + 3
     PLA
     BVS GenerateBadParameterIndirect
 .L87AD
-    ASL L00B4
-    ROL L00B5
-    ROL L00B6
-    ROL L00B7
+    ASL SFTODOOTHER
+    ROL SFTODOOTHER + 1
+    ROL SFTODOOTHER + 2
+    ROL SFTODOOTHER + 3
     DEX
     BNE L878D
     INY
