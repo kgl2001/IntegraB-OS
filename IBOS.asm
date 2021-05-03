@@ -665,20 +665,19 @@ MACRO AND_NOT n
     AND #NOT(n) AND &FF
 ENDMACRO
 
-; The following convenience macros only save a couple of lines of code each time
-; they're used, but they avoid having extra labels cluttering up the code by
-; hiding their internal branches.
+; The following convenience macros only save a couple of lines of code each time they're used,
+; but they avoid having extra labels cluttering up the code by hiding their internal branches.
 
-; "INCrement if Carry Set" - convenience macro for use when adding an 8-bit
-; value to a 16-bit value.
+; "INCrement if Carry Set" - convenience macro for use when adding an 8-bit value to a 16-bit
+; value.
 MACRO INCCS x
     BCC NoCarry
     INC x
 .NoCarry
 ENDMACRO
 
-; "DECrement if Carry Clear" - convenient macro for use when subtracting an
-; 8-bit value from a 16-bit value.
+; "DECrement if Carry Clear" - convenient macro for use when subtracting an 8-bit value from a
+; 16-bit value.
 MACRO DECCC x
     BCS NoBorrow
     DEC x
@@ -693,9 +692,9 @@ MACRO INCWORD x
 .NoCarry
 ENDMACRO
 
-; This macro asserts that the given label immediately follows the macro call.
-; This makes fall-through more explicit and guards against accidentally breaking
-; things when rearranging blocks of code.
+; This macro asserts that the given label immediately follows the macro call. This makes
+; fall-through more explicit and guards against accidentally breaking things when rearranging
+; blocks of code.
 MACRO FALLTHROUGH_TO label
     ASSERT P% == label
 ENDMACRO
