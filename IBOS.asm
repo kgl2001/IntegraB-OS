@@ -9402,14 +9402,13 @@ column = prvC
 			
 ;XY?0=&69
 ;OSWORD &49 (73) - Integra-B calls
-.LB8B1	  LDA #lo(prvDateBuffer)
-            STA prvOswordBlockCopy + 4
-            LDA #hi(prvDateBuffer)
-            STA prvOswordBlockCopy + 5
-            JSR generateInternalCalendar
-            LDA #&2A
-            STA prvOswordBlockCopy + 1
-            JMP LB7BC
+.LB8B1
+    XASSERT_USE_PRV1
+    LDA #lo(prvDateBuffer):STA prvDateSFTODO4
+    LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
+    JSR generateInternalCalendar
+    LDA #42:STA prvDateSFTODO1 ; SFTODO: magic (=42=max size of resulting buffer - see generateInternalCalendar - ?)
+    JMP LB7BC
 			
 ;XY?0=&64
 ;OSWORD &49 (73) - Integra-B calls
@@ -9419,7 +9418,7 @@ column = prvC
     JSR copyRtcAlarmToPrv
     LDX #rtcRegB:JSR ReadRtcRam
     AND #rtcRegBPIE OR rtcRegBAIE
-    STA prvOswordBlockCopy + 1
+    STA prvOswordBlockCopy + 1 ; SFTODO: Alternate label?
     CLC
     RTS
 
