@@ -1766,40 +1766,41 @@ firstDigitCmdPtrY = &BB
 .L8806      JMP GenerateBadParameter
 }
 
-.errorNotFound
-{
-.L8809      JSR RaiseError								;Goto error handling, where calling address is pulled from stack
-
-	  EQUB &D6
-	  EQUS "Not found", &00
-}
+.GenerateNotFoundError
+    JSR RaiseError
+    EQUB &D6
+    EQUS "Not found", &00
 
 {
 ;Condition then read from Private RAM &83xx (Addr = X, Data = A)
-.L8817      JSR setXMsb								;Set msb of Addr (Addr = Addr OR &80)
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            JMP L8826								;Clear msb of Addr (Addr = Addr & &7F)
+.L8817
+    JSR setXMsb								;Set msb of Addr (Addr = Addr OR &80)
+    JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
+    JMP L8826								;Clear msb of Addr (Addr = Addr & &7F)
 			
 ;Condition then write to Private RAM &83xx (Addr = X, Data = A)
-.L8820      JSR setXMsb								;Set msb of Addr (Addr = Addr OR &80)
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+.L8820
+    JSR setXMsb								;Set msb of Addr (Addr = Addr OR &80)
+    JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
 
 ;Clear msb of Addr (Addr = Addr & &7F)			
-.L8826      PHA
-            TXA
-            AND #&7F
-            TAX
-            PLA
-            RTS		
+.L8826
+    PHA
+    TXA
+    AND #&7F
+    TAX
+    PLA
+    RTS
 
 ;Set msb of Addr (Addr = Addr OR &80)
 .setXMsb
-.L882D      PHA
-            TXA
-            ORA #&80
-            TAX
-            PLA
-            RTS
+.L882D
+    PHA
+    TXA
+    ORA #&80
+    TAX
+    PLA
+    RTS
 
 ; Read/write A from/to user register X. X is preserved on exit.
 ; For X<=&31, the user register is held in RTC register X+&0E.
@@ -1813,41 +1814,42 @@ firstDigitCmdPtrY = &BB
 ; X in on entry.
 
 .^readUserReg
-	  CPX #&80
-            BCS rts  								;Invalid if Address >=&80
-            CPX #&32
-            BCS L8817								;Read from Private RAM if Address >&32 and <&80
-            PHA
-            CLC
-            TXA
-            ADC #rtcUserBase								;Increment address by &0E bytes. First &0E bytes are for the RTC data
-            TAX
-            PLA
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            JMP L885B
+    CPX #&80
+    BCS rts  								;Invalid if Address >=&80
+    CPX #&32
+    BCS L8817								;Read from Private RAM if Address >&32 and <&80
+    PHA
+    CLC
+    TXA
+    ADC #rtcUserBase								;Increment address by &0E bytes. First &0E bytes are for the RTC data
+    TAX
+    PLA
+    JSR ReadRtcRam								;Read data from RTC memory location X into A
+    JMP L885B
 
 .^writeUserReg
-	  CPX #&80
-            BCS rts  								;Invalid if Address >=&80
-            CPX #&32
-            BCS L8820								;Write to Private RAM if Address >&32 and <&80
-            PHA
-            CLC
-            TXA
-            ADC #rtcUserBase								;Increment address by &0E bytes. First &0E bytes are for the RTC data
-            TAX
-            PLA
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
+    CPX #&80
+    BCS rts  								;Invalid if Address >=&80
+    CPX #&32
+    BCS L8820								;Write to Private RAM if Address >&32 and <&80
+    PHA
+    CLC
+    TXA
+    ADC #rtcUserBase								;Increment address by &0E bytes. First &0E bytes are for the RTC data
+    TAX
+    PLA
+    JSR WriteRtcRam								;Write data from A to RTC memory location X
 			
-.L885B      PHA
-            TXA
-            SEC
-            SBC #rtcUserBase								;Restore address by reducing address by &0E bytes. First &0E bytes are for the RTC data
-            TAX
-            PLA
-            CLC
+.L885B
+    PHA
+    TXA
+    SEC
+    SBC #rtcUserBase								;Restore address by reducing address by &0E bytes. First &0E bytes are for the RTC data
+    TAX
+    PLA
+    CLC
 .rts
-.L8863      RTS
+    RTS
 }
 
 ;write data to Private RAM &83xx (Addr = X, Data = A)
@@ -3280,7 +3282,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
             JSR OSFIND								;and open file
             CMP #&00								;has error occurred?
             BNE L9244								;no error, so save file handle and exit
-            JMP errorNotFound								;otherwise error.
+            JMP GenerateNotFoundError								;otherwise error.
 			
 .L9244      STA transientFileHandle								;save file handle to &A8
             RTS									;and return
@@ -5724,7 +5726,7 @@ osfileBlock = L02EE
             LDA #osfileReadInformation
             JSR OSFILE
             CMP #&01
-            BNE errorNotFoundIndirect
+            BNE GenerateNotFoundErrorIndirect
 	  ; SFTODO: And following on from above, these stores to block+10/11 do suggest it really is meant to the be the data length
             LDA osfileBlock + osfileReadInformationLengthOffset
             STA prvOswordBlockCopy + 10                                                   ;low byte of data length
@@ -5734,9 +5736,9 @@ osfileBlock = L02EE
 .LA083      RTS
 }
 
-.errorNotFoundIndirect
+.GenerateNotFoundErrorIndirect
 {
-.LA084      JMP errorNotFound
+.LA084      JMP GenerateNotFoundError
 }
 
 ; Open file pointed to by prvOswordBlockCopy in OSFIND mode A, generating a "Not Found" error if it fails.
@@ -5749,7 +5751,7 @@ osfileBlock = L02EE
             LDY prvOswordBlockCopy + 13                                                   ;high byte of filename in I/O processor
             JSR OSFIND
             CMP #&00
-            BEQ errorNotFoundIndirect
+            BEQ GenerateNotFoundErrorIndirect
             STA L02EE
             RTS
 }
