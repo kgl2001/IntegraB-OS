@@ -1438,35 +1438,31 @@ TmpCommandIndex = &AC
     CMP #rtcRegCIRQF:BCC ExitServiceCall
     JMP RtcInterruptHandler
 .NotServiceCall5
-    LDX #(srvCallLUEnd - srvCallLU) - 1
+    LDX #(CallTableEnd - CallTable) - 1
 .LookupLoop
-    CMP srvCallLU,X:BEQ CallHandlerX
+    CMP CallTable,X:BEQ CallHandlerX
     DEX:BPL LookupLoop
     FALLTHROUGH_TO ExitServiceCall
 
 ; Return from a service call without claiming it.
 .^ExitServiceCall
-    PLA										;restore ROM parameter
-    TAY
-    PLA										;restore ROM number
-    TAX
-    PLA										;restore service type
+    PLA:TAY:PLA:TAX:PLA
     RTS
 
 ; Return from a service call, claiming it.
 .^ExitAndClaimServiceCall
+    ; SQUASH: Wouldn't "PLA:TAY:PLA:TAX:PLA:LDA #0:RTS" be a byte shorter?
     TSX:LDA #0:STA L0103,X ; set stacked A to 0 to claim the call
     JMP ExitServiceCall ; SQUASH: BEQ ; always branch
 
 .CallHandlerX
-    TXA:ASL A:TAX ; double X as we have 16-bit entries at srvAddrLU
-    ; Push the address onto the stack and transferf control using RTS.
-    LDA srvAddrLU+1,X:PHA
-    LDA srvAddrLU,X:PHA
+    TXA:ASL A:TAX ; double X as we have 16-bit entries at HandlerTable
+    ; Push the handler address - 1 onto the stack and transfer control using RTS.
+    LDA HandlerTable+1,X:PHA
+    LDA HandlerTable,X:PHA
     RTS
 
-;Service call lookup table
-.srvCallLU
+.CallTable
     EQUB &09		;*HELP instruction expansion
     EQUB serviceConfigure	;*CONFIGURE command
     EQUB serviceStatus	;*STATUS command
@@ -1479,25 +1475,24 @@ TmpCommandIndex = &AC
     EQUB &06		;Break - Service call &06
     EQUB &08		;Unrecognised OSWORD call
     EQUB &07		;Unrecognised OSBYTE call
-.srvCallLUEnd
+.CallTableEnd
 
-;Service call execute address lookup table
-.srvAddrLU
-    EQUW service09-1	;Address for *HELP
-    EQUW service28-1	;Address for *CONFIGURE command
-    EQUW service29-1	;Address for *STATUS command
-    EQUW service04-1	;Address for Unrecognised Star command
-    EQUW serviceFF-1	;Address for Tube system initialisation
-    EQUW service10-1	;Address for SPOOL/EXEC file closure warning
-    EQUW service03-1	;Address for Autoboot
-    EQUW service01-1	;Address for Absolute workspace claim
-    EQUW service0F-1	;Address for Vectors claimed
-    EQUW service06-1	;Address for Break
-    EQUW service08-1	;Address for unrecognised OSWORD call
-    EQUW service07-1	;Address for unrecognised OSBYTE call
-.srvAddrLUEnd
+.HandlerTable
+    EQUW service09 - 1	;Address for *HELP
+    EQUW service28 - 1	;Address for *CONFIGURE command
+    EQUW service29 - 1	;Address for *STATUS command
+    EQUW service04 - 1	;Address for Unrecognised Star command
+    EQUW serviceFF - 1	;Address for Tube system initialisation
+    EQUW service10 - 1	;Address for SPOOL/EXEC file closure warning
+    EQUW service03 - 1	;Address for Autoboot
+    EQUW service01 - 1	;Address for Absolute workspace claim
+    EQUW service0F - 1	;Address for Vectors claimed
+    EQUW service06 - 1	;Address for Break
+    EQUW service08 - 1	;Address for unrecognised OSWORD call
+    EQUW service07 - 1	;Address for unrecognised OSBYTE call
+.HandlerTableEnd
 
-    ASSERT (srvCallLUEnd - srvCallLU) * 2 == (srvAddrLUEnd - srvAddrLU)
+    ASSERT (CallTableEnd - CallTable) * 2 == (HandlerTableEnd - HandlerTable)
 }
 
 ; Generate an error using the error number and error string immediately following the "JSR raiseError" call.
