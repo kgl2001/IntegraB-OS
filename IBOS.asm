@@ -1439,13 +1439,12 @@ TmpCommandIndex = &AC
     JMP RtcInterruptHandler
 .NotServiceCall5
     LDX #(srvCallLUEnd - srvCallLU) - 1
-.L8637
-    CMP srvCallLU,X
-    BEQ L864E
-    DEX
-    BPL L8637
+.LookupLoop
+    CMP srvCallLU,X:BEQ CallHandlerX
+    DEX:BPL LookupLoop
+    FALLTHROUGH_TO ExitServiceCall
 
-;restore service call parameters and exit
+; Return from a service call without claiming it.
 .^ExitServiceCall
     PLA										;restore ROM parameter
     TAY
@@ -1454,51 +1453,51 @@ TmpCommandIndex = &AC
     PLA										;restore service type
     RTS
 
+; Return from a service call, claiming it.
 .^ExitAndClaimServiceCall
-    TSX
-    LDA #0:STA L0103,X ; set A=0 when returning to caller
+    TSX:LDA #0:STA L0103,X ; set stacked A to 0 to claim the call
     JMP ExitServiceCall ; SQUASH: BEQ ; always branch
 
-.L864E
-    TXA
-    ASL A
-    TAX
-    LDA srvAddrLU+1,X
-    PHA
-    LDA srvAddrLU,X
-    PHA
+.CallHandlerX
+    TXA:ASL A:TAX ; double X as we have 16-bit entries at srvAddrLU
+    ; Push the address onto the stack and transferf control using RTS.
+    LDA srvAddrLU+1,X:PHA
+    LDA srvAddrLU,X:PHA
     RTS
 
 ;Service call lookup table
 .srvCallLU
-    EQUB &09								;*HELP instruction expansion
-    EQUB serviceConfigure						;*CONFIGURE command
-    EQUB serviceStatus							;*STATUS command
-    EQUB &04								;Unrecognised Star command
-    EQUB &FF								;Tube system initialisation
-    EQUB &10								;SPOOL/EXEC file closure warning
-    EQUB &03								;Autoboot
-    EQUB &01								;Absolute workspace claim
-    EQUB &0F								;Vectors claimed - Service call &0F
-    EQUB &06								;Break - Service call &06
-    EQUB &08								;Unrecognised OSWORD call
-    EQUB &07								;Unrecognised OSBYTE call
+    EQUB &09		;*HELP instruction expansion
+    EQUB serviceConfigure	;*CONFIGURE command
+    EQUB serviceStatus	;*STATUS command
+    EQUB &04		;Unrecognised Star command
+    EQUB &FF		;Tube system initialisation
+    EQUB &10		;SPOOL/EXEC file closure warning
+    EQUB &03		;Autoboot
+    EQUB &01		;Absolute workspace claim
+    EQUB &0F		;Vectors claimed - Service call &0F
+    EQUB &06		;Break - Service call &06
+    EQUB &08		;Unrecognised OSWORD call
+    EQUB &07		;Unrecognised OSBYTE call
 .srvCallLUEnd
 
 ;Service call execute address lookup table
 .srvAddrLU
-    EQUW service09-1							;Address for *HELP
-    EQUW service28-1							;Address for *CONFIGURE command
-    EQUW service29-1							;Address for *STATUS command
-    EQUW service04-1							;Address for Unrecognised Star command
-    EQUW serviceFF-1							;Address for Tube system initialisation
-    EQUW service10-1							;Address for SPOOL/EXEC file closure warning
-    EQUW service03-1							;Address for Autoboot
-    EQUW service01-1							;Address for Absolute workspace claim
-    EQUW service0F-1							;Address for Vectors claimed
-    EQUW service06-1							;Address for Break
-    EQUW service08-1							;Address for unrecognised OSWORD call
-    EQUW service07-1							;Address for unrecognised OSBYTE call
+    EQUW service09-1	;Address for *HELP
+    EQUW service28-1	;Address for *CONFIGURE command
+    EQUW service29-1	;Address for *STATUS command
+    EQUW service04-1	;Address for Unrecognised Star command
+    EQUW serviceFF-1	;Address for Tube system initialisation
+    EQUW service10-1	;Address for SPOOL/EXEC file closure warning
+    EQUW service03-1	;Address for Autoboot
+    EQUW service01-1	;Address for Absolute workspace claim
+    EQUW service0F-1	;Address for Vectors claimed
+    EQUW service06-1	;Address for Break
+    EQUW service08-1	;Address for unrecognised OSWORD call
+    EQUW service07-1	;Address for unrecognised OSBYTE call
+.srvAddrLUEnd
+
+    ASSERT (srvCallLUEnd - srvCallLU) * 2 == (srvAddrLUEnd - srvAddrLU)
 }
 
 ; Generate an error using the error number and error string immediately following the "JSR raiseError" call.
