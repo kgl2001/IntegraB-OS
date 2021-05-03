@@ -7385,7 +7385,8 @@ unitsChar = prv82 + &4F
 ; X=2 => " 0"  " 5"  "25"	Right-aligned in a two character field with no leading 0s
 ; X=3 => "  "  " 5"  "25"	Right-aligned in a two character field with no leading 0s, 0 shown as blank
 .^emitADecimalFormatted ; SFTODO: should have ToDateBuffer in name
-.LAB3C      JSR convertAToTensUnitsChars						;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
+    XASSERT_USE_PRV1
+            JSR convertAToTensUnitsChars						;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
             LDY transientDateBufferIndex						;get buffer pointer
 .LAB41      CPX #&00
             BEQ printTensChar
@@ -7413,12 +7414,13 @@ unitsChar = prv82 + &4F
 
 ;postfix for dates. eg 25th, 1st, 2nd, 3rd
 .dateSuffixes
-	  EQUS "th", "st", "nd", "rd"
+    EQUS "th", "st", "nd", "rd"
 
 ; Emit ordinal suffix for A (<=99) into transientDateBuffer; if C is set it will be capitalised.
 ; SFTODO: This only has one caller, can it just be inlined?
 .^emitOrdinalSuffix
-.LAB79      PHP									;save carry flag. Used to select capitalisation
+    XASSERT_USE_PRV1
+            PHP									;save carry flag. Used to select capitalisation
             JSR convertAToTensUnitsChars						;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
             LDA tensChar								;get 10s
             CMP #'1'								;check for '1'
@@ -7527,7 +7529,8 @@ ENDIF
 ; Normal return has C clear
 .emitTimeToDateBuffer ; SFTODO: "time" as in "hour/min/sec, not day of month etc"
 {
-.LABEA      LDA prvDateSFTODO2								;&44 for OSWORD 0E
+    XASSERT_USE_PRV1
+            LDA prvDateSFTODO2								;&44 for OSWORD 0E
             AND #&0F								;&04 for OSWORD 0E
             STA transientDateSFTODO1
             BNE LABF5
@@ -7598,9 +7601,7 @@ ENDIF
 
 ;Separators for Time Display? SFTODO: seems probable, need to update this comment when it becomes clear
 .dateSeparators ; SFTODO: using "date" for consistency with prvDate* variables, maybe revisit after - all the "time"/"date"/"calendar" stuff has a lot of common code
-{
-.LAC6E		EQUS " ", "/", ".", "-"
-}
+    EQUS " ", "/", ".", "-"
 
 ; SFTODO WIP COMMENTS
 ; On entry prvDateSFTODO2 is &ab
@@ -7650,7 +7651,7 @@ ENDIF
 ;            b6: (if century is emitted) 0 => emit "'" as century 1=> emit century as two digit number
 .emitDateToDateBuffer ; SFTODO: "date" here as in "the day identifier, omitting any time indicator within that day"
 {
-.LAC72
+    XASSERT_USE_PRV1
 ; SFTODO: Experimentally using nested scopes here to try to make things clearer, by making it more obvious that some labels have restricted scope - not sure if this is really helpful, let's see
 ; SFTODO: Chopping the individual blocks up into macros might make things clearer?
 ; 1. Optionally emit the day of the week, optionally truncated and/or capitalised, and optionally followed by some punctuation. prvDataSFTODO2's high nybble controls most of those options, although prvDataSFTODO3=0 will prevent punctuation and cause an early return.
@@ -7794,7 +7795,8 @@ ENDIF
 ;set buffer pointer to 0
 .initDateBufferAndEmitTimeAndDate
 {
-.LAD63      LDA prvDateSFTODO4							;get OSWORD X register (lookup table LSB) SFTODO: not sure this comment is always true, e.g. we can be called via *TIME
+    XASSERT_USE_PRV1
+            LDA prvDateSFTODO4							;get OSWORD X register (lookup table LSB) SFTODO: not sure this comment is always true, e.g. we can be called via *TIME
             STA transientDateBufferPtr							;and save
             LDA prvDateSFTODO4 + 1							;get OSWORD Y register (lookup table MSB) SFTODO: ditto
             STA transientDateBufferPtr + 1						;and save
@@ -7809,7 +7811,7 @@ ENDIF
 
 ; SFTODO: Next line implies b7 of prvDateSFTODO1 "mainly" controls ordering
 .emitTimeAndDateToDateBuffer
-.LAD7F      BIT prvDateSFTODO1							;b7 of prvDateSFTODO1 controls whether time or date comes first
+            BIT prvDateSFTODO1							;b7 of prvDateSFTODO1 controls whether time or date comes first
             BMI dateFirst
             JSR emitTimeToDateBuffer
             JSR emitSeparatorToDateBuffer
@@ -7829,7 +7831,8 @@ ENDIF
 ;        %xxx1 => emit " " and stop
 .emitSeparatorToDateBuffer
 {
-.LAD96      LDA prvDateSFTODO1
+    XASSERT_USE_PRV1
+            LDA prvDateSFTODO1
             AND #&F0
             CMP #&D0
             BEQ emitSpaceAtSpace
@@ -7858,10 +7861,11 @@ ENDIF
 }
 
 ; SFTODO: "Ish" in name because I think this will be affected by the bug in calculateDaysBetween1stJanAndPrvDateSFTODOIsh
+; SFTODO: This has only one caller
 .calculateDaysBetween1stJan1900AndPrvDateSFTODOIsh
 {
-; SFTODO: This has only one caller
-.LADCB      LDA #0
+    XASSERT_USE_PRV1
+            LDA #0
             STA prvDateSFTODO0
             SEC
             LDA prvDateCentury
@@ -7922,7 +7926,9 @@ ENDIF
 .convertDaysSince1stJan1900ToDate
 {
 daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
-.LAE2C      LDA #19
+
+    XASSERT_USE_PRV1
+            LDA #19
             STA prvDateCentury
             SEC
             LDA prvDateSFTODO4
@@ -7986,7 +7992,8 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; SFTODO: This is like incrementPrvDateRespectingOpenElements but (presumably) we know the day of month is open and we increment it by a week not the one day incrementPrvDateRespectingOpenElements would do when it's open.
 ; SFTODO: This has only one caller
 .^incrementPrvDateByOneWeek
-.LAEBA      CLC
+    XASSERT_USE_PRV1
+            CLC
             LDA prvDateDayOfMonth
             ADC #7
             STA prvDateDayOfMonth
@@ -8004,7 +8011,8 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; SFTODO: I am still figuring this code out, but what I think this is doing is incrementing the date part of PrvDate* - it's not a simple increment by 1, because we do *not* change anything the user has explicitly specified, we only change "open" elements the user didn't specify. Note that we need to continue to respect openness (it's really more that we're respecting *non*-openness) as we cascade the change into more significant parts of the date when the increment moves an element out of range.
 ; SFTODO: Whether we succeeded or not is indicated by C and V flags - there is probably a common pattern of these across all the date code, once I get a clearer picture
 .^incrementPrvDateRespectingOpenElements
-.LAEDE      LDA #&02 ; SFTODO: test bit indicating prvDateDayOfMonth is &FF
+    XASSERT_USE_PRV1
+            LDA #&02 ; SFTODO: test bit indicating prvDateDayOfMonth is &FF
             BIT prv2Flags
             BEQ prvDayOfMonthNotOpen ; SFTODO: Not quite sure about this - I think this is saying "it wasn't specified by the user", but *we* may have filled it in the meantime - the fact we go and INC it kind of implies we have
             INC prvDateDayOfMonth
@@ -8060,7 +8068,8 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; SFTODO: I think we return with C and V clear if things are OK; we return with C clear and V set if the year gets decremented, or C set (not sure about V, probably clear) if the century gets decremented below 0
 .decrementPrvDateBy1
 {
-.LAF44      DEC prvDateDayOfMonth
+    XASSERT_USE_PRV1
+            DEC prvDateDayOfMonth
             BNE clvClcRts
             LDY prvDateMonth
             DEY
@@ -8089,6 +8098,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; SFTODO: This seems (ignoring for the moment the work done when it does JMP SFTODOProbCalculateDayOfWeekClcRts) to fix up missing parts (&FF) of the date (not time) with the relevant component of 1900/01/01 (ish; I haven't traced the LAFAA branch yet either)
 ; SFTODO: This has only one caller
 .^SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: I think this is a poor (incomplete) label, because in the yearOpen case we are adjusting the date until we match the fixed parts
+    XASSERT_USE_PRV1
 .LAF79      LDA prv2Flags
             AND #&08
             BNE yearOpen ; SFTODO: branch if prvDateYear is &FF, i.e. user didn't supply a year
@@ -8158,6 +8168,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ;SFTODOWIP
 {
 .^LAFF9
+    XASSERT_USE_PRV1
 	  ; Copy prvDate{Century,Year,Month,DayOfMonth,DayOfWeek} to prv2{...} SFTODO: I suspect we do this because we want to retain the original user partial date specification as we will in the answers in prvDate*, which is where we will print the final answer from
 	  LDX #&04
 .LAFFB      LDA prvDateCentury,X
@@ -8330,7 +8341,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; On exit, C is clear iff the calculation succeeded. If C is set, V set indicates "Bad date", V clear indicates "Mismatch".
 .dateCalculation
 {
-.LB133
+    XASSERT_USE_PRV1
 	  ; Set the prvDate* addresses relating to date (as opposed to time) to &FF. SFTODO: PROB TRUE BUT CHECK This is used to indicate that the user has not specified any values for them; we fill these in as we parse the command line and the &FF values left over are the ones we need to calculate.
 	  LDX #&04
             LDA #&FF
@@ -8421,7 +8432,8 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; Take the parsed 2-byte integer year at L00B0 and populate prvDate{Year,Century}, defaulting the century to the current century if a two digit year is specified.
 .interpretParsedYear
 {
-.LB1CA      LDA L00B0 ; SFTODO: low byte of parsed year from command line
+    XASSERT_USE_PRV1
+            LDA L00B0 ; SFTODO: low byte of parsed year from command line
             STA prvA
             LDA L00B1 ; SFTODO: high byte of parsed year from command line
             STA prvB
