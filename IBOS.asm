@@ -6711,6 +6711,8 @@ osfileBlock = L02EE
     ; time-base frequency.
     LDX #rtcRegA:JSR ReadRtcRam:AND #rtcRegADV1:JSR WriteRtcRam
     ; Set DSE in register B according to userRegOsModeShx and force SET off.
+    ; DELETE: If the DSE feature in the RTC doesn't use the right start/end dates for the UK,
+    ; it might not be worth retaining the supporting code.
     LDX #userRegOsModeShx:JSR ReadUserReg
     LDX #0
     AND #&10:BEQ NoAutoDSTAdjust ; test auto DST bit of userRegOsModeShx SFTODO: named constant?
