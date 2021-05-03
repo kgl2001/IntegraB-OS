@@ -10495,13 +10495,11 @@ ScreenStart = &3000
 ; SQUASH: This has only a single caller
 ; SQUASH: Use decrement-by-one technique from http://www.obelisk.me.uk/6502/algorithms.html
 .DecrementPrintBufferFree
-{
     SEC
     LDA prvPrintBufferFreeLow:SBC #1:STA prvPrintBufferFreeLow
     LDA prvPrintBufferFreeMid:SBC #0:STA prvPrintBufferFreeMid
     DECCC prvPrintBufferFreeHigh
     RTS
-}
 
 ;code relocated to &0380
 ;this code either reads, writes or compares the contents of ROM Y address &8000 with A
