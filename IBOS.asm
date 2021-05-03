@@ -573,7 +573,7 @@ prvDateSFTODO1b = prvOswordBlockCopy + 1 ; SFTODO: Use as a copy of "final" tran
 prvDateSFTODO2 = prvOswordBlockCopy + 2
 prvDateSFTODO3 = prvOswordBlockCopy + 3
 prvDateSFTODO4 = prvOswordBlockCopy + 4 ; 2 bytes SFTODO!?
-prvDateSFTODO6 = prvOswordBlockCopy + 6
+prvDateSFTODO6 = prvOswordBlockCopy + 6 ; SFTODO: I am thinking 6/7 are actually the high word of the 32-bit address at SFTODO4, and so we should probably refer to them as SFTODO4+2/3
 prvDateSFTODO7 = prvOswordBlockCopy + 7
 ; SFTODO: I suspect the following locations are not arbitrary and have some relation to OSWORD &E; if so they may be best renamed to indicate this after, not sure until I've been through all the code
 prvDateCentury = prvOswordBlockCopy + 8
@@ -9250,16 +9250,20 @@ column = prvC
 ; SFTODO: *Roughly* speaking this is copying provOswordBlockCopy+1 bytes of data from prvDateBuffer to the 32-bit address at prvOswordBlockOrigAddr+4 in a tube-aware way, although we also have the option use b7 of prvOswordBlockCopy+7 to explicitly ignore tube.
 {
 Ptr = &A8
+AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 
 .^LB7BC
     XASSERT_USE_PRV1
-    BIT prvOswordBlockCopy + 7:BMI LB7F9
-    BIT tubePresenceFlag:BPL LB7F9 ; SFTODO: BRANCH IF NO TUBE
+    ; SFTODO: Is the next line technically incorrect? We should probably only write to the host
+    ; if the high word is &FFFF, not just if the high bit of the high word is set.
+    BIT prvDateSFTODO7:BMI HostWrite
+    BIT tubePresenceFlag:BPL HostWrite
+
+    ; Copy into the parasite.
 .ClaimLoop
     LDA #tubeEntryClaim + tubeClaimId:JSR tubeEntry:BCC ClaimLoop
-
-    CLC:LDA prvOswordBlockOrigAddr:ADC #4:TAX ; SFTODO: magic
-    LDA prvOswordBlockOrigAddr + 1:ADC #0:TAY
+    CLC:LDA prvOswordBlockOrigAddr:ADC #lo(AddressOffset):TAX
+    LDA prvOswordBlockOrigAddr + 1:ADC #hi(AddressOffset):TAY
     LDA #tubeEntryMultibyteHostToParasite:JSR tubeEntry
     LDY #0
 .TubeWriteLoop
@@ -9271,12 +9275,13 @@ Ptr = &A8
     LDA #tubeEntryRelease + tubeClaimId:JSR tubeEntry
     CLC
     RTS
-			
-.LB7F9
+
+    ; Copy into the host.
+.HostWrite
     ; Make Ptr point to the address at offset 4..5 in the original OSWORD block.
     LDA prvOswordBlockOrigAddr:STA Ptr
     LDA prvOswordBlockOrigAddr + 1:STA Ptr + 1
-    LDY #4:LDA (Ptr),Y:TAX ; SFTODO: magic
+    LDY #AddressOffset:LDA (Ptr),Y:TAX
     INY:LDA (Ptr),Y:STA Ptr + 1
     STX Ptr
     ; Now copy prvOswordBlockCopy + 1 bytes from FromBase to that address.
