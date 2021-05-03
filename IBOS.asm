@@ -3573,7 +3573,7 @@ ENDIF
     JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:AND #CapitaliseMask
     ; SQUASH: Re-use another RTS here and fall through.
     CMP #'N':BEQ WriteNfs
-    CMP #'D':BEQ WriteDfs ; carry will be set if we branch
+    CMP #'D':BEQ WriteDfs ; C will be set if we branch
     RTS
 .WriteNfs
     CLC
@@ -3587,36 +3587,31 @@ ENDIF
 ;Read / Write *CONF. <option> <n> parameters
 .Conf1
 {
-	  BCS Conf1Write
-            JSR PrintConfigNameAndGetValue
-            JMP PrintADecimalPadNewline
+    BCS Conf1Write
+    JSR PrintConfigNameAndGetValue
+    JMP PrintADecimalPadNewline
 			
 .Conf1Write
-            JSR convertIntegerDefaultDecimalChecked
-            JMP SetConfigValueA ; SFTODO: move Conf1 block so we can fall through?
+    JSR convertIntegerDefaultDecimalChecked
+    JMP SetConfigValueA ; SQUASH: move Conf1 block so we can fall through?
 }
 			
-; SFTODO: If we moved this to just before PrintADecimal we could fall through into it
+; SQUASH: If we moved this to just before PrintADecimal we could fall through into it
 .PrintADecimalPad
-{
-.L94F8      SEC
-            JMP PrintADecimal								;Convert binary number to numeric characters and write characters to screen
-}
+    SEC:JMP PrintADecimal
 
 .PrintADecimalPadNewline
-{
-.L94FC      JSR PrintADecimalPad
-            JMP OSNEWL
-}
-			
+    JSR PrintADecimalPad
+    JMP OSNEWL
+
 .convertIntegerDefaultDecimalChecked
 {
-.L9502      JSR convertIntegerDefaultDecimal
-            BCS GenerateBadParameterIndirect
-            RTS
+    JSR convertIntegerDefaultDecimal
+    BCS GenerateBadParameterIndirect ; SQUASH: BCC some-other-rts and fall through
+    RTS
 			
 .GenerateBadParameterIndirect
-            JMP GenerateBadParameter
+    JMP GenerateBadParameter
 }
 
 
