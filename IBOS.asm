@@ -1774,14 +1774,14 @@ firstDigitCmdPtrY = &BB
 {
 ;Condition then read from Private RAM &83xx (Addr = X, Data = A)
 .L8817
-    JSR setXMsb								;Set msb of Addr (Addr = Addr OR &80)
-    JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-    JMP L8826								;Clear msb of Addr (Addr = Addr & &7F)
+    JSR SetXMsb
+    JSR ReadPrivateRam8300X
+    JMP L8826
 			
 ;Condition then write to Private RAM &83xx (Addr = X, Data = A)
 .L8820
-    JSR setXMsb								;Set msb of Addr (Addr = Addr OR &80)
-    JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+    JSR SetXMsb
+    JSR WritePrivateRam8300X
 
 ;Clear msb of Addr (Addr = Addr & &7F)			
 .L8826
@@ -1793,8 +1793,7 @@ firstDigitCmdPtrY = &BB
     RTS
 
 ;Set msb of Addr (Addr = Addr OR &80)
-.setXMsb
-.L882D
+.SetXMsb
     PHA
     TXA
     ORA #&80
@@ -1853,7 +1852,7 @@ firstDigitCmdPtrY = &BB
 }
 
 ;write data to Private RAM &83xx (Addr = X, Data = A)
-.writePrivateRam8300X
+.WritePrivateRam8300X
 {
 .L8864      PHP
             SEI
@@ -1864,7 +1863,7 @@ firstDigitCmdPtrY = &BB
 }
 
 ;read data from Private RAM &83xx (Addr = X, Data = A)
-.readPrivateRam8300X
+.ReadPrivateRam8300X
 {
 .L8870      PHP
             SEI
@@ -2250,7 +2249,7 @@ ptr = &00 ; 2 bytes
 ;Unrecognised OSBYTE call - Service call &07
 ;A, X & Y stored in &EF, &F0 & F1 respecively
 .service07  LDX #prvOsMode - prv83								;select OSMODE
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR ReadPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&00								;OSMODE 0?
             BNE osbyte6C								;Branch if OSMODE 1-5
             LDA oswdbtA								;get OSBYTE command
@@ -2362,14 +2361,14 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     ;
     ; We then set rtcRegBUIE iff prvRtcUpdateEndedOptions is non-0; this enables the RTC update
     ; ended interrupt iff RtcInterruptHandler has something to do when it triggers.
-    LDX #prvRtcUpdateEndedOptions - prv83:JSR readPrivateRam8300X
+    LDX #prvRtcUpdateEndedOptions - prv83:JSR ReadPrivateRam8300X
     PHA
     STA oswdbtY
     LDA oswdbtX:LSR A:LSR A
     AND oswdbtY
     EOR oswdbtX
     AND #prvRtcUpdateEndedOptionsMask
-    JSR writePrivateRam8300X
+    JSR WritePrivateRam8300X
     LDX #rtcRegB
     CMP #0
     BNE EnableUpdateEndedInterrupt
@@ -2522,7 +2521,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             BNE purgeNow
             JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDX #prvPrintBufferPurgeOption - prv83
-            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             JMP PrintOnOffOSNEWLExitSC
 
 .purgeNow   PRVEN 								;switch in private RAM
@@ -2531,7 +2530,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 
 .purgeOnOrOff
 	  LDX #prvPrintBufferPurgeOption - prv83
-            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 			
@@ -2794,7 +2793,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     JMP ExitAndClaimServiceCall
 .ShowOsMode
     JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
-    LDX #prvOsMode - prv83:JSR readPrivateRam8300X
+    LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X
 .^SecPrintADecimalOSNEWLPrvDisExitAndClaimServiceCall
     SEC:JSR PrintADecimal
     JMP OSNEWLPrvDisExitAndClaimServiceCall
@@ -2859,10 +2858,10 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     JSR ParseOnOff:BCC ParsedOK
     LDA (transientCmdPtr),Y:CMP #'?':BNE GenerateSyntaxErrorIndirect2
     JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
-    LDX #prvShx - prv83:JSR readPrivateRam8300X
+    LDX #prvShx - prv83:JSR ReadPrivateRam8300X
     JMP PrintOnOffOSNEWLExitSC
 .ParsedOK
-    LDX #prvShx - prv83:JSR writePrivateRam8300X
+    LDX #prvShx - prv83:JSR WritePrivateRam8300X
     JMP ExitAndClaimServiceCall
 }
 
@@ -2926,10 +2925,10 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 .^disableTube
 .L8FC8      LDA #&00
             LDX #prvSFTODOTUBE2ISH - prv83
-            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&FF
             LDX #prvSFTODOTUBEISH - prv83
-            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&00
             STA tubePresenceFlag
             LDA #osargsReadFilingSystemNumber
@@ -2941,7 +2940,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
             JSR doOsbyteIssueServiceRequest
             LDA #&00
             LDX #prvSFTODOTUBEISH - prv83
-            JMP writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+            JMP WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
 
 .turnTubeOn LDA #&81
             STA SHEILA+&E0
@@ -2960,9 +2959,9 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
             BMI exitSCIndirect							;nothing to do if already on
             LDA #&FF
             LDX #prvSFTODOTUBE2ISH - prv83
-            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX #prvSFTODOTUBEISH - prv83
-            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX #&FF								;service type &FF - tube system main initialisation
             LDY #&00
             JSR doOsbyteIssueServiceRequest						;issue paged ROM service request
@@ -2980,7 +2979,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
             JSR doOsbyteIssueServiceRequest						;issue paged ROM service request
             LDA #&00
             LDX #prvSFTODOTUBEISH - prv83
-            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&7F
 .L9045      BIT SHEILA+&E2
             BVC L9045
@@ -3074,7 +3073,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 .SwitchInShadow ; SFTODO: Should maybe change this and related labels, since *S* really does "weird stuff"
     LDA #4:JSR SetOsModeA
     LDA #0:STA osShadowRamFlag
-    LDX #prvShx - prv83:LDA #&FF:JSR writePrivateRam8300X ; set SHX off SFTODO: magic
+    LDX #prvShx - prv83:LDA #&FF:JSR WritePrivateRam8300X ; set SHX off SFTODO: magic
     LDA #vduSetMode:JSR OSWRCH:LDA currentMode:JSR OSWRCH
     BIT tubePresenceFlag:BPL NoTube
     JSR disableTube
@@ -3984,7 +3983,7 @@ ENDIF
 	  LDA lastBreakType
             BNE notSoftReset1
             LDX #&43
-            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             PHA ; SFTODO: Why can't we just do the read from &8343 *after* JSR setDfsNfsPriority and avoid this PHA/PLA?
             JSR setDfsNfsPriority
             PLA
@@ -4059,7 +4058,7 @@ ENDIF
 }
 
 ;Absolute workspace claim - Service call &01
-; SFTODO: I think this code is high enough in the IBOS ROM we don't need to be indirecting via writePrivateRam8300X and could just set PRV1 and access directly?
+; SFTODO: I think this code is high enough in the IBOS ROM we don't need to be indirecting via WritePrivateRam8300X and could just set PRV1 and access directly?
 .service01
 {
 tmp = &A8
@@ -4068,13 +4067,13 @@ tmp = &A8
             STA ramsel								;shadow off
             LDX #&07								;start at address 7
             LDA #&FF								;set data to &FF
-.writeLoop  JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+.writeLoop  JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             DEX									;repeat
             BNE writeLoop								;until 0. (but not writing to &8300)
             LDA romselCopy								;get current ROM number
             AND #maxBank								;mask
 	  ASSERT prvIbosBankNumber == prv83 + 0
-            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             BIT L03A4								;?
             BPL L96EE
             JMP ExitServiceCallIndirect
@@ -4082,7 +4081,7 @@ tmp = &A8
 .L96EE      LDX #userRegPrvPrintBufferStart
             JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             LDX #prvPrvPrintBufferStart-prv83                                                       ; SFTODO: not too happy with this format
-            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDX lastBreakType
             BEQ softReset
             LDX #userRegOsModeShx							;0-2: OSMODE / 3: SHX
@@ -4090,14 +4089,14 @@ tmp = &A8
             PHA
             AND #&07								;mask OSMODE value
             LDX #prvOsMode - prv83							;select OSMODE register
-            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             JSR assignDefaultPseudoRamBanks						;Assign default pseudo RAM banks to absolute RAM banks
             PLA
             AND #&08								;mask off SHX bit
             BEQ shxInA
             LDA #&FF
 .shxInA     LDX #prvShx - prv83							;select SHX register (&08: On, &FF: Off)
-            JSR writePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
 .softReset
 .L9719      JSR IbosSetUp
             LDX #userRegModeShadowTV							;get TV / MODE parameters
@@ -4132,10 +4131,10 @@ tmp = &A8
             LDX lastBreakType								;Read Hard / Soft Break
             BNE dontPreserveScreenMode							;Branch on hard break (power on / Ctrl Break)
             LDX #prvOsMode - prv83							;select OSMODE
-            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ dontPreserveScreenMode							;branch if OSMODE=0
             LDX #prvSFTODOMODE - prv83							;read mode? SFTODO: OK, so probably prvSFTODOMODE is the (configured?) screen mode? That would account for b7 being shadow-ish
-            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             JSR OSWRCH								;write mode?
             JMP screenModeSet
 
@@ -4307,7 +4306,7 @@ tmp = &A8
 ;Vectors claimed - Service call &0F
 {
 .^service0F  LDX #&43
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR ReadPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             AND #&80
             PHA
             LDA #&00
@@ -4329,7 +4328,7 @@ tmp = &A8
             TSX
             ORA L0101,X
 .L9896      LDX #&43
-            JSR writePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
+            JSR WritePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             PLA
             JMP ExitServiceCall								;restore service call parameters and exit
 }
@@ -4341,7 +4340,7 @@ tmp = &A8
 {
 ramPresenceFlags = &A8
 .L989F      LDX #prvOsMode - prv83							;select OSMODE
-            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&00								;If OSMODE=0 SFTODO: Could save a byte with "TAX"
             BEQ rts									;Then leave startup message alone
             LDA #osbyteEnableDisableStartupMessage					;Startup message suppression and !BOOT option status
@@ -6384,7 +6383,7 @@ osfileBlock = L02EE
             CLC
             ADC #prvPseudoBankNumbers - prv83
             TAX
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR ReadPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
 .LA48B      INY
 .parsedDecimalOK
             CMP #&10
@@ -6606,7 +6605,7 @@ osfileBlock = L02EE
             JSR unplugBanksUsingTransientRomBankMask
 	  ; SFTODO: Next bit of code is either claiming or not claiming the service call based on prvSFTODOTUBEISH; it will return with A=&10 (this call) or 0.
 .finish     LDX #prvSFTODOTUBEISH - prv83
-            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             EOR #&FF
             AND #&10
             TSX
@@ -8816,7 +8815,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     ; DELETE: Is the support for notifying user code of update ended interrupts really useful?
     ; Access to the RTC via OSBYTE calls will automatically wait for updates to pass, and any
     ; code dealing directly with the RTC chip could just wait for updates to pass itself.
-    LDX #prvRtcUpdateEndedOptions - prv83:JSR readPrivateRam8300X
+    LDX #prvRtcUpdateEndedOptions - prv83:JSR ReadPrivateRam8300X
     PHA
     AND #prvRtcUpdateEndedOptionsGenerateUserEvent
     BEQ DontGenerateUserEvent
@@ -9812,7 +9811,7 @@ ibosCNPVIndex = 6
             CPY #&FF
             BNE osbyte87Handler
             LDX #prvOsMode - prv83								;select OSMODE
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR ReadPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBA56								;Branch if OSMODE=0
             CMP #&01								;Check if OSMODE=1
             BEQ LBA56								;Branch if OSMODE=1
@@ -9948,7 +9947,7 @@ ibosCNPVIndex = 6
 .LBB00      TXA
             PHA
             LDX #prvOsMode - prv83								;select OSMODE
-            JSR readPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR ReadPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             BEQ LBB18								;Branch if OSMODE=0
             CMP #&04								;OSMODE 4?
             BNE LBB0F								;Branch if OSMODE<>4 (OSMODE 1-3)
@@ -9974,7 +9973,7 @@ ibosCNPVIndex = 6
             CPX #osErrorEnd - osError							;until &15
             BNE LBB24								;loop
             LDX #prvOsMode - prv83							;select OSMODE
-            JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
+            JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             ORA #'0'								;convert OSMODE to character printable OSMODE (OSMODE = OSMODE + &30)
             STA L0113								;write OSMODE character to error text
             JMP L0100								;Generate BRK and error
@@ -10052,7 +10051,7 @@ ibosCNPVIndex = 6
     LDA ramselCopy:AND_NOT ramselShen:STA ramselCopy:STA ramsel
     PLA:PHA ; peek original OSWRCH A=new mode
     AND_NOT shadowModeOffset ; SQUASH: redundant as we didn't take "BCS EnteringShadowMode" branch above
-    LDX #prvSFTODOMODE - prv83:JSR writePrivateRam8300X
+    LDX #prvSFTODOMODE - prv83:JSR WritePrivateRam8300X
     LDA #ModeChangeStateEnteringNonShadowMode:STA ModeChangeState
     PLA:JMP ProcessWrchv
 
@@ -10060,7 +10059,7 @@ ibosCNPVIndex = 6
     LDA ramselCopy:ORA #ramselShen:STA ramselCopy:STA ramsel
     JSR maybeSwapShadow1
     PLA:PHA ; peek original OSWRCH A=new mode
-    ORA #shadowModeOffset:LDX #prvSFTODOMODE - prv83:JSR writePrivateRam8300X
+    ORA #shadowModeOffset:LDX #prvSFTODOMODE - prv83:JSR WritePrivateRam8300X
     ; SQUASH: Share STA ModeChangeState:PLA:JMP ProcessWrchv with code above?
     LDA #ModeChangeStateEnteringShadowMode:STA ModeChangeState
     PLA:JMP ProcessWrchv
@@ -10133,7 +10132,7 @@ ScreenStart = &3000
 ; having SHX enabled (e.g. make it the default). Acorn shadow RAM on the B+ and M128 always
 ; behaves as if SHX is enabled, so having it on reduces scope for surprise program corruption.
 .SwapShadowIfShxEnabled
-    LDX #prvShx - prv83:JSR readPrivateRam8300X:BEQ Rts ; nothing to do if SHX off
+    LDX #prvShx - prv83:JSR ReadPrivateRam8300X:BEQ Rts ; nothing to do if SHX off
     ; Blank out the screen while we're copying data around. There's a mode change pending in
     ; the near future and that will undo this change.
     LDA #&08:STA crtcHorzTotal
@@ -10171,7 +10170,7 @@ ScreenStart = &3000
 
     ; If we're in OSMODE 0, don't install vector handlers, set up the print buffer or enable
     ; shadow RAM.
-    LDX #prvOsMode - prv83:JSR readPrivateRam8300X:BEQ OsMode0
+    LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X:BEQ OsMode0
     JSR installOSPrintBufStub
 
     ; Save the parent values of BYTEV, WORDV, WRCHV and RDCHV at parentVectorTbl1 and install
@@ -10191,7 +10190,7 @@ ScreenStart = &3000
 
     JSR InitPrintBuffer
     LDA lastBreakType:BNE DisableShadow ; branch if not soft reset
-    LDX #prvSFTODOMODE - prv83:JSR readPrivateRam8300X:BPL DisableShadow
+    LDX #prvSFTODOMODE - prv83:JSR ReadPrivateRam8300X:BPL DisableShadow
     ; Enable shadow RAM.
     LDA #ramselShen:STA ramselCopy:STA ramsel ; set ramselShen (SFTODO: and clear Prvs* too; is this safe? probably...)
     LDA vduStatus:ORA #vduStatusShadow:STA vduStatus
@@ -10347,7 +10346,7 @@ ScreenStart = &3000
     PRVEN
     TSX:LDA L0107,X:AND #flagV:BEQ Count ; test V in stacked flags from caller
     ; We're purging the buffer.
-    LDX #prvPrintBufferPurgeOption - prv83:JSR readPrivateRam8300X:BEQ PurgeOff
+    LDX #prvPrintBufferPurgeOption - prv83:JSR ReadPrivateRam8300X:BEQ PurgeOff
     JSR purgePrintBuffer
 .PurgeOff
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
@@ -10634,11 +10633,11 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
 .SanitisePrvPrintBufferStart
 {
     ; SQUASH: We could change "BCC Rts" below to use the RTS above and make the JSR:RTS a JMP.
-    LDX #prvPrvPrintBufferStart - prv83:JSR readPrivateRam8300X
+    LDX #prvPrvPrintBufferStart - prv83:JSR ReadPrivateRam8300X
     CMP #&90:BCC UseAC
     CMP #&AC:BCC Rts
 .UseAC
-    LDA #&AC:JSR writePrivateRam8300X
+    LDA #&AC:JSR WritePrivateRam8300X
 .Rts
     RTS
 }
@@ -10654,7 +10653,7 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
 SAVE "IBOS-01.rom", start, end
 
 ; SFTODO: Would it be possible to save space by factoring out "LDX #prvOsMode:JSR
-; readPrivateRam8300X" into a subroutine?
+; ReadPrivateRam8300X" into a subroutine?
 
 ; SFTODO: Could we save space by factoring out some common-ish sequences of code
 ; to set or clear various bits of ROMSEL/RAMSEL and their RAM copies?
