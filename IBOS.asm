@@ -162,6 +162,8 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 userRegRamPresenceFlags = &7F ; b0 set=RAM in banks 0-1, b1 set=RAM in banks 2-3, ...
 
 ; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
+TransientZP = &A8
+TransientZPSize = 8
 ; SFTODO: I am thinking these names - maybe now, and probably also in "final" vsn - should have the actual address as part of the name - because different bits of code use the same location for different things, this will help to make it a bit more obvious if two bits of code are trying to use the same location for two different purposes at once (mainly important when we come to modify the code, but just might be relevant if there are bugs in the existing code)
 transientOs4243SwrAddr = &A8 ; 2 bytes
 transientFileHandle = &A8 ; 1 byte
@@ -1817,7 +1819,7 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
 ; For X<=&31, the user register is held in RTC register X+rtcUserBase.
 ; For &32<=X<=&7F, the user register is held in private RAM at &8380+X.
 ; For X>=&80, these subroutines do nothing.
-; SFTODO: Does the code rely on that behaviour for X>=&80?
+; SQUASH: Does the code rely on that behaviour for X>=&80?
 ; SQUASH: These two routines start off very similar, can we share code?
 .^ReadUserReg
     CPX #&80:BCS Rts ; no-op for X>=&80
@@ -1885,21 +1887,20 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
     RTS
 }
 
-.stackTransientCmdSpace
+.stackTransientCmdSpace ; SFTODO: RENAME "SAVE"?
 {
-.L88A0      LDX #&07
-.L88A2      LDA L00A8,X								;Copy 8 values from &AF-&A8 to the stack
-            PHA
-            DEX
-            BPL L88A2
-            PHA										;Create space on the stack
-            PHA										;for a return address.
-            TSX
-            LDA L010B,X								;Copy the original return address
-            STA L0101,X								;into the space just created.
-            LDA L010C,X
-            STA L0102,X
-            RTS										;Return to the caller.
+    LDX #TransientZPSize - 1
+.Loop
+    LDA TransientZP,X
+    PHA
+    DEX:BPL Loop
+    ; Copy our caller's return address onto the top of the stack so we can return successfully.
+    ; SQUASH: Can't we do TSX:LDA thinkcarefully,X:PHA:LDA thinkcarefully,X:PHA:RTS?
+    ; SQUASH: Could we do TSX:JMP (thinkcarefully,X)?
+    PHA:PHA:TSX
+    LDA L0103 + TransientZPSize,X:STA L0101,X
+    LDA L0104 + TransientZPSize,X:STA L0102,X
+    RTS
 }
 
 ; SFTODO: This currently only has one caller and could be inlined.
