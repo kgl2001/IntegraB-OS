@@ -9245,54 +9245,61 @@ column = prvC
 
 ; SFTODO: Mostly un-decoded
 {
-.^LB7BC	  BIT prvOswordBlockCopy + 7
-            BMI LB7F9
-            BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
-            BPL LB7F9
-.LB7C6      LDA #tubeEntryClaim + tubeClaimId
-            JSR tubeEntry
-            BCC LB7C6
-            CLC
-            LDA prvOswordBlockOrigAddr
-            ADC #&04
-            TAX
-            LDA prvOswordBlockOrigAddr + 1
-            ADC #&00
-            TAY
-            LDA #&01
-            JSR tubeEntry
-            LDY #&00
-.LB7E1      LDA prv80+&00,Y
-.LB7E4      BIT SHEILA+&E4
-            BVC LB7E4
-            STA SHEILA+&E5
-            INY
-            CPY prvOswordBlockCopy + 1
-            BNE LB7E1
-            LDA #tubeEntryRelease + tubeClaimId
-            JSR tubeEntry
-            CLC
-            RTS
+.^LB7BC
+    XASSERT_USE_PRV1
+    BIT prvOswordBlockCopy + 7
+    BMI LB7F9
+    BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
+    BPL LB7F9
+.LB7C6
+    LDA #tubeEntryClaim + tubeClaimId
+    JSR tubeEntry
+    BCC LB7C6
+    CLC
+    LDA prvOswordBlockOrigAddr
+    ADC #&04
+    TAX
+    LDA prvOswordBlockOrigAddr + 1
+    ADC #&00
+    TAY
+    LDA #&01
+    JSR tubeEntry
+    LDY #&00
+.LB7E1
+    LDA prv80+&00,Y
+.LB7E4
+    BIT SHEILA+&E4
+    BVC LB7E4
+    STA SHEILA+&E5
+    INY
+    CPY prvOswordBlockCopy + 1
+    BNE LB7E1
+    LDA #tubeEntryRelease + tubeClaimId
+    JSR tubeEntry
+    CLC
+    RTS
 			
-.LB7F9      LDA prvOswordBlockOrigAddr
-            STA L00A8
-            LDA prvOswordBlockOrigAddr + 1
-            STA L00A9
-            LDY #&04
-            LDA (L00A8),Y
-            TAX
-            INY
-            LDA (L00A8),Y
-            STA L00A9
-            STX L00A8
-            LDY #&00
-.LB811      LDA prv80+&00,Y
-            STA (L00A8),Y
-            INY
-            CPY prvOswordBlockCopy + 1
-            BNE LB811
-            CLC
-            RTS
+.LB7F9
+    LDA prvOswordBlockOrigAddr
+    STA L00A8
+    LDA prvOswordBlockOrigAddr + 1
+    STA L00A9
+    LDY #&04
+    LDA (L00A8),Y
+    TAX
+    INY
+    LDA (L00A8),Y
+    STA L00A9
+    STX L00A8
+    LDY #&00
+.LB811
+    LDA prv80+&00,Y
+    STA (L00A8),Y
+    INY
+    CPY prvOswordBlockCopy + 1
+    BNE LB811
+    CLC
+    RTS
 }
 
 {
