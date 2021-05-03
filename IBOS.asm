@@ -621,6 +621,7 @@ prvShx = prv83 + &3D ; working copy of SHX, initialised from relevant bit of use
 prvSFTODOTUBE2ISH = prv83 + &40
 prvSFTODOTUBEISH = prv83 + &41
 prvTubeReleasePending = prv83 + &42 ; used during OSWORD 42; &FF means we have claimed the tube and need to release it at end of transfer, 0 means we don't
+prvSFTODOFILEISH = prv83 + &43
 ; SFTODO: If private RAM is battery backed, could we just keep OSMODE in
 ; prvOsMode and not bother with the copy in the low bits of userRegOsModeShx?
 ; That would save some code.
@@ -3753,8 +3754,8 @@ ENDIF
     ; Before doing "filing system stuff" which logically relates to this service call, we use
     ; it just as a convenient way to execute the following code at a suitable point during
     ; reset.
-    ;
-    ; If KEYV is set up to use the extended vector mechanism by a ROM which has &47 ("G") at
+
+    ; If KEYV is set up to use the extended vector mechanism by a ROM which has &47 ('G') at
     ; &800D, set romselMemsel on the extended vector bank number. I am fairly confident the
     ; intention here is to detect GENIE (both 1.01 and 1.02 match that test) having claimed
     ; KEYV during an earlier reset-related service call; by patching its extended vector
@@ -3770,55 +3771,52 @@ ENDIF
     LDA XKEYVBank:ORA #romselMemsel:STA XKEYVBank
 .NoGenie
 
-    CLC
-    JSR SFTODOALARMSOMETHING
-    BIT L03A4
-    BPL L9611
+    CLC:JSR SFTODOALARMSOMETHING
+    BIT L03A4:BPL L9611 ; SFTODO!?
     JMP L964C
-			
-.L9611      PRVEN								;switch in private RAM
-            LDX lastBreakType								;get last Break type
-            CPX #&01								;power on break?
-            BNE notPowerOnStarBoot							;branch if not
-            CLC
-            LDA prvBootSFTODO								;get data from Private RAM
-            BEQ notPowerOnStarBoot							;branch if we don't have a *BOOT command in effect
-            ADC #&0F
-            LDX #&00
-.L9625      STA L0B00,X
-            INX
-            CPX #&11
-            BNE L9625
-            LDA #&10
-            STA L0B0A
-            LDX #&01								;Code relocation
-.L9634      LDA prv81,X
-            STA L0B10,X
-            INX
-            CPX prv81
-            BNE L9634
-.notPowerOnStarBoot
-            PRVDIS								;switch out private RAM
-            LDA #osbyteKeyboardScanFrom10
-            JSR OSBYTE
-            CPX #keycodeNone
-            BEQ noKeyPressed
-.L964C      LDX romselCopy
-            DEX
-            JMP selectFirstFilingSystemROMLessEqualXAndLanguage
-			
-.noKeyPressed
-	  LDA lastBreakType
-            BNE notSoftReset1
-            LDX #&43
-            JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
-            PHA ; SFTODO: Why can't we just do the read from &8343 *after* JSR setDfsNfsPriority and avoid this PHA/PLA?
-            JSR setDfsNfsPriority
-            PLA
-            AND #&7F
-            TAX
-            CPX romselCopy
-            BCC selectFirstFilingSystemROMLessEqualXAndLanguage
+.L9611
+
+    ; Handle *BOOT.
+    PRVEN
+    LDX lastBreakType:CPX #1:BNE NotPowerOnStarBoot
+    CLC:LDA prvBootSFTODO:BEQ NotPowerOnStarBoot ; branch if we don't have a *BOOT command
+    ; SFTODO!
+    ADC #&0F
+    LDX #&00
+.L9625
+    STA L0B00,X
+    INX
+    CPX #&11
+    BNE L9625
+    LDA #&10
+    STA L0B0A
+    LDX #&01								;Code relocation
+.L9634
+    LDA prv81,X
+    STA L0B10,X
+    INX
+    CPX prv81
+    BNE L9634
+.NotPowerOnStarBoot
+    PRVDIS
+
+    ; Now arrange for selection of the desired filing system. If a key is pressed we let the
+    ; usual mechanism kick in and don't bring the *CONFIGURE FILE setting into play.
+    LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeNone:BEQ NoKeyPressed
+.L964C
+    LDX romselCopy:DEX
+    JMP selectFirstFilingSystemROMLessEqualXAndLanguage
+.NoKeyPressed
+
+    LDA lastBreakType:BNE notSoftReset1
+    LDX #prvSFTODOFILEISH - prv83:JSR ReadPrivateRam8300X
+    PHA ; SFTODO: Why can't we just do the read from &8343 *after* JSR setDfsNfsPriority and avoid this PHA/PLA?
+    JSR setDfsNfsPriority
+    PLA
+    AND #&7F
+    TAX
+    CPX romselCopy
+    BCC selectFirstFilingSystemROMLessEqualXAndLanguage
 .notSoftReset1
             JSR setDfsNfsPriority
             JMP selectConfiguredFilingSystemAndLanguage
@@ -4135,7 +4133,7 @@ tmp = &A8
 
 ;Vectors claimed - Service call &0F
 {
-.^service0F  LDX #&43
+.^service0F  LDX #prvSFTODOFILEISH - prv83
             JSR ReadPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
             AND #&80
             PHA
@@ -4157,7 +4155,7 @@ tmp = &A8
             AND #&0F
             TSX
             ORA L0101,X
-.L9896      LDX #&43
+.L9896      LDX #prvSFTODOFILEISH - prv83
             JSR WritePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
             PLA
             JMP ExitServiceCall								;restore service call parameters and exit
