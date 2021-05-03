@@ -3445,53 +3445,36 @@ ENDIF
     TAY
     RTS
 
+{
 .GetShiftedBitMask
     LDA ConfParBit + ConfParBitBitCountOffset,Y
     AND #&7F ; SFTODO: so what does b7 signify?
     TAX:LDA bitMaskTable,X:STA transientConfigBitMask ; SQUASH: use PHA?
-    LDA ConfParBit+ConfParBitStartBitOffset,Y:TAX ; SQUASH: we could just do LDX ...,Y
+    LDA ConfParBit + ConfParBitStartBitOffset,Y:TAX ; SQUASH: we could just do LDX ...,Y
     LDA transientConfigBitMask ; SQUASH: use PLA?
     JSR ShiftALeftByX
     STA transientConfigBitMask
     RTS
 
-.setConfigValue
-{
-.L93E1      STA transientConfigPrefix
-.^L93E3     JSR SetYToTransientCmdIdxTimes3
-            JSR GetShiftedBitMask
-            LDA ConfParBit+1,Y
-            TAX ; SQUASH: LDX blah,Y?
-            LDA transientConfigPrefix
-            JSR ShiftALeftByX
-            AND transientConfigBitMask
-            STA transientConfigPrefix
-            LDA transientConfigBitMask
-            EOR #&FF
-            STA transientConfigBitMask
-            LDA ConfParBit+ConfParBitUserRegOffset,Y
-            TAX ; SQUASH: avoid this with LDX blah,Y?
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            AND transientConfigBitMask
-            ORA transientConfigPrefix
-            JMP WriteUserReg							;Write to RTC clock User area. X=Addr, A=Data
-}
+.^SetConfigValueA
+    STA transientConfigPrefix
+.^SetConfigValueTransientConfigPrefix
+    JSR SetYToTransientCmdIdxTimes3
+    JSR GetShiftedBitMask
+    LDA ConfParBit + 1,Y:TAX ; SQUASH: LDX blah,Y?
+    LDA transientConfigPrefix:JSR ShiftALeftByX:AND transientConfigBitMask:STA transientConfigPrefix
+    LDA transientConfigBitMask:EOR #&FF:STA transientConfigBitMask
+    LDA ConfParBit + ConfParBitUserRegOffset,Y:TAX ; SQUASH: avoid this with LDX blah,Y?
+    JSR ReadUserReg:AND transientConfigBitMask:ORA transientConfigPrefix:JMP WriteUserReg
 
-.getConfigValue
-{
-.L940A      JSR SetYToTransientCmdIdxTimes3
-            JSR GetShiftedBitMask
-            LDA ConfParBit+ConfParBitUserRegOffset,Y
-            TAX ; SQUASH: can we just use LDX blah,Y to avoid this?
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            AND transientConfigBitMask
-            STA transientConfigPrefixSFTODO ; SFTODO: Just PHA?
-            LDA ConfParBit+1,Y
-            TAX ; SQUASH: LDX blah,Y
-            LDA transientConfigPrefixSFTODO ; SFTODO: Just PLA?
-            JSR ShiftARightByX
-            STA transientConfigPrefixSFTODO
-            RTS
+.^GetConfigValue
+    JSR SetYToTransientCmdIdxTimes3
+    JSR GetShiftedBitMask
+    LDA ConfParBit + ConfParBitUserRegOffset,Y:TAX ; SQUASH: can we just use LDX blah,Y to avoid this?
+    JSR ReadUserReg:AND transientConfigBitMask:STA transientConfigPrefixSFTODO ; SQUASH: Just PHA?
+    LDA ConfParBit+1,Y:TAX ; SQUASH: LDX blah,Y
+    LDA transientConfigPrefixSFTODO:JSR ShiftARightByX:STA transientConfigPrefixSFTODO ; SQUASH: LDA->PLA?
+    RTS
 }
 			
 ; SFTODO: This code saves transientCommandIndex (&AA) across call to ConfRefDynamicSyntaxGenerationForTransientCmdIdx, but it superficially looks as though ConfRefDynamicSyntaxGenerationForTransientCmdIdx preserves it itself, so the code to preserve here may be redundant.
@@ -3502,7 +3485,7 @@ ENDIF
             JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
             PLA
             STA transientCommandIndex
-            JSR getConfigValue
+            JSR GetConfigValue
             LDA transientConfigPrefix
             RTS
 }
@@ -3608,7 +3591,7 @@ ENDIF
             STA transientConfigPrefix
             TYA
             PHA
-            JSR L93E3
+            JSR SetConfigValueTransientConfigPrefix
             PLA
             TAY
             JSR FindNextCharAfterSpace							;find next character. offset stored in Y
@@ -3639,7 +3622,7 @@ ENDIF
 			
 .Conf1Write
             JSR convertIntegerDefaultDecimalChecked
-            JMP setConfigValue ; SFTODO: move Conf1 block so we can fall through?
+            JMP SetConfigValueA ; SFTODO: move Conf1 block so we can fall through?
 }
 			
 ; SFTODO: If we moved this to just before PrintADecimal we could fall through into it
@@ -3670,7 +3653,7 @@ ENDIF
 .L950B		EQUB &04,&02,&01
 
 .^Conf3	  BCS L9528
-            JSR getConfigValue
+            JSR GetConfigValue
             LSR A
             BCS L9523
             LSR A
@@ -3686,12 +3669,12 @@ ENDIF
 			
 .L9528      LDX transientConfigPrefixSFTODO
 	  LDA L950B,X
-            JMP setConfigValue
+            JMP SetConfigValueA
 }
 
 {
 .^Conf6	  BCS Conf6Write
-            JSR getConfigValue
+            JSR GetConfigValue
             LDA ConfParBit+2,Y
             ASL A
             LDA #&00
@@ -3705,12 +3688,12 @@ ENDIF
             LDA #&00
             ROL A
             EOR transientConfigPrefixSFTODO
-            JMP setConfigValue
+            JMP SetConfigValueA
 }
 
 {
 .^Conf2     BCS Conf2Write
-            JSR getConfigValue
+            JSR GetConfigValue
             PHA
             JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
             PLA
@@ -3721,12 +3704,12 @@ ENDIF
 .Conf2Write JSR convertIntegerDefaultDecimalChecked
             SEC
             SBC #&01
-            JMP setConfigValue
+            JMP SetConfigValueA
 }
 
 {
 .^Conf5	  BCS Conf5Write
-            JSR getConfigValue
+            JSR GetConfigValue
             PHA
             JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
             PLA
@@ -3741,12 +3724,12 @@ ENDIF
             CMP #shadowModeOffset
             BCC valueInA
             SBC #shadowModeOffset - (maxMode + 1)
-.valueInA   JMP setConfigValue
+.valueInA   JMP SetConfigValueA
 }
 
 {
 .^Conf4	  BCS Conf4Write
-            JSR getConfigValue
+            JSR GetConfigValue
             PHA
             JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
             PLA
@@ -3772,7 +3755,7 @@ ENDIF
             STA L00AE
             PLA
             ORA L00AE
-            JMP setConfigValue
+            JMP SetConfigValueA
 }
 
 ; SFTODO: This entire block is dead code
