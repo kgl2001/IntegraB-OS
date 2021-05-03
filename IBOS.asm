@@ -1510,39 +1510,31 @@ TmpCommandIndex = &AC
     JMP L0100
 }
 			
-; Parse "ON" or "OFF" from the command line, returning with C clear if we succeed, in which case A=&FF for ON or 0 for OFF. If parsing fails we return with C set and A=&7F. Flags reflect value in A on exit.
-.parseOnOff
+; Parse "ON" or "OFF" from the command line, returning with C clear if we succeed, in which
+; case A=&FF for ON or 0 for OFF. If parsing fails we return with C set and A=&7F. N/Z reflect
+; value in A on exit.
+.ParseOnOff
 {
-.L8699      JSR FindNextCharAfterSpace							;find next character. offset stored in Y
-            LDA (transientCmdPtr),Y
-            AND #&DF								;capitalise
-            CMP #'O'
-            BNE invalid
-            INY
-            LDA (transientCmdPtr),Y
-            AND #&DF								;capitalise
-            CMP #'N'
-            BNE notOn
-            INY
-            LDA #&FF
-            CLC
-            RTS
-			
-.notOn      CMP #'F'
-            BNE invalid
-            INY
-            LDA (transientCmdPtr),Y
-            AND #&DF								;capitalise
-            CMP #'F'
-            BNE off									;accept "OF" to mean "OFF"
-            INY
-.off        LDA #&00
-            CLC
-            RTS
-			
-.invalid    LDA #&7F
-            SEC
-            RTS
+    JSR FindNextCharAfterSpace
+    LDA (transientCmdPtr),Y:AND #&DF:CMP #'O':BNE Invalid
+    INY:LDA (transientCmdPtr),Y:AND #&DF:CMP #'N':BNE NotOn
+    INY
+    LDA #&FF
+    CLC
+    RTS
+.NotOn
+    CMP #'F':BNE Invalid
+    ; We will accept "OF" to mean "OFF", but if the second "F" is present we skip over it.
+    INY:LDA (transientCmdPtr),Y:AND #&DF:CMP #'F':BNE Off
+    INY
+.Off
+    LDA #0
+    CLC
+    RTS
+.Invalid
+    LDA #&7F
+    SEC
+    RTS
 }
 
 ; Print "OFF" if A=0, otherwise print "ON".
@@ -2524,7 +2516,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 ;*PURGE Command
 .purge
 {
-            JSR parseOnOff
+            JSR ParseOnOff
             BCC purgeOnOrOff
             LDA (transientCmdPtr),Y
             CMP #'?'
@@ -2547,6 +2539,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 ;*BUFFER Command
 ; This is a big chunk of fairly self-contained code, so we use two levels of scope instead of
 ; the usual one to pin down the labels a bit more.
+; SFTODO: "*BUFFER OFF" (at least on b-em) seems to generate an empty error message - this isn't a valid command, but this behaviour doesn't seem right
 .buffer
 {
 MaxSwrBanks = 4
@@ -2864,7 +2857,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ;*SHX Command
 .shx
 {
-    JSR parseOnOff:BCC ParsedOK
+    JSR ParseOnOff:BCC ParsedOK
     LDA (transientCmdPtr),Y:CMP #'?':BNE GenerateSyntaxErrorIndirect2
     JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
     LDX #prvShx - prv83:JSR readPrivateRam8300X
@@ -2899,7 +2892,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ; SFTODO LINEAR REVIEW UP TO HERE
 ;*TUBE Command
 {
-.^tube      JSR parseOnOff
+.^tube      JSR ParseOnOff
             BCC turnTubeOnOrOff
             LDA (transientCmdPtr),Y
             CMP #'?'
@@ -9062,7 +9055,7 @@ column = prvC
             BEQ showAlarm
             CMP #vduCr
             BEQ showAlarm
-            JSR parseOnOff
+            JSR ParseOnOff
             BCS LB61B
             PHP
             LDX #userRegAlarm
