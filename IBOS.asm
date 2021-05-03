@@ -9413,14 +9413,15 @@ column = prvC
 			
 ;XY?0=&64
 ;OSWORD &49 (73) - Integra-B calls
-.LB8C6		JSR LB774
-            JSR copyRtcAlarmToPrv
-            LDX #&0B								;Select 'Register B' register on RTC: Register &0B
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            AND #&60
-            STA prvOswordBlockCopy + 1
-            CLC
-            RTS
+.LB8C6
+    XASSERT_USE_PRV1
+    JSR LB774
+    JSR copyRtcAlarmToPrv
+    LDX #rtcRegB:JSR ReadRtcRam
+    AND #rtcRegBPIE OR rtcRegBAIE
+    STA prvOswordBlockCopy + 1
+    CLC
+    RTS
 
 ; SFTODO: Don't these next two calls contain most of the logic we'd need to implement OSWORD &F?
 ;XY?0=&65
