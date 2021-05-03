@@ -709,8 +709,7 @@ ENDMACRO
 
 ; This macro wraps "JSR PrvDis" with a sanity check that the code calling it won't be hidden by
 ; paging in PRVS1. This isn't likely to catch anything which wouldn't be caught by PRVEN, but
-; it just might, e.g. ".foo:PRVDIS:blahblah:.bar:PRVEN:blahblah:JMP foo" where that code
-; fragment straddles &8400.
+; it just might.
 MACRO PRVDIS ; SFTODO: Rename to indicate this is PRVS1 only? Also perhaps put a verb in the name?
     ASSERT P% >= &8400
     JSR PrvDis
