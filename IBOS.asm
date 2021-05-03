@@ -6616,7 +6616,8 @@ osfileBlock = L02EE
 ;Write contents from Private memory address &8000 to screen
 .printDateBuffer
 {
-.LA5DE      LDX #&00
+    XASSERT_USE_PRV1
+            LDX #&00
 .LA5E0      LDA prvDateBuffer,X
             BEQ LA5EE
             JSR OSASCI
@@ -6629,7 +6630,8 @@ osfileBlock = L02EE
 ;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223, but why???
 .initDateSFTODOS
 {
-.LA5EF      LDA #&05
+    XASSERT_USE_PRV1
+            LDA #&05
             STA prvDateSFTODO0
             LDA #&84
             STA prvDateSFTODO1 ; SFTODO: b7 of this is tested e.g. at LAD7F
@@ -6643,7 +6645,8 @@ osfileBlock = L02EE
 ; Multiply 8-bit values prvA and prvB to give a 16-bit result at prvDC.
 .mul8
 {
-.LA604      LDA #&00
+    XASSERT_USE_PRV1
+            LDA #&00
             STA prvDC + 1
             LDX #&08
 .loop       ASL A
@@ -6664,7 +6667,8 @@ osfileBlock = L02EE
 ; SFTODO: Ignoring the setup, the loop looks very much to me like division of prvA=prvD by prvC, with the result in prvD and the remainder in A. But the setup code says that if prvB (which is otherwise unused)>=prvC, we return with prvD=result=prvA and "remainder" prvB
 .SFTODOPSEUDODIV
 {
-.LA624      LDX #&08
+    XASSERT_USE_PRV1
+            LDX #&08
             LDA prvA
             STA prvD
 	  LDA prvB
@@ -6758,7 +6762,8 @@ osfileBlock = L02EE
 ;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
 .writeRtcDate ; SFTODO: as in "not time" - maybe rename all this later?
 {
-.LA6CB      JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
+    XASSERT_USE_PRV1
+            JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
             LDX #rtcRegDayOfWeek							;Select 'Day of Week' register on RTC: Register &06
             LDA prvDateDayOfWeek							;Get 'Day of Week' from &822C
             JSR WriteRtcRam								;Write data from A to RTC memory location X
@@ -6778,24 +6783,18 @@ osfileBlock = L02EE
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
 .getRtcSecondsMinutesHours
-{
-.LA6F3      JSR waitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
-            LDX #rtcRegSeconds							;Select 'Seconds' register on RTC: Register &00
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            STA prvDateSeconds							;Store 'Seconds' at &822F
-            LDX #rtcRegMinutes							;Select 'Minutes' register on RTC: Register &02
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            STA prvDateMinutes							;Store 'Minutes' at &822E
-            LDX #rtcRegHours								;Select 'Hours' register on RTC: Register &04
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            STA prvDateHours								;Store 'Hours' at &822D
-            RTS
-}
+    XASSERT_USE_PRV1
+    JSR waitOutRTCUpdate
+    LDX #rtcRegSeconds:JSR ReadRtcRam:STA prvDateSeconds
+    LDX #rtcRegMinutes:JSR ReadRtcRam:STA prvDateMinutes
+    LDX #rtcRegHours:JSR ReadRtcRam:STA prvDateHours
+    RTS
 
 ;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from RTC and Store in Private RAM (&82xx)
 .getRtcDayMonthYear
 {
-.LA70F      JSR waitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
+    XASSERT_USE_PRV1
+            JSR waitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
             LDX #rtcRegDayOfWeek							;Select 'Day of Week' register on RTC: Register &06
             JSR ReadRtcRam								;Read data from RTC memory location X into A
             STA prvDateDayOfWeek							;Store 'Day of Week' at &822C
@@ -6814,7 +6813,8 @@ osfileBlock = L02EE
 ;Read 'Sec Alarm', 'Min Alarm' & 'Hr Alarm' from RTC and Store in Private RAM (&82xx)
 .copyRtcAlarmToPrv
 {
-.LA732      JSR waitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
+    XASSERT_USE_PRV1
+            JSR waitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
             LDX #rtcRegAlarmSeconds							;Select 'Sec Alarm' register on RTC: Register &01
             JSR ReadRtcRam								;Read data from RTC memory location X into A
             STA prvDateSeconds							;Store 'Sec Alarm' at &822F
@@ -6830,7 +6830,8 @@ osfileBlock = L02EE
 ;Read 'Sec Alarm', 'Min Alarm' & 'Hr Alarm' from Private RAM (&82xx) and write to RTC
 .copyPrvAlarmToRtc
 {
-.LA74E      JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
+    XASSERT_USE_PRV1
+            JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
             LDX #&01								;Select 'Sec Alarm' register on RTC: Register &01
             LDA prvOswordBlockCopy + 15								;Get 'Sec Alarm' from &822F
             JSR WriteRtcRam								;Write data from A to RTC memory location X
@@ -6843,12 +6844,10 @@ osfileBlock = L02EE
 }
 
 .getRtcDateTime
-{
-.LA769      JSR getRtcDayMonthYear
-            JMP getRtcSecondsMinutesHours
-}
+    JSR getRtcDayMonthYear
+    JMP getRtcSecondsMinutesHours
 
-; SFTODO: Following block is dead code
+; SQUASH: Dead code
 {
             JSR WriteRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC						***not used. nothing jumps into this code***
             JMP writeRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
@@ -6899,7 +6898,7 @@ osfileBlock = L02EE
 
 .SFTODOALARMSOMETHING
 {
-.LA7A8      BCS LA7C2
+            BCS LA7C2
             LDX #userRegAlarm
             JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&40
@@ -6922,7 +6921,8 @@ osfileBlock = L02EE
 
 ; Return with C set iff prvDate{Century,Year} is a leap year.
 .^testLeapYear
-.LA7CD      LDA prvDateYear
+    XASSERT_USE_PRV1
+            LDA prvDateYear
             CMP #&00 ; SFTODO: redundant
             BNE notYear0
             LDA prvDateCentury
@@ -6936,7 +6936,7 @@ osfileBlock = L02EE
 
 .getDaysInMonthY
 {
-.LA7DF      DEY ; SFTODO: We could avoid this DEY/INY if we changed next line to LDA monthDaysTable-1,Y
+.LA7DF      DEY ; SQUASH: We could avoid this DEY/INY if we changed next line to LDA monthDaysTable-1,Y
             LDA monthDaysTable,Y
             INY
             CPY #2									;February
@@ -6968,7 +6968,8 @@ osfileBlock = L02EE
 ; SFTODO: This seems to want to calculate "prvDate - 1st January in same year" in days, so result (in prvDateSFTODO4, 16 bit word) will be 0 for 1st January, 1 for 2nd January, etc. However, see the comment below about TYA vs TXA - what it actually seems to do is return the number of days up to the end of prvMonth in prvDateSFTODO4 and prvDateDayOfMonth-1 in X. Maybe this *is* what it really wants to do and I'm misinterpreting things - would need to look at caller in more detail
 .calculateDaysBetween1stJanAndPrvDateSFTODOIsh
 {
-.LA7FE      LDA #&00
+    XASSERT_USE_PRV1
+            LDA #&00
             STA prvDateSFTODO4
             STA prvDateSFTODO4 + 1
             LDY #0
