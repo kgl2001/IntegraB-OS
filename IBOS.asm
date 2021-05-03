@@ -3254,16 +3254,13 @@ OriginalOutputDeviceStatus = TransientZP + 1
 
 ;*CREATE Command
 .create
-{
     JSR ParseFilename
-    CLC
-    TYA:ADC transientCmdPtr:STA osfileBlock
+    ; Set filename in OSFILE block.
+    CLC:TYA:ADC transientCmdPtr:STA osfileBlock
     LDA transientCmdPtr + 1:ADC #0:STA osfileBlock + 1
-    LDA #0
-    STA osfileBlock + 10
-    STA osfileBlock + 11
-    STA osfileBlock + 12
-    STA osfileBlock + 13
+    ; Set "start address" in OSFILE block (0).
+    LDA #0:STA osfileBlock + 10:STA osfileBlock + 11:STA osfileBlock + 12:STA osfileBlock + 13
+    ; Set "end address" in OSFILE block (length).
     TXA:TAY:JSR convertIntegerDefaultHex:BCS GenerateSyntaxErrorForTransientCommandIndexIndirect
     LDA ConvertIntegerResult:STA osfileBlock + 14
     LDA ConvertIntegerResult + 1:STA osfileBlock + 15
@@ -3271,7 +3268,6 @@ OriginalOutputDeviceStatus = TransientZP + 1
     LDA ConvertIntegerResult + 3:STA osfileBlock + 17
     LDA #osfileCreateFile:LDX #lo(osfileBlock):LDY #hi(osfileBlock):JSR OSFILE
     JMP ExitAndClaimServiceCall
-}
 
 ; *CONFIGURE and *STATUS simply issue the corresponding service calls, so the
 ; bulk of their implementation is in the service call handlers. This means that
