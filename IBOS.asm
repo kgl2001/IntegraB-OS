@@ -1463,54 +1463,51 @@ TmpCommandIndex = &AC
     RTS
 
 .CallTable
-    EQUB &09		;*HELP instruction expansion
-    EQUB serviceConfigure	;*CONFIGURE command
-    EQUB serviceStatus	;*STATUS command
-    EQUB &04		;Unrecognised Star command
-    EQUB &FF		;Tube system initialisation
-    EQUB &10		;SPOOL/EXEC file closure warning
-    EQUB &03		;Autoboot
-    EQUB &01		;Absolute workspace claim
-    EQUB &0F		;Vectors claimed - Service call &0F
-    EQUB &06		;Break - Service call &06
-    EQUB &08		;Unrecognised OSWORD call
-    EQUB &07		;Unrecognised OSBYTE call
+    EQUB &09		; *HELP instruction expansion
+    EQUB serviceConfigure	; *CONFIGURE command
+    EQUB serviceStatus	; *STATUS command
+    EQUB &04		; Unrecognised Star command
+    EQUB &FF		; Tube system initialisation
+    EQUB &10		; SPOOL/EXEC file closure warning
+    EQUB &03		; Autoboot
+    EQUB &01		; Absolute workspace claim
+    EQUB &0F		; Vectors claimed - Service call &0F
+    EQUB &06		; Break - Service call &06
+    EQUB &08		; Unrecognised OSWORD call
+    EQUB &07		; Unrecognised OSBYTE call
 .CallTableEnd
 
 .HandlerTable
-    EQUW service09 - 1	;Address for *HELP
-    EQUW service28 - 1	;Address for *CONFIGURE command
-    EQUW service29 - 1	;Address for *STATUS command
-    EQUW service04 - 1	;Address for Unrecognised Star command
-    EQUW serviceFF - 1	;Address for Tube system initialisation
-    EQUW service10 - 1	;Address for SPOOL/EXEC file closure warning
-    EQUW service03 - 1	;Address for Autoboot
-    EQUW service01 - 1	;Address for Absolute workspace claim
-    EQUW service0F - 1	;Address for Vectors claimed
-    EQUW service06 - 1	;Address for Break
-    EQUW service08 - 1	;Address for unrecognised OSWORD call
-    EQUW service07 - 1	;Address for unrecognised OSBYTE call
+    EQUW service09 - 1	; Address for *HELP
+    EQUW service28 - 1	; Address for *CONFIGURE command
+    EQUW service29 - 1	; Address for *STATUS command
+    EQUW service04 - 1	; Address for Unrecognised Star command
+    EQUW serviceFF - 1	; Address for Tube system initialisation
+    EQUW service10 - 1	; Address for SPOOL/EXEC file closure warning
+    EQUW service03 - 1	; Address for Autoboot
+    EQUW service01 - 1	; Address for Absolute workspace claim
+    EQUW service0F - 1	; Address for Vectors claimed
+    EQUW service06 - 1	; Address for Break
+    EQUW service08 - 1	; Address for unrecognised OSWORD call
+    EQUW service07 - 1	; Address for unrecognised OSBYTE call
 .HandlerTableEnd
 
     ASSERT (CallTableEnd - CallTable) * 2 == (HandlerTableEnd - HandlerTable)
 }
 
-; Generate an error using the error number and error string immediately following the "JSR raiseError" call.
-.raiseError
+; Generate an error using the error number and error string immediately following the "JSR RaiseError" call.
+.RaiseError
 {
-.L867E      JSR PrvDis								;switch out private RAM
-            PLA
-            STA osErrorPtr
-            PLA
-            STA osErrorPtr + 1
-            LDY #1
-.L8689      LDA (osErrorPtr),Y
-            STA L0100,Y								;relocate error text
-            BEQ L8693
-            INY
-            BNE L8689
-.L8693      STA L0100								;forced BRK
-            JMP L0100
+    JSR PrvDis
+    PLA:STA osErrorPtr:PLA:STA osErrorPtr + 1
+    LDY #1
+.CopyLoop
+    LDA (osErrorPtr),Y:STA L0100,Y
+    BEQ CopyDone
+    INY:BNE CopyLoop ; always branch
+.CopyDone
+    STA L0100 ; write BRK opcode (0)
+    JMP L0100
 }
 			
 ; Parse "ON" or "OFF" from the command line, returning with C clear if we succeed, in which case A=&FF for ON or 0 for OFF. If parsing fails we return with C set and A=&7F. Flags reflect value in A on exit.
@@ -1782,7 +1779,7 @@ firstDigitCmdPtrY = &BB
 
 .errorNotFound
 {
-.L8809      JSR raiseError								;Goto error handling, where calling address is pulled from stack
+.L8809      JSR RaiseError								;Goto error handling, where calling address is pulled from stack
 
 	  EQUB &D6
 	  EQUS "Not found", &00
@@ -2481,7 +2478,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             BCC L8C19								;check for error
             JMP ExitAndClaimServiceCall								;Exit Service Call
 			
-.L8C19      JSR raiseError								;Goto error handling, where calling address is pulled from stack
+.L8C19      JSR RaiseError								;Goto error handling, where calling address is pulled from stack
 
 	  EQUB &FD
 	  EQUS "Too long", &00
@@ -2559,7 +2556,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 
     JSR PrvEn
     LDA prvOsMode:BNE NotOsMode0 ; the buffer isn't available in OSMODE 0
-    JSR raiseError
+    JSR RaiseError
     EQUB &80
     EQUS "No Buffer!", &00
 .NotOsMode0
@@ -2769,7 +2766,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     RTS
 
 .BufferNotEmpty
-    JSR raiseError ; SFTODO: Change this to "GenerateError", or use "Raise" instead of "Generate" elsewhere
+    JSR RaiseError ; SFTODO: Change this to "GenerateError", or use "Raise" instead of "Generate" elsewhere
     EQUB &80
     EQUS "Printing!", &00
 }
@@ -2959,7 +2956,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
             LDA SHEILA+&E0
             LSR A
             BCS enableTube
-            JSR raiseError								;Goto error handling, where calling address is pulled from stack
+            JSR RaiseError								;Goto error handling, where calling address is pulled from stack
 
 	  EQUB &80
 	  EQUS "No Tube!", &00
@@ -3245,7 +3242,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 .^acknowledgeEscapeAndGenerateError
 .L91F1      LDA #osbyteAcknowledgeEscape
             JSR OSBYTE
-            JSR raiseError								;Goto error handling, where calling address is pulled from stack
+            JSR RaiseError								;Goto error handling, where calling address is pulled from stack
 
 	  EQUB &11
 	  EQUS "Escape", &00
@@ -3402,7 +3399,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
             CPX #&00
             BEQ exitSCIndirect
 .^GenerateBadParameter
-.L92E3      JSR raiseError								;Goto error handling, where calling address is pulled from stack
+.L92E3      JSR RaiseError								;Goto error handling, where calling address is pulled from stack
 
 	  EQUB &FE
 	  EQUS "Bad parameter", &00
@@ -5244,12 +5241,12 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             PLP
 .errorBadAddress
 .L9DB8      BVC errorNotAllocated
-            JSR raiseError								;Goto error handling, where calling address is pulled from stack
+            JSR RaiseError								;Goto error handling, where calling address is pulled from stack
 	  EQUB &80
 	  EQUS "Bad address", &00
 
 .errorNotAllocated
-.L9DCA      JSR raiseError								;Goto error handling, where calling address is pulled from stack
+.L9DCA      JSR RaiseError								;Goto error handling, where calling address is pulled from stack
 	  EQUB &80
 	  EQUS "Not allocated", &00
 
@@ -6143,7 +6140,7 @@ osfileBlock = L02EE
             BCC rts
             BVC GenerateSyntaxErrorIndirect
 .^badId
-.LA2EB      JSR raiseError								;Goto error handling, where calling address is pulled from stack
+.LA2EB      JSR RaiseError								;Goto error handling, where calling address is pulled from stack
 
 	  EQUB &80
 	  EQUS "Bad id", &00
@@ -8844,21 +8841,21 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 
 .PrvDisMismatch
       	  JSR PrvDis								;switch out private RAM
-            JSR raiseError								;Goto error handling, where calling address is pulled from stack
+            JSR RaiseError								;Goto error handling, where calling address is pulled from stack
 
             EQUB &80
   	  EQUS "Mismatch", &00
 
 .PrvDisBadDate
 	  JSR PrvDis								;switch out private RAM
-            JSR raiseError								;Goto error handling, where calling address is pulled from stack
+            JSR RaiseError								;Goto error handling, where calling address is pulled from stack
 
             EQUB &80
 	  EQUS "Bad date", &00
 
 .PrvDisBadTime
 	  JSR PrvDis								;switch out private RAM
-            JSR raiseError								;Goto error handling, where calling address is pulled from stack
+            JSR RaiseError								;Goto error handling, where calling address is pulled from stack
 
             EQUB &80
 	  EQUS "Bad time", &00
