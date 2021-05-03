@@ -9191,31 +9191,32 @@ column = prvC
             RTS
 }
 			
-;Clear RTC buffer
 {
-.^LB774      LDY #&0F
-            LDA #&00
-.LB778      STA prvOswordBlockCopy,Y
-            DEY
-            BPL LB778
-            RTS
+.^ClearPrvOswordBlockCopy
+    XASSERT_USE_PRV1
+    LDY #15 ; SFTODO: mild magic
+    LDA #0
+.Loop
+    STA prvOswordBlockCopy,Y
+    DEY:BPL Loop
+    RTS
 }
 			
 ;OSWORD &0E (14) Read real time clock XY?0 parameter lookup code
 {
-.^oswd0e_1   LDA prvOswordBlockCopy							;get XY?0 value
-            ASL A									;x2 (each entry in lookup table is 2 bytes)
-            TAY
-            LDA oswd0elu+1,Y						;get low byte
-            PHA										;and push
-            LDA oswd0elu,Y							;get high byte
-            PHA										;and push
-            RTS										;jump to parameter lookup address
+.^oswd0e_1
+    XASSERT_USE_PRV1
+    ; Transfer control to the handler at oswd0elu[prvOswordBlockCopy] using RTS.
+    LDA prvOswordBlockCopy:ASL A:TAY
+    LDA oswd0elu+1,Y:PHA
+    LDA oswd0elu,Y:PHA
+    RTS
 
 ;OSWORD &0E (14) Read real time clock XY?0 parameter lookup table
-.oswd0elu	  EQUW oswd0eReadString-1							;XY?0=0: Read time and date in string format
-	  EQUW oswd0eReadBCD-1							;XY?0=1: Read time and date in binary coded decimal (BCD) format
-	  EQUW oswd0eConvertBCD-1							;XY?0=2: Convert BCD values into string format
+.oswd0elu
+    EQUW oswd0eReadString - 1	; XY?0=0: Read time and date in string format
+    EQUW oswd0eReadBCD - 1	; XY?0=1: Read time and date in binary coded decimal (BCD) format
+    EQUW oswd0eConvertBCD - 1	; XY?0=2: Convert BCD values into string format
 }
 
 ;OSWORD &49 (73) - Integra-B calls XY?0 parameter lookup code
@@ -9375,7 +9376,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;XY?0=&61
 ;OSWORD &49 (73) - Integra-B calls
 .LB891
-    JSR LB774								;Clear RTC buffer @ &8220-&822F
+    JSR ClearPrvOswordBlockCopy								;Clear RTC buffer @ &8220-&822F
     JSR getRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
     CLC
     RTS
@@ -9417,7 +9418,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;OSWORD &49 (73) - Integra-B calls
 .LB8C6
     XASSERT_USE_PRV1
-    JSR LB774
+    JSR ClearPrvOswordBlockCopy
     JSR copyRtcAlarmToPrv
     LDX #rtcRegB:JSR ReadRtcRam
     AND #rtcRegBPIE OR rtcRegBAIE
