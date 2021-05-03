@@ -1822,6 +1822,8 @@ firstDigitCmdPtrY = &BB
 }
 
 {
+    ASSERT P% >= &8400 ; we're going to page in PRVS1
+
 ; Page in private RAM temporarily and do STA prv83,X. A, X and Y are preserved, flags reflect A
 ; on exit.
 .^WritePrivateRam8300X
