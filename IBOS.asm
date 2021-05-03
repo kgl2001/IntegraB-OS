@@ -10409,22 +10409,19 @@ ScreenStart = &3000
     INC prvPrintBufferPtrBase,X:BNE Rts
     INC prvPrintBufferPtrBase + 1,X
     LDA prvPrintBufferPtrBase + 1,X:CMP prvPrintBufferBankEnd:BCC Rts
-    LDY prvPrintBufferPtrBase + 2,X:INY:CPY #4:BCC LBED2 ; SFTODO: magic?
+    LDY prvPrintBufferPtrBase + 2,X:INY:CPY #MaxPrintBufferSwrBanks:BCC DontWrap1
     LDY #0
-.LBED2
-    LDA prvPrintBufferBankList,Y:BPL ValidBank
+.DontWrap1
+    LDA prvPrintBufferBankList,Y:BPL DontWrap2
     ; Top bit of this bank number is set, so it's going to be $FF indicating an invalid bank;
     ; wrap round to the first bank.
-    LDY #&00
-.ValidBank
-    TYA
-    STA prvPrintBufferPtrBase + 2,X
+    LDY #0
+.DontWrap2
+    TYA:STA prvPrintBufferPtrBase + 2,X
     ; SFTODO: Are the next two lines redundant? I think we can only get
     ; here if INC prvPrintBufferPtrBase,X above left this value zero.
-    LDA #&00
-    STA prvPrintBufferPtrBase,X
-    LDA prvPrintBufferBankStart
-    STA prvPrintBufferPtrBase + 1,X
+    LDA #0:STA prvPrintBufferPtrBase,X
+    LDA prvPrintBufferBankStart:STA prvPrintBufferPtrBase + 1,X
 .Rts
     RTS
 }
