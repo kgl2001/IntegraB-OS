@@ -10251,7 +10251,7 @@ ScreenStart = &3000
     LDA L0108,X ; get original A=character to insert
     JSR staPrintBufferWritePtr
     JSR AdvancePrintBufferWritePtr
-    JSR decrementPrintBufferFree
+    JSR DecrementPrintBufferFree
     ; Return to caller with carry clear to indicate insertion succeeded.
     TSX:LDA L0107,X:AND_NOT flagC:STA L0107,X ; modify stacked flags so C is clear
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
@@ -10290,7 +10290,7 @@ ScreenStart = &3000
     ; V was cleared by the caller, so we're removing a character from the buffer.
     PLA:STA L0108,X ; overwrite stacked A with character read from our buffer
     JSR AdvancePrintBufferReadPtr
-    JSR incrementPrintBufferFree
+    JSR IncrementPrintBufferFree
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
 
 .ExamineBuffer
@@ -10328,14 +10328,14 @@ ScreenStart = &3000
 .Count
     LDA L0107,X:AND #flagC:BNE CountSpaceLeft ; test C in stacked flags from caller
     ; We're counting the entries in the buffer; return them as 16-bit value YX.
-    JSR getPrintBufferUsed
+    JSR GetPrintBufferUsed
     TXA:TSX:STA L0103,X ; overwrite stacked X, so we return A to caller in X
     TYA:STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
 
 .CountSpaceLeft
     ; We're counting the space left in the buffer; return that as 16-bit value YX.
-    JSR getPrintBufferFree
+    JSR GetPrintBufferFree
     ; SQUASH: Following code is identical to fragment just above, we could JMP to it to avoid
     ; this duplication.
     TXA:TSX:STA L0103,X ; overwrite stacked X, so we return A to caller in X
@@ -10450,28 +10450,23 @@ ScreenStart = &3000
     RTS
 }
 
-; SFTODO: This currently only has one caller, so could be inlined. Although
-; maybe there's some critical alignment stuff going on, which means certain code
-; has to live in the &Bxxx region so it can be accessed while private RAM is
-; paged in. But we could potentially move the caller (or just all INSV/CNPV/REMV
-; code??) into &Bxxx, although it may not be worth the hassle.
-.getPrintBufferFree
+; SQUASH: This currently only has one caller, so could be inlined. Although maybe there's some
+; critical alignment stuff going on, which means certain code has to live in the &Bxxx region
+; so it can be accessed while private RAM is paged in. But we could potentially move the caller
+; (or just all INSV/CNPV/REMV code??) into &Bxxx, although it may not be worth the hassle.
+.GetPrintBufferFree
 {
-    LDX prvPrintBufferFreeHigh:BNE atLeast64KFree
+    LDX prvPrintBufferFreeHigh:BNE AtLeast64KFree
     LDX prvPrintBufferFreeLow:LDY prvPrintBufferFreeMid
     RTS
-
-.atLeast64KFree
-            ; Tell the caller there's 64K-1 byte free, which is the maximum
-            ; return value.
-            LDX #&FF
-            LDY #&FF
-            RTS
+.AtLeast64KFree
+    ; Tell the caller there's 64K-1 byte free, which is the maximum return value.
+    LDX #&FF:LDY #&FF
+    RTS
 }
 
-; SFTODO: Currently has only one caller FWIW
-.getPrintBufferUsed
-{
+; SQUASH: This currently only has one caller.
+.GetPrintBufferUsed
 ; SFTODO: Won't this incorrectly return 0 if a 64K buffer is entirely full? Do
 ; we prevent this happening somehow? This could be tested fairly easily by
 ; simply having no printer connected/turned on, setting a 64K buffer, writing
@@ -10479,29 +10474,26 @@ ScreenStart = &3000
 ; possible the nature of the (presumably) circular print buffer means it can
 ; never actually contain more than 64K-1 bytes even if it's 64K, but that's
 ; just speculation.
-.LBF25      SEC
-            LDA prvPrintBufferSizeLow
-            SBC prvPrintBufferFreeLow
-            TAX
-            LDA prvPrintBufferSizeMid
-            SBC prvPrintBufferFreeMid
-            TAY
-            RTS
-}
+    SEC
+    LDA prvPrintBufferSizeLow:SBC prvPrintBufferFreeLow:TAX
+    LDA prvPrintBufferSizeMid:SBC prvPrintBufferFreeMid:TAY
+    RTS
 
-; SFTODO: This has only a single caller
-.incrementPrintBufferFree
+; SQUASH: This has only a single caller
+.IncrementPrintBufferFree
 {
-.LBF35      INC prvPrintBufferFreeLow
-            BNE LBF3D
-            INC prvPrintBufferFreeMid
-.LBF3D      BNE LBF42
-            INC prvPrintBufferFreeHigh
-.LBF42      RTS
+    INC prvPrintBufferFreeLow
+    BNE NoCarry ; ENHANCE: Would be clearer to just BNE Rts
+    INC prvPrintBufferFreeMid
+.NoCarry
+    BNE Rts
+    INC prvPrintBufferFreeHigh
+.Rts
+    RTS
 }
 
-; SFTODO: This has only a single caller
-.decrementPrintBufferFree
+; SQUASH: This has only a single caller
+.DecrementPrintBufferFree
 {
 .LBF43      SEC
             LDA prvPrintBufferFreeLow
