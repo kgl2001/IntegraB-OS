@@ -9619,64 +9619,51 @@ parentVectorTbl2 = parentVectorTbl1 + 4 * 2 ; 4 vectors, 2 bytes each
 parentVectorTbl2End = parentVectorTbl2 + 3 * 2 ; 3 vectors, 2 bytes each
 ASSERT parentVectorTbl2End <= osPrintBuf + &40
 
-; Restore A, X, Y and the flags from the stacked copies pushed during the vector
-; entry process. The stack must have the same layout as described in the big
-; comment in vectorEntry; note that the addresses in this subroutine are two
-; bytes higher because we were called via JSR so we need to allow for our own
-; return address on the stack.
+; Restore A, X, Y and the flags from the stacked copies pushed during the vector entry process.
+; The stack must have the same layout as described in the big comment in vectorEntry; note that
+; the addresses in this subroutine are two bytes higher because we were called via JSR so we
+; need to allow for our own return address on the stack.
 .restoreOrigVectorRegs
 {
-.LB994      TSX
-            LDA L0108,X ; get original flags
-            PHA
-            LDA L0109,X ; get original A
-            PHA
-            LDA L0104,X ; get original X
-            PHA
-            ; SFTODO: We could save a byte here by doing LDY L0103,X directly.
-            LDA L0103,X ; get original Y
-            TAY
-            PLA
-            TAX
-            PLA
-            PLP
-            RTS
+    TSX
+    LDA L0108,X:PHA ; get original flags
+    LDA L0109,X:PHA ; get original A
+    LDA L0104,X:PHA ; get original X
+    ; SFTODO: We could save a byte here by doing LDY L0103,X directly.
+    LDA L0103,X:TAY ; get original Y
+    PLA:TAX
+    PLA
+    PLP
+    RTS
 }
 
-; This subroutine is the inverse of restoreOrigVectorRegs; it takes the current
-; values of A, X, Y and the flags and overwrites the stacked copies with them
-; so they will be restored on returning from the vector handler.
+; This subroutine is the inverse of restoreOrigVectorRegs; it takes the current values of A, X,
+; Y and the flags and overwrites the stacked copies with them so they will be restored on
+; returning from the vector handler.
 .updateOrigVectorRegs
 {
-            ; At this point the stack is as described in the big comment in
-            ; vectorEntry but with the return address for this subroutine also
-            ; pushed onto the stack.
-.LB9AA      PHP
-            PHA
-            TXA
-            PHA
-            TYA
-            TSX
-            ; So at this point the stack is as described in the big comment in
-            ; vectorEntry but with everything moved up five bytes (X=S-5, if S
-            ; is the value of the stack pointer in that comment).
-            STA L0106,X ; overwrite original stacked Y
-            PLA
-            STA L0107,X ; overwrite original stacked X
-            PLA
-            STA L010C,X ; overwrite original stacked A
-            PLA
-            STA L010B,X ; overwrite original stacked flags
-.LB9BF      RTS
+    ; At this point the stack is as described in the big comment in vectorEntry but with the
+    ; return address for this subroutine also pushed onto the stack.
+    PHP
+    PHA
+    TXA:PHA
+    ; So at this point the stack is as described in the big comment in vectorEntry but with
+    ; everything moved up five bytes (X=S-5, if S is the value of the stack pointer in that
+    ; comment).
+    TYA:TSX:STA L0106,X ; overwrite original stacked Y
+    PLA:STA L0107,X ; overwrite original stacked X
+    PLA:STA L010C,X ; overwrite original stacked A
+    PLA:STA L010B,X ; overwrite original stacked flags
+    RTS
 }
 
-; Table of vector handlers used by vectorEntry; addresses have -1 subtracted
-; because we transfer control to these via an RTS instruction. The odd bytes
-; between the addresses are there to match the spacing of the JSR instructions
-; at osPrintBuf; the actual values are irrelevant and will never be used.
-; SFTODO: Are they really unused? Maybe there's some code hiding somewhere,
-; but nothing references this label except the code at vectorEntry. It just
-; seems a bit odd these bytes aren't 0.
+; Table of vector handlers used by vectorEntry; addresses have -1 subtracted because we
+; transfer control to these via an RTS instruction. The odd bytes between the addresses are
+; there to match the spacing of the JSR instructions at osPrintBuf; the actual values are
+; irrelevant and will never be used.
+; SFTODO: Are they really unused? Maybe there's some code hiding somewhere, but nothing
+; references this label except the code at vectorEntry. It just seems a bit odd these bytes
+; aren't 0.
 ibosBYTEVIndex = 0
 ibosWORDVIndex = 1
 ibosWRCHVIndex = 2
