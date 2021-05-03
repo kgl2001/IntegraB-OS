@@ -10418,8 +10418,7 @@ ScreenStart = &3000
     LDY #0
 .DontWrap2
     TYA:STA prvPrintBufferPtrBase + 2,X
-    ; SFTODO: Are the next two lines redundant? I think we can only get
-    ; here if INC prvPrintBufferPtrBase,X above left this value zero.
+    ; SQUASH: Next line is redundant, INC prvPrintBufferPtrBase,X left this 0 above.
     LDA #0:STA prvPrintBufferPtrBase,X
     LDA prvPrintBufferBankStart:STA prvPrintBufferPtrBase + 1,X
 .Rts
