@@ -1371,38 +1371,40 @@ TmpCommandIndex = &AC
 ;*HELP Service Call
 .service09
 {
-            JSR setTransientCmdPtr
-            LDA (transientCmdPtr),Y
-            CMP #vduCr
-            BNE checkArgument
-	  ; This is *HELP with no argument
-            LDX #ibosSubTblHelpNoArgument
-.showHelpX  TXA
-            PHA
-            JSR OSNEWL
-            LDX #title - romHeader
+    JSR setTransientCmdPtr
+    LDA (transientCmdPtr),Y
+    CMP #vduCr
+    BNE checkArgument
+    ; This is *HELP with no argument
+    LDX #ibosSubTblHelpNoArgument
+.showHelpX
+    TXA
+    PHA
+    JSR OSNEWL
+    LDX #title - romHeader
 .titleVersionLoop
-            LDA romHeader,X
-            BNE printChar
-            LDA #' '
-.printChar  JSR OSWRCH
-            INX
-            CPX copyrightOffset
-            BNE titleVersionLoop
-            JSR OSNEWL
-            PLA
-            JSR ibosRef ; SFTODO: redundant? DynamicSyntaxGenerationForIbosSubTblA does this itself
-            JSR DynamicSyntaxGenerationForIbosSubTblA
-            JMP ExitServiceCallIndirect
+    LDA romHeader,X
+    BNE printChar
+    LDA #' '
+.printChar
+    JSR OSWRCH
+    INX
+    CPX copyrightOffset
+    BNE titleVersionLoop
+    JSR OSNEWL
+    PLA
+    JSR ibosRef ; SFTODO: redundant? DynamicSyntaxGenerationForIbosSubTblA does this itself
+    JSR DynamicSyntaxGenerationForIbosSubTblA
+    JMP ExitServiceCallIndirect
 
 .checkArgument
-	  ; See if the *HELP argument is one of the ones we recognise and show it if it is.
-            JSR ibosRef
-            LDA #&00
-            JSR SearchKeywordTable ; SFTODO: maybe rename this to indicate we're not always searching "commands"?
-            BCC showHelpX
+    ; See if the *HELP argument is one of the ones we recognise and show it if it is.
+    JSR ibosRef
+    LDA #&00
+    JSR SearchKeywordTable ; SFTODO: maybe rename this to indicate we're not always searching "commands"?
+    BCC showHelpX
 .ExitServiceCallIndirect
-            JMP ExitServiceCall								;restore service call parameters and exit
+    JMP ExitServiceCall
 }
 
 ; Return with A=Y=0 and (transientCmdPtr),Y accessing the same byte as (osCmdPtr),Y on entry.
