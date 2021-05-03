@@ -1917,13 +1917,13 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
     RTS
 }
 						
-;Unconfirmed language entry point
-.language   CMP #&01								;Check if valid language entry
-            BEQ languageEntry								;Jump to confirmed language entry
-            RTS										;Not a valid language entry
-
-
+; Language entry point.
+.language
 {
+    ; Check this is normal language start up, not (e.g.) Electron soft key expansion.
+    CMP #1:BEQ NormalLanguageStartUp ; SQUASH: Move this so we can fall through and BNE to another RTS
+    RTS
+
 ;Set BRK Vector
 .^setBrkv
 .L88D7      LDA #brkvHandler MOD &100
@@ -1932,9 +1932,8 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
             STA BRKVH
             RTS
 
-;Confirmed language entry point
 ; SFTODO: Start of this code is same as L8969 - could we save a few bytes by (e.g.) setting osErrorPtr to &8000 here and testing for that in BRKV handler and skipping the error printing code in that case?
-.^languageEntry
+.NormalLanguageStartUp
 .L88E2      CLI
             CLD
             LDX #&FF
