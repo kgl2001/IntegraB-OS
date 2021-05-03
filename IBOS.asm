@@ -7012,12 +7012,14 @@ osfileBlock = L02EE
 ;    b1: minutes
 ;    b0: seconds
 .^validateDateTimeRespectingLeapYears
-.LA838      CLC
+            CLC
             BCC LA83C
 ; SFTODO: This entry point always allows 29th February regardless
 .^validateDateTimeAssumingLeapYear ; SFTODO: perhaps not ideal name
-.LA83B      SEC
-.LA83C      PHP
+            SEC
+.LA83C
+    XASSERT_USE_PRV1
+      PHP
             LDA prvDateCentury
             LDX #0
             LDY #99
@@ -7122,13 +7124,15 @@ osfileBlock = L02EE
 {
 ; As calculateDayOfWeekInA, except we also update prvDateDayOfWeek with the calculated day of the week, and set SFTODO:PROBABLY b3 of prvDateSFTODO0 if this changes prvDateDayOfWeek from its previous value.
 .^calculateDayOfWeekInPrvDateDayOfWeek
-.LA905      CLC
+            CLC
             BCC LA909
 ; SFTODO: Use a magic formula to calculate the day of the week for prvDate{Century,Year,Month,DayOfMonth}; I don't know how this works, but presumably it does.
 ; We return with the calculated day of the week in A.
 .^calculateDayOfWeekInA
-.LA908      SEC
-.LA909      PHP
+            SEC
+.LA909
+    XASSERT_USE_PRV1
+      PHP
             LDA prvDateYear
             STA prvTmp3
             LDA prvDateCentury
@@ -7237,7 +7241,9 @@ osfileBlock = L02EE
 {
 ; SFTODO: 7 ROWS, 6 COLUMNS ARE KEY NUMBERS HERE AND WE SHOULD PROBABLY BE CALCULATING SOME NAMED CONSTANTS (EG 42) FROM OTHER NAMED CONSTANTS WHICH ARE 6 AND 7
 daysInMonth = transientDateSFTODO2
-.LA9E6      LDA #1
+
+    XASSERT_USE_PRV1
+            LDA #1
             STA prvDateDayOfMonth
             JSR calculateDayOfWeekInPrvDateDayOfWeek
             LDY prvDateMonth
@@ -7336,7 +7342,9 @@ daysInMonth = transientDateSFTODO2
 endCalOffset = prv82 + &4E
 capitalisationMask = prv82 + &4F
 maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to print"
-.LAAF5	  BCC indexInA
+
+    XASSERT_USE_PRV1
+       	  BCC indexInA
 	  CLC
             ADC #&07								;adjust month index to skip past the day of week entries in calOffsetTable
 .indexInA   STX maxOutputLength
