@@ -3864,31 +3864,28 @@ ENDIF
     JMP LF16E ; OSBYTE 143 - Pass service commands to sideways ROMs (http://mdfs.net/Docs/Comp/BBC/OS1-20/F135), except we enter partway through to start at bank X not bank 15
 }
 
-;Absolute workspace claim - Service call &01
-; SFTODO: I think this code is high enough in the IBOS ROM we don't need to be indirecting via WritePrivateRam8300X and could just set PRV1 and access directly?
+; Absolute workspace claim - service call &01
+;
+; We're not going to claim any workspace, but we use this call to take control early in the
+; reset process.
 .service01
 {
 tmp = &A8
-            LDA #&00
-            STA ramselCopy
-            STA ramsel								;shadow off
-            LDX #&07								;start at address 7
-            LDA #&FF								;set data to &FF
-.writeLoop  JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-            DEX									;repeat
-            BNE writeLoop								;until 0. (but not writing to &8300)
-            LDA romselCopy								;get current ROM number
-            AND #maxBank								;mask
-	  ASSERT prvIbosBankNumber == prv83 + 0
-            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-            BIT L03A4								;?
-            BPL L96EE
-            JMP ExitServiceCallIndirect
+    ; SQUASH: I think this code is high enough in the IBOS ROM we don't need to be indirecting
+    ; via WritePrivateRam8300X and could just set PRV1 and access directly?
+    LDA #0:STA ramselCopy:STA ramsel ; shadow off SFTODO?
+    LDX #7								;start at address 7
+    LDA #&FF								;set data to &FF
+.WriteLoop
+    JSR WritePrivateRam8300X
+    DEX:BNE WriteLoop
+    LDA romselCopy:AND #maxBank:ASSERT prvIbosBankNumber == prv83 + 0:JSR WritePrivateRam8300X
+    BIT L03A4:BPL L96EE ; SFTODO!?
+    JMP ExitServiceCallIndirect
 			
-.L96EE      LDX #userRegPrvPrintBufferStart
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            LDX #prvPrvPrintBufferStart-prv83                                                       ; SFTODO: not too happy with this format
-            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+.L96EE
+    LDX #userRegPrvPrintBufferStart:JSR ReadUserReg
+    LDX #prvPrvPrintBufferStart-prv83:JSR WritePrivateRam8300X
             LDX lastBreakType
             BEQ softReset
             LDX #userRegOsModeShx							;0-2: OSMODE / 3: SHX
