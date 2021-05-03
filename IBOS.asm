@@ -185,7 +185,6 @@ transientDateSFTODO2 = &AA ; SFTODO: prob just temp storage
 transientDateSFTODO1 = &AB ; SFTODO!? 2 bytes?
 
 FilingSystemWorkspace = &B0; IBOS repurposes this, which feels a bit risky but presumably works in practice
-
 ConvertIntegerResult = FilingSystemWorkspace ; 4 bytes
 
 vduStatus = &D0
@@ -1656,24 +1655,6 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
 .convertIntegerDefaultHex
     LDA #16:JMP convertIntegerDefaultBaseA ; SQUASH: "BNE ; always branch"
 
-; Convert an number expressed in ASCII at (transientCmdPtr),Y into a 32-bit
-; integer. It may be prefixed with '-' for negative, '&' indicates hex, '%'
-; indicates binary and '+' indicates decimal.
-;
-; SFTODO: The next two lines seem wrong - we return with C *clear* if and only if a number has been parsed successfully, otherwise we return with C set - in this case I think V is clear if there is nothing to parse, or set if there is something but we can't parse it - not 100% sure about this, and need to check code again.
-; Returns with V clear if there is no number to parse; C is not altered.
-; Otherwise C is set if and only if a number is parsed successfully.
-; If we parse successfully, the integer is at &B0 (SFTODO: do we use this?
-; probably) and the low byte is in A. SFTODO: Introduce named constants for &B0 in this use
-; If we fail to parse successfully, we beep and return with A=0.
-; SFTODO: I guess it's an IBOS thing, but that beep seems a bit odd - I think
-; this is used for commands implemented on B+/Master like SRLOAD and I don't
-; think their SRLOAD will ever beep.
-; SFTODO: Use of &Bx zp here seems iffy, this is filing system workspace. Did we
-; save it somewhere first? Even so, seems less than ideal - what if an interrupt
-; occurs?
-; SFTODO: Any chance of shrinking this code using loops to work on the 4-byte values?
-
 ; Parse a 32-bit integer from (transientCmdPtr),Y. The following prefixes are
 ; recognised:
 ;     "-"  negative decimal
@@ -1693,12 +1674,15 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
 ;     1 0 => input was empty, nothing to parse
 ;     1 1 => input not empty but nothing was parsed (we will have beeped)
 ;            ConvertIntegerResult and A will be 0 but flags will not reflect A
+;
+; ENHANCE: Beeping when we fail to parse seems a little unconventional, disable this?
+; SQUASH: Could we use some loops to do the four byte arithmetic?
 {
-Base = &B8
-NegateFlag = &B9
-OriginalCmdPtrY = &BA
-FirstDigitCmdPtrY = &BB
-Tmp = &B4 ; 4 bytes
+Tmp = FilingSystemWorkspace + 4 ; 4 bytes
+Base = FilingSystemWorkspace + 8
+NegateFlag = FilingSystemWorkspace + 9
+OriginalCmdPtrY = FilingSystemWorkspace + 10
+FirstDigitCmdPtrY = FilingSystemWorkspace + 11
 
 ; SQUASH: Could we share this fragment?
 .NothingToConvert
@@ -1720,13 +1704,12 @@ Tmp = &B4 ; 4 bytes
     STA ConvertIntegerResult + 3
     STA NegateFlag
     LDA (transientCmdPtr),Y:CMP #'-':BNE NotNegative
-    LDA #&FF
-    STA NegateFlag
+    LDA #&FF:STA NegateFlag ; SQUASH: "ROR NegateFlag"? C is set after CMP and BNE not taken
     ; '-' implies decimal.
 .Decimal
     LDA #10:JMP BaseInA ; SQUASH: "BNE ; always branch"
 .NotNegative
-    ; Check for prefixes which indicate a particular Base, overriding the default.
+    ; Check for prefixes which indicate a particular base, overriding the default.
     CMP #'+':BEQ Decimal
     CMP #'&':BNE NotHex
     LDA #16:JMP BaseInA ; SQUASH: "BNE ; always branch"
@@ -1753,7 +1736,7 @@ Tmp = &B4 ; 4 bytes
     STX ConvertIntegerResult + 3
     ; Step 2) Set ConvertIntegerResult += Tmp * Base.
     LDA Base
-    LDX #8
+    LDX #8 ; Base is an 8-bit value
 .MultiplyLoop
     LSR A
     BCC ZeroBit
