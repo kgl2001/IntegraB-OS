@@ -9437,30 +9437,33 @@ column = prvC
 			
 ;XY?0=&67
 ;OSWORD &49 (73) - Integra-B calls
-.LB8E2	  JSR copyPrvAlarmToRtc
-            LDA prvOswordBlockCopy + 1
-            AND #rtcRegBPIE OR rtcRegBAIE
-            STA prvOswordBlockCopy + 1
-            LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            AND_NOT rtcRegBPIE OR rtcRegBAIE
-            ORA prvOswordBlockCopy + 1
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            SEC
-            RTS
+.LB8E2
+    XASSERT_USE_PRV1
+    JSR copyPrvAlarmToRtc
+    LDA prvOswordBlockCopy + 1
+    AND #rtcRegBPIE OR rtcRegBAIE
+    STA prvOswordBlockCopy + 1
+    LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
+    JSR ReadRtcRam								;Read data from RTC memory location X into A
+    AND_NOT rtcRegBPIE OR rtcRegBAIE
+    ORA prvOswordBlockCopy + 1
+    JSR WriteRtcRam								;Write data from A to RTC memory location X
+    SEC
+    RTS
 
-; SFTODO: Perhaps be interesting to write a little test program for the following two calls; we could pre-compute some correct answers and check those (which I suspect would reveal bugs, as per SFTODOs elsewhere), and we could also loop over all dates from 1900/01/01 and round-trip via both of these calls to check that we get the same answer back for each date (and in fact we could also check that the day number was one larger each time - that would in fact remove any need to pre-compute some correct answers)
 ;XY?0=&6A
 ;OSWORD &49 (73) - Integra-B calls
-.LB8FC	  JSR calculateDaysBetween1stJan1900AndPrvDateSFTODOIsh
-            CLC
-            RTS
+.LB8FC
+    JSR calculateDaysBetween1stJan1900AndPrvDateSFTODOIsh
+    CLC
+    RTS
 			
 ;XY?0=&6B
 ;OSWORD &49 (73) - Integra-B calls
-.LB901	  JSR convertDaysSince1stJan1900ToDate
-            CLC
-            RTS
+.LB901
+    JSR convertDaysSince1stJan1900ToDate
+    CLC
+    RTS
 
 {
 .ExitServiceCallIndirect
@@ -9548,31 +9551,28 @@ ASSERT romCodeStubEnd - romCodeStub <= bytesToCopy
             RTS
 }
 
-; Code stub which is copied into the OS printer buffer at runtime by
-; installOSPrintBufStub. The first 7 instructions are identical JSRs to the RAM
-; copy of romCodeStubCallIBOS; these are (SFTODO: confirm this) installed as the
-; targets of various non-extended vectors (SFTODO: by which subroutine?). The
-; code at romCodeStubCallIBOS pages us in, calls the vectorEntry subroutine and
-; then pages the previous ROM back in afterwards. vectorEntry is able to
-; distinguish which of the 7 JSRs transferred control (and therefore which
-; vector is being called) by examining the return address pushed onto the stack
-; by that initial JSR.
+; Code stub which is copied into the OS printer buffer at runtime by installOSPrintBufStub. The
+; first 7 instructions are identical JSRs to the RAM copy of romCodeStubCallIBOS; these are
+; (SFTODO: confirm this) installed as the targets of various non-extended vectors (SFTODO: by
+; which subroutine?). The code at romCodeStubCallIBOS pages us in, calls the vectorEntry
+; subroutine and then pages the previous ROM back in afterwards. vectorEntry is able to
+; distinguish which of the 7 JSRs transferred control (and therefore which vector is being
+; called) by examining the return address pushed onto the stack by that initial JSR.
 ;
-; Doing all this avoids the use of the OS extended vector mechanism, which is
-; relatively slow (particularly important for WRCHV, which gets called for every
-; character output to the screen) and doesn't allow for vector chains.
+; Doing all this avoids the use of the OS extended vector mechanism, which is relatively slow
+; (particularly important for WRCHV, which gets called for every character output to the
+; screen) and doesn't allow for vector chains.
 ;
-; Note that while we have to save the originally paged in bank from romselCopy
-; and restore it afterwards for obvious reasons (the caller is very likely
-; directly or indirectly relying on this, e.g. a BASIC program will need the
-; BASIC ROM to remain paged in after making an OS call which goes to IBOS!),
-; this *also* has the effect of restoring the previous values of PRVEN and MEMSEL.
-; SFTODO: I would like to get the whole ROM disassembled first before writing a
-; permanent comment, but this is why e.g. rdchvHandler can do JSR setMemsel without
-; explicitly reverting that change.
-; SFTODO: Experience with Ozmoo suggests it's *probably* OK, but does IBOS always
-; restore RAMSEL/RAMID to their original values if it changes them? Or at least the
-; PRVSx bits?
+; Note that while we have to save the originally paged in bank from romselCopy and restore it
+; afterwards for obvious reasons (the caller is very likely directly or indirectly relying on
+; this, e.g. a BASIC program will need the BASIC ROM to remain paged in after making an OS call
+; which goes to IBOS!), this *also* has the effect of restoring the previous values of PRVEN
+; and MEMSEL.
+; SFTODO: I would like to get the whole ROM disassembled first before writing a permanent
+; comment, but this is why e.g. rdchvHandler can do JSR setMemsel without explicitly reverting
+; that change.
+; SFTODO: Experience with Ozmoo suggests it's *probably* OK, but does IBOS always restore
+; RAMSEL/RAMID to their original values if it changes them? Or at least the PRVSx bits?
 .romCodeStub
 ramCodeStub = osPrintBuf ; SFTODO: use ramCodeStub instead of osPrintBuf in some/all places?
 {
@@ -9629,7 +9629,7 @@ ASSERT parentVectorTbl2End <= osPrintBuf + &40
     LDA L0108,X:PHA ; get original flags
     LDA L0109,X:PHA ; get original A
     LDA L0104,X:PHA ; get original X
-    ; SFTODO: We could save a byte here by doing LDY L0103,X directly.
+    ; SQUASH: We could save a byte here by doing LDY L0103,X directly.
     LDA L0103,X:TAY ; get original Y
     PLA:TAX
     PLA
