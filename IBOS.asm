@@ -218,6 +218,7 @@ osfindOpenOutput = &80
 osfindOpenUpdate = &C0
 osgbpbReadCurPtr = &04
 osfileReadInformation = &05
+osfileCreateFile = &07
 osfileReadInformationLengthOffset = &0A
 osfileLoad = &FF
 
@@ -3248,45 +3249,26 @@ OriginalOutputDeviceStatus = TransientZP + 1
 			
 ;Close file with file handle at &A8
 .CloseTransientFileHandle
-{
-.L9268      LDA #osfindClose
-            LDY transientFileHandle
-            JMP OSFIND
-}
-			
+    LDA #osfindClose:LDY transientFileHandle:JMP OSFIND
+
 ;*CREATE Command
-{
-.^create		JSR ParseFilename
-            CLC
-            TYA
-            ADC L00A8
-            STA L02EE
-            LDA L00A9
-            ADC #&00
-            STA L02EF
-            LDA #&00
-            STA L02F8
-            STA L02F9
-            STA L02FA
-            STA L02FB
-            TXA
-            TAY
-            JSR convertIntegerDefaultHex
-            BCS GenerateSyntaxErrorForTransientCommandIndexIndirect
-            LDA L00B0
-            STA L02FC
-            LDA L00B1
-            STA L02FD
-            LDA L00B2
-            STA L02FE
-            LDA L00B3
-            STA L02FF
-            LDA #&07
-            LDX #&EE
-            LDY #&02
-            JSR OSFILE
-            JMP ExitAndClaimServiceCall								;Exit Service Call
-}
+.create
+    JSR ParseFilename
+    CLC
+    TYA:ADC transientCmdPtr:STA L02EE
+    LDA transientCmdPtr + 1:ADC #0:STA L02EF
+    LDA #0
+    STA L02F8
+    STA L02F9
+    STA L02FA
+    STA L02FB
+    TXA:TAY:JSR convertIntegerDefaultHex:BCS GenerateSyntaxErrorForTransientCommandIndexIndirect
+    LDA ConvertIntegerResult:STA L02FC
+    LDA ConvertIntegerResult + 1:STA L02FD
+    LDA ConvertIntegerResult + 2:STA L02FE
+    LDA ConvertIntegerResult + 3:STA L02FF
+    LDA #osfileCreateFile:LDX #lo(L02EE):LDY #hi(L02EE):JSR OSFILE
+    JMP ExitAndClaimServiceCall
 
 ; *CONFIGURE and *STATUS simply issue the corresponding service calls, so the
 ; bulk of their implementation is in the service call handlers. This means that
