@@ -1689,34 +1689,27 @@ firstDigitCmdPtrY = &BB
     JSR FindNextCharAfterSpace:BCS NothingToConvert ; branch if carriage return
     STY originalCmdPtrY
     STY firstDigitCmdPtrY
-    LDA #&00
+    LDA #0
     STA ConvertIntegerResult
     STA ConvertIntegerResult + 1
     STA ConvertIntegerResult + 2
     STA ConvertIntegerResult + 3
     STA negateFlag
-    LDA (transientCmdPtr),Y
-    CMP #'-'
-    BNE L8753
+    LDA (transientCmdPtr),Y:CMP #'-':BNE NotNegative
     LDA #&FF
     STA negateFlag
-.L874E
-    LDA #10
-    JMP L8766
-			
-.L8753
-    CMP #'+'
-    BEQ L874E
-    CMP #'&'
-    BNE L8760
-    LDA #&10
-    JMP L8766
-			
-.L8760
-    CMP #'%'
-    BNE L87B9
+    ; '-' implies decimal.
+.Decimal
+    LDA #10:JMP BaseInA ; SQUASH: "BNE ; always branch"
+.NotNegative
+    ; Check for prefixes which indicate a particular base, overriding the default.
+    CMP #'+':BEQ Decimal
+    CMP #'&':BNE NotHex
+    LDA #16:JMP BaseInA ; SQUASH: "BNE ; always branch"
+.NotHex
+    CMP #'%':BNE L87B9
     LDA #2
-.L8766
+.BaseInA
     STA base
     INY
     STY firstDigitCmdPtrY
