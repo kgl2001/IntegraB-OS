@@ -4981,7 +4981,9 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             RTS
 
 {
-.^L9C52      JSR FindNextCharAfterSpace								;find next character. offset stored in Y
+.^L9C52
+    XASSERT_USE_PRV1
+      JSR FindNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'@'
             BNE parseOsword4243BufferAddress
@@ -5010,7 +5012,8 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ; Parse a 32-bit hex-default value from the command line and store it in the "buffer address" part of prvOswordBlockCopy. (Some callers will move it from there to where they really want it afterwards.)
 .parseOsword4243BufferAddress
 {
-.L9C82      JSR convertIntegerDefaultHex
+    XASSERT_USE_PRV1
+            JSR convertIntegerDefaultHex
             BCS GenerateSyntaxErrorIndirect
             LDA L00B0
             STA prvOswordBlockCopy + 2
@@ -5025,7 +5028,8 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 			
 .parseOsword4243Length
 {
-.L9C9C      JSR FindNextCharAfterSpace								;find next character. offset stored in Y
+    XASSERT_USE_PRV1
+            JSR FindNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #'+'
             PHP
@@ -5080,7 +5084,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ; SFTODO: This has only one caller
 .transferBlock
 {
-.L9CF6      LDA L00AD
+            LDA L00AD
             PHA
             LDA L00AC
             PHA
@@ -5124,7 +5128,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 .adjustTransferParameters ; SFTODO: temporary name, rename once I understand better
 {
 ; SFTODO: (AD AC) = &C000 - (A9 A8), then L9D42
-.L9D32      SEC
+            SEC
             LDA #&00
             SBC transientOs4243SwrAddr
             STA L00AC
@@ -5159,7 +5163,8 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 .SFTODOsetVandCBasedOnSomethingAndMaybeSwizzleStuff
 ; SFTODO: This has only one caller
 {
-.L9D62      BIT prvOswordBlockCopy                                                                  ;get function
+    XASSERT_USE_PRV1
+            BIT prvOswordBlockCopy                                                                  ;get function
             BVC secSevRts                                                                           ;branch if we have an absolute address
             ; We're dealing with a pseudo-address.
             BIT L00A9
@@ -5203,7 +5208,8 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ; can name it properly once more code labelled up
 .doTransfer
 {
-.L9D8E      JSR adjustTransferParameters
+    XASSERT_USE_PRV1
+            JSR adjustTransferParameters
             LDX prvOswordBlockCopy + 1	; SFTODO: We seem to be treating this as a ROM bank of some kind, but prvOswordBlockCopy+1 will be the leftover low byte of the filename in the OSWORD &43 case, won't it?! In any case, it's not clear to me we use this outside the few instructions before absoluteAddress, so why not just do it *after* the BVC? Negligible performance gain but I think it's clearer (if it's really *not* used on the other code path)
             BIT prvOswordBlockCopy                                                                  ; get function
             BVC absoluteAddress
