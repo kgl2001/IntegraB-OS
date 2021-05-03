@@ -198,6 +198,7 @@ negativeVduQueueSize = &026A
 tubePresenceFlag = &027A ; SFTODO: allmem says 0=inactive, is there actually a specific bit or value for active? what does this code rely on?
 osShadowRamFlag = &027F ; *SHADOW option, 1=force shadow mode, 0=don't force shadow mode
 currentLanguageRom = &028C ; SFTODO: not sure yet if we're using this for what the OS does or repurposing it
+osfileBlock = &02EE ; OS OSFILE block for *LOAD, *SAVE, etc
 currentMode = &0355
 
 romTypeTable = &02A1
@@ -3253,22 +3254,24 @@ OriginalOutputDeviceStatus = TransientZP + 1
 
 ;*CREATE Command
 .create
+{
     JSR ParseFilename
     CLC
-    TYA:ADC transientCmdPtr:STA L02EE
-    LDA transientCmdPtr + 1:ADC #0:STA L02EF
+    TYA:ADC transientCmdPtr:STA osfileBlock
+    LDA transientCmdPtr + 1:ADC #0:STA osfileBlock + 1
     LDA #0
-    STA L02F8
-    STA L02F9
-    STA L02FA
-    STA L02FB
+    STA osfileBlock + 10
+    STA osfileBlock + 11
+    STA osfileBlock + 12
+    STA osfileBlock + 13
     TXA:TAY:JSR convertIntegerDefaultHex:BCS GenerateSyntaxErrorForTransientCommandIndexIndirect
-    LDA ConvertIntegerResult:STA L02FC
-    LDA ConvertIntegerResult + 1:STA L02FD
-    LDA ConvertIntegerResult + 2:STA L02FE
-    LDA ConvertIntegerResult + 3:STA L02FF
-    LDA #osfileCreateFile:LDX #lo(L02EE):LDY #hi(L02EE):JSR OSFILE
+    LDA ConvertIntegerResult:STA osfileBlock + 14
+    LDA ConvertIntegerResult + 1:STA osfileBlock + 15
+    LDA ConvertIntegerResult + 2:STA osfileBlock + 16
+    LDA ConvertIntegerResult + 3:STA osfileBlock + 17
+    LDA #osfileCreateFile:LDX #lo(osfileBlock):LDY #hi(osfileBlock):JSR OSFILE
     JMP ExitAndClaimServiceCall
+}
 
 ; *CONFIGURE and *STATUS simply issue the corresponding service calls, so the
 ; bulk of their implementation is in the service call handlers. This means that
