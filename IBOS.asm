@@ -1355,6 +1355,8 @@ TabColumn = 12
 {
 .SkipSpace
     INY
+; SQUASH: In some places we do "LDA (transientCmdPtr),Y" after alling FindNextCharAfterSpace;
+; this is redundant.
 .^FindNextCharAfterSpace
     LDA (transientCmdPtr),Y
     CMP #' ':BEQ SkipSpace
@@ -3556,39 +3558,29 @@ ENDIF
     JSR printSpace
     LDX #userRegDiscNetBootData:JSR ReadUserReg
     LDX #'N'
-    AND #1:BEQ Nfs ; SQUASH: LSR A:BCC Nfs
+    AND #1:BEQ ReadNfs ; SQUASH: LSR A:BCC ReadNfs
     LDX #'D'
-.Nfs
+.ReadNfs
     TXA:JSR OSWRCH
     JMP OSNEWL
 
 ;Write *CONF. FILE parameters to RTC register
 .Conf0Write
-    JSR convertIntegerDefaultDecimalChecked
-    STA transientConfigPrefix
-    TYA
-    PHA
-    JSR SetConfigValueTransientConfigPrefix
-    PLA
-    TAY
-    JSR FindNextCharAfterSpace
-    LDA (transientCmdPtr),Y
-    AND #CapitaliseMask
-    CMP #'N'
-    BEQ L94DD
-    CMP #'D'
-    BEQ L94DE
+    JSR convertIntegerDefaultDecimalChecked:STA transientConfigPrefix
+    TYA:PHA
+    JSR SetConfigValueTransientConfigPrefix ; SFTODO: I'm thinking "transientConfigPrefix" might be badly misnamed (in general, not just here)
+    PLA:TAY
+    JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:AND #CapitaliseMask
+    ; SQUASH: Re-use another RTS here and fall through.
+    CMP #'N':BEQ WriteNfs
+    CMP #'D':BEQ WriteDfs ; carry will be set if we branch
     RTS
-			
-.L94DD
+.WriteNfs
     CLC
-.L94DE
+.WriteDfs
     PHP
-    LDX #userRegDiscNetBootData
-    JSR ReadUserReg
-    LSR A
-    PLP
-    ROL A
+    LDX #userRegDiscNetBootData:JSR ReadUserReg
+    LSR A:PLP:ROL A
     JMP WriteUserReg
 }
 			
