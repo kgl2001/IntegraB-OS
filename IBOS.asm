@@ -9376,29 +9376,34 @@ column = prvC
 
 ;XY?0=&61
 ;OSWORD &49 (73) - Integra-B calls
-.LB891      JSR LB774								;Clear RTC buffer @ &8220-&822F
-            JSR getRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
-            CLC
-            RTS
+.LB891
+    JSR LB774								;Clear RTC buffer @ &8220-&822F
+    JSR getRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
+    CLC
+    RTS
 			
 ;XY?0=&60
 ;OSWORD &49 (73) - Integra-B calls
-.LB899		JSR getRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
+.LB899
+    JSR getRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
+    FALLTHROUGH_TO LB89C
 
 ;XY?0=&62
 ;OSWORD &49 (73) - Integra-B calls
-.LB89C      LDA #lo(prvDateBuffer)
-	  STA prvDateSFTODO4
-            LDA #hi(prvDateBuffer)
-            STA prvDateSFTODO4 + 1
-            JSR initDateBufferAndEmitTimeAndDate
-            JMP LB7BC
+.LB89C
+    XASSERT_USE_PRV1
+    ; SQUASH: We probably do the next two lines a lot and could factor them out.
+    LDA #lo(prvDateBuffer):STA prvDateSFTODO4
+    LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
+    JSR initDateBufferAndEmitTimeAndDate
+    JMP LB7BC
 			
 ;XY?0=&68
 ;OSWORD &49 (73) - Integra-B calls
-.LB8AC		JSR LAFF9
-            CLC
-            RTS
+.LB8AC
+    JSR LAFF9
+    CLC
+    RTS
 			
 ;XY?0=&69
 ;OSWORD &49 (73) - Integra-B calls
