@@ -7265,7 +7265,7 @@ daysInMonth = transientDateSFTODO2
 }
 
 ;Calendar text (LAA5F)
-.calText		EQUS "today"
+.calText		EQUS "today" ; SFTODO: is this used? probably, but be good to check...
 		EQUS "sunday"
 		EQUS "monday"
 		EQUS "tuesday"
