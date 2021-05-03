@@ -9140,27 +9140,23 @@ column = prvC
 			
 ;OSWORD &49 (73) - Integra-B calls
 {
-.^osword49	JSR stackTransientCmdSpace						;save 8 bytes of data from &A8 onto the stack
-            PRVEN								;switch in private RAM
-            LDA oswdbtX								;get X register value of most recent OSWORD call
-            STA prvOswordBlockOrigAddr							;and save to &8230
-            LDA oswdbtY								;get Y register value of most recent OSWORD call
-            STA prvOswordBlockOrigAddr + 1							;and save to &8231
-            JSR oswordsv							;save XY entry table
-            JSR oswd49_1							;execute OSWORD &49
-            BCS osword49a							;successful so don't restore XY entry table
-            JSR oswordrs							;restore table
-.osword49a	LDA prvOswordBlockOrigAddr							;get X register value of most recent OSWORD call
-            STA oswdbtX								;and restore to &F0
-            LDA prvOswordBlockOrigAddr + 1							;get Y register value of most recent OSWORD call
-            STA oswdbtY								;and restore to &F1
-            LDA #&49								;load A register value of most recent OSWORD call (&49)
-            STA oswdbtA								;and restore to &EF
-            PRVDIS								;switch out private RAM
-
+.^osword49
+    JSR stackTransientCmdSpace
+    PRVEN
+    LDA oswdbtX:STA prvOswordBlockOrigAddr
+    LDA oswdbtY:STA prvOswordBlockOrigAddr + 1
+    JSR oswordsv ; save the OSWORD block
+    JSR oswd49_1 ; execute the OSWORD call
+    BCS Success
+    JSR oswordrs ; restore the OSWORD block if we failed
+.Success
+    LDA prvOswordBlockOrigAddr:STA oswdbtX
+    LDA prvOswordBlockOrigAddr + 1:STA oswdbtY
+    LDA #&49:STA oswdbtA
+    PRVDIS
 .^unstackTransientCmdSpaceAndExitSC
-	  JSR unstackTransientCmdSpace						;restore 8 bytes of data to &A8 from the stack
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+    JSR unstackTransientCmdSpace
+    JMP ExitAndClaimServiceCall
 }
 			
 ;Save OSWORD XY entry table
@@ -9222,8 +9218,9 @@ Ptr = &AE
 }
 
 ;OSWORD &49 (73) - Integra-B calls XY?0 parameter lookup code
+; SQUASH: This has only one caller
 {
-.^oswd49_1
+.^oswd49_1 ; SFTODO: rename
     XASSERT_USE_PRV1
     ; prvOswordBlockCopy is a code in the range &60-&6F; we use that to index into oswd49lu and
     ; transfer control to the relevant handler via RTS.
