@@ -1538,19 +1538,14 @@ TmpCommandIndex = &AC
 }
 
 ; Print "OFF" if A=0, otherwise print "ON".
-.printOnOff
+.PrintOnOff
 {
-.L86C8      PHA
-            LDA #'O'
-            JSR OSWRCH
-            PLA
-            BEQ L86D6					;'OFF' if 0, otherwise 'ON'
-            LDA #'N'
-            JMP OSWRCH					;write 'ON' to screen
-			
-.L86D6      LDA #'F'
-            JSR OSWRCH
-            JMP OSWRCH					;write 'OFF' to screen
+    PHA
+    LDA #'O':JSR OSWRCH
+    PLA:BEQ Off
+    LDA #'N':JMP OSWRCH
+.Off
+    LDA #'F':JSR OSWRCH:JMP OSWRCH
 }
 			
 ;Convert binary number in A to numeric characters and write characters to screen
@@ -2524,7 +2519,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDX #prvPrintBufferPurgeOption - prv83
             JSR readPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
-            JMP printOnOffOSNEWLExitSC
+            JMP PrintOnOffOSNEWLExitSC
 
 .purgeNow   JSR PrvEn 								;switch in private RAM
             JSR purgePrintBuffer
@@ -2861,7 +2856,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA (transientCmdPtr),Y:CMP #'?':BNE GenerateSyntaxErrorIndirect2
     JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
     LDX #prvShx - prv83:JSR readPrivateRam8300X
-    JMP printOnOffOSNEWLExitSC
+    JMP PrintOnOffOSNEWLExitSC
 .ParsedOK
     LDX #prvShx - prv83:JSR writePrivateRam8300X
     JMP ExitAndClaimServiceCall
@@ -2899,8 +2894,8 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
             BNE GenerateSyntaxErrorIndirect
             JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDA tubePresenceFlag
-.^printOnOffOSNEWLExitSC
-.L8FA3      JSR printOnOff
+.^PrintOnOffOSNEWLExitSC
+.L8FA3      JSR PrintOnOff
             JSR OSNEWL
 .exitSCIndirect
             JMP ExitAndClaimServiceCall								;Exit Service Call
@@ -9102,7 +9097,7 @@ column = prvC
             LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR ReadRtcRam								;Read data from RTC memory location X into A
             AND #rtcRegBAIE
-            JSR printOnOff
+            JSR PrintOnOff
             LDX #userRegAlarm
             JSR readUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND #&80
