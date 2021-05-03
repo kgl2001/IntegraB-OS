@@ -3499,73 +3499,49 @@ ENDIF
 .Common
     PHP
     JSR SetTransientCmdPtr
-    LDA (transientCmdPtr),Y
-    CMP #vduCr
-    BNE optionSpecified
-; There's no option specified.
-    PLP
-    BCC statusAll
-; This is *CONFIGURE with no option, so show the supported options.
+    LDA (transientCmdPtr),Y:CMP #vduCr:BNE OptionSpecified
+    ; There's no option specified.
+    PLP:BCC StatusAll
+    ; This is *CONFIGURE with no option, so show the supported options.
     LDA #ibosHelpTableConfigureList
-    JSR ibosRef ; SFTODO: Redundant? DynamicSyntaxGenerationForIbosHelpTableA does JSR ibosRef itself...
+    JSR ibosRef ; SQUASH: Redundant - DynamicSyntaxGenerationForIbosHelpTableA does JSR ibosRef itself...
     JSR DynamicSyntaxGenerationForIbosHelpTableA
-    JMP ExitServiceCall								;restore service call parameters and exit
+    JMP ExitServiceCall
 			
-.optionSpecified
-    LDA #&00
-    STA transientConfigPrefix
-    JSR ConfRef
-    JSR SearchKeywordTable
-    BCC optionRecognised
+.OptionSpecified
+    LDA #0:STA transientConfigPrefix
+    JSR ConfRef:JSR SearchKeywordTable:BCC OptionRecognised
     TAY
-    JSR ParseNoSh
-    BCS notNoSh
-    TYA
-    JSR ConfRef
-    JSR SearchKeywordTable
-    BCC optionRecognised
-.notNoSh
+    JSR ParseNoSh:BCS NotNoSh
+    TYA:JSR ConfRef:JSR SearchKeywordTable:BCC OptionRecognised
+.NotNoSh
     PLP
-    JMP ExitServiceCall								;restore service call parameters and exit
+    JMP ExitServiceCall
 			
-.optionRecognised
-    JSR FindNextCharAfterSpace							;find next character. offset stored in Y
-    PLP
-    JSR jmpConfTypTblX
-    JMP ExitAndClaimServiceCall								;Exit Service Call
+.OptionRecognised
+    JSR FindNextCharAfterSpace
+    PLP:JSR JmpConfTypTblX
+    JMP ExitAndClaimServiceCall
 			
 ; Jump to the code at ConfTypTbl[X]; C is preserved, as it is used to indicate
 ; *STATUS (clear) or *CONFIGURE (set).
-.jmpConfTypTblX
+.JmpConfTypTblX
     PHP
     STX transientCommandIndex
-    TXA
-    ASL A
-    TAX
+    TXA:ASL A:TAX
     PLP
-    LDA ConfTypTbl+1,X
-    PHA
-    LDA ConfTypTbl,X
-    PHA
+    LDA ConfTypTbl + 1,X:PHA
+    LDA ConfTypTbl,X:PHA
     RTS
 			
-.statusAll
-    LDX #&00
-.L948D
-    TXA
-    PHA
-    TYA
-    PHA
-    CLC ; *STATUS
-    JSR jmpConfTypTblX
-    PLA
-    TAY
-    PLA
-    TAX
-    INX
-    CPX ConfTbla								;number of *CONFIGURE options
-    BNE L948D
-    JMP ExitServiceCall
+.StatusAll
+    LDX #0
+.StatusLoop
+    TXA:PHA:TYA:PHA
+    CLC:JSR JmpConfTypTblX ; C clear => *STATUS
+    PLA:TAY:PLA:TAX
+    INX:CPX ConfTbla:BNE StatusLoop ; CPX against number of *CONFIGURE options SQUASH: CPX #that value
+    JMP ExitServiceCall ; SQUASH: "BEQ to copy of this instruction above ; always branch"
 }
 
 ;Read / Write *CONF. FILE parameters
