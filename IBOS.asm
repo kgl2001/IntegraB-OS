@@ -1716,7 +1716,7 @@ firstDigitCmdPtrY = &BB
     INY:STY firstDigitCmdPtrY
     JMP ParseDigit ; SQUASH: "BNE ; always branch"?
 			
-.L876E
+.ValidDigit
     TAX
     LDA ConvertIntegerResult
     STA L00B4
@@ -1762,19 +1762,14 @@ firstDigitCmdPtrY = &BB
     INY
 .ParseDigit
     LDA (transientCmdPtr),Y:CMP #'Z'+1:BCC NotLowerCase
-    AND #CapitaliseMask                                                                                ;convert to upper case
+    AND #CapitaliseMask
 .NotLowerCase
-    SEC
-    SBC #'0'
-    CMP #10
-    BCC L87CE
-    SBC #('A' - 10) - '0'
-    CMP #10
-    BCC L87D2
-.L87CE
-    CMP base
-    BCC L876E
-.L87D2
+    SEC:SBC #'0':CMP #10:BCC DigitConverted
+    SBC #('A' - 10) - '0' ; Set A = original ASCII code - 'A' + 10, so 'A' => 10, 'B' = 11, etc
+    CMP #10:BCC InvalidDigit
+.DigitConverted
+    CMP base:BCC ValidDigit
+.InvalidDigit
     BIT negateFlag
     BPL L87EF
     SEC
