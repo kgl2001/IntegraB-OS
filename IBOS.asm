@@ -676,7 +676,7 @@ MACRO INCCS x
 .NoCarry
 ENDMACRO
 
-; "DECrement if Carry Clear" - convenient macro for use when subtracting an 8-bit value from a
+; "DECrement if Carry Clear" - convenience macro for use when subtracting an 8-bit value from a
 ; 16-bit value.
 MACRO DECCC x
     BCS NoBorrow
