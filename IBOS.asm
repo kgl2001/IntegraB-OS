@@ -3745,42 +3745,36 @@ ENDIF
             RTS
 }
 			
-;Autoboot - Service call &03
+; Autoboot - Service call &03
+; Note that we are expecting to be in bank 15, so nothing else can intercept this call before
+; we see it.
 .service03
 {
-	  ; If KEYV is set up to use the extended vector mechanism by a ROM
-	  ; which has &47 ("G") at &800D, set romselMemsel on the extended
-	  ; vector bank number. SFTODO: I believe this will have the effect of
-	  ; ensuring main/video memory is paged in. This seems weird, I am
-	  ; guessing it's a workaround for a particular ROM, but I don't know
-	  ; what or why. Just *maybe* this is the GXR? (But does that claim
-	  ; KEYV?) Just might be worth asking on stardot about this at some
-	  ; point. - OK, looking at the Integra-B manual, it does mention GXR
-	  ; in the "Applications" section, but I think this is much more likely
-	  ; to be for GENIE, which will almost certainly be claiming KEYV to
-	  ; allow it to be entered. (I haven't checked GXR or GENIE yet to see
-	  ; what is at &800D - OK, I now have, both GENIE 1.01 and GENIE 1.02 have "G" at &800D.)
-	  ; SFTODO: Ken - just a random thought, GENIE is PALPROM-ish with extra RAM, would your v2 board maybe be able to run it? Some discussion on stardot https://stardot.org.uk/forums/viewtopic.php?f=7&t=16297
-	  LDA KEYVH
-            CMP #&FF
-            BNE notExtendedVectorGROM
-            LDA #&0D
-            STA osRdRmPtr
-            LDA #&80
-            STA osRdRmPtr + 1
-            LDY XKEYVBank
-            JSR OSRDRM
-            CMP #'G'
-            BNE notExtendedVectorGROM
-            LDA XKEYVBank
-            ORA #romselMemsel
-            STA XKEYVBank
-.notExtendedVectorGROM
-            CLC
-            JSR SFTODOALARMSOMETHING
-            BIT L03A4
-            BPL L9611
-            JMP L964C
+    ; Before doing "filing system stuff" which logically relates to this service call, we use
+    ; it just as a convenient way to execute the following code at a suitable point during
+    ; reset.
+    ;
+    ; If KEYV is set up to use the extended vector mechanism by a ROM which has &47 ("G") at
+    ; &800D, set romselMemsel on the extended vector bank number. I am fairly confident the
+    ; intention here is to detect GENIE (both 1.01 and 1.02 match that test) having claimed
+    ; KEYV during an earlier reset-related service call; by patching its extended vector
+    ; bank number to have romselMemsel set, it will have access to video RAM and so will work
+    ; correctly even if we're in a shadow mode.
+    ;
+    ; SFTODO: Ken - just a random thought, GENIE is PALPROM-ish with extra RAM, would your v2
+    ; board maybe be able to run it? Some discussion on stardot
+    ; https://stardot.org.uk/forums/viewtopic.php?f=7&t=16297
+    LDA KEYVH:CMP #&FF:BNE NoGenie
+    LDA #&0D:STA osRdRmPtr:LDA #&80:STA osRdRmPtr + 1:LDY XKEYVBank:JSR OSRDRM
+    CMP #'G':BNE NoGenie
+    LDA XKEYVBank:ORA #romselMemsel:STA XKEYVBank
+.NoGenie
+
+    CLC
+    JSR SFTODOALARMSOMETHING
+    BIT L03A4
+    BPL L9611
+    JMP L964C
 			
 .L9611      PRVEN								;switch in private RAM
             LDX lastBreakType								;get last Break type
