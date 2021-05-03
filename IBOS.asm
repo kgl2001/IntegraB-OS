@@ -1416,14 +1416,13 @@ TmpCommandIndex = &AC
     RTS
 }
 			
-; SFTODO: I haven't traced through this code yet, but I infer that it's reponsible for printing "Syntax: " followed by the *HELP definition of the command.
-.GenerateSyntaxError
+.GenerateSyntaxErrorForTransientCommandIndex
 {
-.L860E      JSR PrvDis								;switch out private RAM
-            LDA L00AA
-            JSR CmdRef								;get start of * command look up table address X=&26, Y=&80
-            SEC
-            JMP DynamicSyntaxGenerationForAUsingYX
+    JSR PrvDis
+    LDA transientCommandIndex
+    JSR CmdRef
+    SEC
+    JMP DynamicSyntaxGenerationForAUsingYX
 }
 
 ;service entry point
@@ -2577,7 +2576,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     JMP ShowBufferSizeAndLocation
 .PrvDisGenerateSyntaxError
     JSR PrvDis
-    JMP GenerateSyntaxError
+    JMP GenerateSyntaxErrorForTransientCommandIndex
 
 .BankCountParsedOK
 {
@@ -2806,7 +2805,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 {
     JSR convertIntegerDefaultDecimal:BCC ParsedOK
     LDA (transientCmdPtr),Y:CMP #'?':BEQ ShowOsMode
-    JMP GenerateSyntaxError
+    JMP GenerateSyntaxErrorForTransientCommandIndex
 .ParsedOK
     JSR SetOsModeA
     JMP ExitAndClaimServiceCall
@@ -2869,7 +2868,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 }
 
 .GenerateSyntaxErrorIndirect2
-    JMP GenerateSyntaxError
+    JMP GenerateSyntaxErrorForTransientCommandIndex
 
 ;*SHX Command
 .shx
@@ -2923,7 +2922,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
             JMP ExitAndClaimServiceCall								;Exit Service Call
 
 .GenerateSyntaxErrorIndirect
-            JMP GenerateSyntaxError
+            JMP GenerateSyntaxErrorForTransientCommandIndex
 
 .turnTubeOnOrOff
             BNE turnTubeOn
@@ -3132,7 +3131,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     INY
 .NoOpenBracket
     JSR convertIntegerDefaultHex:BCC ConvertedOK
-    JMP GenerateSyntaxError
+    JMP GenerateSyntaxErrorForTransientCommandIndex
 .ConvertedOK
     LDA (transientCmdPtr),Y
     CMP #')':BNE NoCloseBracket
@@ -3311,7 +3310,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
             LDA (transientCmdPtr),Y							;read character
             CMP #vduCr								;CR?
             BNE L9253								;not CR, so jump
-.^L9250      JMP GenerateSyntaxError								;no file name, so error with 'Syntax:'
+.^L9250      JMP GenerateSyntaxErrorForTransientCommandIndex								;no file name, so error with 'Syntax:'
 
 .L9253      TYA
             PHA
@@ -4988,7 +4987,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 }
 			
 .GenerateSyntaxErrorIndirect
-	  JMP GenerateSyntaxError
+	  JMP GenerateSyntaxErrorForTransientCommandIndex
 
 .L9C42      JSR convertIntegerDefaultHex
             BCS GenerateSyntaxErrorIndirect
@@ -6156,7 +6155,7 @@ osfileBlock = L02EE
 	  EQUS "Bad id", &00
 
 .GenerateSyntaxErrorIndirect
-            JMP GenerateSyntaxError
+            JMP GenerateSyntaxErrorForTransientCommandIndex
 
 	  ; SFTODO: Can we repurpose another nearby RTS and get rid of this?
 .rts        RTS
@@ -9040,7 +9039,7 @@ column = prvC
             PLP
             BCC LB62A
             JSR PrvDis								;switch out private RAM
-            JMP GenerateSyntaxError
+            JMP GenerateSyntaxErrorForTransientCommandIndex
 			
 .LB62A      JMP PrvDisBadTime
 
