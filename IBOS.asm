@@ -1325,10 +1325,11 @@ TmpCommandIndex = &AC
 
     JSR setTransientCmdPtr
     JSR CmdRef:JSR SearchKeywordTable:BCC RunCommand
-    ; We didn't find a match, so see if there's an "I" prefix (case-insensitive) and if so try without that.
+    ; We didn't find a match, so see if there's an "I" prefix (case-insensitive) and if so try
+    ; without that.
     TAY:LDA (transientCmdPtr),Y:AND #&DF:CMP #'I':BNE NoIPrefix
-    INY:TYA ; skip the "I"
-    JSR CmdRef:JSR SearchKeywordTable:BCC RunCommand
+    INY ; skip the "I"
+    TYA:JSR CmdRef:JSR SearchKeywordTable:BCC RunCommand
 .ExitServiceCallIndirect
     LDA #4 ; SQUASH: redundant, ExitServiceCall will do PLA
     JMP ExitServiceCall
@@ -1360,8 +1361,8 @@ TmpCommandIndex = &AC
     DEY:LDA (transientTblPtr),Y:PHA
     ; Record the relevant index at transientCommandIndex for use in generating a syntax error
     ; later if necessary. (transientCommandIndex == transientTblPtr so we couldn't just store
-    ; this here direectly. SQUASH: It might be possible to reshuffle the zero page use to
-    ; avoid this, but the chances of breaking things might be quite high.)
+    ; this here direectly. SQUASH: If we just used a different address instead of
+    ; transientTblPtr in this subroutine we could probably avoid this.)
     LDX TmpCommandIndex:STX transientCommandIndex
     LDY TmpCommandTailOffset
     RTS ; transfer control to the command
