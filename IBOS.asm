@@ -3805,7 +3805,7 @@ ENDIF
     LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeNone:BEQ NoKeyPressed
 .L964C
     LDX romselCopy:DEX
-    JMP selectFirstFilingSystemROMLessEqualXAndLanguage
+    JMP SelectFirstFilingSystemROMLessEqualXAndLanguage
 .NoKeyPressed
 
     LDA lastBreakType:BNE notSoftReset1
@@ -3815,34 +3815,29 @@ ENDIF
     PLA
     AND #&7F
     TAX
-    CPX romselCopy
-    BCC selectFirstFilingSystemROMLessEqualXAndLanguage
+    CPX romselCopy:BCC SelectFirstFilingSystemROMLessEqualXAndLanguage
 .notSoftReset1
-            JSR setDfsNfsPriority
-            JMP selectConfiguredFilingSystemAndLanguage
+    JSR setDfsNfsPriority
+    JMP selectConfiguredFilingSystemAndLanguage
 
 .setDfsNfsPriority
-            LDX #userRegDiscNetBootData							;Register &10 (0: File system disc/net flag / 4: Boot / 5-7: Data )
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            ROR A
-            ROR A									;Move File system bit to msb
-            AND #&80								;and isolate bit
-            TAX
-            LDA #osbyteReadWriteStartupOptions						;select read / write start-up options
-            LDY #&7F								;retain lower 7 bits
-            JSR OSBYTE								;execute read / write start-up options
-            RTS
+    LDX #userRegDiscNetBootData
+    JSR ReadUserReg
+    ROR A
+    ROR A
+    AND #&80
+    TAX
+    LDA #osbyteReadWriteStartupOptions
+    LDY #&7F
+    JSR OSBYTE
+    RTS
 
 .selectConfiguredFilingSystemAndLanguage
-            LDX #userRegLangFile
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            AND #&0F								;get *CONFIGURE FILE value
-            TAX
-	  ; SFTODO: If the selected filing system is >= our bank, start one bank lower?! This seems odd, although *if* we know we're bank 15, this really just means "start below us" (presumably to avoid infinite recursion)
-            CPX romselCopy
-            BCC selectFirstFilingSystemROMLessEqualXAndLanguage
-            DEX
-.selectFirstFilingSystemROMLessEqualXAndLanguage
+    LDX #userRegLangFile:JSR ReadUserReg:AND #&0F:TAX ; get *CONFIGURE FILE value
+    ; SFTODO: If the selected filing system is >= our bank, start one bank lower?! This seems odd, although *if* we know we're bank 15, this really just means "start below us" (presumably to avoid infinite recursion)
+    CPX romselCopy:BCC SelectFirstFilingSystemROMLessEqualXAndLanguage
+    DEX
+.SelectFirstFilingSystemROMLessEqualXAndLanguage
             JSR passServiceCallToROMsLessEqualX
             LDA lastBreakType
             BNE notSoftReset
