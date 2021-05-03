@@ -1693,8 +1693,8 @@ NegateFlag = FilingSystemWorkspace + 9
 OriginalCmdPtrY = FilingSystemWorkspace + 10
 FirstDigitCmdPtrY = FilingSystemWorkspace + 11
 
-.^convertIntegerDefaultHex
-    LDA #16:JMP convertIntegerDefaultBaseA ; SQUASH: "BNE ; always branch"
+.^ConvertIntegerDefaultHex
+    LDA #16:JMP ConvertIntegerDefaultBaseA ; SQUASH: "BNE ; always branch"
 
 ; SQUASH: Could we share this fragment?
 .NothingToConvert
@@ -1702,9 +1702,9 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
     CLV
     RTS
 
-.^convertIntegerDefaultDecimal
+.^ConvertIntegerDefaultDecimal
     LDA #10
-.^convertIntegerDefaultBaseA
+.^ConvertIntegerDefaultBaseA
     STA Base
     JSR FindNextCharAfterSpace:BCS NothingToConvert ; branch if carriage return
     STY OriginalCmdPtrY
@@ -2507,7 +2507,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     EQUB &80
     EQUS "No Buffer!", &00
 .NotOsMode0
-    JSR convertIntegerDefaultDecimal:BCC BankCountParsedOK
+    JSR ConvertIntegerDefaultDecimal:BCC BankCountParsedOK
     LDA (transientCmdPtr),Y
     CMP #'#':BEQ UseUserBankList
     CMP #'?':BNE PrvDisGenerateSyntaxError
@@ -2741,7 +2741,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ;*OSMODE Command
 .osmode
 {
-    JSR convertIntegerDefaultDecimal:BCC ParsedOK
+    JSR ConvertIntegerDefaultDecimal:BCC ParsedOK
     LDA (transientCmdPtr),Y:CMP #'?':BEQ ShowOsMode
     JMP GenerateSyntaxErrorForTransientCommandIndex
 .ParsedOK
@@ -2791,7 +2791,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ;*SHADOW Command
 .shadow
 {
-    JSR convertIntegerDefaultDecimal:BCC ParsedOK
+    JSR ConvertIntegerDefaultDecimal:BCC ParsedOK
     LDA (transientCmdPtr),Y
     CMP #'?':BEQ ShowShadow
     CMP #vduCr:BNE GenerateSyntaxErrorIndirect2
@@ -3069,7 +3069,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     CMP #'(':PHP:BNE NoOpenBracket
     INY
 .NoOpenBracket
-    JSR convertIntegerDefaultHex:BCC ConvertedOK
+    JSR ConvertIntegerDefaultHex:BCC ConvertedOK
     JMP GenerateSyntaxErrorForTransientCommandIndex
 .ConvertedOK
     LDA (transientCmdPtr),Y
@@ -3263,7 +3263,7 @@ OriginalOutputDeviceStatus = TransientZP + 1
     ; Set "start address" in OSFILE block (0).
     LDA #0:STA osfileBlock + 10:STA osfileBlock + 11:STA osfileBlock + 12:STA osfileBlock + 13
     ; Set "end address" in OSFILE block (length).
-    TXA:TAY:JSR convertIntegerDefaultHex:BCS GenerateSyntaxErrorForTransientCommandIndexIndirect
+    TXA:TAY:JSR ConvertIntegerDefaultHex:BCS GenerateSyntaxErrorForTransientCommandIndexIndirect
     LDA ConvertIntegerResult:STA osfileBlock + 14
     LDA ConvertIntegerResult + 1:STA osfileBlock + 15
     LDA ConvertIntegerResult + 2:STA osfileBlock + 16
@@ -3566,7 +3566,7 @@ ENDIF
 
 ;Write *CONF. FILE parameters to RTC register
 .Conf0Write
-    JSR convertIntegerDefaultDecimalChecked:STA transientConfigPrefix
+    JSR ConvertIntegerDefaultDecimalChecked:STA transientConfigPrefix
     TYA:PHA
     JSR SetConfigValueTransientConfigPrefix ; SFTODO: I'm thinking "transientConfigPrefix" might be badly misnamed (in general, not just here)
     PLA:TAY
@@ -3592,7 +3592,7 @@ ENDIF
     JMP PrintADecimalPadNewline
 			
 .Conf1Write
-    JSR convertIntegerDefaultDecimalChecked
+    JSR ConvertIntegerDefaultDecimalChecked
     JMP SetConfigValueA ; SQUASH: move Conf1 block so we can fall through?
 }
 			
@@ -3604,9 +3604,9 @@ ENDIF
     JSR PrintADecimalPad
     JMP OSNEWL
 
-.convertIntegerDefaultDecimalChecked
+.ConvertIntegerDefaultDecimalChecked
 {
-    JSR convertIntegerDefaultDecimal
+    JSR ConvertIntegerDefaultDecimal
     BCS GenerateBadParameterIndirect ; SQUASH: BCC some-other-rts and fall through
     RTS
 			
@@ -3667,7 +3667,7 @@ ENDIF
             ADC #&01
             JMP PrintADecimalPadNewline
 
-.Conf2Write JSR convertIntegerDefaultDecimalChecked
+.Conf2Write JSR ConvertIntegerDefaultDecimalChecked
             SEC
             SBC #&01
             JMP SetConfigValueA
@@ -3685,7 +3685,7 @@ ENDIF
             ADC #(shadowModeOffset - (maxMode + 1)) - 1 ; -1 because C is set
 .modeInA	  JMP PrintADecimalPadNewline
 
-.Conf5Write JSR convertIntegerDefaultDecimalChecked
+.Conf5Write JSR ConvertIntegerDefaultDecimalChecked
 	  ; Map a mode 0-7 or 128-135 to a "compressed mode" in the range 0-15.
             CMP #shadowModeOffset
             BCC valueInA
@@ -3711,12 +3711,12 @@ ENDIF
             AND #&01
             JMP PrintADecimalPadNewline
 
-.Conf4Write JSR convertIntegerDefaultDecimalChecked
+.Conf4Write JSR ConvertIntegerDefaultDecimalChecked
             AND #&07
             ASL A
             PHA
             JSR FindNextCharAfterSpaceSkippingComma
-            JSR convertIntegerDefaultDecimalChecked
+            JSR ConvertIntegerDefaultDecimalChecked
             AND #&01
             STA L00AE
             PLA
@@ -3741,7 +3741,7 @@ ENDIF
             ASL L00AE								;Missing address label?
             ASL L00AE
             JSR FindNextCharAfterSpaceSkippingComma
-            JSR convertIntegerDefaultDecimalChecked
+            JSR ConvertIntegerDefaultDecimalChecked
             AND #&03
             ORA L00AE
             STA L00AE
@@ -4822,7 +4822,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 
 .L9C42
     XASSERT_USE_PRV1
-      JSR convertIntegerDefaultHex
+      JSR ConvertIntegerDefaultHex
             BCS GenerateSyntaxErrorIndirect
             LDA L00B0
             STA prvOswordBlockCopy + 8
@@ -4863,7 +4863,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 .parseOsword4243BufferAddress
 {
     XASSERT_USE_PRV1
-            JSR convertIntegerDefaultHex
+            JSR ConvertIntegerDefaultHex
             BCS GenerateSyntaxErrorIndirect
             LDA L00B0
             STA prvOswordBlockCopy + 2
@@ -4885,7 +4885,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             PHP
             BNE L9CA7
             INY
-.L9CA7      JSR convertIntegerDefaultHex
+.L9CA7      JSR ConvertIntegerDefaultHex
             BCS GenerateSyntaxErrorIndirect
             PLP
             BEQ L9CC7
@@ -6226,14 +6226,14 @@ osfileBlock = L02EE
 ; If C is set, V will be clear iff there was nothing left on the command line.
 .parseBankNumber
 {
-; SFTODO: Would it be more compact to check for W-Z *first*, then use convertIntegerDefaultHex? This might only work if we do a "proper" upper case conversion, not sure.
+; SFTODO: Would it be more compact to check for W-Z *first*, then use ConvertIntegerDefaultHex? This might only work if we do a "proper" upper case conversion, not sure.
             JSR FindNextCharAfterSpace								;find next character. offset stored in Y
             BCS endOfLine
             LDA (transientCmdPtr),Y
             CMP #','
             BNE LA464
             INY
-.LA464      JSR convertIntegerDefaultDecimal
+.LA464      JSR ConvertIntegerDefaultDecimal
             BCC parsedDecimalOK
             LDA (transientCmdPtr),Y
             AND #CapitaliseMask                                                                                ;convert to upper case (imperfect but presumably good enough)
@@ -8239,7 +8239,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             BNE dateArgumentParsed
             INY
 .dayOfWeekOpen
-            JSR convertIntegerDefaultDecimal
+            JSR ConvertIntegerDefaultDecimal
             BCC dayOfMonthInA
             LDA #&FF
 .dayOfMonthInA
@@ -8250,7 +8250,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             CMP #'/'
             BNE dateArgumentParsed
             INY
-            JSR convertIntegerDefaultDecimal
+            JSR ConvertIntegerDefaultDecimal
             BCC monthInA
             LDA #&FF
 .monthInA   STA prvDateMonth
@@ -8260,7 +8260,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             CMP #'/'
             BNE dateArgumentParsed
             INY
-            JSR convertIntegerDefaultDecimal
+            JSR ConvertIntegerDefaultDecimal
             BCC parsedYearOK
             LDA #&FF
             STA prvDateYear
@@ -8341,7 +8341,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             BNE notMinus
 	  ; SFTODO: Similar chunk of code here and at .plus, could we factor out?
             INY
-            JSR convertIntegerDefaultDecimal
+            JSR ConvertIntegerDefaultDecimal
             BCS LB20B ; SFTODO: Branch if parsing failed
             CMP #&00
             BNE LB20D
@@ -8353,7 +8353,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             RTS
 			
 .plus       INY
-            JSR convertIntegerDefaultDecimal
+            JSR ConvertIntegerDefaultDecimal
             BCS LB21F ; SFTODO: Branch if parsing failed
             CMP #&00
             BNE LB221
@@ -8447,14 +8447,14 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .parseAndValidateTime
 {
     XASSERT_USE_PRV1
-            JSR convertIntegerDefaultDecimal
+            JSR ConvertIntegerDefaultDecimal
             BCS parseError
             STA prvDateHours
             LDA (transientCmdPtr),Y
             INY
             CMP #':'
             BNE parseError
-            JSR convertIntegerDefaultDecimal
+            JSR ConvertIntegerDefaultDecimal
             BCS parseError
             STA prvDateMinutes
             LDA (transientCmdPtr),Y
@@ -8466,7 +8466,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             BEQ secondsInA ; always branch
 .skipCharAndParseSeconds
             INY
-            JSR convertIntegerDefaultDecimal
+            JSR ConvertIntegerDefaultDecimal
             BCS parseError
 .secondsInA STA prvDateSeconds
             TYA
@@ -8490,21 +8490,21 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     XASSERT_USE_PRV1
       LDA #&00
             STA prvDateDayOfWeek
-            JSR convertIntegerDefaultDecimal
+            JSR ConvertIntegerDefaultDecimal
             BCS LB32F
             STA prvDateDayOfMonth
             LDA (transientCmdPtr),Y
             INY
             CMP #'/'
             BNE LB32F
-            JSR convertIntegerDefaultDecimal
+            JSR ConvertIntegerDefaultDecimal
             BCS LB32F
             STA prvDateMonth
             LDA (transientCmdPtr),Y
             INY
             CMP #'/'
             BNE LB32F
-            JSR convertIntegerDefaultDecimal
+            JSR ConvertIntegerDefaultDecimal
             BCS LB32F
             JSR interpretParsedYear
             JSR validateDateTimeAssumingLeapYear
