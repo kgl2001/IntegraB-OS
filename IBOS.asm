@@ -10615,12 +10615,14 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
 ; SFTODO: Mildly magic constants
 .SanitisePrvPrintBufferStart
 {
+MaxPrintBufferStart = prv8End - 1024
+
     ; SQUASH: We could change "BCC Rts" below to use the RTS above and make the JSR:RTS a JMP.
     LDX #prvPrvPrintBufferStart - prv83:JSR ReadPrivateRam8300X
     CMP #hi(prv8Start):BCC UseAC
-    CMP #&AC:BCC Rts
+    CMP #hi(MaxPrintBufferStart):BCC Rts
 .UseAC
-    LDA #&AC:JSR WritePrivateRam8300X
+    LDA #hi(MaxPrintBufferStart):JSR WritePrivateRam8300X
 .Rts
     RTS
 }
