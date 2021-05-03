@@ -1678,7 +1678,7 @@ originalCmdPtrY = &BA
 firstDigitCmdPtrY = &BB
 
 ; SQUASH: Could we share this fragment?
-.clvRts
+.NothingToConvert
     CLV
     RTS
 
@@ -1686,8 +1686,7 @@ firstDigitCmdPtrY = &BB
     LDA #10
 .^convertIntegerDefaultBaseA
     STA base
-    JSR FindNextCharAfterSpace
-    BCS clvRts                                                                              ;return with V set if it's a carriage return
+    JSR FindNextCharAfterSpace:BCS NothingToConvert ; branch if carriage return
     STY originalCmdPtrY
     STY firstDigitCmdPtrY
     LDA #&00
@@ -1808,8 +1807,7 @@ firstDigitCmdPtrY = &BB
     RTS
 			
 .L87F8
-    LDA #vduBell
-    JSR OSWRCH								;Generate VDU 7 beep
+    LDA #vduBell:JSR OSWRCH								;Generate VDU 7 beep
     LDA #&00
     LDY originalCmdPtrY
     SEC
