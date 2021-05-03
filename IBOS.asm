@@ -2201,7 +2201,8 @@ ptr = &00 ; 2 bytes
 
 ; SFTODO: THIS IS APPROXIMATELY OSBYTE &6F Aries/Watford Shadow RAM Access
 {
-.^L8A7B	  PHP
+.^L8A7B
+	  PHP
 	  SEI
 	  PRVEN								;switch in private RAM
             TXA ; SFTODO: Just do STX in next line and avoid this? *Or* maybe rely on the fact we have this value in X to avoid needing to load this later
@@ -2885,7 +2886,6 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     JMP ExitAndClaimServiceCall
 }
 
-; SFTODO LINEAR REVIEW UP TO HERE
 ;*TUBE Command
 {
 .^tube      JSR ParseOnOff
@@ -2896,7 +2896,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
             JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
             LDA tubePresenceFlag
 .^PrintOnOffOSNEWLExitSC
-.L8FA3      JSR PrintOnOff
+            JSR PrintOnOff
             JSR OSNEWL
 .exitSCIndirect
             JMP ExitAndClaimServiceCall								;Exit Service Call
