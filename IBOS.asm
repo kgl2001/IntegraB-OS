@@ -10244,17 +10244,9 @@ ScreenStart = &3000
 ; properly/formally/some other term.
 .pageInPrvs81
 {
-.LBD45      LDA romselCopy
-            ORA #romselPrvEn
-            STA romselCopy
-            STA romsel
-            LDA ramselCopy
-            PHA
-            ORA #ramselPrvs81
-            STA ramselCopy
-            STA ramsel
-            PLA
-            RTS
+    LDA romselCopy:ORA #romselPrvEn:STA romselCopy:STA romsel
+    LDA ramselCopy:PHA:ORA #ramselPrvs81:STA ramselCopy:STA ramsel:PLA
+    RTS
 }
 
 .InsvHandler
@@ -10423,17 +10415,16 @@ ScreenStart = &3000
 ; Advance prvPrintBufferReadPtr by one, wrapping round at the end of each bank and wrapping
 ; round at the end of the bank list.
 .^AdvancePrintBufferReadPtr
-    XASSERT_USE_PRV1
     LDX #prvPrintBufferReadPtrIndex
     ASSERT prvPrintBufferReadPtrIndex != 0:BNE Common ; always branch
 
 ; Advance prvPrintBufferWritePtr by one, wrapping round at the end of each bank and wrapping
 ; round at the end of the bank list.
 .^AdvancePrintBufferWritePtr
-    XASSERT_USE_PRV1
     LDX #prvPrintBufferWritePtrIndex
 .Common
-    INC prvPrintBufferPtrBase,X:BNE Rts
+    XASSERT_USE_PRV1
+    INC prvPrintBufferPtrBase    ,X:BNE Rts
     INC prvPrintBufferPtrBase + 1,X
     LDA prvPrintBufferPtrBase + 1,X:CMP prvPrintBufferBankEnd:BCC Rts
     LDY prvPrintBufferPtrBase + 2,X:INY:CPY #MaxPrintBufferSwrBanks:BCC DontWrap1
