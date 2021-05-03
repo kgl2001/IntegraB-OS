@@ -9328,50 +9328,50 @@ column = prvC
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=2: Convert BCD values into string format
 .^oswd0eConvertBCD
-.LB844      LDX #&06
-.LB846      LDA prvOswordBlockCopy + 1,X
-            JSR LB87A
-            STA prvOswordBlockCopy + 9,X
-            DEX
-            BPL LB846
-            LDA #&13
-            STA prvOswordBlockCopy + 8
-            JMP LB821
+    XASSERT_USE_PRV1
+    LDX #6
+.LB846
+    LDA prvOswordBlockCopy + 1,X
+    JSR LB87A
+    STA prvOswordBlockCopy + 9,X
+    DEX:BPL LB846
+    LDA #19:STA prvDateCentury
+    JMP LB821 ; SQUASH: "BNE ; always branch"
 
-.^LB85A      LDA prvOswordBlockCopy + 9,Y
-            SEC
-            SBC #&64
-            BCS LB85A
-            ADC #&64
-            LDX #&FF
-            SEC
-.LB867      INX
-            SBC #&0A
-            BCS LB867
-            ADC #&0A
-            STA prvOswordBlockCopy + 9,Y
-            TXA
-            ASL A
-            ASL A
-            ASL A
-            ASL A
-            ORA prvOswordBlockCopy + 9,Y
-            RTS
+.^LB85A
+    XASSERT_USE_PRV1
+    LDA prvOswordBlockCopy + 9,Y
+    SEC:SBC #100:BCS LB85A
+    ADC #100
+    LDX #&FF
+    SEC
+.LB867
+    INX
+    SBC #10
+    BCS LB867
+    ADC #10
+    STA prvOswordBlockCopy + 9,Y
+    TXA
+    ASL A:ASL A:ASL A:ASL A
+    ORA prvOswordBlockCopy + 9,Y
+    RTS
 
 ; SFTODO: This has only one caller
-.LB87A      PHA
-            AND #&0F
-            STA prv82+&4E
-            PLA
-            AND #&F0
-            LSR A
-            STA prv82+&4F
-            LSR A
-            LSR A
-            CLC
-            ADC prv82+&4F
-            ADC prv82+&4E
-            RTS
+.LB87A
+    XASSERT_USE_PRV1
+    PHA
+    AND #&0F
+    STA prv82+&4E
+    PLA
+    AND #&F0
+    LSR A
+    STA prv82+&4F
+    LSR A
+    LSR A
+    CLC
+    ADC prv82+&4F
+    ADC prv82+&4E
+    RTS
 }
 
 ;XY?0=&61
