@@ -726,12 +726,6 @@ MACRO PRVS81EN ; SFTODO: Better name?
     JSR pageInPrvs81
 ENDMACRO
 
-; As PRVDIS, but for paging out PRVS1 and PRVS8. SFTODO: This is never used, delete it?!
-MACRO PRVS81DIS ; SFTODO: Better name?
-    ASSERT (P% >= prv1End AND P% < prv8Start) OR (P% >= prv8End)
-    JSR pageOutPrvs81
-ENDMACRO
-
 start = &8000
 end = &C000
 ORG	start
