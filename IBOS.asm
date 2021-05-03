@@ -3547,49 +3547,49 @@ ENDIF
 ;Read / Write *CONF. FILE parameters
 .Conf0	
 {
- 	  BCS Conf0Write
+    BCS Conf0Write
 
 ;Read *CONF. FILE parameters from RTC register and write to screen
-            JSR PrintConfigNameAndGetValue
-            JSR PrintADecimalPad
-            JSR printSpace								;write ' ' to screen
-            LDX #userRegDiscNetBootData							;Register &10 (0: File system disc/net flag / 4: Boot / 5-7: Data )
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            LDX #'N'								;'N' - NFS
-	  ; SFTODO: If we're desperate for space using LSR A:BCC would save a byte.
-            AND #&01								;Isolate file system bit SFTODO: replace with constant if used elsewhere too (prob is?!)
-            BEQ L94BA								;NFS?
-            LDX #'D'								;'D' - DFS
-.L94BA      TXA
-            JSR OSWRCH								;Write to screen
-            JMP OSNEWL								;New line
+    JSR PrintConfigNameAndGetValue
+    JSR PrintADecimalPad
+    ; Show the D(FS)/N(FS) setting specific to *CONFIGURE FILE.
+    JSR printSpace
+    LDX #userRegDiscNetBootData:JSR ReadUserReg
+    LDX #'N'
+    AND #1:BEQ Nfs ; SQUASH: LSR A:BCC Nfs
+    LDX #'D'
+.Nfs
+    TXA:JSR OSWRCH
+    JMP OSNEWL
 
 ;Write *CONF. FILE parameters to RTC register
 .Conf0Write
-            JSR convertIntegerDefaultDecimalChecked
-            STA transientConfigPrefix
-            TYA
-            PHA
-            JSR SetConfigValueTransientConfigPrefix
-            PLA
-            TAY
-            JSR FindNextCharAfterSpace							;find next character. offset stored in Y
-            LDA (transientCmdPtr),Y							;Read File system type
-            AND #CapitaliseMask								;Capitalise
-            CMP #'N'								;Is 'N' - NFS
-            BEQ L94DD								;CLC then write to register
-            CMP #'D'								;Is 'D' - NFS
-            BEQ L94DE								;SEC then write to register
-            RTS
+    JSR convertIntegerDefaultDecimalChecked
+    STA transientConfigPrefix
+    TYA
+    PHA
+    JSR SetConfigValueTransientConfigPrefix
+    PLA
+    TAY
+    JSR FindNextCharAfterSpace
+    LDA (transientCmdPtr),Y
+    AND #CapitaliseMask
+    CMP #'N'
+    BEQ L94DD
+    CMP #'D'
+    BEQ L94DE
+    RTS
 			
-.L94DD      CLC
-.L94DE      PHP									;Save File system status bit in Carry flag
-            LDX #userRegDiscNetBootData							;Register &10 (0: File system / 4: Boot / 5-7: Data )
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            LSR A									;Rotate old File system status bit out of register
-            PLP									;Restore new File system status bit from Carry flag
-            ROL A									;Rotate new File system status bit in to register
-            JMP WriteUserReg							;Write to RTC clock User area. X=Addr, A=Data
+.L94DD
+    CLC
+.L94DE
+    PHP
+    LDX #userRegDiscNetBootData
+    JSR ReadUserReg
+    LSR A
+    PLP
+    ROL A
+    JMP WriteUserReg
 }
 			
 ;Read / Write *CONF. <option> <n> parameters
