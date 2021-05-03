@@ -1738,11 +1738,12 @@ SFTODOOTHER = &B4 ; 4 bytes
     INY:STY FirstDigitCmdPtrY
     JMP ParseDigit ; SQUASH: "BNE ; always branch"?
 			
-.ValidDigit
+.ValidDigitInA
+    ; Set SFTODOOTHER = ConvertIntegerResult and ConvertIntegerResult = sign-extended(digit)
     TAX
     LDA ConvertIntegerResult:STA SFTODOOTHER
     STX ConvertIntegerResult
-    LDX #&00
+    LDX #0
     LDA ConvertIntegerResult + 1:STA SFTODOOTHER + 1
     STX ConvertIntegerResult + 1
     LDA ConvertIntegerResult + 2:STA SFTODOOTHER + 2
@@ -1750,7 +1751,7 @@ SFTODOOTHER = &B4 ; 4 bytes
     LDA ConvertIntegerResult + 3:STA SFTODOOTHER + 3
     STX ConvertIntegerResult + 3
     LDA Base
-    LDX #&08
+    LDX #8
 .L878D
     LSR A
     BCC L87AD
@@ -1763,12 +1764,8 @@ SFTODOOTHER = &B4 ; 4 bytes
     PLA
     BVS GenerateBadParameterIndirect
 .L87AD
-    ASL SFTODOOTHER
-    ROL SFTODOOTHER + 1
-    ROL SFTODOOTHER + 2
-    ROL SFTODOOTHER + 3
-    DEX
-    BNE L878D
+    ASL SFTODOOTHER:ROL SFTODOOTHER + 1:ROL SFTODOOTHER + 2:ROL SFTODOOTHER + 3
+    DEX:BNE L878D
     INY
 .ParseDigit
     LDA (transientCmdPtr),Y:CMP #'Z'+1:BCC NotLowerCase
@@ -1778,7 +1775,7 @@ SFTODOOTHER = &B4 ; 4 bytes
     SBC #('A' - 10) - '0' ; Set A = original ASCII code - 'A' + 10, so 'A' => 10, 'B' = 11, etc
     CMP #10:BCC InvalidDigit
 .DigitConverted
-    CMP Base:BCC ValidDigit
+    CMP Base:BCC ValidDigitInA
 .InvalidDigit
     ; We stop parsing when we see an invalid digit but we don't consider it an error as such. SFTODO: I think this is true, but check
     BIT NegateFlag:BPL DontNegate
