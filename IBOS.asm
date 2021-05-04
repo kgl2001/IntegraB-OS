@@ -6732,7 +6732,7 @@ osfileBlock = L02EE
 .Rts
    RTS
 
-;Lookup table for number of days in each month
+; Lookup table for number of days in each month
 .MonthDaysTable
     EQUB 31 ; January
     EQUB 28 ; February
@@ -6748,40 +6748,31 @@ osfileBlock = L02EE
     EQUB 31 ; December
 }
 
-; SFTODO: This has only one caller
-; SFTODO: This seems to want to calculate "prvDate - 1st January in same year" in days, so result (in prvDateSFTODO4, 16 bit word) will be 0 for 1st January, 1 for 2nd January, etc. However, see the comment below about TYA vs TXA - what it actually seems to do is return the number of days up to the end of prvMonth in prvDateSFTODO4 and prvDateDayOfMonth-1 in X. Maybe this *is* what it really wants to do and I'm misinterpreting things - would need to look at caller in more detail
-.calculateDaysBetween1stJanAndPrvDateSFTODOIsh
+; Set prvDateSFTODO4 to the day number of prvDate{DayOfMonth,Month} in the current year, with
+; 1st January being 0.
+; ENHANCE: That's what this should do, there's a bug; see ENHANCE: comment below.
+; SQUASH: This has only one caller
+.CalculateDaysBetween1stJanAndPrvDateSFTODOIsh
 {
     XASSERT_USE_PRV1
-            LDA #&00
-            STA prvDateSFTODO4
-            STA prvDateSFTODO4 + 1
-            LDY #0
-.LA808      INY
-            CPY prvDateMonth
-            BEQ LA823
-            JSR GetDaysInMonthY
-            CLC
-            ADC prvDateSFTODO4
-            STA prvDateSFTODO4
-	  ; SFTODO: Could use BCC:INC to save a few bytes
-            LDA prvDateSFTODO4 + 1
-            ADC #0
-            STA prvDateSFTODO4 + 1
-            BCC LA808 ; SFTODO: In reality won't this branch always be taken? We're counting days from 1st January and we surely won't overflow a 16-bit word?
-            RTS ; SFTODO: In which case this is redundant
+    LDA #0:STA prvDateSFTODO4:STA prvDateSFTODO4 + 1
 
-.LA823      LDX prvDateDayOfMonth
-            DEX
-            TYA ; SFTODO: should this be TXA?? Pretty sure it should, see test/date.bas
-            CLC
-            ADC prvDateSFTODO4
-            STA prvDateSFTODO4
-	  ; SFTODO: Could use BCC:INC to save a few bytes
-            LDA prvDateSFTODO4 + 1
-            ADC #0
-            STA prvDateSFTODO4 + 1
-            RTS
+    ; Count the days in the complete months (if any) before prvDateMonth.
+    LDY #0 ; SQUASH: TAY
+.PrecedingMonthLoop
+    INY:CPY prvDateMonth:BEQ CountedDaysInPrecedingMonths
+    JSR GetDaysInMonthY
+    CLC:ADC prvDateSFTODO4:STA prvDateSFTODO4
+    LDA prvDateSFTODO4 + 1:ADC #0:STA prvDateSFTODO4 + 1 ; SQUASH: INCCS prvDateSFTODO4 + 1
+    BCC PrecedingMonthLoop ; always branch SQUASH: careful if change to INCCS in previous line
+    RTS ; SQUASH: redundant, BCC will always branch (prvSFTODODATE4 will always be <365)
+
+    ; Count the days up to but not including prvDateDayOfMonth in the current month.
+.CountedDaysInPrecedingMonths
+    LDX prvDateDayOfMonth:DEX:TYA ; ENHANCE: This is buggy; TYA should be TXA, see test/date.bas.
+    CLC:ADC prvDateSFTODO4:STA prvDateSFTODO4
+    LDA prvDateSFTODO4 + 1:ADC #0:STA prvDateSFTODO4 + 1 ; SQUASH: INCCS prvDateSFTODO4 + 1
+    RTS
 }
 
 {
@@ -7653,9 +7644,9 @@ ENDIF
             JMP emitSpace
 }
 
-; SFTODO: "Ish" in name because I think this will be affected by the bug in calculateDaysBetween1stJanAndPrvDateSFTODOIsh
+; SFTODO: "Ish" in name because I think this will be affected by the bug in CalculateDaysBetween1stJanAndPrvDateSFTODOIsh
 ; SFTODO: This has only one caller
-.calculateDaysBetween1stJan1900AndPrvDateSFTODOIsh
+.CalculateDaysBetween1stJan1900AndPrvDateSFTODOIsh
 {
     XASSERT_USE_PRV1
             LDA #0
@@ -7697,7 +7688,7 @@ ENDIF
 	  ; prvDC += yearsSince1900 DIV 4
             BCS LAE26 ; branch if we've overflowed SFTODO: seems a little pointless, we didn't check for overflow above so why only here? Just maybe this works out correctly, but I'm a little dubious.
 	  ; We have prvDC = yearsSince1900*daysPerYear + yearsSince1900 DIV 4 = days since January 1st 1900.
-            JSR calculateDaysBetween1stJanAndPrvDateSFTODOIsh
+            JSR CalculateDaysBetween1stJanAndPrvDateSFTODOIsh
             CLC
             LDA prvDateSFTODO4
             ADC prvDC
@@ -7705,7 +7696,7 @@ ENDIF
             LDA prvDateSFTODO4 + 1
             ADC prvDC + 1
             STA prvDateSFTODO4 + 1
-	  ; We have now (SFTODO: ignoring possible bug in calculateDaysBetween1stJanAndPrvDateSFTODOIsh) calculated the number of days from January 1st 1900 to prvDate.
+	  ; We have now (SFTODO: ignoring possible bug in CalculateDaysBetween1stJanAndPrvDateSFTODOIsh) calculated the number of days from January 1st 1900 to prvDate.
             BCS LAE26 ; branch if we've overflowed SFTODO: pointless? well, at least inconsistent/incomplete?
             RTS
 			
@@ -7715,7 +7706,7 @@ ENDIF
 }
 
 ; SFTODO: This has only one caller
-; SFTODO: I suspect this subroutine is (intended to be) the inverse of JSR calculateDaysBetween1stJan1900AndPrvDateSFTODOIsh - yes, I haven't followed the logic through step by step but it looks very much like it
+; SFTODO: I suspect this subroutine is (intended to be) the inverse of JSR CalculateDaysBetween1stJan1900AndPrvDateSFTODOIsh - yes, I haven't followed the logic through step by step but it looks very much like it
 .convertDaysSince1stJan1900ToDate
 {
 daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
@@ -9266,7 +9257,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;XY?0=&6A
 ;OSWORD &49 (73) - Integra-B calls
 .LB8FC
-    JSR calculateDaysBetween1stJan1900AndPrvDateSFTODOIsh
+    JSR CalculateDaysBetween1stJan1900AndPrvDateSFTODOIsh
     CLC
     RTS
 			
