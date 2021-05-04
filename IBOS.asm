@@ -9135,20 +9135,19 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 
 .^LB85A
     XASSERT_USE_PRV1
-    LDA prvOswordBlockCopy + 9,Y
-    SEC:SBC #100:BCS LB85A
+.HundredsLoop
+    LDA prvDateYear,Y
+    SEC:SBC #100:BCS HundredsLoop
     ADC #100
     LDX #&FF
     SEC
-.LB867
-    INX
-    SBC #10
-    BCS LB867
+.TensLoop
+    INX:SBC #10:BCS TensLoop
     ADC #10
-    STA prvOswordBlockCopy + 9,Y
+    STA prvDateYear,Y
     TXA
     ASL A:ASL A:ASL A:ASL A
-    ORA prvOswordBlockCopy + 9,Y
+    ORA prvDateYear,Y
     RTS
 
 ; SFTODO: This has only one caller
