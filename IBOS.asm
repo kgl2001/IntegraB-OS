@@ -7878,18 +7878,18 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 {
 ; SFTODO: This seems (ignoring for the moment the work done when it does JMP SFTODOProbCalculateDayOfWeekClcRts) to fix up missing parts (&FF) of the date (not time) with the relevant component of 1900/01/01 (ish; I haven't traced the LAFAA branch yet either)
 ; SFTODO: This has only one caller
+; SFTODO: MOVE THESE FLAGS IF USEFUL
+prv2FlagYear = 1<<3
+prv2FlagCentury = 1<<4
+prv2FlagMask = %00011111
 .^SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: I think this is a poor (incomplete) label, because in the yearOpen case we are adjusting the date until we match the fixed parts
     XASSERT_USE_PRV1
-    LDA prv2Flags
-    AND #&08
-    BNE yearOpen ; SFTODO: branch if prvDateYear is &FF, i.e. user didn't supply a year
-    LDA prv2Flags
-    AND #&10
-    BEQ haveCentury ; SFTODO: branch if prvDateCentury is not &FF
+    LDA prv2Flags:AND #prv2FlagYear:BNE yearOpen ; SFTODO: branch if prvDateYear is &FF, i.e. user didn't supply a year
+    LDA prv2Flags:AND #prv2FlagCentury:BEQ haveCentury ; SFTODO: branch if prvDateCentury is not &FF
     LDA #19 ; default century to 19 SFTODO: probably OK, but should we default to whatever the current century is instead, as we do elsewhere??
     STA prvDateCentury
     LDA prv2Flags
-    AND #&0F ; clear bit indicating prvDateCentury was &FF
+    AND #NOT(prv2FlagCentury) AND prv2FlagMask ; clear bit indicating prvDateCentury is open
     STA prv2Flags
 .haveCentury
     ; SFTODO: Replace &FF values in prvDate{Century,Year,Month,DayOfMonth} with 0,0,1,1 respectively - so we're sort of defaulting to 1900/01/01, probably, given the defaulting of prvCentury earlier
