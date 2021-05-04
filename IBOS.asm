@@ -3972,43 +3972,35 @@ tmp = &A8
     ; the *FX255 argument. I suppose this does allow control over the filing-system specific
     ; interpretation for b6. No we won't, because we force b6-7 clear below anyway. So this is
     ; harmless but still a little odd.
-            AND #%00000111								;get FDRIVE bits
-            ASL A
-            ASL A
-            ASL A
-            ASL A
-            STA tmp
-            LDX #userRegDiscNetBootData							;Register &10 (0: File system / 4: Boot / 5-7: Data )
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            PHA
-            LDY #%11001000								;preserve b7, b6 and b3 (boot flag) on soft reset
-            LDA lastBreakType
-            BEQ bootInAMaskInY							;branch if soft reset
-	  ; Get the boot flag from userRegDiscNetBootData into b3 of A
-            PLA
-            PHA
-	  ; SFTODO: So where do we set b7 to select NFS or DFS priority? I wonder if this has been bodged in slightly and could be more efficiently handled here, but perhaps there's a good reason for doing it elsewhere.
-            LDY #%11000000								;preserve b6-7 of startup options on non-soft reset SFTODO: presumably from keyboard links? would it be a worthwhile enhancement to allow IBOS to control *all* bits of the startup options?
-            LSR A
-            AND #1<<3
-            EOR #1<<3
+    AND #%00000111 ; get *CONFIGURE FDRIVE bits
+    ASL A:ASL A:ASL A:ASL A:STA tmp
+    LDX #userRegDiscNetBootData:JSR ReadUserReg:PHA
+    LDY #%11001000 ; preserve b7, b6 and b3 (boot flag) on soft reset
+    LDA lastBreakType:BEQ bootInAMaskInY ; branch if soft reset
+    ; Get the boot flag from userRegDiscNetBootData into b3 of A
+    PLA:PHA ; peek userRegDiscNetBootData value
+    ; SFTODO: So where do we set b7 to select NFS or DFS priority? I wonder if this has been
+    ; bodged in slightly and could be more efficiently handled here, but perhaps there's a good
+    ; reason for doing it elsewhere.
+    LDY #%11000000 ; preserve b6-7 of startup options on non-soft reset SFTODO: presumably from keyboard links? would it be a worthwhile enhancement to allow IBOS to control *all* bits of the startup options?
+    LSR A
+    AND #1<<3
+    EOR #1<<3
 .bootInAMaskInY
-            ORA tmp
-            ORA #%00000111								;force mode 7 SFTODO: seems a bit pointless but harmless, I guess
-            AND #%00111111
-            TAX
-            LDA #osbyteReadWriteStartupOptions
-            JSR OSBYTE
-	  ; Set the baud rate directly on the ACIA. SFTODO: Is that right? Why do we need this, since we're setting it via the OS using OSBYTE above anyway?
-            PLA									;get userRegDiscNetBootData value
-            JSR lsrA3
-            AND #%00011100								;A="data" (baud rate) shifted into b2-4
-            TAX
-            LDY #&E3
-            LDA #osbyteReadWriteAciaRegister
-            JSR OSBYTE
+    ORA tmp
+    ORA #%00000111 ; force mode 7 SFTODO: seems a bit pointless but harmless, I guess
+    AND #%00111111
+    TAX
+    LDA #osbyteReadWriteStartupOptions
+    JSR OSBYTE
+
+    ; Set the baud rate directly on the ACIA. SFTODO: Is that right? Why do we need this, since
+    ; we're setting it via the OS using OSBYTE above anyway?
+    PLA:JSR lsrA3:AND #%00011100 ; A=userRegDiscNetBootData "data" (baud rate) bits shifted into b2-4
+    TAX:LDY #&E3:LDA #osbyteReadWriteAciaRegister:JSR OSBYTE ; SFTODO: minor magic
+
 .ExitServiceCallIndirect
-            JMP ExitServiceCall								;restore service call parameters and exit
+    JMP ExitServiceCall
 }
 
 ; SQUASH: lsrA4 has only one caller (but there are places where it should be used and isn't)
