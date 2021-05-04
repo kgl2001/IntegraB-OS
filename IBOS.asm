@@ -7045,7 +7045,7 @@ daysInMonth = transientDateSFTODO2
             STA (transientDateSFTODO1),Y
             BNE zeroBufferLoop
             INC daysInMonth ; bump daysInMonth so the following loop can use a strictly less than comparison
-.dayOfMonthLoop
+.DayOfMonthLoop
             LDA prvDateDayOfMonth
             CMP daysInMonth
             BCC notDone ; SFTODO: Could we BCS to a nearby RTS (there's one just above) to save a byte
@@ -7072,7 +7072,7 @@ daysInMonth = transientDateSFTODO2
             LDA prvDateDayOfMonth
             STA (transientDateSFTODO1),Y ; SFTODO: I think what we're doing here is putting the day-of-month numbers into the order we need to output them a line at a time (although the exact nature of how we're doing that via the above calculations isn't completely clear yet)
             INC prvDateDayOfMonth
-            JMP dayOfMonthLoop
+            JMP DayOfMonthLoop
 }
 
 ;Calendar text (LAA5F)
@@ -7918,30 +7918,22 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
     LDA prv2Flags:STA prvTmp6 ; SFTODO: TEMP STASH ORIGINAL prv2Flags?
     LDA #NOT(prv2FlagDayOfWeek) AND prv2FlagMask
     STA prv2Flags ; SFTODO: We must be doing this for the benefit of incrementPrvDateRespectingOpenElements
-.incLoop
+.IncLoop
     LDA prv2DateDayOfMonth
-    CMP #&FF
-    BEQ dayOfMonthOpen
-    CMP prvDateDayOfMonth
-    BNE prvDateDoesntMatchFixed
-.dayOfMonthOpen
+    CMP #&FF:BEQ prvDayOfMonthMatchesFixed
+    CMP prvDateDayOfMonth:BNE prvDateDoesntMatchFixed
+.prvDayOfMonthMatchesFixed
     LDA prv2DateMonth
-    CMP #&FF
-    BEQ monthOpen
-    CMP prvDateMonth
-    BEQ prvDateMatchesFixed
+    CMP #&FF:BEQ prvDateMatchesFixed
+    CMP prvDateMonth:BEQ prvDateMatchesFixed
 .prvDateDoesntMatchFixed
-    JSR incrementPrvDateRespectingOpenElements
-    BCC incLoop
-    LDA prvTmp6 ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
-    STA prv2Flags
+    JSR incrementPrvDateRespectingOpenElements:BCC IncLoop
+    LDA prvTmp6:STA prv2Flags ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
     SEC
     RTS
 
 .prvDateMatchesFixed
-.monthOpen
-    LDA prvTmp6 ; RESTORE STASHED prv2Flags FROM ABOVE?
-    STA prv2Flags
+    LDA prvTmp6:STA prv2Flags ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
 .SFTODOProbCalculateDayOfWeekClcRts
     JSR calculateDayOfWeekInA:STA prvDateDayOfWeek
     ; SFTODO: Speculation but I think correct: At this point prvDate is a concrete date which
@@ -8181,9 +8173,9 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
             INY
 .DayOfWeekOpen
             JSR ConvertIntegerDefaultDecimal
-            BCC dayOfMonthInA
+            BCC DayOfMonthInA
             LDA #&FF
-.dayOfMonthInA
+.DayOfMonthInA
             STA prvDateDayOfMonth
 	  ; After the day of the month there may be a '/' followed by month/year components; if there's no '/' we have finished parsing the user-specified partial date.
             JSR FindNextCharAfterSpace								;find next character. offset stored in Y
