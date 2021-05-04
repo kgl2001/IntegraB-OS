@@ -9109,11 +9109,10 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=1: Read time and date in binary coded decimal (BCD) format
 .^oswd0eReadBCD
-    JSR GetRtcDateTime
-    LDY #6
+   JSR GetRtcDateTime
+   LDY #6
 .Loop
-   JSR ConvertBinaryToBcd
-   STA (oswdbtX),Y
+   JSR ConvertBinaryToBcd:STA (oswdbtX),Y
    DEY:BPL Loop
    SEC
    RTS
@@ -9135,6 +9134,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 
 ; Convert binary value (<=99) at prvDateYear,Y to BCD representation in A; prvDateYear,Y is
 ; corrupted on exit.
+; SQUASH: This has only one caller.
 .^ConvertBinaryToBcd
     XASSERT_USE_PRV1
     ; SFTODO: Isn't this buggy? If prvDateYear,Y is >=100, we will loop forever. I suspect the
@@ -9157,8 +9157,8 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     ORA prvDateYear,Y
     RTS
 
-; SFTODO: This has only one caller
 ; Convert A from BCD to binary.
+; SQUASH: This has only one caller
 .ConvertBcdToBinary
     ; If A on entry is &xy, return with
     ; A = (&x0       >> 1) + (&x0       >> 3) + &y
