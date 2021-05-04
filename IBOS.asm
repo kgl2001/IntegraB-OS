@@ -7880,70 +7880,75 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; SFTODO: This has only one caller
 .^SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: I think this is a poor (incomplete) label, because in the yearOpen case we are adjusting the date until we match the fixed parts
     XASSERT_USE_PRV1
-.LAF79      LDA prv2Flags
-            AND #&08
-            BNE yearOpen ; SFTODO: branch if prvDateYear is &FF, i.e. user didn't supply a year
-            LDA prv2Flags
-            AND #&10
-            BEQ haveCentury ; SFTODO: branch if prvDateCentury is not &FF
-            LDA #19 ; default century to 19 SFTODO: probably OK, but should we default to whatever the current century is instead, as we do elsewhere??
-            STA prvDateCentury
-            LDA prv2Flags
-            AND #&0F ; clear bit indicating prvDateCentury was &FF
-            STA prv2Flags
+    LDA prv2Flags
+    AND #&08
+    BNE yearOpen ; SFTODO: branch if prvDateYear is &FF, i.e. user didn't supply a year
+    LDA prv2Flags
+    AND #&10
+    BEQ haveCentury ; SFTODO: branch if prvDateCentury is not &FF
+    LDA #19 ; default century to 19 SFTODO: probably OK, but should we default to whatever the current century is instead, as we do elsewhere??
+    STA prvDateCentury
+    LDA prv2Flags
+    AND #&0F ; clear bit indicating prvDateCentury was &FF
+    STA prv2Flags
 .haveCentury
-	  ; SFTODO: Replace &FF values in prvDate{Century,Year,Month,DayOfMonth} with 0,0,1,1 respectively - so we're sort of defaulting to 1900/01/01, probably, given the defaulting of prvCentury earlier
-	  LDX #&00
-.loop       LDA prvDateCentury,X
-            CMP #&FF
-            BNE LAF9F
-            TXA
-            LSR A
-.LAF9F      STA prvDateCentury,X
-            INX
-            CPX #&04
-            BNE loop
-            JMP SFTODOProbCalculateDayOfWeekClcRts
+    ; SFTODO: Replace &FF values in prvDate{Century,Year,Month,DayOfMonth} with 0,0,1,1 respectively - so we're sort of defaulting to 1900/01/01, probably, given the defaulting of prvCentury earlier
+    LDX #&00
+.loop
+    LDA prvDateCentury,X
+    CMP #&FF
+    BNE LAF9F
+    TXA
+    LSR A
+.LAF9F
+    STA prvDateCentury,X
+    INX
+    CPX #&04
+    BNE loop
+    JMP SFTODOProbCalculateDayOfWeekClcRts
 
 ; SFTODOWIP
-.yearOpen   JSR GetRtcDayMonthYear
-            LDA prv2Flags
-            AND #&1E ; test all bits of prv2Flags except DayOfWeek
-            CMP #&1E
-            BEQ SFTODOProbCalculateDayOfWeekClcRts ; branch if *all* of century/year/month/day-of-month are open
-            LDA prv2Flags
-            STA prvTmp6 ; SFTODO: TEMP STASH ORIGINAL prv2Flags?
-            LDA #&1E ; SFTODO: temporarily set prv2Flags so all of century/year/month/day-of-month are open
-            STA prv2Flags ; SFTODO: We must be doing this for the benefit of incrementPrvDateRespectingOpenElements
-.incLoop    LDA prv2DateDayOfMonth
-            CMP #&FF
-            BEQ dayOfMonthOpen
-            CMP prvDateDayOfMonth
-            BNE prvDateDoesntMatchFixed
+.yearOpen
+    JSR GetRtcDayMonthYear
+    LDA prv2Flags
+    AND #&1E ; test all bits of prv2Flags except DayOfWeek
+    CMP #&1E
+    BEQ SFTODOProbCalculateDayOfWeekClcRts ; branch if *all* of century/year/month/day-of-month are open
+    LDA prv2Flags
+    STA prvTmp6 ; SFTODO: TEMP STASH ORIGINAL prv2Flags?
+    LDA #&1E ; SFTODO: temporarily set prv2Flags so all of century/year/month/day-of-month are open
+    STA prv2Flags ; SFTODO: We must be doing this for the benefit of incrementPrvDateRespectingOpenElements
+.incLoop
+    LDA prv2DateDayOfMonth
+    CMP #&FF
+    BEQ dayOfMonthOpen
+    CMP prvDateDayOfMonth
+    BNE prvDateDoesntMatchFixed
 .dayOfMonthOpen
-            LDA prv2DateMonth
-            CMP #&FF
-            BEQ monthOpen
-            CMP prvDateMonth
-            BEQ prvDateMatchesFixed
+    LDA prv2DateMonth
+    CMP #&FF
+    BEQ monthOpen
+    CMP prvDateMonth
+    BEQ prvDateMatchesFixed
 .prvDateDoesntMatchFixed
-            JSR incrementPrvDateRespectingOpenElements
-            BCC incLoop
-            LDA prvTmp6 ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
-            STA prv2Flags
-            SEC
-            RTS
+    JSR incrementPrvDateRespectingOpenElements
+    BCC incLoop
+    LDA prvTmp6 ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
+    STA prv2Flags
+    SEC
+    RTS
 
 .prvDateMatchesFixed
-.monthOpen  LDA prvTmp6 ; RESTORE STASHED prv2Flags FROM ABOVE?
-            STA prv2Flags
+.monthOpen
+    LDA prvTmp6 ; RESTORE STASHED prv2Flags FROM ABOVE?
+    STA prv2Flags
 .SFTODOProbCalculateDayOfWeekClcRts
-            JSR calculateDayOfWeekInA
-            STA prvDateDayOfWeek
-            LDA #&00
-            STA prvDateSFTODO0
-            CLC
-            RTS
+    JSR calculateDayOfWeekInA
+    STA prvDateDayOfWeek
+    LDA #&00
+    STA prvDateSFTODO0
+    CLC
+    RTS
 }
 
 ;SFTODOWIP
