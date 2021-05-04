@@ -3938,42 +3938,18 @@ tmp = &A8
     JSR OSWRCH
 .ScreenModeSet
 
-    JSR displayBannerIfRequired
-    LDX #userRegKeyboardDelay							;get keyboard auto-repeat delay (cSecs)
-    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-    TAX
-    LDA #osbyteSetAutoRepeatDelay						;select keyboard auto-repeat delay
-    JSR OSBYTE								;write keyboard auto-repeat delay
-    LDX #userRegKeyboardRepeat							;get keyboard auto-repeat rate (cSecs)
-    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-    TAX
-    LDA #osbyteSetAutoRepeatPeriod						;select keyboard auto-repeat rate
-    JSR OSBYTE								;write keyboard auto-repeat rate
-    LDX #userRegPrinterIgnore							;get character ignored by printer
-    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-    TAX
-    LDA #osbyteSetPrinterIgnore							;select character ignored by printer
-    JSR OSBYTE								;write character ignored by printer
-    LDX #userRegTubeBaudPrinter							;get RS485 baud rate for receiving and transmitting data (bits 2,3,4) & printer destination (bit 5)
-    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-    JSR lsrA2								;2 x LSR
-    PHA
-    AND #&07								;get lower 3 bits
-    CLC
-    ADC #&01								;increment to convert to baud rate
-    PHA
-    TAX									;baud rate value
-    LDA #osbyteSetSerialReceiveRate						;select RS485 baud rate for receiving data
-    JSR OSBYTE								;write RS485 baud rate for receiving data
-    PLA
-    TAX									;baud rate value
-    LDA #osbyteSetSerialTransmitRate						;select RS485 baud rate for transmitting data
-    JSR OSBYTE								;write RS485 baud rate for transmitting data
-    PLA
-    JSR lsrA3								;3 x LSR
-    TAX
-    LDA #osbyteSetPrinterType							;select printer destination
-    JSR OSBYTE								;write printer destination
+    JSR DisplayBannerIfRequired
+
+    LDX #userRegKeyboardDelay:JSR ReadUserReg:TAX:LDA #osbyteSetAutoRepeatDelay:JSR OSBYTE
+    LDX #userRegKeyboardRepeat:JSR ReadUserReg:TAX:LDA #osbyteSetAutoRepeatPeriod:JSR OSBYTE
+    LDX #userRegPrinterIgnore:JSR ReadUserReg:TAX:LDA #osbyteSetPrinterIgnore:JSR OSBYTE
+
+    LDX #userRegTubeBaudPrinter:JSR ReadUserReg:JSR lsrA2:PHA
+    AND #&07:CLC:ADC #1 ; mask off baud rate bits and add 1 to convert to 1-8 range
+    PHA:TAX:LDA #osbyteSetSerialReceiveRate:JSR OSBYTE
+    PLA:TAX:LDA #osbyteSetSerialTransmitRate:JSR OSBYTE
+    PLA:JSR lsrA3:TAX:LDA #osbyteSetPrinterType:JSR OSBYTE
+
     LDX #userRegFdriveCaps
     JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
     PHA
@@ -4127,7 +4103,7 @@ tmp = &A8
 ; SFTODO: This has only one caller
 ; SFTODO: At least in b-em, I note that with a second processor, we get the INTEGRA-B banner *as well as* the tube banner. This doesn't happen with the standard OS banner. Arguably this is desirable, but we *could* potentially not show our own banner if we have a second processor attached to be more "standard".
 ; SFTODO: Perhaps a bit of a novelty, but could we make the startup banner *CONFIGURE-able?
-.displayBannerIfRequired
+.DisplayBannerIfRequired
 {
 ramPresenceFlags = &A8
 .L989F      LDX #prvOsMode - prv83							;select OSMODE
