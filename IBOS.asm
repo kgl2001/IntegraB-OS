@@ -3844,7 +3844,7 @@ ENDIF
     LDA lastBreakType:BNE NotSoftReset2
     LDA currentLanguageRom:BPL EnterLangA ; SFTODO: Do we expect this to always branch? Not at all sure.
 .NotSoftReset2
-    LDX #userRegLangFile:JSR ReadUserReg:JSR lsrA4 ; get *CONFIGURE LANG value
+    LDX #userRegLangFile:JSR ReadUserReg:JSR LsrA4 ; get *CONFIGURE LANG value
     JMP EnterLangA
 			
 .NoTube
@@ -3947,11 +3947,11 @@ tmp = &A8
     LDX #userRegKeyboardRepeat:JSR ReadUserReg:TAX:LDA #osbyteSetAutoRepeatPeriod:JSR OSBYTE
     LDX #userRegPrinterIgnore:JSR ReadUserReg:TAX:LDA #osbyteSetPrinterIgnore:JSR OSBYTE
 
-    LDX #userRegTubeBaudPrinter:JSR ReadUserReg:JSR lsrA2:PHA
+    LDX #userRegTubeBaudPrinter:JSR ReadUserReg:JSR LsrA2:PHA
     AND #&07:CLC:ADC #1 ; mask off baud rate bits and add 1 to convert to 1-8 range
     PHA:TAX:LDA #osbyteSetSerialReceiveRate:JSR OSBYTE
     PLA:TAX:LDA #osbyteSetSerialTransmitRate:JSR OSBYTE
-    PLA:JSR lsrA3:TAX:LDA #osbyteSetPrinterType:JSR OSBYTE
+    PLA:JSR LsrA3:TAX:LDA #osbyteSetPrinterType:JSR OSBYTE
 
     LDX #userRegFdriveCaps:JSR ReadUserReg:PHA
 
@@ -3976,7 +3976,7 @@ tmp = &A8
     ASL A:ASL A:ASL A:ASL A:STA tmp
     LDX #userRegDiscNetBootData:JSR ReadUserReg:PHA
     LDY #%11001000 ; preserve b7, b6 and b3 (boot flag) on soft reset
-    LDA lastBreakType:BEQ bootInAMaskInY ; branch if soft reset
+    LDA lastBreakType:BEQ BootInAMaskInY ; branch if soft reset
     ; Get the boot flag from userRegDiscNetBootData into b3 of A
     PLA:PHA ; peek userRegDiscNetBootData value
     ; SFTODO: So where do we set b7 to select NFS or DFS priority? I wonder if this has been
@@ -3986,7 +3986,7 @@ tmp = &A8
     LSR A
     AND #1<<3
     EOR #1<<3
-.bootInAMaskInY
+.BootInAMaskInY
     ORA tmp
     ORA #%00000111 ; force mode 7 SFTODO: seems a bit pointless but harmless, I guess
     AND #%00111111
@@ -3996,19 +3996,19 @@ tmp = &A8
 
     ; Set the serial data format (word length, parity, stop bits) directly on the ACIA (control
     ; register bits CR2, CR3 and CR4).
-    PLA:JSR lsrA3:AND #%00011100 ; A=userRegDiscNetBootData data bits shifted into b2-4
+    PLA:JSR LsrA3:AND #%00011100 ; A=userRegDiscNetBootData data bits shifted into b2-4
     TAX:          LDY #%11100011:LDA #osbyteReadWriteAciaRegister:JSR OSBYTE
 
 .ExitServiceCallIndirect
     JMP ExitServiceCall
 }
 
-; SQUASH: lsrA4 has only one caller (but there are places where it should be used and isn't)
-.lsrA4      LSR A
-; SQUASH: Use of JSR lsrA3 or JSR lsrA2 is silly - the former is neutral on space and slower,
+; SQUASH: LsrA4 has only one caller (but there are places where it should be used and isn't)
+.LsrA4      LSR A
+; SQUASH: Use of JSR LsrA3 or JSR LsrA2 is silly - the former is neutral on space and slower,
 ; the latter is both larger and slower
-.lsrA3      LSR A
-.lsrA2      LSR A
+.LsrA3      LSR A
+.LsrA2      LSR A
             LSR A
             RTS
 
@@ -7456,7 +7456,7 @@ ENDIF
 ; 1. Optionally emit the day of the week, optionally truncated and/or capitalised, and optionally followed by some punctuation. prvDataSFTODO2's high nybble controls most of those options, although prvDataSFTODO3=0 will prevent punctuation and cause an early return.
     {
 	  LDA prvDateSFTODO2
-	  ; SFTODO: Use lsrA4
+	  ; SFTODO: Use LsrA4
             LSR A
             LSR A
             LSR A
@@ -8197,7 +8197,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 	  JSR validateDateTimeAssumingLeapYear ; SFTODO: *just possibly* it would be better to validate *respecting* leap year *iff* prvDateYear/prvDateCentury are not &FF (i.e. we have a specific year) - but I could very easily be missing some subtlety here - note that in LAFF9 we redo the validation respecting leap year after filling in the blanks, so this is probably *not* a helpful tweak here - OK, LAFF9 will *sometimes* redo the validation, so just maybe (it's all very unclear right now) this tweak would add a tiny bit of value
 	  ; Stash the date validation result (shifted into the low nybble) on the stack.
             LDA prvDateSFTODO0
-	  ; SFTODO: Use lsrA4
+	  ; SFTODO: Use LsrA4
             LSR A
             LSR A
             LSR A
