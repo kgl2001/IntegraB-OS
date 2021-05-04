@@ -3965,12 +3965,10 @@ tmp = &A8
 .CapsInX
     LDY #0:LDA #osbyteReadWriteKeyboardStatus:JSR OSBYTE
 
-    ; Implement *CONFIGURE FDRIVE SFTODO: AND OTHER BITS AND PIECES WHICH AFFECT THIS
-    ; SFTODO: This is a little odd - we're masking off the 3 bits allocated to FDRIVE, but the
-    ; *FX255 command only allows two bits for FDRIVE - our top FDRIVE bit will be put in b6 of
-    ; the *FX255 argument. I suppose this does allow control over the filing-system specific
-    ; interpretation for b6. No we won't, because we force b6-7 clear below anyway. So this is
-    ; harmless but still a little odd.
+    ; Implement *CONFIGURE FDRIVE and *CONFIGURE BOOT.
+    ; There are 3 bits allocated to FDRIVE, but *FX255 only has two bits for drive speed. The
+    ; most significant FDRIVE bit will be shifted up into bit 6 of tmp here, but it will be
+    ; masked off at BootInAMaskInY.
     PLA:AND #%00000111 ; get *CONFIGURE FDRIVE bits from userRegFdriveCaps
     ASL A:ASL A:ASL A:ASL A:STA tmp
     LDX #userRegDiscNetBootData:JSR ReadUserReg:PHA
@@ -3981,15 +3979,18 @@ tmp = &A8
     ; SFTODO: So where do we set b7 to select NFS or DFS priority? I wonder if this has been
     ; bodged in slightly and could be more efficiently handled here, but perhaps there's a good
     ; reason for doing it elsewhere.
-    LDY #%11000000 ; preserve b6-7 of startup options on non-soft reset SFTODO: presumably from keyboard links? would it be a worthwhile enhancement to allow IBOS to control *all* bits of the startup options?
-    LSR A
+    ; On non-soft reset we preserve b6-7 of existing startup options, which presumably come
+    ; from the keyboard links (SFTODO: or whatever code adjusts b7 to select NFS or DFS priority).
+    ; ENHANCE: Would it be worth allowing IBOS to control b6 and b7?
+    LDY #%11000000
+    LSR A ; boot flag is bit 4 of userRegDiscNetBootData, we need it in bit 3
     AND #%00001000
-    EOR #%00001000
+    EOR #%00001000 ; userRegDiscNetBootData uses opposite sense to *FX255
 .BootInAMaskInY
     ORA tmp
     ORA #%00000111 ; force mode 7 SFTODO: seems a bit pointless but harmless, I guess
     AND #%00111111
-    TAX:LDA #osbyteReadWriteStartupOptions:JSR OSBYTE
+    TAX:LDA #osbyteReadWriteStartupOptions:JSR OSBYTE ; set to (<old value> AND Y) EOR X
 
     ; Set the serial data format (word length, parity, stop bits) directly on the ACIA (control
     ; register bits CR2, CR3 and CR4).
