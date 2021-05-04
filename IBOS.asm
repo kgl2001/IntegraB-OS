@@ -4940,7 +4940,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             BVC secSevRts                                                                           ;branch if we have an absolute address
             ; We're dealing with a pseudo-address.
             BIT L00A9
-            BVC clcRts
+            BVC ClcRts
             LDA #&10
             STA L00A8
             LDA #&80
@@ -4958,7 +4958,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             LDA prvSFTODOFOURBANKS,X
             BMI clvSecRts
             TAX
-.clcRts
+.ClcRts
 .L9D84      CLC
             RTS
 
@@ -6698,59 +6698,54 @@ osfileBlock = L02EE
             ORA #&08
             ORA L00AE
             JSR WriteRtcRam								;Write data from A to RTC memory location X
-.clcRts      CLC
+.ClcRts      CLC
             RTS
 
 .LA7C2      LDX #&0B								;Select 'Register B' register on RTC: Register &0B
             JSR ReadRtcRam								;Read data from RTC memory location X into A
             AND #&08
-            BNE clcRts
+            BNE ClcRts
             SEC
             RTS
 
 ; Return with C set iff prvDate{Century,Year} is a leap year.
-.^testLeapYear
+.^TestLeapYear
     XASSERT_USE_PRV1
-            LDA prvDateYear
-            CMP #&00 ; SFTODO: redundant
-            BNE notYear0
-            LDA prvDateCentury
-.notYear0   LSR A									;Test divisibility of A by 4
-            BCS clcRts
-            LSR A
-            BCS clcRts
-            SEC
-            RTS
+    LDA prvDateYear:CMP #0:BNE NotYear0 ; SQUASH: "CMP #0" is redundant
+    LDA prvDateCentury
+.NotYear0
+    ; Set C iff A is divisible by 4.
+    LSR A:BCS ClcRts
+    LSR A:BCS ClcRts
+    SEC
+    RTS
 }
 
-.getDaysInMonthY
+; Return number of days in month Y in prvDate{Century,Year} in A.
+.GetDaysInMonthY
 {
-.LA7DF      DEY ; SQUASH: We could avoid this DEY/INY if we changed next line to LDA monthDaysTable-1,Y
-            LDA monthDaysTable,Y
-            INY
-            CPY #2									;February
-            BNE rts
-            PHA
-            JSR testLeapYear
-            PLA
-            BCC rts
-            LDA #29
-.rts        RTS
+   DEY:LDA MonthDaysTable,Y:INY ; SQUASH: Just do "LDA monthDaysTable-1,Y" to avoid DEY/INY
+   ; Add the leap day if this is February in a leap year.
+   CPY #2:BNE Rts
+   PHA:JSR TestLeapYear:PLA:BCC Rts
+   LDA #29
+.Rts
+   RTS
 
-;Lookup table for Number of Days in each month
-.monthDaysTable
-        	  EQUB 31 ; January
-	  EQUB 28 ; February
-	  EQUB 31 ; March
-	  EQUB 30 ; April
-	  EQUB 31 ; May
-	  EQUB 30 ; June
-	  EQUB 31 ; July
-	  EQUB 31 ; August
-	  EQUB 30 ; September
-	  EQUB 31 ; October
-	  EQUB 30 ; November
-	  EQUB 31 ; December
+;Lookup table for number of days in each month
+.MonthDaysTable
+    EQUB 31 ; January
+    EQUB 28 ; February
+    EQUB 31 ; March
+    EQUB 30 ; April
+    EQUB 31 ; May
+    EQUB 30 ; June
+    EQUB 31 ; July
+    EQUB 31 ; August
+    EQUB 30 ; September
+    EQUB 31 ; October
+    EQUB 30 ; November
+    EQUB 31 ; December
 }
 
 ; SFTODO: This has only one caller
@@ -6765,7 +6760,7 @@ osfileBlock = L02EE
 .LA808      INY
             CPY prvDateMonth
             BEQ LA823
-            JSR getDaysInMonthY
+            JSR GetDaysInMonthY
             CLC
             ADC prvDateSFTODO4
             STA prvDateSFTODO4
@@ -6841,7 +6836,7 @@ osfileBlock = L02EE
             BNE monthDaysInY ; always branch
 .lookupMonthDays
 	  LDY prvDateMonth
-            JSR getDaysInMonthY
+            JSR GetDaysInMonthY
             TAY
 .monthDaysInY
 	  LDA prvDateDayOfMonth
@@ -7037,7 +7032,7 @@ daysInMonth = transientDateSFTODO2
             STA prvDateDayOfMonth
             JSR calculateDayOfWeekInPrvDateDayOfWeek
             LDY prvDateMonth
-            JSR getDaysInMonthY
+            JSR GetDaysInMonthY
             STA daysInMonth
 .makePrvDateDayOfWeekGe37Loop
             CLC
@@ -7743,7 +7738,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 	  ; By this point we've adjusted prvDateSFTODO4 and prvDateCentury so we now SFTODO: GUESSING want to calculate the number of days between prvDate and 1st January (prvCentury 00)
 	  LDA #0
             STA prvDateYear
-.LAE52      JSR testLeapYear ; set C iff prvDateYear is a leap year
+.LAE52      JSR TestLeapYear ; set C iff prvDateYear is a leap year
             LDA #lo(daysPerYear)
             ADC #0
             STA prvA
@@ -7765,7 +7760,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .LAE82      LDA #&01
             STA prvDateMonth
 .LAE87      LDY prvDateMonth
-            JSR getDaysInMonthY
+            JSR GetDaysInMonthY
             STA prvA
             SEC
             LDA prvDateSFTODO4
@@ -7796,7 +7791,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             ADC #7
             STA prvDateDayOfMonth
             LDY prvDateMonth
-            JSR getDaysInMonthY
+            JSR GetDaysInMonthY
             CMP prvDateDayOfMonth
             BCS clvClcRts
             STA prvTmp2
@@ -7815,7 +7810,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             BEQ prvDayOfMonthNotOpen ; SFTODO: Not quite sure about this - I think this is saying "it wasn't specified by the user", but *we* may have filled it in the meantime - the fact we go and INC it kind of implies we have
             INC prvDateDayOfMonth
             LDY prvDateMonth
-            JSR getDaysInMonthY
+            JSR GetDaysInMonthY
             CMP prvDateDayOfMonth
             BCS clvClcRts
             LDA #1
@@ -7873,7 +7868,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             DEY
             BNE wrapMonth
             LDY #12
-.wrapMonth  JSR getDaysInMonthY
+.wrapMonth  JSR GetDaysInMonthY
             STA prvDateDayOfMonth
             STY prvDateMonth
             CPY #12
