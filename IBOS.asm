@@ -3623,8 +3623,11 @@ ENDIF
 ; SQUASH: If we moved this block just before L932E we could "BXX L932E ; always branch" instead
 ; of having to JMP.
 {
-.L950B
-    EQUB &04,&02,&01
+; Given a ParseNoSh result n, BitLookup[n] is the bit set in the *CONFIGURE CAPS bits.
+.BitLookup
+    EQUB %100 ; 0 = CAPS
+    EQUB %010 ; 1 = NOCAPS
+    EQUB %001 ; 2 = SHCAPS
 
 .^Conf3
     BCS Conf3Write
@@ -3639,7 +3642,7 @@ ENDIF
 			
 .Conf3Write
     LDX transientConfigPrefixSFTODO
-    LDA L950B,X
+    LDA BitLookup,X
     JMP SetConfigValueA
 }
 
@@ -3950,25 +3953,25 @@ tmp = &A8
     PLA:TAX:LDA #osbyteSetSerialTransmitRate:JSR OSBYTE
     PLA:JSR lsrA3:TAX:LDA #osbyteSetPrinterType:JSR OSBYTE
 
-    LDX #userRegFdriveCaps
-    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-    PHA
-    AND #%00111000								;get CAPS bits
-    LDX #&A0								;CAPS Lock Engaged + Shift Enabled?
-    CMP #&08								;CAPS Lock Engaged?
-    BEQ capsInA
-    LDX #&30								;
-    CMP #&10								;SHIFT Lock Engaged?
-    BEQ capsInA
-    LDX #&20
-.capsInA    LDY #&00
-            LDA #osbyteReadWriteKeyboardStatus						;select keyboard status byte
-            JSR OSBYTE								;write keyboard status byte
-            PLA
-	  ; SFTODO: This is a little odd - we're masking off the 3 bits allocated to FDRIVE, but the *FX255 command only allows
-	  ; two bits for FDRIVE - our top FDRIVE bit will be put in b6 of the *FX255 argument. I suppose this does allow control
-	  ; over the filing-system specific interpretation for b6. No we won't, because we force b6-7 clear below anyway. So
-	  ; this is harmless but still a little odd.
+    LDX #userRegFdriveCaps:JSR ReadUserReg:PHA
+
+    ; Implement *CONFIGURE xCAPS.
+    AND #%00111000 ; get *CONFIGURE CAPS bits
+    LDX #%10100000 ; SHCAPS
+    CMP #%00001000:BEQ CapsInA ; *CONFIGURE SHCAPS?
+    LDX #%00110000 ; NOCAPS
+    CMP #%00010000:BEQ CapsInA ; *CONFIGURE NOCAPS?
+    LDX #%00100000 ; CAPS
+.CapsInA
+    LDY #0:LDA #osbyteReadWriteKeyboardStatus:JSR OSBYTE
+
+    ; Implement *CONFIGURE FDRIVE SFTODO: AND OTHER BITS AND PIECES WHICH AFFECT THIS
+    PLA ; get userRegFdriveCaps value
+    ; SFTODO: This is a little odd - we're masking off the 3 bits allocated to FDRIVE, but the
+    ; *FX255 command only allows two bits for FDRIVE - our top FDRIVE bit will be put in b6 of
+    ; the *FX255 argument. I suppose this does allow control over the filing-system specific
+    ; interpretation for b6. No we won't, because we force b6-7 clear below anyway. So this is
+    ; harmless but still a little odd.
             AND #%00000111								;get FDRIVE bits
             ASL A
             ASL A
@@ -4008,9 +4011,10 @@ tmp = &A8
             JMP ExitServiceCall								;restore service call parameters and exit
 }
 
-; SFTODO: lsrA4 has only one caller (but there are places where it should be used and isn't)
+; SQUASH: lsrA4 has only one caller (but there are places where it should be used and isn't)
 .lsrA4      LSR A
-; SFTODO: Use of JSR lsrA3 or JSR lsrA2 is silly - the former is neutral on space and slower, the latter is both larger and slower
+; SQUASH: Use of JSR lsrA3 or JSR lsrA2 is silly - the former is neutral on space and slower,
+; the latter is both larger and slower
 .lsrA3      LSR A
 .lsrA2      LSR A
             LSR A
