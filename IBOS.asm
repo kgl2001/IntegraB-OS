@@ -6551,7 +6551,7 @@ osfileBlock = L02EE
 .writeRtcDate ; SFTODO: as in "not time" - maybe rename all this later?
 {
     XASSERT_USE_PRV1
-            JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
+            JSR WaitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
             LDX #rtcRegDayOfWeek							;Select 'Day of Week' register on RTC: Register &06
             LDA prvDateDayOfWeek							;Get 'Day of Week' from &822C
             JSR WriteRtcRam								;Write data from A to RTC memory location X
@@ -6570,19 +6570,19 @@ osfileBlock = L02EE
 }
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
-.getRtcSecondsMinutesHours
+.GetRtcSecondsMinutesHours
     XASSERT_USE_PRV1
-    JSR waitOutRTCUpdate
+    JSR WaitOutRTCUpdate
     LDX #rtcRegSeconds:JSR ReadRtcRam:STA prvDateSeconds
     LDX #rtcRegMinutes:JSR ReadRtcRam:STA prvDateMinutes
     LDX #rtcRegHours:JSR ReadRtcRam:STA prvDateHours
     RTS
 
 ;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from RTC and Store in Private RAM (&82xx)
-.getRtcDayMonthYear
+.GetRtcDayMonthYear
 {
     XASSERT_USE_PRV1
-            JSR waitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
+            JSR WaitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
             LDX #rtcRegDayOfWeek							;Select 'Day of Week' register on RTC: Register &06
             JSR ReadRtcRam								;Read data from RTC memory location X into A
             STA prvDateDayOfWeek							;Store 'Day of Week' at &822C
@@ -6602,7 +6602,7 @@ osfileBlock = L02EE
 .copyRtcAlarmToPrv
 {
     XASSERT_USE_PRV1
-            JSR waitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
+            JSR WaitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
             LDX #rtcRegAlarmSeconds							;Select 'Sec Alarm' register on RTC: Register &01
             JSR ReadRtcRam								;Read data from RTC memory location X into A
             STA prvDateSeconds							;Store 'Sec Alarm' at &822F
@@ -6619,7 +6619,7 @@ osfileBlock = L02EE
 .copyPrvAlarmToRtc
 {
     XASSERT_USE_PRV1
-            JSR waitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
+            JSR WaitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
             LDX #&01								;Select 'Sec Alarm' register on RTC: Register &01
             LDA prvOswordBlockCopy + 15								;Get 'Sec Alarm' from &822F
             JSR WriteRtcRam								;Write data from A to RTC memory location X
@@ -6631,9 +6631,9 @@ osfileBlock = L02EE
             JMP WriteRtcRam								;Write data from A to RTC memory location X
 }
 
-.getRtcDateTime
-    JSR getRtcDayMonthYear
-    JMP getRtcSecondsMinutesHours
+.GetRtcDateTime
+    JSR GetRtcDayMonthYear
+    JMP GetRtcSecondsMinutesHours
 
 ; SQUASH: Dead code
 {
@@ -6642,7 +6642,7 @@ osfileBlock = L02EE
 }
 
 ; Wait until any RTC update in progress	is complete.
-.waitOutRTCUpdate
+.WaitOutRTCUpdate
 {
     LDX #rtcRegA
 .Loop
@@ -7906,7 +7906,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             JMP SFTODOProbCalculateDayOfWeekClcRts
 
 ; SFTODOWIP
-.yearOpen   JSR getRtcDayMonthYear
+.yearOpen   JSR GetRtcDayMonthYear
             LDA prv2Flags
             AND #&1E ; test all bits of prv2Flags except DayOfWeek
             CMP #&1E
@@ -8663,7 +8663,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             STA prvDateSFTODO4							;store #&00 to address &8224
             LDA #hi(prvDateBuffer)
             STA prvDateSFTODO4 + 1							;store #&80 to address &8225
-            JSR getRtcDateTime							;read TIME & DATE information from RTC and store in Private RAM (&82xx)
+            JSR GetRtcDateTime							;read TIME & DATE information from RTC and store in Private RAM (&82xx)
             JSR initDateBufferAndEmitTimeAndDate								;format text for output to screen?
             JSR printDateBuffer								;output TIME & DATE data from address &8000 to screen
 .PrvDisExitAndClaimServiceCall
@@ -9094,7 +9094,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=0: Read time and date in string format
 .^oswd0eReadString
-    JSR getRtcDateTime
+    JSR GetRtcDateTime
 .^LB821
     XASSERT_USE_PRV1
     JSR initDateSFTODOS
@@ -9109,7 +9109,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=1: Read time and date in binary coded decimal (BCD) format
 .^oswd0eReadBCD
-    JSR getRtcDateTime
+    JSR GetRtcDateTime
     LDY #6
 .Loop
    JSR LB85A
@@ -9127,10 +9127,10 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     LDX #6
 .Loop
     LDA prvOswordBlockCopy + 1,X
-    JSR LB87A
-    STA prvOswordBlockCopy + 9,X
+    JSR ConvertABcdToBinary
+    STA prvDateYear,X
     DEX:BPL Loop
-    LDA #19:STA prvDateCentury
+    LDA #19:STA prvDateCentury ; ENHANCE: Treat years &00-&79 as 20xx?
     JMP LB821 ; SQUASH: "BNE ; always branch"
 
 .^LB85A
@@ -9152,20 +9152,25 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     RTS
 
 ; SFTODO: This has only one caller
-.LB87A
+.ConvertABcdToBinary
+    ; If A on entry is &xy, return with
+    ; A = (&x0       >> 1) + (&x0       >> 3) + &y
+    ;   = ((&x << 4) >> 1) + ((&x << 4) >> 3) + &y
+    ;   = (&x * 8)         + (&x * 2)         + &y
+    ;   = (&x * 10)                           + &y
     XASSERT_USE_PRV1
     PHA
     AND #&0F
-    STA prv82+&4E
+    STA prvTmp2
     PLA
     AND #&F0
     LSR A
-    STA prv82+&4F
+    STA prvTmp3
     LSR A
     LSR A
     CLC
-    ADC prv82+&4F
-    ADC prv82+&4E
+    ADC prvTmp3
+    ADC prvTmp2
     RTS
 }
 
@@ -9173,14 +9178,14 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;OSWORD &49 (73) - Integra-B calls
 .LB891
     JSR ClearPrvOswordBlockCopy								;Clear RTC buffer @ &8220-&822F
-    JSR getRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
+    JSR GetRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
     CLC
     RTS
 			
 ;XY?0=&60
 ;OSWORD &49 (73) - Integra-B calls
 .LB899
-    JSR getRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
+    JSR GetRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
     FALLTHROUGH_TO LB89C
 
 ;XY?0=&62
