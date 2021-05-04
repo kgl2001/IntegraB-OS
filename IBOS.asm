@@ -4963,7 +4963,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             RTS
 
 .secSevRts
-.badDate3
+.BadDate3
 .L9D86      BIT rts ; set V
             SEC
 .rts
@@ -5379,7 +5379,7 @@ ptr = &AC ; 2 bytes
             LDY #hi(mainRamTransferTemplate)
             JSR copyYxToVariableMainRamSubroutine					;relocate &32 bytes of code from &9ED9 to &03A7
             BIT prvOswordBlockCopy                                                                  ;test function
-            BPL rts2                                                                                ;if this is read (from sideways RAM) we're done
+            BPL Rts2                                                                                ;if this is read (from sideways RAM) we're done
             ; Patch the code at variableMainRamSubroutine to swap the operands
             ; of LDA and STA, thereby swapping the transfer direction.
             LDA #transientOs4243MainAddr
@@ -5388,7 +5388,7 @@ ptr = &AC ; 2 bytes
             LDA #transientOs4243SwrAddr
             STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair1 + 3 - mainRamTransferTemplate)
             STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair2 + 3 - mainRamTransferTemplate)
-.rts2       RTS
+.Rts2       RTS
 }
 
 ;Relocation code then check for RAM banks.
@@ -7950,169 +7950,197 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 {
 .^LAFF9
     XASSERT_USE_PRV1
-	  ; Copy prvDate{Century,Year,Month,DayOfMonth,DayOfWeek} to prv2{...} SFTODO: I suspect we do this because we want to retain the original user partial date specification as we will in the answers in prvDate*, which is where we will print the final answer from
-	  LDX #&04
-.LAFFB      LDA prvDateCentury,X
-            STA prv2DateCentury,X
-            DEX
-            BPL LAFFB
-	  ; Set prv2Flags so b4-0 are set iff prv{Century,Year,Month,DayOfMonth,DayOfWeek} is &FF.
-            LDX #&00
-            STX prv2Flags
-.loop       LDA prvDateCentury,X
-            CMP #&FF
-            ROL prv2Flags
-            INX
-            CPX #&05
-            BNE loop
-            JSR SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: RETURNS SOMETHING IN C, ALSO PROBABLY IN prvDateSFTODO0 ("OK" EXIT PATH SETS IT TO 0, I THINK)
-            BCS badDate3
-            LDA prv2DateDayOfWeek
-            CMP #&FF
-            BNE dayOfWeekNotOpen
-            JSR validateDateTimeRespectingLeapYears
-            LDA prvDateSFTODO0
-            AND #&F0
-            BNE badDate3
-            CLC
-            RTS
+    ; Copy prvDate{Century,Year,Month,DayOfMonth,DayOfWeek} to prv2{...} SFTODO: I suspect we do this because we want to retain the original user partial date specification as we will in the answers in prvDate*, which is where we will print the final answer from
+    LDX #&04
+.LAFFB
+    LDA prvDateCentury,X
+    STA prv2DateCentury,X
+    DEX
+    BPL LAFFB
+    ; Set prv2Flags so b4-0 are set iff prv{Century,Year,Month,DayOfMonth,DayOfWeek} is &FF.
+    LDX #&00
+    STX prv2Flags
+.loop
+    LDA prvDateCentury,X
+    CMP #&FF
+    ROL prv2Flags
+    INX
+    CPX #&05
+    BNE loop
+    JSR SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: RETURNS SOMETHING IN C, ALSO PROBABLY IN prvDateSFTODO0 ("OK" EXIT PATH SETS IT TO 0, I THINK)
+    BCS BadDate3
+    LDA prv2DateDayOfWeek
+    CMP #&FF
+    BNE DayOfWeekNotOpen
+    JSR validateDateTimeRespectingLeapYears
+    LDA prvDateSFTODO0
+    AND #&F0
+    BNE BadDate3
+    CLC
+    RTS
 
-.badDate3   BIT rts
-            SEC
-.rts        RTS
+.BadDate3
+    BIT Rts ; set V
+    SEC
+.Rts
+    RTS
 
-.dayOfWeekNotOpen ; SFTODO: I think this code is adjusting the date we've calculated up until now to satisfy user conditions like "last Tuesday in X" or whatever, but I am guessing - however, I chose this label because we come here if the prv2 *copy* of the user's initial inputs lacks the day of week
-            CMP #&07
-            BCC LB03E
-            CMP #&5B
-            BCC LB086 ; SFTODO: maybe one of the "before/after day of week" type queries???
-            JMP LB0F3 ; SFTODO: ditto???
+.DayOfWeekNotOpen ; SFTODO: I think this code is adjusting the date we've calculated up until now to satisfy user conditions like "last Tuesday in X" or whatever, but I am guessing - however, I chose this label because we come here if the prv2 *copy* of the user's initial inputs lacks the day of week
+    CMP #&07
+    BCC LB03E
+    CMP #&5B
+    BCC LB086 ; SFTODO: maybe one of the "before/after day of week" type queries???
+    JMP LB0F3 ; SFTODO: ditto???
 
 ; SFTODO: *Maybe* the case where we want a specific day of week!? Pure guesswork
-.LB03E      LDA prv2Flags
-            AND #&0E ; SFTODO: get bits indicating if prv{Year,Month,DayOfMonth} are &FF
-            BNE someOfPrvYearMonthDayOfMonthOpen
-            JSR validateDateTimeRespectingLeapYears
-            LDA prvDateSFTODO0
-            AND #&F0 ; SFTODO: get century, year, month, day of month flags?
-            BNE badDate2
-.someOfPrvYearMonthDayOfMonthOpen
-            INC prv2DateDayOfWeek
-.LB052      LDA prv2DateDayOfWeek
-            CMP prvDateDayOfWeek
-            BEQ LB071
-.LB05A      JSR incrementPrvDateRespectingOpenElements
-            BCS badDate2
-            BVC LB068
-            LDA #&08
-            BIT prv2Flags
-            BEQ LB083
-.LB068      JSR calculateDayOfWeekInA
-            STA prvDateDayOfWeek
-            JMP LB052 ; SFTODO: Looks like we're looping round, and incrementPrvDateRespectingOpenElements at least sometimes increments day of month, so I wonder if this is implementing one of the "search for date where day of week is X" operations - maybe
+.LB03E
+    LDA prv2Flags
+    AND #&0E ; SFTODO: get bits indicating if prv{Year,Month,DayOfMonth} are &FF
+    BNE SomeOfPrvYearMonthDayOfMonthOpen
+    JSR validateDateTimeRespectingLeapYears
+    LDA prvDateSFTODO0
+    AND #&F0 ; SFTODO: get century, year, month, day of month flags?
+    BNE BadDate2
+.SomeOfPrvYearMonthDayOfMonthOpen
+    INC prv2DateDayOfWeek
+.LB052
+    LDA prv2DateDayOfWeek
+    CMP prvDateDayOfWeek
+    BEQ LB071
+.LB05A
+    JSR incrementPrvDateRespectingOpenElements
+    BCS BadDate2
+    BVC LB068
+    LDA #&08
+    BIT prv2Flags
+    BEQ LB083
+.LB068
+    JSR calculateDayOfWeekInA
+    STA prvDateDayOfWeek
+    JMP LB052 ; SFTODO: Looks like we're looping round, and incrementPrvDateRespectingOpenElements at least sometimes increments day of month, so I wonder if this is implementing one of the "search for date where day of week is X" operations - maybe
 			
-.LB071      JSR validateDateTimeRespectingLeapYears
-            LDA prvOswordBlockCopy
-            AND #&F0
-            BNE LB05A
-.LB07B      CLV
-            CLC
-            RTS
+.LB071
+    JSR validateDateTimeRespectingLeapYears
+    LDA prvOswordBlockCopy
+    AND #&F0
+    BNE LB05A
+.LB07B
+    CLV
+    CLC
+    RTS
 
 ; SFTODO: As elsewhere, do we really need so many copies of this and similar code fragments? (We might, but check.)
-.badDate2   SEC
-            BIT rts2
-.rts2       RTS
+.BadDate2
+    SEC
+    BIT Rts2
+.Rts2
+    RTS
 
-.LB083      CLV
-            SEC
-            RTS
+.LB083
+    CLV
+    SEC
+    RTS
 			
-.LB086      STA prvA
-            LDA #0
-            STA prvB
-            LDA #7
-            STA prvC
-            JSR SFTODOPSEUDODIV
-            TAX
-            INX
-            STX prvDateDayOfWeek
-            LDA #&1E
-            STA prv2Flags
-            LDX prvD
-            CPX #10
-            BEQ LB0E7
-            CPX #11
-            BEQ LB0CD
-            CPX #12
-            BEQ LB0DA
-            TXA
-            PHA
-.LB0B1      JSR calculateDayOfWeekInA
-            CMP prvDateDayOfWeek
-            BEQ LB0C1
-            JSR incrementPrvDateRespectingOpenElements
-            BCC LB0B1
-            PLA
-            BCS badDate2
-.LB0C1      PLA
-            TAX
-.LB0C3      DEX
-            BEQ LB07B
-            JSR incrementPrvDateByOneWeek
-            BCC LB0C3
-            CLV
-            RTS
+.LB086
+    STA prvA
+    LDA #0
+    STA prvB
+    LDA #7
+    STA prvC
+    JSR SFTODOPSEUDODIV
+    TAX
+    INX
+    STX prvDateDayOfWeek
+    LDA #&1E
+    STA prv2Flags
+    LDX prvD
+    CPX #10
+    BEQ LB0E7
+    CPX #11
+    BEQ LB0CD
+    CPX #12
+    BEQ LB0DA
+    TXA
+    PHA
+.LB0B1
+    JSR calculateDayOfWeekInA
+    CMP prvDateDayOfWeek
+    BEQ LB0C1
+    JSR incrementPrvDateRespectingOpenElements
+    BCC LB0B1
+    PLA
+    BCS BadDate2
+.LB0C1
+    PLA
+    TAX
+.LB0C3
+    DEX
+    BEQ LB07B
+    JSR incrementPrvDateByOneWeek
+    BCC LB0C3
+    CLV
+    RTS
 
-.LB0CD      JSR incrementPrvDateRespectingOpenElements
-            JSR calculateDayOfWeekInA
-            CMP prvDateDayOfWeek
-            BNE LB0CD
-            BEQ LB07B
-.LB0DA      JSR decrementPrvDateBy1
-            JSR calculateDayOfWeekInA
-            CMP prvDateDayOfWeek
-            BNE LB0DA
-            BEQ LB07B
-.LB0E7      JSR calculateDayOfWeekInA
-            CMP prvDateDayOfWeek
-            BEQ LB07B
-            BCS LB0DA
-            BCC LB0CD
+.LB0CD
+    JSR incrementPrvDateRespectingOpenElements
+    JSR calculateDayOfWeekInA
+    CMP prvDateDayOfWeek
+    BNE LB0CD
+    BEQ LB07B
+.LB0DA
+    JSR decrementPrvDateBy1
+    JSR calculateDayOfWeekInA
+    CMP prvDateDayOfWeek
+    BNE LB0DA
+    BEQ LB07B
+.LB0E7
+    JSR calculateDayOfWeekInA
+    CMP prvDateDayOfWeek
+    BEQ LB07B
+    BCS LB0DA
+    BCC LB0CD
 
-.LB0F3      LDA #&1E
-            STA prv2Flags
-            LDA prv2DateDayOfWeek
-            CMP #&9B
-            BCC LB116
-            SBC #&9A
-            TAX
-.LB102      JSR incrementPrvDateRespectingOpenElements
-            BCC LB10A
-            JMP badDate2
+.LB0F3
+    LDA #&1E
+    STA prv2Flags
+    LDA prv2DateDayOfWeek
+    CMP #&9B
+    BCC LB116
+    SBC #&9A
+    TAX
+.LB102
+    JSR incrementPrvDateRespectingOpenElements
+    BCC LB10A
+    JMP BadDate2
 			
-.LB10A      DEX
-            BNE LB102
-            JSR calculateDayOfWeekInA
-            STA prvDateDayOfWeek
-            JMP LB07B
+.LB10A
+    DEX
+    BNE LB102
+    JSR calculateDayOfWeekInA
+    STA prvDateDayOfWeek
+    JMP LB07B
 			
-.LB116      SEC
-            SBC #&5A
-            TAX
-.LB11A      JSR decrementPrvDateBy1
-            BCC LB122
-            JMP badDate2
+.LB116
+    SEC
+    SBC #&5A
+    TAX
+.LB11A
+    JSR decrementPrvDateBy1
+    BCC LB122
+    JMP BadDate2
 			
-.LB122      DEX
-            BNE LB11A
-            JSR calculateDayOfWeekInA
-            STA prvDateDayOfWeek
-            JMP LB07B
+.LB122
+    DEX
+    BNE LB11A
+    JSR calculateDayOfWeekInA
+    STA prvDateDayOfWeek
+    JMP LB07B
 
-.^badDate	  SEC
-            BIT rts3
-.rts3       RTS
+.^BadDate
+    SEC
+    BIT Rts3
+.Rts3
+    RTS
 }
 
 ;SFTODOWIP
@@ -8134,17 +8162,17 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             CMP #vduCr
             BEQ dateArgumentParsed
             JSR SFTODOProbParsePlusMinusDate
-            BCS badDate
+            BCS BadDate
             STA prvDateDayOfWeek
             CMP #&FF
-            BEQ dayOfWeekOpen
+            BEQ DayOfWeekOpen
 	  ; The user has specified a day of the week; if there's no trailing comma this is the end of the user-specified partial date.
             JSR FindNextCharAfterSpace								;find next character. offset stored in Y
             LDA (transientCmdPtr),Y
             CMP #','
             BNE dateArgumentParsed
             INY
-.dayOfWeekOpen
+.DayOfWeekOpen
             JSR ConvertIntegerDefaultDecimal
             BCC dayOfMonthInA
             LDA #&FF
@@ -8203,11 +8231,11 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             PLA
             AND prvDateSFTODO0
             AND #&0F ; SFTODO: redundant? the value we just pulled with PLA had undergone 4xLSR A so high nybble was already 0
-            BNE badDateIndirect ; branch if still some validation errors after masking off open (&FF) values
+            BNE BadDateIndirect ; branch if still some validation errors after masking off open (&FF) values
             JMP LAFF9
 
-.badDateIndirect
-            JMP badDate
+.BadDateIndirect
+            JMP BadDate
 }
 
 ; Take the parsed 2-byte integer year at L00B0 and populate prvDate{Year,Century}, defaulting the century to the current century if a two digit year is specified.
@@ -8718,7 +8746,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 			
 ;Start of CALENDAR * Command
 {
-dayOfWeek = prvA ; this is also the row number
+DayOfWeek = prvA ; this is also the row number
 cellIndex = prvB ; current element in the 42-element structure generated by generateInternalCalendar
 column = prvC
 
@@ -8767,7 +8795,7 @@ column = prvC
 .monthNamePrinted
             JSR generateInternalCalendar
             LDA #1
-            STA dayOfWeek
+            STA DayOfWeek
             LDA #0
             STA cellIndex
 .rowLoop    LDY #&00
@@ -8776,7 +8804,7 @@ column = prvC
             STA transientDateBufferPtr
             LDA #hi(prvDateBuffer)
             STA transientDateBufferPtr + 1
-            LDA dayOfWeek
+            LDA DayOfWeek
             LDX #3 ; truncate day names to 3 characters
             LDY #&FF ; SFTODO: Comments on emitDayOrMonthName suggest this means *don't* capitalise day names, but we *do* capitalise them (just try *CALENDAR and see)
             CLC
@@ -8803,8 +8831,8 @@ column = prvC
             BEQ printDone
             INX
             BNE printLoop
-.printDone  INC dayOfWeek
-            LDA dayOfWeek
+.printDone  INC DayOfWeek
+            LDA DayOfWeek
             CMP #daysPerWeek + 1
             BCC rowLoop
             PRVDIS								;switch out private RAM
@@ -9184,15 +9212,15 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;XY?0=&61
 ;OSWORD &49 (73) - Integra-B calls
 .LB891
-    JSR ClearPrvOswordBlockCopy								;Clear RTC buffer @ &8220-&822F
-    JSR GetRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
+    JSR ClearPrvOswordBlockCopy
+    JSR GetRtcDateTime
     CLC
     RTS
 			
 ;XY?0=&60
 ;OSWORD &49 (73) - Integra-B calls
 .LB899
-    JSR GetRtcDateTime								;read TIME & DATE information from RTC and store in Private RAM (&82xx)
+    JSR GetRtcDateTime
     FALLTHROUGH_TO LB89C
 
 ;XY?0=&62
@@ -9203,7 +9231,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     LDA #lo(prvDateBuffer):STA prvDateSFTODO4
     LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
     JSR initDateBufferAndEmitTimeAndDate
-    JMP CopyPrvDateBuffer
+    JMP CopyPrvDateBuffer ; SQUASH: rearrange and fall through?
 			
 ;XY?0=&68
 ;OSWORD &49 (73) - Integra-B calls
