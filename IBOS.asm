@@ -9095,7 +9095,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;XY&0=0: Read time and date in string format
 .^oswd0eReadString
     JSR GetRtcDateTime
-.^LB821
+.^oswd0eReadStringInternal
     XASSERT_USE_PRV1
     JSR initDateSFTODOS
     LDA prvOswordBlockOrigAddr:STA prvDateSFTODO4
@@ -9131,7 +9131,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     STA prvDateYear,X
     DEX:BPL Loop
     LDA #19:STA prvDateCentury ; ENHANCE: Treat years &00-&79 as 20xx?
-    JMP LB821 ; SQUASH: "BNE ; always branch"
+    JMP oswd0eReadStringInternal ; SQUASH: "BNE ; always branch"
 
 .^LB85A
     XASSERT_USE_PRV1
