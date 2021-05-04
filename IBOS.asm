@@ -3966,13 +3966,12 @@ tmp = &A8
     LDY #0:LDA #osbyteReadWriteKeyboardStatus:JSR OSBYTE
 
     ; Implement *CONFIGURE FDRIVE SFTODO: AND OTHER BITS AND PIECES WHICH AFFECT THIS
-    PLA ; get userRegFdriveCaps value
     ; SFTODO: This is a little odd - we're masking off the 3 bits allocated to FDRIVE, but the
     ; *FX255 command only allows two bits for FDRIVE - our top FDRIVE bit will be put in b6 of
     ; the *FX255 argument. I suppose this does allow control over the filing-system specific
     ; interpretation for b6. No we won't, because we force b6-7 clear below anyway. So this is
     ; harmless but still a little odd.
-    AND #%00000111 ; get *CONFIGURE FDRIVE bits
+    PLA:AND #%00000111 ; get *CONFIGURE FDRIVE bits from userRegFdriveCaps
     ASL A:ASL A:ASL A:ASL A:STA tmp
     LDX #userRegDiscNetBootData:JSR ReadUserReg:PHA
     LDY #%11001000 ; preserve b7, b6 and b3 (boot flag) on soft reset
@@ -3984,15 +3983,13 @@ tmp = &A8
     ; reason for doing it elsewhere.
     LDY #%11000000 ; preserve b6-7 of startup options on non-soft reset SFTODO: presumably from keyboard links? would it be a worthwhile enhancement to allow IBOS to control *all* bits of the startup options?
     LSR A
-    AND #1<<3
-    EOR #1<<3
+    AND #%00001000
+    EOR #%00001000
 .BootInAMaskInY
     ORA tmp
     ORA #%00000111 ; force mode 7 SFTODO: seems a bit pointless but harmless, I guess
     AND #%00111111
-    TAX
-    LDA #osbyteReadWriteStartupOptions
-    JSR OSBYTE
+    TAX:LDA #osbyteReadWriteStartupOptions:JSR OSBYTE
 
     ; Set the serial data format (word length, parity, stop bits) directly on the ACIA (control
     ; register bits CR2, CR3 and CR4).
