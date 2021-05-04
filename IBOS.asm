@@ -6670,6 +6670,7 @@ osfileBlock = L02EE
 		EQUB &00								;Register &09 - Year:		00
 
 ;Stop Clock and Initialise RTC registers &00 to &0B
+; SFTODO: Is this responsible for forcing reg B DSE bit off? This *would* matter if we wanted to use DSE.
 .^LA790      LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             LDA #&86								;Stop Clock, Set Binary mode, Set 24hr mode
             JSR WriteRtcRam								;Write data from A to RTC memory location X
