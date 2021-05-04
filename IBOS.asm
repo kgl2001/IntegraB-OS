@@ -3994,10 +3994,10 @@ tmp = &A8
     LDA #osbyteReadWriteStartupOptions
     JSR OSBYTE
 
-    ; Set the baud rate directly on the ACIA. SFTODO: Is that right? Why do we need this, since
-    ; we're setting it via the OS using OSBYTE above anyway?
-    PLA:JSR lsrA3:AND #%00011100 ; A=userRegDiscNetBootData "data" (baud rate) bits shifted into b2-4
-    TAX:LDY #&E3:LDA #osbyteReadWriteAciaRegister:JSR OSBYTE ; SFTODO: minor magic
+    ; Set the serial data format (word length, parity, stop bits) directly on the ACIA (control
+    ; register bits CR2, CR3 and CR4).
+    PLA:JSR lsrA3:AND #%00011100 ; A=userRegDiscNetBootData data bits shifted into b2-4
+    TAX:          LDY #%11100011:LDA #osbyteReadWriteAciaRegister:JSR OSBYTE
 
 .ExitServiceCallIndirect
     JMP ExitServiceCall
