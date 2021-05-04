@@ -6641,17 +6641,14 @@ osfileBlock = L02EE
             JMP writeRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
 }
 
-;Wait until RTC Update in Progress	is complete
+; Wait until any RTC update in progress	is complete.
 .waitOutRTCUpdate
 {
     LDX #rtcRegA
-.loop
-    JSR Nop3								;3 x NOP delay
-    STX rtcAddress								;Strobe in address
-    JSR Nop3								;3 x NOP delay
-    ASSERT rtcRegAUIP == &80
-    LDA rtcData
-    BMI loop ; try again if update in progress
+.Loop
+    JSR Nop3:STX rtcAddress
+    JSR Nop3:LDA rtcData
+    ASSERT rtcRegAUIP == &80:BMI Loop
     RTS
 }
 
