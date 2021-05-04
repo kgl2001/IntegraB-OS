@@ -634,7 +634,11 @@ prvPseudoBankNumbers = prv83 + &08 ; 4 bytes, absolute RAM bank number for the P
 prvSFTODOFOURBANKS = prv83 + &0C ; 4 bytes, SFTODO: something to do with the pseudo RAM banks I think
 prvRomTypeTableCopy = prv83 + &2C ; 16 bytes
 
-prvSFTODOMODE = prv83 + &3F ; SFTODO: this is a screen mode (including a shadow flag in b7), but I'm not sure exactly what screen mode yet - current? *CONFIGUREd? something else?
+; prvLastScreenMode is the last screen mode selected. This differs from currentMode because a)
+; it includes the shadow flag in bit 7 b) it isn't modified by the OS on reset. We use it to
+; emulate Master-like behaviour by preserving the current mode across a soft break. SFTODO: I
+; am 95% sure this is right, but be good to check all code using it later.
+prvLastScreenMode = prv83 + &3F
 
 LDBE6       = &DBE6
 LDC16       = &DC16
@@ -3918,79 +3922,69 @@ tmp = &A8
     TAY
     LDA #osbyteTV:JSR OSBYTE
 
-	  ; Set the screen mode. On a soft reset we preserve the last selected
-	  ; mode (like the Master), unless we're in OSMODE 0; on other resets
-	  ; we select the *CONFIGUREd mode.
-            LDA #vduSetMode								;select switch MODE
-            JSR OSWRCH								;write switch MODE
-            LDX lastBreakType								;Read Hard / Soft Break
-            BNE dontPreserveScreenMode							;Branch on hard break (power on / Ctrl Break)
-            LDX #prvOsMode - prv83							;select OSMODE
-            JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
-            BEQ dontPreserveScreenMode							;branch if OSMODE=0
-            LDX #prvSFTODOMODE - prv83							;read mode? SFTODO: OK, so probably prvSFTODOMODE is the (configured?) screen mode? That would account for b7 being shadow-ish
-            JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
-            JSR OSWRCH								;write mode?
-            JMP screenModeSet
+    ; Set the screen mode. On a soft reset we preserve the last selected mode (like the
+    ; Master), unless we're in OSMODE 0; on other resets we select the *CONFIGUREd mode.
+    LDA #vduSetMode:JSR OSWRCH
+    LDX lastBreakType:BNE DontPreserveScreenMode ; branch if not soft reset
+    LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X:BEQ DontPreserveScreenMode
+    LDX #prvLastScreenMode - prv83:JSR ReadPrivateRam8300X:JSR OSWRCH
+    JMP ScreenModeSet
+.DontPreserveScreenMode
+    LDX #userRegModeShadowTV:JSR ReadUserReg:AND #&0F
+    ; Map the "compressed mode" in the range 0-15 to 0-7 or 128-135.
+    CMP #maxMode + 1:BCC ScreenModeInA
+    ADC #(shadowModeOffset - (maxMode + 1)) - 1 ; -1 because C is set
+.ScreenModeInA
+    JSR OSWRCH
+.ScreenModeSet
 
-.dontPreserveScreenMode
-            LDX #userRegModeShadowTV							;get MODE value - Shadow: bit 3, Mode: bits 0, 1 & 2
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            AND #&0F								;Lower nibble only
-	  ; Map the "compressed mode" in the range 0-15 to 0-7 or 128-135.
-            CMP #maxMode + 1
-            BCC screenModeInA
-            ADC #(shadowModeOffset - (maxMode + 1)) - 1					;-1 because C is set
-.screenModeInA
-	  JSR OSWRCH								;Write MODE
-.screenModeSet
-	  JSR displayBannerIfRequired
-            LDX #userRegKeyboardDelay							;get keyboard auto-repeat delay (cSecs)
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            TAX
-            LDA #osbyteSetAutoRepeatDelay						;select keyboard auto-repeat delay
-            JSR OSBYTE								;write keyboard auto-repeat delay
-            LDX #userRegKeyboardRepeat							;get keyboard auto-repeat rate (cSecs)
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            TAX
-            LDA #osbyteSetAutoRepeatPeriod						;select keyboard auto-repeat rate
-            JSR OSBYTE								;write keyboard auto-repeat rate
-            LDX #userRegPrinterIgnore							;get character ignored by printer
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            TAX
-            LDA #osbyteSetPrinterIgnore							;select character ignored by printer
-            JSR OSBYTE								;write character ignored by printer
-            LDX #userRegTubeBaudPrinter							;get RS485 baud rate for receiving and transmitting data (bits 2,3,4) & printer destination (bit 5)
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            JSR lsrA2								;2 x LSR
-            PHA
-            AND #&07								;get lower 3 bits
-            CLC
-            ADC #&01								;increment to convert to baud rate
-            PHA
-            TAX									;baud rate value
-            LDA #osbyteSetSerialReceiveRate						;select RS485 baud rate for receiving data
-            JSR OSBYTE								;write RS485 baud rate for receiving data
-            PLA
-            TAX									;baud rate value
-            LDA #osbyteSetSerialTransmitRate						;select RS485 baud rate for transmitting data
-            JSR OSBYTE								;write RS485 baud rate for transmitting data
-            PLA
-            JSR lsrA3								;3 x LSR
-            TAX
-            LDA #osbyteSetPrinterType							;select printer destination
-            JSR OSBYTE								;write printer destination
-            LDX #userRegFdriveCaps
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            PHA
-            AND #%00111000								;get CAPS bits
-            LDX #&A0								;CAPS Lock Engaged + Shift Enabled?
-            CMP #&08								;CAPS Lock Engaged?
-            BEQ capsInA
-            LDX #&30								;
-            CMP #&10								;SHIFT Lock Engaged?
-            BEQ capsInA
-            LDX #&20
+    JSR displayBannerIfRequired
+    LDX #userRegKeyboardDelay							;get keyboard auto-repeat delay (cSecs)
+    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
+    TAX
+    LDA #osbyteSetAutoRepeatDelay						;select keyboard auto-repeat delay
+    JSR OSBYTE								;write keyboard auto-repeat delay
+    LDX #userRegKeyboardRepeat							;get keyboard auto-repeat rate (cSecs)
+    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
+    TAX
+    LDA #osbyteSetAutoRepeatPeriod						;select keyboard auto-repeat rate
+    JSR OSBYTE								;write keyboard auto-repeat rate
+    LDX #userRegPrinterIgnore							;get character ignored by printer
+    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
+    TAX
+    LDA #osbyteSetPrinterIgnore							;select character ignored by printer
+    JSR OSBYTE								;write character ignored by printer
+    LDX #userRegTubeBaudPrinter							;get RS485 baud rate for receiving and transmitting data (bits 2,3,4) & printer destination (bit 5)
+    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
+    JSR lsrA2								;2 x LSR
+    PHA
+    AND #&07								;get lower 3 bits
+    CLC
+    ADC #&01								;increment to convert to baud rate
+    PHA
+    TAX									;baud rate value
+    LDA #osbyteSetSerialReceiveRate						;select RS485 baud rate for receiving data
+    JSR OSBYTE								;write RS485 baud rate for receiving data
+    PLA
+    TAX									;baud rate value
+    LDA #osbyteSetSerialTransmitRate						;select RS485 baud rate for transmitting data
+    JSR OSBYTE								;write RS485 baud rate for transmitting data
+    PLA
+    JSR lsrA3								;3 x LSR
+    TAX
+    LDA #osbyteSetPrinterType							;select printer destination
+    JSR OSBYTE								;write printer destination
+    LDX #userRegFdriveCaps
+    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
+    PHA
+    AND #%00111000								;get CAPS bits
+    LDX #&A0								;CAPS Lock Engaged + Shift Enabled?
+    CMP #&08								;CAPS Lock Engaged?
+    BEQ capsInA
+    LDX #&30								;
+    CMP #&10								;SHIFT Lock Engaged?
+    BEQ capsInA
+    LDX #&20
 .capsInA    LDY #&00
             LDA #osbyteReadWriteKeyboardStatus						;select keyboard status byte
             JSR OSBYTE								;write keyboard status byte
@@ -9879,7 +9873,7 @@ ibosCNPVIndex = 6
     LDA ramselCopy:AND_NOT ramselShen:STA ramselCopy:STA ramsel
     PLA:PHA ; peek original OSWRCH A=new mode
     AND_NOT shadowModeOffset ; SQUASH: redundant as we didn't take "BCS EnteringShadowMode" branch above
-    LDX #prvSFTODOMODE - prv83:JSR WritePrivateRam8300X
+    LDX #prvLastScreenMode - prv83:JSR WritePrivateRam8300X
     LDA #ModeChangeStateEnteringNonShadowMode:STA ModeChangeState
     PLA:JMP ProcessWrchv
 
@@ -9887,7 +9881,7 @@ ibosCNPVIndex = 6
     LDA ramselCopy:ORA #ramselShen:STA ramselCopy:STA ramsel
     JSR maybeSwapShadow1
     PLA:PHA ; peek original OSWRCH A=new mode
-    ORA #shadowModeOffset:LDX #prvSFTODOMODE - prv83:JSR WritePrivateRam8300X
+    ORA #shadowModeOffset:LDX #prvLastScreenMode - prv83:JSR WritePrivateRam8300X
     ; SQUASH: Share STA ModeChangeState:PLA:JMP ProcessWrchv with code above?
     LDA #ModeChangeStateEnteringShadowMode:STA ModeChangeState
     PLA:JMP ProcessWrchv
@@ -10017,7 +10011,7 @@ ScreenStart = &3000
 
     JSR InitPrintBuffer
     LDA lastBreakType:BNE DisableShadow ; branch if not soft reset
-    LDX #prvSFTODOMODE - prv83:JSR ReadPrivateRam8300X:BPL DisableShadow
+    LDX #prvLastScreenMode - prv83:JSR ReadPrivateRam8300X:BPL DisableShadow
     ; Enable shadow RAM.
     LDA #ramselShen:STA ramselCopy:STA ramsel ; set ramselShen (SFTODO: and clear Prvs* too; is this safe? probably...)
     LDA vduStatus:ORA #vduStatusShadow:STA vduStatus
@@ -10032,7 +10026,7 @@ ScreenStart = &3000
     LDA #1:STA osShadowRamFlag
 .SFTODOCOMMON1
     PRVEN
-    LDA prvSFTODOMODE:AND_NOT shadowModeOffset:STA prvSFTODOMODE
+    LDA prvLastScreenMode:AND_NOT shadowModeOffset:STA prvLastScreenMode
     JMP PrvDis ; SFTODO: Should have PRVDIS-like macro for this case
 }
 
@@ -10059,7 +10053,7 @@ ScreenStart = &3000
     ; SQUASH: I think the next few lines up to and including "PRVDIS" could be replaced by
     ; "JSR SFTODOCOMMON1".
     PRVEN
-    LDA prvSFTODOMODE:AND_NOT shadowModeOffset:STA prvSFTODOMODE
+    LDA prvLastScreenMode:AND_NOT shadowModeOffset:STA prvLastScreenMode
     PRVDIS
     JSR maybeSwapShadow2
     JMP DisableShadow
