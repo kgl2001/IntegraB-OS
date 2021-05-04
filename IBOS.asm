@@ -9112,7 +9112,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     JSR GetRtcDateTime
     LDY #6
 .Loop
-   JSR LB85A
+   JSR ConvertBinaryToBcd
    STA (oswdbtX),Y
    DEY:BPL Loop
    SEC
@@ -9127,14 +9127,20 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     LDX #6
 .Loop
     LDA prvOswordBlockCopy + 1,X
-    JSR ConvertABcdToBinary
+    JSR ConvertBcdToBinary
     STA prvDateYear,X
     DEX:BPL Loop
     LDA #19:STA prvDateCentury ; ENHANCE: Treat years &00-&79 as 20xx?
     JMP oswd0eReadStringInternal ; SQUASH: "BNE ; always branch"
 
-.^LB85A
+; Convert binary value (<=99) at prvDateYear,Y to BCD representation in A; prvDateYear,Y is
+; corrupted on exit.
+.^ConvertBinaryToBcd
     XASSERT_USE_PRV1
+    ; SFTODO: Isn't this buggy? If prvDateYear,Y is >=100, we will loop forever. I suspect the
+    ; HundredsLoop label should be *after* the LDA prvDateYear,Y. In practice this probably
+    ; never happens - we can't generate a valid BCD representation of a value >=100 - but in
+    ; that case HundredsLoop up to and including the ADC #100 is redundant.
 .HundredsLoop
     LDA prvDateYear,Y
     SEC:SBC #100:BCS HundredsLoop
@@ -9144,6 +9150,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 .TensLoop
     INX:SBC #10:BCS TensLoop
     ADC #10
+    ; We now have tens in X and ones in A.
     STA prvDateYear,Y
     TXA
     ASL A:ASL A:ASL A:ASL A
@@ -9151,7 +9158,8 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     RTS
 
 ; SFTODO: This has only one caller
-.ConvertABcdToBinary
+; Convert A from BCD to binary.
+.ConvertBcdToBinary
     ; If A on entry is &xy, return with
     ; A = (&x0       >> 1) + (&x0       >> 3) + &y
     ;   = ((&x << 4) >> 1) + ((&x << 4) >> 3) + &y
