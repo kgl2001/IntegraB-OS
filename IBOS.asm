@@ -7880,15 +7880,16 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; SFTODO: CARRY INDICATES SOMETHING ON EXIT
 ; SFTODO: This has only one caller
 ; SFTODO: MOVE THESE FLAGS IF USEFUL
+prv2FlagDayOfWeek = 1<<0
 prv2FlagYear = 1<<3
 prv2FlagCentury = 1<<4
-prv2FlagMask = %00011111
+prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we could just use AND_NOT, but doing so wouldn't recreate the binary perfectly
 .^SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: I think this is a poor (incomplete) label, because in the YearOpen case we are adjusting the date until we match the fixed parts
     XASSERT_USE_PRV1
     LDA prv2Flags:AND #prv2FlagYear:BNE YearOpen ; SFTODO: branch if prvDateYear is &FF, i.e. user didn't supply a year
 
     ; The year is not open. Default the century if it's open.
-    LDA prv2Flags:AND #prv2FlagCentury:BEQ CenturyNotOpen ; SFTODO: branch if prvDateCentury is not &FF
+    LDA prv2Flags:AND #prv2FlagCentury:BEQ CenturyNotOpen
     LDA #19:STA prvDateCentury ; default century to 19 SFTODO: probably OK, but should we default to whatever the current century is instead, as we do elsewhere??
     LDA prv2Flags:AND #NOT(prv2FlagCentury) AND prv2FlagMask:STA prv2Flags ; clear bit indicating prvDateCentury is open
 .CenturyNotOpen
@@ -7907,14 +7908,15 @@ prv2FlagMask = %00011111
 
 ; SFTODOWIP
 .YearOpen
-    JSR GetRtcDayMonthYear
+    JSR GetRtcDayMonthYear ; SFTODO: COMMENT/DRAW ATTENTION TO THIS
+    ; If the user partial date specification has everything except (perhaps) day-of-week specified, all we need to is calculate the initial prvDateDayofWeek. SFTODO: REWRITE THIS COMMENT ONCE I GET A FULLER PICTURE, I SEE WHAT'S GOING ON BUT EXPRESSING IT BADLY.
     LDA prv2Flags
-    AND #&1E ; test all bits of prv2Flags except DayOfWeek
-    CMP #&1E
-    BEQ SFTODOProbCalculateDayOfWeekClcRts ; branch if *all* of century/year/month/day-of-month are open
-    LDA prv2Flags
-    STA prvTmp6 ; SFTODO: TEMP STASH ORIGINAL prv2Flags?
-    LDA #&1E ; SFTODO: temporarily set prv2Flags so all of century/year/month/day-of-month are open
+    AND #NOT(prv2FlagDayOfWeek) AND prv2FlagMask
+    CMP #NOT(prv2FlagDayOfWeek) AND prv2FlagMask
+    BEQ SFTODOProbCalculateDayOfWeekClcRts
+    ; The user has left at least one non-day-of-week element open.
+    LDA prv2Flags:STA prvTmp6 ; SFTODO: TEMP STASH ORIGINAL prv2Flags?
+    LDA #NOT(prv2FlagDayOfWeek) AND prv2FlagMask
     STA prv2Flags ; SFTODO: We must be doing this for the benefit of incrementPrvDateRespectingOpenElements
 .incLoop
     LDA prv2DateDayOfMonth
