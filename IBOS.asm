@@ -7950,23 +7950,23 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 {
 .^LAFF9
     XASSERT_USE_PRV1
-    ; Copy prvDate{Century,Year,Month,DayOfMonth,DayOfWeek} to prv2{...} SFTODO: I suspect we do this because we want to retain the original user partial date specification as we will in the answers in prvDate*, which is where we will print the final answer from
-    LDX #&04
-.LAFFB
-    LDA prvDateCentury,X
-    STA prv2DateCentury,X
-    DEX
-    BPL LAFFB
-    ; Set prv2Flags so b4-0 are set iff prv{Century,Year,Month,DayOfMonth,DayOfWeek} is &FF.
-    LDX #&00
+
+    ; Copy prvDate{Century,Year,Month,DayOfMonth,DayOfWeek} to prv2{...} SFTODO: I suspect we
+    ; do this because we want to retain the original user partial date specification as we will
+    ; in the answers in prvDate*, which is where we will print the final answer from
+    LDX #4
+.CopyLoop
+    LDA prvDateCentury,X:STA prv2DateCentury,X
+    DEX:BPL CopyLoop
+
+    ; Set prv2Flags so b4-0 are set iff prv{Century,Year,Month,DayOfMonth,DayOfWeek}
+    ; respectively are &FF ("open").
+    LDX #0
     STX prv2Flags
-.loop
-    LDA prvDateCentury,X
-    CMP #&FF
-    ROL prv2Flags
-    INX
-    CPX #&05
-    BNE loop
+.SetFlagsLoop
+    LDA prvDateCentury,X:CMP #&FF:ROL prv2Flags
+    INX:CPX #5:BNE SetFlagsLoop
+
     JSR SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: RETURNS SOMETHING IN C, ALSO PROBABLY IN prvDateSFTODO0 ("OK" EXIT PATH SETS IT TO 0, I THINK)
     BCS BadDate3
     LDA prv2DateDayOfWeek
