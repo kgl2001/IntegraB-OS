@@ -7877,38 +7877,36 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 
 {
 ; SFTODO: This seems (ignoring for the moment the work done when it does JMP SFTODOProbCalculateDayOfWeekClcRts) to fix up missing parts (&FF) of the date (not time) with the relevant component of 1900/01/01 (ish; I haven't traced the LAFAA branch yet either)
+; SFTODO: CARRY INDICATES SOMETHING ON EXIT
 ; SFTODO: This has only one caller
 ; SFTODO: MOVE THESE FLAGS IF USEFUL
 prv2FlagYear = 1<<3
 prv2FlagCentury = 1<<4
 prv2FlagMask = %00011111
-.^SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: I think this is a poor (incomplete) label, because in the yearOpen case we are adjusting the date until we match the fixed parts
+.^SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: I think this is a poor (incomplete) label, because in the YearOpen case we are adjusting the date until we match the fixed parts
     XASSERT_USE_PRV1
-    LDA prv2Flags:AND #prv2FlagYear:BNE yearOpen ; SFTODO: branch if prvDateYear is &FF, i.e. user didn't supply a year
-    LDA prv2Flags:AND #prv2FlagCentury:BEQ haveCentury ; SFTODO: branch if prvDateCentury is not &FF
-    LDA #19 ; default century to 19 SFTODO: probably OK, but should we default to whatever the current century is instead, as we do elsewhere??
-    STA prvDateCentury
-    LDA prv2Flags
-    AND #NOT(prv2FlagCentury) AND prv2FlagMask ; clear bit indicating prvDateCentury is open
-    STA prv2Flags
-.haveCentury
-    ; SFTODO: Replace &FF values in prvDate{Century,Year,Month,DayOfMonth} with 0,0,1,1 respectively - so we're sort of defaulting to 1900/01/01, probably, given the defaulting of prvCentury earlier
-    LDX #&00
-.loop
+    LDA prv2Flags:AND #prv2FlagYear:BNE YearOpen ; SFTODO: branch if prvDateYear is &FF, i.e. user didn't supply a year
+
+    ; The year is not open. Default the century if it's open.
+    LDA prv2Flags:AND #prv2FlagCentury:BEQ CenturyNotOpen ; SFTODO: branch if prvDateCentury is not &FF
+    LDA #19:STA prvDateCentury ; default century to 19 SFTODO: probably OK, but should we default to whatever the current century is instead, as we do elsewhere??
+    LDA prv2Flags:AND #NOT(prv2FlagCentury) AND prv2FlagMask:STA prv2Flags ; clear bit indicating prvDateCentury is open
+.CenturyNotOpen
+    ; Now fill in open elements of prvDate{Century,Year,Month,DayOfMonth} with the
+    ; corresponding elements of 1900/01/00.
+    LDX #0
+.DefaultLoop
     LDA prvDateCentury,X
-    CMP #&FF
-    BNE LAF9F
-    TXA
-    LSR A
-.LAF9F
+    CMP #&FF:BNE ElementNotOpen
+    TXA:LSR A ; generate defaults 0, 0, 1, 1.
+.ElementNotOpen
     STA prvDateCentury,X
-    INX
-    CPX #&04
-    BNE loop
-    JMP SFTODOProbCalculateDayOfWeekClcRts
+    INX:CPX #4:BNE DefaultLoop
+    ; Finish by populating prvDateDayOfWeek correctly.
+    JMP SFTODOProbCalculateDayOfWeekClcRts ; SQUASH: BEQ always
 
 ; SFTODOWIP
-.yearOpen
+.YearOpen
     JSR GetRtcDayMonthYear
     LDA prv2Flags
     AND #&1E ; test all bits of prv2Flags except DayOfWeek
@@ -7943,10 +7941,12 @@ prv2FlagMask = %00011111
     LDA prvTmp6 ; RESTORE STASHED prv2Flags FROM ABOVE?
     STA prv2Flags
 .SFTODOProbCalculateDayOfWeekClcRts
-    JSR calculateDayOfWeekInA
-    STA prvDateDayOfWeek
-    LDA #&00
-    STA prvDateSFTODO0
+    JSR calculateDayOfWeekInA:STA prvDateDayOfWeek
+    ; SFTODO: Speculation but I think correct: At this point prvDate is a concrete date which
+    ; is the earliest possible candidate matching the user's partial date specification. We
+    ; will later compare it against the user's question and move it forwards in time to see if
+    ; we can find a date matching the user's specification completely.
+    LDA #0:STA prvDateSFTODO0
     CLC
     RTS
 }
