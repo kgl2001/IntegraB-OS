@@ -6475,21 +6475,23 @@ osfileBlock = L02EE
 .SFTODOPSEUDODIV
 {
     XASSERT_USE_PRV1
-            LDX #&08
-            LDA prvA
-            STA prvD
-	  LDA prvB
-            CMP prvC
-            BCS rts ; SFTODO: branch if prvB>=prvC
-.loop       ROL prvD
-            ROL A
-            CMP prvC
-            BCC LA640
-            SBC prvC
-.LA640      DEX
-            BNE loop
-            ROL prvD
-.rts        RTS
+    LDX #8 ; 8-bit division
+    ; If prvB>=prvC, return with prvD=prvA, A=prvB.
+    LDA prvA:STA prvD
+    LDA prvB
+    CMP prvC:BCS Rts ; SFTODO: branch if prvB>=prvC
+    ; SFTODO: Set prvD=prvA DIV prvC, A=prvA MOD prvC
+.Loop
+    ROL prvD
+    ROL A
+    CMP prvC
+    BCC LA640
+    SBC prvC
+.LA640
+    DEX:BNE Loop
+    ROL prvD
+.Rts
+    RTS
 }
 
 {
@@ -6949,11 +6951,9 @@ osfileBlock = L02EE
             SBC #&01
             EOR #&FF
 .LA9A5      STA prvA
-            LDA #&00
-            STA prvB
-            LDA #&07
-            STA prvC
-            JSR SFTODOPSEUDODIV
+            LDA #0:STA prvB
+            LDA #7:STA prvC
+            JSR SFTODOPSEUDODIV ; SFTODO: HERE WE WILL DIVIDE WITHOUT ANY WEIRDNESS
             PLP
             BCS LA9C0
             SEC
@@ -7024,14 +7024,10 @@ daysInMonth = transientDateSFTODO2
             BCC notDone ; SFTODO: Could we BCS to a nearby RTS (there's one just above) to save a byte
             RTS
 .notDone    ADC prvDateDayOfWeek
-            SEC
-            SBC #&02
-            STA prvA
-            LDA #&00
-            STA prvB
-            LDA #&07
-            STA prvC
-            JSR SFTODOPSEUDODIV
+            SEC:SBC #2:STA prvA
+            LDA #0:STA prvB
+            LDA #7:STA prvC
+            JSR SFTODOPSEUDODIV ; SFTODO: WILL ALWAYS DIVIDE WITH NO WEIRDNESS
             STA prvA ; SFTODO: Ignoring SFTODOPSEUDODIV quirk with prvB, we are setting A = (prvDateDayOfWeek + 2) MOD 7 - though remember we adjusted prvDateDayOfWeek above for currently unclear reasons (I suspect they're something to do with blanks in the first column of dates, ish)
             LDA #&06
             STA prvB
@@ -7979,7 +7975,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     STA prvA
     LDA #0:STA prvB
     LDA #7:STA prvC
-    JSR SFTODOPSEUDODIV
+    JSR SFTODOPSEUDODIV ; SFTODO: WILL ALWAYS DIVIDE WITH NO WEIRDNESS
     TAX
     INX
     STX prvDateDayOfWeek
@@ -8146,12 +8142,9 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .InterpretParsedYear
 {
     XASSERT_USE_PRV1
-            LDA L00B0 ; SFTODO: low byte of parsed year from command line
-            STA prvA
-            LDA L00B1 ; SFTODO: high byte of parsed year from command line
-            STA prvB
-            LDA #100
-            STA prvC
+            LDA ConvertIntegerResult:STA prvA
+            LDA ConvertIntegerResult + 1:STA prvB
+            LDA #100:STA prvC
             JSR SFTODOPSEUDODIV
             STA prvDateYear
             LDA prvD
