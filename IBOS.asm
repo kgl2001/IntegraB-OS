@@ -7958,9 +7958,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .LB03E
     LDA prv2Flags:AND #prv2FlagYear OR prv2FlagMonth OR prv2FlagDayOfMonth:BNE SomeOfPrvYearMonthDayOfMonthOpen
     JSR ValidateDateTimeRespectingLeapYears
-    LDA prvDateSFTODO0
-    AND #&F0 ; SFTODO: get century, year, month, day of month flags?
-    BNE BadDate2
+    LDA prvDateSFTODO0:AND #prvDateSFTODO0CenturyYearMonthDayOfMonth:BNE BadDate2
 .SomeOfPrvYearMonthDayOfMonthOpen
     INC prv2DateDayOfWeek
 .LB052
@@ -7978,9 +7976,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 			
 .LB071
     JSR ValidateDateTimeRespectingLeapYears
-    LDA prvOswordBlockCopy
-    AND #&F0
-    BNE LB05A
+    LDA prvDateSFTODO0:AND #prvDateSFTODO0CenturyYearMonthDayOfMonth:BNE LB05A
 .LB07B
     CLV
     CLC
