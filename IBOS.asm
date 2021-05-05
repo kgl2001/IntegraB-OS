@@ -7938,25 +7938,23 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     CMP #&5B:BCC LB086 ; SFTODO: maybe one of the "before/after day of week" type queries???
     JMP LB0F3 ; SQUASH: BCS always SFTODO: ditto???
 
-; SFTODO: *Maybe* the case where we want a specific day of week!? Pure guesswork
+; SFTODO: *Maybe* the case where we want a specific day of week!? Pure guesswork - starting to look very much like it, though fine details still not clear
 .LB03E
     LDA prv2Flags:AND #prv2FlagYear OR prv2FlagMonth OR prv2FlagDayOfMonth:BNE SomeOfPrvYearMonthDayOfMonthOpen
     JSR ValidateDateTimeRespectingLeapYears
     LDA prvDateSFTODOQ:AND #prvDateSFTODOQCenturyYearMonthDayOfMonth:BNE BadDate2
 .SomeOfPrvYearMonthDayOfMonthOpen
     INC prv2DateDayOfWeek
-.LB052
-    LDA prv2DateDayOfWeek
-    CMP prvDateDayOfWeek
-    BEQ LB071
+.SFTODOLOOP
+    LDA prv2DateDayOfWeek:CMP prvDateDayOfWeek:BEQ LB071
 .LB05A
     JSR IncrementPrvDateOpenElements:BCS BadDate2
-    BVC LB068
-    LDA #prv2FlagYear:BIT prv2Flags:BEQ LB083
-.LB068
-    JSR calculateDayOfWeekInA
-    STA prvDateDayOfWeek
-    JMP LB052 ; SFTODO: Looks like we're looping round, and IncrementPrvDateOpenElements at least sometimes increments day of month, so I wonder if this is implementing one of the "search for date where day of week is X" operations - maybe
+    BVC YearNotIncremented
+    ; IncrementPrvDateOpenElements has just incremented the year; this is only OK if it's open.
+    LDA #prv2FlagYear:BIT prv2Flags:BEQ YearNotOpen ; SFTODO: RENAME BEQ LABEL AS SOME SORT OF "FAIL"???
+.YearNotIncremented
+    JSR calculateDayOfWeekInA:STA prvDateDayOfWeek
+    JMP SFTODOLOOP ; SFTODO: Looks like we're looping round, and IncrementPrvDateOpenElements at least sometimes increments day of month, so I wonder if this is implementing one of the "search for date where day of week is X" operations - maybe
 			
 .LB071
     JSR ValidateDateTimeRespectingLeapYears
@@ -7973,7 +7971,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .Rts2
     RTS
 
-.LB083
+.YearNotOpen
     CLV
     SEC
     RTS
