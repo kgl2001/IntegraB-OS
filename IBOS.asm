@@ -7847,8 +7847,8 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 
 ; SFTODOWIP
 .YearOpen
-    ; The user has left the year open; this is a special case because use today as the starting
-    ; point, not 1st January 1900.
+    ; The user has left the year open; this is a special case because we use today as the
+    ; starting point, not 1st January 1900.
     JSR GetRtcDayMonthYear
     ; If the user partial date specification has everything except (perhaps) day-of-week
     ; specified, the date is already fully specified.
