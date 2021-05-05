@@ -7746,20 +7746,14 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; SFTODO: This has only one caller
 .^incrementPrvDateByOneWeek
     XASSERT_USE_PRV1
-            CLC
-            LDA prvDateDayOfMonth
-            ADC #7
-            STA prvDateDayOfMonth
-            LDY prvDateMonth
-            JSR GetDaysInMonthY
-            CMP prvDateDayOfMonth
-            BCS clvClcRts
-            STA prvTmp2
-            SEC
-            LDA prvDateDayOfMonth
-            SBC prvTmp2
-            STA prvDateDayOfMonth
-            JMP LAEF8 ; SFTODO: This is probably "incrementPrvDateMonthBy1"
+    CLC:LDA prvDateDayOfMonth:ADC #daysPerWeek:STA prvDateDayOfMonth
+    LDY prvDateMonth:JSR GetDaysInMonthY
+    CMP prvDateDayOfMonth:BCS clvClcRts
+    ; Our addition made prvDateDayOfMonth > DaysInMonth, so fix that and bump the month by 1 to
+    ; compensate.
+    STA prvTmp2
+    SEC:LDA prvDateDayOfMonth:SBC prvTmp2:STA prvDateDayOfMonth
+    JMP LAEF8 ; SQUASH: BCS always? SFTODO: This is probably "incrementPrvDateMonthBy1"
 
 ; SFTODO: I am still figuring this code out, but what I think this is doing is incrementing the date part of PrvDate* - it's not a simple increment by 1, because we do *not* change anything the user has explicitly specified, we only change "open" elements the user didn't specify. Note that we need to continue to respect openness (it's really more that we're respecting *non*-openness) as we cascade the change into more significant parts of the date when the increment moves an element out of range.
 ; SFTODO: Whether we succeeded or not is indicated by C and V flags - there is probably a common pattern of these across all the date code, once I get a clearer picture
