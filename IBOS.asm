@@ -6802,7 +6802,7 @@ osfileBlock = L02EE
     LDA prvDateMonth:CMP #&FF:BNE MonthNotOpen
     LDY #31:BNE MaxDayOfMonthInY ; always branch
 .MonthNotOpen
-    CMP #2:BNE LookupMonthDays
+    CMP #2:BNE LookupMonthDays ; February is a special case
     LDY #29:BNE MaxDayOfMonthInY ; always branch
 .LookupMonthDays
     LDY prvDateMonth:JSR GetDaysInMonthY:TAY
