@@ -8249,46 +8249,41 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
     LDA #0:STA transientDateSFTODO1
     JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y
     CMP #'+':BEQ Plus
-    CMP #'-':BNE NotMinus
+    CMP #'-':BNE NotPlusOrMinus
     ; SQUASH: Similar chunk of code here and at .plus, could we factor out?
-    INY
-    JSR ConvertIntegerDefaultDecimal
-    BCS LB20B ; SFTODO: Branch if parsing failed
-    CMP #&00
-    BNE LB20D
-.LB20B
-    LDA #&01
-.LB20D
+    INY ; skip '-'
+    JSR ConvertIntegerDefaultDecimal:BCS NoIntegerParsed1
+    CMP #0:BNE PositiveIntegerParsed1 ; SQUASH: "CMP #0" is redundant, flags should reflect A already
+.NoIntegerParsed1
+    LDA #1
+.PositiveIntegerParsed1
     CMP #63+2 ; SFTODO: user guide says 63 is max value, not sure why +2 instead of +1 (+1 make sense as we bcs == branch-if-greater-or-equal)
-    BCS LB229
+    BCS OutOfRange
     ADC #&5A ; SFTODO!?
     CLC
     RTS
 			
 .Plus
-    INY
-    JSR ConvertIntegerDefaultDecimal
-    BCS LB21F ; SFTODO: Branch if parsing failed
-    CMP #&00
-    BNE LB221
-.LB21F
-    LDA #&01
-.LB221
-    CMP #99+2 ; SFTODO: user gide says 99 is max value, as above not sure why +2 instead of +1
-    BCS LB229
+    INY ; skip '+'
+    JSR ConvertIntegerDefaultDecimal:BCS NoIntegerParsed2
+    CMP #0:BNE PositiveIntegerParsed2 ; SQUASH: "CMP #0" is redundant, flags should reflect A already
+.NoIntegerParsed2
+    LDA #1
+.PositiveIntegerParsed2
+    CMP #99+2 ; SFTODO: user guide says 99 is max value, as above not sure why +2 instead of +1
+    BCS OutOfRange
     ADC #&9A ; SFTODO!?
     CLC
     RTS
 
-; SFTODO: THIS LABEL IS PROBABLY "PARSING FOR THIS FRAGMENT FAILED"
-.LB229
+.OutOfRange
     LDA #&FF
     SEC
     RTS
 
 ; SFTODO: It looks like this is parsing a day name from the command line, returning with A populated and C clear if parsed OK, otherwise returning with A=&FF and C set.
-.NotMinus
-    LDX #&00 ; SFTODO: Rename label "notPlusMinus"?
+.NotPlusOrMinus
+    LDX #0
 .LB22F
     STX prvTmp4
     LDA calOffsetTable+1,X
