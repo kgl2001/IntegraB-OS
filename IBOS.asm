@@ -6916,16 +6916,11 @@ osfileBlock = L02EE
             ASL prvDC
             ROL prvDC + 1
             SEC
-            LDA prvDC
-            SBC #19
-            STA prvA
-            LDA prvDC + 1
-            SBC #&00
-            STA prvB
+            LDA prvDC:SBC #19:STA prvA
+            LDA prvDC + 1:SBC #0:STA prvB
 	  ; SFTODO: So BA=prvTmp4*130-19??
-            LDA #100
-            STA prvDC
-            JSR SFTODOPSEUDODIV
+            LDA #100:STA prvDC
+            JSR SFTODOPSEUDODIV ; SFTODO: Don't really know what's going on here yet, but I think this *could* invoke the weird prvB>=prvC condition in SFTODOPSEUDODIV.
             CLC
             LDA prvDC + 1
             ADC prvDateDayOfMonth
@@ -8145,7 +8140,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             LDA ConvertIntegerResult:STA prvA
             LDA ConvertIntegerResult + 1:STA prvB
             LDA #100:STA prvC
-            JSR SFTODOPSEUDODIV
+            JSR SFTODOPSEUDODIV ; SFTODO: IN PRACTICE THIS WILL ALWAYS DO DIVISION WITH NO WEIRDNESS (9999 WOULD GIVE PRVB=39<100)
             STA prvDateYear
             LDA prvD
             BNE centuryInA
