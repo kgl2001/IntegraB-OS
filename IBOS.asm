@@ -578,7 +578,7 @@ prvDateBuffer = prv80 + 0 ; SFTODO: how big?
 prvDateBuffer2 = prv80 + &C8 ; SFTODO: how big? not a great name either
 
 ; SFTODO: EXPERIMENTAL LABELS USED BY DATE/CALENDAR CODE
-prvDateSFTODO0 = prvOswordBlockCopy ; SFTODO: sometimes - maybe always? - used as flags regarding validation - the meaning of the flags is changed (at least) by dateCalculation so just possibly it would be helpful to give this location a different name depending on which style of flags it contains???
+prvDateSFTODO0 = prvOswordBlockCopy ; SFTODO: sometimes - maybe always? - used as flags regarding validation - the meaning of the flags is changed (at least) by DateCalculation so just possibly it would be helpful to give this location a different name depending on which style of flags it contains???
 prvDateSFTODO1 = prvOswordBlockCopy + 1 ; SFTODO: Use as a bitfield controlling formatting
 prvDateSFTODO1b = prvOswordBlockCopy + 1 ; SFTODO: Use as a copy of "final" transientDateBufferIndex
 prvDateSFTODO2 = prvOswordBlockCopy + 2
@@ -8147,64 +8147,49 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
 ; The calculation to perform is parsed from the command line using (transientCmdPtr),Y.
 ; On entry, SFTODO!
 ; On exit, C is clear iff the calculation succeeded. If C is set, V set indicates "Bad date", V clear indicates "Mismatch".
-.dateCalculation
+.DateCalculation
 {
     XASSERT_USE_PRV1
 
-    ; Set the prvDate* addresses relating to date (as opposed to time) to &FF. SFTODO: PROB TRUE BUT CHECK This is used to indicate that the user has not specified any values for them; we fill these in as we parse the command line and the &FF values left over are the ones we need to calculate.
-    LDX #&04
+    ; Set prvDate* up so all the date-related entries (we don't care about time here) are &FF,
+    ; indicating they are "open". As we parse the user input we will fill in some or all of
+    ; those date-related entries, forming a template date.
+    LDX #4
     LDA #&FF
-.setFFLoop
+.SetOpenLoop
     STA prvDateCentury,X
-    DEX
-    BPL setFFLoop
-    JSR FindNextCharAfterSpace								;find next character. offset stored in Y
-    LDA (transientCmdPtr),Y
-    CMP #vduCr
-    BEQ dateArgumentParsed
-    JSR SFTODOProbParsePlusMinusDate
-    BCS BadDate
+    DEX:BPL SetOpenLoop
+
+    JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:CMP #vduCr:BEQ DateArgumentParsed
+    JSR SFTODOProbParsePlusMinusDate:BCS BadDate
     STA prvDateDayOfWeek
-    CMP #&FF
-    BEQ DayOfWeekOpen
+    CMP #&FF:BEQ DayOfWeekOpen
     ; The user has specified a day of the week; if there's no trailing comma this is the end of the user-specified partial date.
-    JSR FindNextCharAfterSpace								;find next character. offset stored in Y
-    LDA (transientCmdPtr),Y
-    CMP #','
-    BNE dateArgumentParsed
+    JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:CMP #',':BNE DateArgumentParsed
     INY
 .DayOfWeekOpen
-    JSR ConvertIntegerDefaultDecimal
-    BCC DayOfMonthInA
+    JSR ConvertIntegerDefaultDecimal:BCC DayOfMonthInA
     LDA #&FF
 .DayOfMonthInA
     STA prvDateDayOfMonth
     ; After the day of the month there may be a '/' followed by month/year components; if there's no '/' we have finished parsing the user-specified partial date.
-    JSR FindNextCharAfterSpace								;find next character. offset stored in Y
-    LDA (transientCmdPtr),Y
-    CMP #'/'
-    BNE dateArgumentParsed
+    JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:CMP #'/':BNE DateArgumentParsed
     INY
-    JSR ConvertIntegerDefaultDecimal
-    BCC monthInA
+    JSR ConvertIntegerDefaultDecimal:BCC MonthInA
     LDA #&FF
-.monthInA
+.MonthInA
     STA prvDateMonth
     ; After the month there may be a '/' followed by a year component; if there's no '/' we have finished parsing the user-specified partial date.
-    JSR FindNextCharAfterSpace								;find next character. offset stored in Y
-    LDA (transientCmdPtr),Y
-    CMP #'/'
-    BNE dateArgumentParsed
+    JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:CMP #'/':BNE DateArgumentParsed
     INY
-    JSR ConvertIntegerDefaultDecimal
-    BCC parsedYearOK
+    JSR ConvertIntegerDefaultDecimal:BCC ParsedYearOK
     LDA #&FF
     STA prvDateYear
     STA prvDateCentury
-    JMP dateArgumentParsed
-.parsedYearOK
+    JMP DateArgumentParsed ; SQUASH: BNE always branch
+.ParsedYearOK
     JSR interpretParsedYear
-.dateArgumentParsed
+.DateArgumentParsed
     ; SFTODO: I am kind of guessing that at this point the command argument has been parsed and anything "provided" has been filled in over the &FF defaults we put in place at the start. So if we're doing a simple "*DATE", *everything* (date-ish, not time-ish) will be &FF.
     JSR validateDateTimeAssumingLeapYear ; SFTODO: *just possibly* it would be better to validate *respecting* leap year *iff* prvDateYear/prvDateCentury are not &FF (i.e. we have a specific year) - but I could very easily be missing some subtlety here - note that in LAFF9 we redo the validation respecting leap year after filling in the blanks, so this is probably *not* a helpful tweak here - OK, LAFF9 will *sometimes* redo the validation, so just maybe (it's all very unclear right now) this tweak would add a tiny bit of value
     ; Stash the date validation result (shifted into the low nybble) on the stack.
@@ -8719,7 +8704,7 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
             LDA prvDateSFTODO2 ; SFTODO: It would be shorter just to do LDA #xx:STA prvDateSFTODO2
             AND #&F0
             STA prvDateSFTODO2							;store #&40 to address &8222, updating value set by initDateSFTODOS
-            JSR dateCalculation
+            JSR DateCalculation
             BCC calculationOk
             BVS PrvDisBadDateIndirect
             JMP PrvDisMismatch								;Error with Mismatch
@@ -8755,7 +8740,7 @@ column = prvC
 
 .^calend    PRVEN								;switch in private RAM
 	  ; SFTODO: Can we share the next few lines of code with *DATE?
-            JSR dateCalculation
+            JSR DateCalculation
             BCC calculationOk
             BVS PrvDisBadDateIndirect
             JMP PrvDisMismatch
