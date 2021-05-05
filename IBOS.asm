@@ -7759,56 +7759,60 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; SFTODO: Whether we succeeded or not is indicated by C and V flags - there is probably a common pattern of these across all the date code, once I get a clearer picture
 .^incrementPrvDateRespectingOpenElements
     XASSERT_USE_PRV1
-            LDA #prv2FlagDayOfMonth
-            BIT prv2Flags
-            BEQ prvDayOfMonthNotOpen ; SFTODO: Not quite sure about this - I think this is saying "it wasn't specified by the user", but *we* may have filled it in the meantime - the fact we go and INC it kind of implies we have
-            INC prvDateDayOfMonth
-            LDY prvDateMonth
-            JSR GetDaysInMonthY
-            CMP prvDateDayOfMonth
-            BCS clvClcRts
-            LDA #1
-            STA prvDateDayOfMonth
+    LDA #prv2FlagDayOfMonth
+    BIT prv2Flags
+    BEQ prvDayOfMonthNotOpen ; SFTODO: Not quite sure about this - I think this is saying "it wasn't specified by the user", but *we* may have filled it in the meantime - the fact we go and INC it kind of implies we have
+    INC prvDateDayOfMonth
+    LDY prvDateMonth
+    JSR GetDaysInMonthY
+    CMP prvDateDayOfMonth
+    BCS clvClcRts
+    LDA #1
+    STA prvDateDayOfMonth
 .prvDayOfMonthNotOpen
-.LAEF8      LDA #&04 ; SFTODO: test bit indicating prvMonth is &FF
-            BIT prv2Flags
-            BEQ prvMonthNotOpen
-            INC prvDateMonth
-            LDA prvDateMonth
-            CMP #13
-            BCC clvClcRts
-            LDA #1
-            STA prvDateMonth
+.LAEF8
+    LDA #prv2FlagMonth
+    BIT prv2Flags
+    BEQ prvMonthNotOpen
+    INC prvDateMonth
+    LDA prvDateMonth
+    CMP #13
+    BCC clvClcRts
+    LDA #1
+    STA prvDateMonth
 .prvMonthNotOpen
-            LDA #&08 ; SFTODO: test bit indicating prvYear is &FF
-            BIT prv2Flags
-            BEQ prvYearNotOpen
-            INC prvDateYear ; SFTODO: *probably* sets prvDateYear to 0 - but then why would we do the following, so maybe it doesn't?
-            LDA prvDateYear
-            CMP #100
-            BCC sevClcRts
-            LDA #0
-            STA prvDateYear
+    LDA #prv2FlagYear
+    BIT prv2Flags
+    BEQ prvYearNotOpen
+    INC prvDateYear ; SFTODO: *probably* sets prvDateYear to 0 - but then why would we do the following, so maybe it doesn't?
+    LDA prvDateYear
+    CMP #100
+    BCC sevClcRts
+    LDA #0
+    STA prvDateYear
 .prvYearNotOpen
-            LDA #&10 ; SFTODO: test bit indicating prvCentury is &FF
-            BIT prv2Flags
-            BEQ sevClcRts ; SFTODO: branch if prvCentury not open
-            INC prvDateCentury
-            LDA prvDateCentury
-            CMP #100
-            BCC sevClcRts
-            LDA #0
-            STA prvDateCentury
-            SEC
-            RTS
+    LDA #prv2FlagCentury
+    BIT prv2Flags
+    BEQ sevClcRts ; SFTODO: branch if prvCentury not open
+    INC prvDateCentury
+    LDA prvDateCentury
+    CMP #100
+    BCC sevClcRts
+    LDA #0
+    STA prvDateCentury
+    SEC
+    RTS
 			
-.^clvClcRts      CLV
-            CLC
-            RTS
+.^clvClcRts
+    CLV
+    CLC
+    RTS
 			
-.^sevClcRts BIT rts
-            CLC
-.rts        RTS
+.^sevClcRts
+    BIT rts
+    CLC
+.rts
+    RTS
 }
 
 ; SFTODO: Note that unlike incrementPrvDateRespectingOpenElements, this does *not* respect open elements - I suspect this is correct given how it's called (e.g. - making this up - by the time we get to this point we have "picked" a date and we're just moving it back one day at a time to meet some additional criterion) but it *is* a difference worth noting in final comments.
