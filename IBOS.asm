@@ -6438,7 +6438,7 @@ osfileBlock = L02EE
 {
     XASSERT_USE_PRV1
             LDA #&05
-            STA prvDateSFTODO0
+            STA prvDateSFTODO0 ; SFTODO: Is this really used? It just possibly is visible to caller via some Integra-B oswords...
             LDA #&84
             STA prvDateSFTODO1 ; SFTODO: b7 of this is tested e.g. at LAD7F
             LDA #&44
@@ -8141,6 +8141,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     LDA prvDateSFTODOQ
     LSR A:LSR A:LSR A:LSR A ; SQUASH: JSR LsrA4
     PHA
+    ; SFTODO: I believe the use of prvDateSFTODO0 (==prvDateSFTODOQ) here is entirely local to this subroutine - once we call LAFF9 we will not use the value left in there, and will overwrite it most of the time.
     ; Set prvDateSFTODO0 so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is &FF (open).
     LDX #0
     STX prvDateSFTODO0
@@ -8692,7 +8693,7 @@ column = prvC
             LDA #hi(prvDateBuffer2)
             STA prvDateSFTODO4 + 1
             LDA #&05
-            STA prvDateSFTODO0
+            STA prvDateSFTODO0 ; SFTODO: Is this used? I suspect it may be used as a return value to a caller via an Integra-B OSWORD but not sure
             LDA #&40 ; SFTODO: use just a single space as separator between (empty) time and the date?
             STA prvDateSFTODO1
             LDA #&00 ; SFTODO: don't emit time?
