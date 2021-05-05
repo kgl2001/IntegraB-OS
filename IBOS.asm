@@ -8245,31 +8245,27 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
 .SFTODOProbParsePlusMinusDate
 {
     XASSERT_USE_PRV1
-   STY prvTmp2
-   LDA #&00
-   STA transientDateSFTODO1
-   JSR FindNextCharAfterSpace								;find next character. offset stored in Y
-   LDA (transientCmdPtr),Y
-   CMP #'+'
-   BEQ plus
-   CMP #'-'
-   BNE notMinus
-; SFTODO: Similar chunk of code here and at .plus, could we factor out?
-   INY
-   JSR ConvertIntegerDefaultDecimal
-   BCS LB20B ; SFTODO: Branch if parsing failed
-   CMP #&00
-   BNE LB20D
+    STY prvTmp2
+    LDA #0:STA transientDateSFTODO1
+    JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y
+    CMP #'+':BEQ Plus
+    CMP #'-':BNE NotMinus
+    ; SQUASH: Similar chunk of code here and at .plus, could we factor out?
+    INY
+    JSR ConvertIntegerDefaultDecimal
+    BCS LB20B ; SFTODO: Branch if parsing failed
+    CMP #&00
+    BNE LB20D
 .LB20B
-   LDA #&01
+    LDA #&01
 .LB20D
-   CMP #63+2 ; SFTODO: user guide says 63 is max value, not sure why +2 instead of +1 (+1 make sense as we bcs == branch-if-greater-or-equal)
-   BCS LB229
-   ADC #&5A ; SFTODO!?
-   CLC
-   RTS
+    CMP #63+2 ; SFTODO: user guide says 63 is max value, not sure why +2 instead of +1 (+1 make sense as we bcs == branch-if-greater-or-equal)
+    BCS LB229
+    ADC #&5A ; SFTODO!?
+    CLC
+    RTS
 			
-.plus
+.Plus
     INY
     JSR ConvertIntegerDefaultDecimal
     BCS LB21F ; SFTODO: Branch if parsing failed
@@ -8291,7 +8287,7 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
     RTS
 
 ; SFTODO: It looks like this is parsing a day name from the command line, returning with A populated and C clear if parsed OK, otherwise returning with A=&FF and C set.
-.notMinus
+.NotMinus
     LDX #&00 ; SFTODO: Rename label "notPlusMinus"?
 .LB22F
     STX prvTmp4
