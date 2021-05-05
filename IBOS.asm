@@ -579,16 +579,17 @@ prvDateBuffer = prv80 + 0 ; SFTODO: how big?
 prvDateBuffer2 = prv80 + &C8 ; SFTODO: how big? not a great name either
 
 ; SFTODO: EXPERIMENTAL LABELS USED BY DATE/CALENDAR CODE
-prvDateSFTODO0 = prvOswordBlockCopy ; SFTODO: sometimes - maybe always? - used as flags regarding validation - the meaning of the flags is changed (at least) by DateCalculation so just possibly it would be helpful to give this location a different name depending on which style of flags it contains???
-prvDateSFTODO0Century = 1<<7
-prvDateSFTODO0Year = 1<<6
-prvDateSFTODO0Month = 1<<5
-prvDateSFTODO0DayOfMonth = 1<<4
-prvDateSFTODO0DayOfWeek = 1<<3
-prvDateSFTODO0Hours = 1<<2
-prvDateSFTODO0Minutes = 1<<1
-prvDateSFTODO0Seconds = 1<<0
-prvDateSFTODO0CenturyYearMonthDayOfMonth = prvDateSFTODO0Century OR prvDateSFTODO0Year OR prvDateSFTODO0Month OR prvDateSFTODO0DayOfMonth
+prvDateSFTODO0 = prvOswordBlockCopy ; SFTODO: I think we use this for two different things so giving it different names to try to reduce confusion
+prvDateSFTODOQ = prvOswordBlockCopy ; SFTODO: sometimes - maybe always? - used as flags regarding validation - the meaning of the flags is changed (at least) by DateCalculation so just possibly it would be helpful to give this location a different name depending on which style of flags it contains???
+prvDateSFTODOQCentury = 1<<7
+prvDateSFTODOQYear = 1<<6
+prvDateSFTODOQMonth = 1<<5
+prvDateSFTODOQDayOfMonth = 1<<4
+prvDateSFTODOQDayOfWeek = 1<<3
+prvDateSFTODOQHours = 1<<2
+prvDateSFTODOQMinutes = 1<<1
+prvDateSFTODOQSeconds = 1<<0
+prvDateSFTODOQCenturyYearMonthDayOfMonth = prvDateSFTODOQCentury OR prvDateSFTODOQYear OR prvDateSFTODOQMonth OR prvDateSFTODOQDayOfMonth
 prvDateSFTODO1 = prvOswordBlockCopy + 1 ; SFTODO: Use as a bitfield controlling formatting
 prvDateSFTODO1b = prvOswordBlockCopy + 1 ; SFTODO: Use as a copy of "final" transientDateBufferIndex
 prvDateSFTODO2 = prvOswordBlockCopy + 2
@@ -6789,7 +6790,7 @@ osfileBlock = L02EE
 }
 
 {
-; SFTODO: Both of these return with bits set in prvDateSFTODO0 for errors - does anything actually check this except to see if it's 0/non-0?
+; SFTODO: Both of these return with bits set in prvDateSFTODOQ for errors - does anything actually check this except to see if it's 0/non-0?
 ; SFTODO: This entry point validates days in February based on prvDate{Century,Year}
 .^ValidateDateTimeRespectingLeapYears
     CLC:BCC Common ; always branch
@@ -6800,9 +6801,9 @@ osfileBlock = L02EE
      ; SFTODO: Does anything actually check the individual bits in the result we build up? If not this code could potentially be simplified. Pretty sure we do but need to check.
     XASSERT_USE_PRV1
     PHP
-    LDA prvDateCentury:LDX #0:LDY #99:JSR CheckABetweenXAndY:LDA #prvDateSFTODO0Century:JSR RecordCheckResultForA
-    LDA prvDateYear:LDX #0:LDY #99:JSR CheckABetweenXAndY:LDA #prvDateSFTODO0Year:JSR RecordCheckResultForA
-    LDA prvDateMonth:LDX #1:LDY #12:JSR CheckABetweenXAndY:LDA #prvDateSFTODO0Month:JSR RecordCheckResultForA
+    LDA prvDateCentury:LDX #0:LDY #99:JSR CheckABetweenXAndY:LDA #prvDateSFTODOQCentury:JSR RecordCheckResultForA
+    LDA prvDateYear:LDX #0:LDY #99:JSR CheckABetweenXAndY:LDA #prvDateSFTODOQYear:JSR RecordCheckResultForA
+    LDA prvDateMonth:LDX #1:LDY #12:JSR CheckABetweenXAndY:LDA #prvDateSFTODOQMonth:JSR RecordCheckResultForA
     ; Set Y to the maximum acceptable day of the month; if the month is open we can allow days up to and including 31.
     PLP:BCC LookupMonthDays
     LDA prvDateMonth:CMP #&FF:BNE MonthNotOpen
@@ -6813,23 +6814,23 @@ osfileBlock = L02EE
 .LookupMonthDays
     LDY prvDateMonth:JSR GetDaysInMonthY:TAY
 .MaxDayOfMonthInY
-    LDA prvDateDayOfMonth:LDX #1:JSR CheckABetweenXAndY:LDA #prvDateSFTODO0DayOfMonth:JSR RecordCheckResultForA
+    LDA prvDateDayOfMonth:LDX #1:JSR CheckABetweenXAndY:LDA #prvDateSFTODOQDayOfMonth:JSR RecordCheckResultForA
     ; SFTODO: Why do we allow prvDateDayOfWeek to be 0?
-    LDA prvDateDayOfWeek:LDX #0:LDY #7:JSR CheckABetweenXAndY:LDA #prvDateSFTODO0DayOfWeek:JSR RecordCheckResultForA
-    LDA prvDateHours:LDX #0:LDY #23:JSR CheckABetweenXAndY:LDA #prvDateSFTODO0Hours:JSR RecordCheckResultForA
-    LDA prvDateMinutes:LDX #0:LDY #59:JSR CheckABetweenXAndY:LDA #prvDateSFTODO0Minutes:JSR RecordCheckResultForA
-    LDA prvDateSeconds:JSR CheckABetweenXAndY:LDA #prvDateSFTODO0Seconds:FALLTHROUGH_TO RecordCheckResultForA
+    LDA prvDateDayOfWeek:LDX #0:LDY #7:JSR CheckABetweenXAndY:LDA #prvDateSFTODOQDayOfWeek:JSR RecordCheckResultForA
+    LDA prvDateHours:LDX #0:LDY #23:JSR CheckABetweenXAndY:LDA #prvDateSFTODOQHours:JSR RecordCheckResultForA
+    LDA prvDateMinutes:LDX #0:LDY #59:JSR CheckABetweenXAndY:LDA #prvDateSFTODOQMinutes:JSR RecordCheckResultForA
+    LDA prvDateSeconds:JSR CheckABetweenXAndY:LDA #prvDateSFTODOQSeconds:FALLTHROUGH_TO RecordCheckResultForA
 
 ; Set the bits set in A in prvOswordBlock if C is set, clear them if C is clear.
 .RecordCheckResultForA
-    BCC RecordOk ; SFTODO: could we just BCC rts if we knew prvDateSFTODO0 was 0 to start with? Do we re-use A values?
-    ORA prvDateSFTODO0
-    STA prvDateSFTODO0
+    BCC RecordOk ; SFTODO: could we just BCC rts if we knew prvDateSFTODOQ was 0 to start with? Do we re-use A values?
+    ORA prvDateSFTODOQ
+    STA prvDateSFTODOQ
     RTS
 .RecordOk
     EOR #&FF
-    AND prvDateSFTODO0
-    STA prvDateSFTODO0
+    AND prvDateSFTODOQ
+    STA prvDateSFTODOQ
     RTS
 
 ; Return with C clear iff X<=A<=Y.
@@ -6864,7 +6865,7 @@ osfileBlock = L02EE
 
 ; SFTODO: the "in" in the next two exported labels is maybe confusing, "storeTo" might be better but even more longwinded - anyway, just a note for when I finally clean up all the label names
 {
-; As calculateDayOfWeekInA, except we also update prvDateDayOfWeek with the calculated day of the week, and set SFTODO:PROBABLY b3 of prvDateSFTODO0 if this changes prvDateDayOfWeek from its previous value.
+; As calculateDayOfWeekInA, except we also update prvDateDayOfWeek with the calculated day of the week, and set SFTODO:PROBABLY b3 of prvDateSFTODOQ if this changes prvDateDayOfWeek from its previous value.
 .^calculateDayOfWeekInPrvDateDayOfWeek
             CLC
             BCC LA909
@@ -6968,9 +6969,10 @@ osfileBlock = L02EE
             BCS rts
             CMP prvDateDayOfWeek
             BEQ LA9DF
-            LDA #&08 ; SFTODO: This bit is the same one ValidateDateTimeRespectingLeapYear uses to indicate day of week invalid, but the meaning of SFTODO0 seems to change a bit and I'm not entirely sure I am interpreting this correctly
-            ORA prvDateSFTODO0
-            STA prvDateSFTODO0
+	  ; SFTODO: I think it's right to be using the SFTODOQ labels here but not sure yet
+            LDA #prvDateSFTODOQDayOfWeek
+            ORA prvDateSFTODOQ
+            STA prvDateSFTODOQ
 .LA9DF      LDA prvA
             STA prvDateDayOfWeek
 .rts        RTS
@@ -7616,7 +7618,7 @@ ENDIF
 {
     XASSERT_USE_PRV1
             LDA #0
-            STA prvDateSFTODO0
+            STA prvDateSFTODO0 ; SFTODO: USE SFTODOQ LABEL???
             SEC
             LDA prvDateCentury
             SBC #19
@@ -7667,7 +7669,7 @@ ENDIF
             RTS
 			
 .LAE26      LDA #&FF
-            STA prvDateSFTODO0
+            STA prvDateSFTODO0 ; SFTODO: USE SFTODOQ LABEL?
             RTS
 }
 
@@ -7907,7 +7909,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     ; is the earliest possible candidate matching the user's partial date specification. We
     ; will later compare it against the user's question and move it forwards in time to see if
     ; we can find a date matching the user's specification completely.
-    LDA #0:STA prvDateSFTODO0
+    LDA #0:STA prvDateSFTODOQ ; SFTODO: PROB CORRECT TO USE SFTODOQ BUT NOT 100% SURE
     CLC
     RTS
 }
@@ -7937,8 +7939,8 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     JSR SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek:BCS BadDate3
     LDA prv2DateDayOfWeek:CMP #&FF:BNE DayOfWeekNotOpen
     JSR ValidateDateTimeRespectingLeapYears
-    LDA prvDateSFTODO0
-    AND #&F0 ; SFTODO: magic - this is masking off century/year/month/day-of-month error flags
+    LDA prvDateSFTODOQ
+    AND #prvDateSFTODOQCenturyYearMonthDayOfMonth
     BNE BadDate3
     CLC
     RTS
@@ -7958,7 +7960,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .LB03E
     LDA prv2Flags:AND #prv2FlagYear OR prv2FlagMonth OR prv2FlagDayOfMonth:BNE SomeOfPrvYearMonthDayOfMonthOpen
     JSR ValidateDateTimeRespectingLeapYears
-    LDA prvDateSFTODO0:AND #prvDateSFTODO0CenturyYearMonthDayOfMonth:BNE BadDate2
+    LDA prvDateSFTODOQ:AND #prvDateSFTODOQCenturyYearMonthDayOfMonth:BNE BadDate2
 .SomeOfPrvYearMonthDayOfMonthOpen
     INC prv2DateDayOfWeek
 .LB052
@@ -7976,7 +7978,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 			
 .LB071
     JSR ValidateDateTimeRespectingLeapYears
-    LDA prvDateSFTODO0:AND #prvDateSFTODO0CenturyYearMonthDayOfMonth:BNE LB05A
+    LDA prvDateSFTODOQ:AND #prvDateSFTODOQCenturyYearMonthDayOfMonth:BNE LB05A
 .LB07B
     CLV
     CLC
@@ -8135,7 +8137,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     ; Validate the non-open components of prvDate*.
     JSR ValidateDateTimeAssumingLeapYear ; SFTODO: *just possibly* it would be better to validate *respecting* leap year *iff* prvDateYear/prvDateCentury are not &FF (i.e. we have a specific year) - but I could very easily be missing some subtlety here - note that in LAFF9 we redo the validation respecting leap year after filling in the blanks, so this is probably *not* a helpful tweak here - OK, LAFF9 will *sometimes* redo the validation, so just maybe (it's all very unclear right now) this tweak would add a tiny bit of value
     ; Stash the date validation result (shifted into the low nybble) on the stack.
-    LDA prvDateSFTODO0
+    LDA prvDateSFTODOQ
     LSR A:LSR A:LSR A:LSR A ; SQUASH: JSR LsrA4
     PHA
     ; Set prvDateSFTODO0 so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is &FF (open).
@@ -8364,8 +8366,8 @@ EndIndex = transientDateSFTODO2 ; exclusive
             BCS LB32F
             JSR InterpretParsedYear
             JSR ValidateDateTimeAssumingLeapYear
-            LDA prvDateSFTODO0
-            AND #&F0
+            LDA prvDateSFTODOQ ; SFTODO: PROB RIGHT TO BE USING SFTODOQ LABEL BUT NOT SURE
+            AND #prvDateSFTODOQCenturyYearMonthDayOfMonth
             BNE LB32F
             JSR calculateDayOfWeekInPrvDateDayOfWeek
             CLC
