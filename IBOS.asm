@@ -8150,91 +8150,95 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
 .dateCalculation
 {
     XASSERT_USE_PRV1
-	  ; Set the prvDate* addresses relating to date (as opposed to time) to &FF. SFTODO: PROB TRUE BUT CHECK This is used to indicate that the user has not specified any values for them; we fill these in as we parse the command line and the &FF values left over are the ones we need to calculate.
-	  LDX #&04
-            LDA #&FF
-.setFFLoop  STA prvDateCentury,X
-            DEX
-            BPL setFFLoop
-            JSR FindNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (transientCmdPtr),Y
-            CMP #vduCr
-            BEQ dateArgumentParsed
-            JSR SFTODOProbParsePlusMinusDate
-            BCS BadDate
-            STA prvDateDayOfWeek
-            CMP #&FF
-            BEQ DayOfWeekOpen
-	  ; The user has specified a day of the week; if there's no trailing comma this is the end of the user-specified partial date.
-            JSR FindNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (transientCmdPtr),Y
-            CMP #','
-            BNE dateArgumentParsed
-            INY
+
+    ; Set the prvDate* addresses relating to date (as opposed to time) to &FF. SFTODO: PROB TRUE BUT CHECK This is used to indicate that the user has not specified any values for them; we fill these in as we parse the command line and the &FF values left over are the ones we need to calculate.
+    LDX #&04
+    LDA #&FF
+.setFFLoop
+    STA prvDateCentury,X
+    DEX
+    BPL setFFLoop
+    JSR FindNextCharAfterSpace								;find next character. offset stored in Y
+    LDA (transientCmdPtr),Y
+    CMP #vduCr
+    BEQ dateArgumentParsed
+    JSR SFTODOProbParsePlusMinusDate
+    BCS BadDate
+    STA prvDateDayOfWeek
+    CMP #&FF
+    BEQ DayOfWeekOpen
+    ; The user has specified a day of the week; if there's no trailing comma this is the end of the user-specified partial date.
+    JSR FindNextCharAfterSpace								;find next character. offset stored in Y
+    LDA (transientCmdPtr),Y
+    CMP #','
+    BNE dateArgumentParsed
+    INY
 .DayOfWeekOpen
-            JSR ConvertIntegerDefaultDecimal
-            BCC DayOfMonthInA
-            LDA #&FF
+    JSR ConvertIntegerDefaultDecimal
+    BCC DayOfMonthInA
+    LDA #&FF
 .DayOfMonthInA
-            STA prvDateDayOfMonth
-	  ; After the day of the month there may be a '/' followed by month/year components; if there's no '/' we have finished parsing the user-specified partial date.
-            JSR FindNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (transientCmdPtr),Y
-            CMP #'/'
-            BNE dateArgumentParsed
-            INY
-            JSR ConvertIntegerDefaultDecimal
-            BCC monthInA
-            LDA #&FF
-.monthInA   STA prvDateMonth
-	  ; After the month there may be a '/' followed by a year component; if there's no '/' we have finished parsing the user-specified partial date.
-            JSR FindNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (transientCmdPtr),Y
-            CMP #'/'
-            BNE dateArgumentParsed
-            INY
-            JSR ConvertIntegerDefaultDecimal
-            BCC parsedYearOK
-            LDA #&FF
-            STA prvDateYear
-            STA prvDateCentury
-            JMP dateArgumentParsed
+    STA prvDateDayOfMonth
+    ; After the day of the month there may be a '/' followed by month/year components; if there's no '/' we have finished parsing the user-specified partial date.
+    JSR FindNextCharAfterSpace								;find next character. offset stored in Y
+    LDA (transientCmdPtr),Y
+    CMP #'/'
+    BNE dateArgumentParsed
+    INY
+    JSR ConvertIntegerDefaultDecimal
+    BCC monthInA
+    LDA #&FF
+.monthInA
+    STA prvDateMonth
+    ; After the month there may be a '/' followed by a year component; if there's no '/' we have finished parsing the user-specified partial date.
+    JSR FindNextCharAfterSpace								;find next character. offset stored in Y
+    LDA (transientCmdPtr),Y
+    CMP #'/'
+    BNE dateArgumentParsed
+    INY
+    JSR ConvertIntegerDefaultDecimal
+    BCC parsedYearOK
+    LDA #&FF
+    STA prvDateYear
+    STA prvDateCentury
+    JMP dateArgumentParsed
 .parsedYearOK
-	  JSR interpretParsedYear
+    JSR interpretParsedYear
 .dateArgumentParsed
-  	  ; SFTODO: I am kind of guessing that at this point the command argument has been parsed and anything "provided" has been filled in over the &FF defaults we put in place at the start. So if we're doing a simple "*DATE", *everything* (date-ish, not time-ish) will be &FF.
-	  JSR validateDateTimeAssumingLeapYear ; SFTODO: *just possibly* it would be better to validate *respecting* leap year *iff* prvDateYear/prvDateCentury are not &FF (i.e. we have a specific year) - but I could very easily be missing some subtlety here - note that in LAFF9 we redo the validation respecting leap year after filling in the blanks, so this is probably *not* a helpful tweak here - OK, LAFF9 will *sometimes* redo the validation, so just maybe (it's all very unclear right now) this tweak would add a tiny bit of value
-	  ; Stash the date validation result (shifted into the low nybble) on the stack.
-            LDA prvDateSFTODO0
-	  ; SFTODO: Use LsrA4
-            LSR A
-            LSR A
-            LSR A
-            LSR A
-            PHA
-	  ; Set prvDateSFTODO0 so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is &FF.
-            LDX #&00
-            STX prvDateSFTODO0
-.loop       LDA prvDateCentury,X
-            CMP #&FF								;set carry iff A=&FF
-            ROL prvDateSFTODO0							;rotate carry into prvOswordBlockCopy
-            INX
-            CPX #&04
-            BNE loop
-	  ; Invert prvDateSFTODO0 b0-3, so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is not &FF. SFTODO: I THINK I MAY HAVE HAD THE SENSE OF THIS THE WRONG WAY ROUND IN SOME OF MY CODE ANALYSIS
-            LDA prvDateSFTODO0
-            EOR #&0F
-            STA prvDateSFTODO0
-	  ; AND prvDateSFTODO0 with the date validation mask we stacked earlier; this will ignore validation errors
-	  ; where the corresponding prvDate* address was &FF.
-            PLA
-            AND prvDateSFTODO0
-            AND #&0F ; SFTODO: redundant? the value we just pulled with PLA had undergone 4xLSR A so high nybble was already 0
-            BNE BadDateIndirect ; branch if still some validation errors after masking off open (&FF) values
-            JMP LAFF9
+    ; SFTODO: I am kind of guessing that at this point the command argument has been parsed and anything "provided" has been filled in over the &FF defaults we put in place at the start. So if we're doing a simple "*DATE", *everything* (date-ish, not time-ish) will be &FF.
+    JSR validateDateTimeAssumingLeapYear ; SFTODO: *just possibly* it would be better to validate *respecting* leap year *iff* prvDateYear/prvDateCentury are not &FF (i.e. we have a specific year) - but I could very easily be missing some subtlety here - note that in LAFF9 we redo the validation respecting leap year after filling in the blanks, so this is probably *not* a helpful tweak here - OK, LAFF9 will *sometimes* redo the validation, so just maybe (it's all very unclear right now) this tweak would add a tiny bit of value
+    ; Stash the date validation result (shifted into the low nybble) on the stack.
+    LDA prvDateSFTODO0
+    ; SFTODO: Use LsrA4
+    LSR A
+    LSR A
+    LSR A
+    LSR A
+    PHA
+    ; Set prvDateSFTODO0 so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is &FF.
+    LDX #&00
+    STX prvDateSFTODO0
+.loop
+    LDA prvDateCentury,X
+    CMP #&FF								;set carry iff A=&FF
+    ROL prvDateSFTODO0							;rotate carry into prvOswordBlockCopy
+    INX
+    CPX #&04
+    BNE loop
+; Invert prvDateSFTODO0 b0-3, so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is not &FF. SFTODO: I THINK I MAY HAVE HAD THE SENSE OF THIS THE WRONG WAY ROUND IN SOME OF MY CODE ANALYSIS
+    LDA prvDateSFTODO0
+    EOR #&0F
+    STA prvDateSFTODO0
+; AND prvDateSFTODO0 with the date validation mask we stacked earlier; this will ignore validation errors
+; where the corresponding prvDate* address was &FF.
+    PLA
+    AND prvDateSFTODO0
+    AND #&0F ; SFTODO: redundant? the value we just pulled with PLA had undergone 4xLSR A so high nybble was already 0
+    BNE BadDateIndirect ; branch if still some validation errors after masking off open (&FF) values
+    JMP LAFF9
 
 .BadDateIndirect
-            JMP BadDate
+    JMP BadDate
 }
 
 ; Take the parsed 2-byte integer year at L00B0 and populate prvDate{Year,Century}, defaulting the century to the current century if a two digit year is specified.
