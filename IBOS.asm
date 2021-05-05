@@ -7866,7 +7866,9 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     ;
     ; Temporarily set prv2Flags so IncrementPrvDateOpenElements will treat everything as open.
     ; (Note that it doesn't touch day-of-week anyway, so it's irrelevant that we set that to be
-    ; non-open here.) SFTODO: I *think* we need to do this because otherwise a partial specification of TODO!!!
+    ; non-open here.) SFTODO: I *think* we need to do this because otherwise a partial
+    ; specification like "17th" would never be able to match if today is "15th" (and thus the
+    ; initial prvDateMonth is 15).
     LDA prv2Flags:STA prvTmp6:LDA #NOT(prv2FlagDayOfWeek) AND prv2FlagMask:STA prv2Flags
 .IncLoop
     LDA prv2DateDayOfMonth
