@@ -207,6 +207,7 @@ romPrivateWorkspaceTable = &0DF0
 romTypeSrData = 2 ; ROM type byte used for banks allocated to pseudo-addressing via *SRDATA
 
 CapitaliseMask = &DF
+LowerCaseMask = &20
 
 osBrkStackPointer = &F0
 osCmdPtr = &F2
@@ -7076,7 +7077,7 @@ daysInMonth = transientDateSFTODO2
 }
 
 ;Calendar text (LAA5F)
-.calText		EQUS "today" ; SFTODO: is this used? probably, but be good to check...
+.calText		EQUS "today"
 		EQUS "sunday"
 		EQUS "monday"
 		EQUS "tuesday"
@@ -8283,28 +8284,24 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
 
 ; SFTODO: It looks like this is parsing a day name from the command line, returning with A populated and C clear if parsed OK, otherwise returning with A=&FF and C set.
 .NotPlusOrMinus
+StartIndex = prvTmp3
+EndIndex = transientDateSFTODO2 ; exclusive
     LDX #0
 .LB22F
     STX prvTmp4
-    LDA calOffsetTable+1,X
-    STA transientDateSFTODO2
-    LDA calOffsetTable,X
-    STA prvTmp3
+    LDA calOffsetTable+1,X:STA EndIndex
+    LDA calOffsetTable,X:STA StartIndex
     TAX
-.LB23E
-    LDA (transientCmdPtr),Y
-    ORA #&20								;force lower case (imperfectly)
-    CMP calText,X
-    BNE LB24F
+.CheckDayNameLoop
+    LDA (transientCmdPtr),Y:ORA #LowerCaseMask
+    CMP calText,X:BNE NoMatch
     INY
-    INX
-    CPX transientDateSFTODO2
-    BEQ LB26A
-    BNE LB23E
-.LB24F
+    INX:CPX EndIndex:BEQ LB26A
+    BNE CheckDayNameLoop ; always branch
+.NoMatch
     SEC
     TXA
-    SBC prvTmp3
+    SBC StartIndex
     CMP #&02
     BCS LB26A
     LDY prvTmp2
