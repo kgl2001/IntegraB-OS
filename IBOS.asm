@@ -8287,35 +8287,30 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
 StartIndex = prvTmp3
 EndIndex = transientDateSFTODO2 ; exclusive
     LDX #0
-.LB22F
+.DayNameLoop
     STX prvTmp4
     LDA calOffsetTable+1,X:STA EndIndex
     LDA calOffsetTable,X:STA StartIndex
     TAX
 .CheckDayNameLoop
     LDA (transientCmdPtr),Y:ORA #LowerCaseMask
-    CMP calText,X:BNE NoMatch
+    CMP calText,X:BNE NotExactlyThisDayName
     INY
-    INX:CPX EndIndex:BEQ LB26A
+    INX:CPX EndIndex:BEQ DayNameMatched
     BNE CheckDayNameLoop ; always branch
-.NoMatch
-    SEC
-    TXA
-    SBC StartIndex
-    CMP #&02
-    BCS LB26A
+.NotExactlyThisDayName
+    ; We failed to match exactly, but if we matched at least 2 characters that's OK.
+    SEC:TXA:SBC StartIndex:CMP #2:BCS DayNameMatched
     LDY prvTmp2
     LDX prvTmp4
-    INX
-    CPX #&08
-    BCC LB22F
+    INX:CPX #daysPerWeek + 1:BCC DayNameLoop ; +1 as calOffsetTable has "today" as well
     LDY prvTmp2
     LDA #&FF
     CLC
     RTS
 
 ; SFTODO: This bit looks like it's probably checking for +/- *after* a day name (e.g. "*DATE TU+,23/10/19")
-.LB26A
+.DayNameMatched
     LDA prvTmp4
     BNE LB27B
     LDX #&06								;Select 'Day of Week' register on RTC: Register &06
