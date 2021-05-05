@@ -580,6 +580,7 @@ prvDateBuffer2 = prv80 + &C8 ; SFTODO: how big? not a great name either
 
 ; SFTODO: EXPERIMENTAL LABELS USED BY DATE/CALENDAR CODE
 prvDateSFTODO0 = prvOswordBlockCopy ; SFTODO: I think we use this for two different things so giving it different names to try to reduce confusion
+prvDateSFTODOX = prvOswordBlockCopy ; SFTODO: "simple" use just as 0/&FF success/fail indicator in an OSWORD call
 prvDateSFTODOQ = prvOswordBlockCopy ; SFTODO: sometimes - maybe always? - used as flags regarding validation - the meaning of the flags is changed (at least) by DateCalculation so just possibly it would be helpful to give this location a different name depending on which style of flags it contains???
 prvDateSFTODOQCentury = 1<<7
 prvDateSFTODOQYear = 1<<6
@@ -7618,7 +7619,7 @@ ENDIF
 {
     XASSERT_USE_PRV1
             LDA #0
-            STA prvDateSFTODO0 ; SFTODO: USE SFTODOQ LABEL???
+            STA prvDateSFTODOX
             SEC
             LDA prvDateCentury
             SBC #19
@@ -7669,7 +7670,7 @@ ENDIF
             RTS
 			
 .LAE26      LDA #&FF
-            STA prvDateSFTODO0 ; SFTODO: USE SFTODOQ LABEL?
+            STA prvDateSFTODOX
             RTS
 }
 
