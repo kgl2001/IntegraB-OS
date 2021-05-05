@@ -8000,10 +8000,8 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 			
 .LB086
     STA prvA
-    LDA #0
-    STA prvB
-    LDA #7
-    STA prvC
+    LDA #0:STA prvB
+    LDA #7:STA prvC
     JSR SFTODOPSEUDODIV
     TAX
     INX
