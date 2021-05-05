@@ -8345,7 +8345,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
 .NoSuffixParsed
     DEC CurrentDayNumber ; make CurrentDayNumber 0-based instead of 1-based
     STX DayOfWeekSuffix
-    ; Return with A=(DayOfWeekSuffix << 3)
+    ; SFTODO: Pack the parsed details into A in some currently unclear way.
     TXA
     ASL A
     ASL A
