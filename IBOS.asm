@@ -7759,7 +7759,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; SFTODO: Whether we succeeded or not is indicated by C and V flags - there is probably a common pattern of these across all the date code, once I get a clearer picture
 .^incrementPrvDateRespectingOpenElements
     XASSERT_USE_PRV1
-            LDA #&02 ; SFTODO: test bit indicating prvDateDayOfMonth is &FF
+            LDA #prv2FlagDayOfMonth
             BIT prv2Flags
             BEQ prvDayOfMonthNotOpen ; SFTODO: Not quite sure about this - I think this is saying "it wasn't specified by the user", but *we* may have filled it in the meantime - the fact we go and INC it kind of implies we have
             INC prvDateDayOfMonth
