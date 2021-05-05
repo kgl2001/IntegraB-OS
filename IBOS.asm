@@ -599,6 +599,12 @@ prvDateSeconds = prvOswordBlockCopy + 15
 
 ; SFTODO WIP - THERE IS SEEMS TO BE AN EXTRA COPY OF PART OF DATE/TIME "OSWORD" BLOCK MADE HERE - "prv2" PART OF NAME IS REALLY JUST TEMP
 prv2Flags = prv82 + &42 ; SFTODO: should have "Date" or something in the name
+prv2FlagDayOfWeek = 1<<0
+prv2FlagDayOfMonth = 1<<1
+prv2FlagMonth = 1<<2
+prv2FlagYear = 1<<3
+prv2FlagCentury = 1<<4
+prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we could just use AND_NOT, but doing so wouldn't recreate the binary perfectly
 prv2DateCentury = prv82 + &43
 prv2DateYear = prv82 + &44
 prv2DateMonth = prv82 + &45
@@ -7842,11 +7848,6 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; SFTODO: This seems (ignoring for the moment the work done when it does JMP SFTODOProbCalculateDayOfWeekClcRts) to fix up missing parts (&FF) of the date (not time) with the relevant component of 1900/01/01 (ish; I haven't traced the LAFAA branch yet either)
 ; SFTODO: CARRY INDICATES SOMETHING ON EXIT
 ; SFTODO: This has only one caller
-; SFTODO: MOVE THESE FLAGS IF USEFUL
-prv2FlagDayOfWeek = 1<<0
-prv2FlagYear = 1<<3
-prv2FlagCentury = 1<<4
-prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we could just use AND_NOT, but doing so wouldn't recreate the binary perfectly
 .^SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: I think this is a poor (incomplete) label, because in the YearOpen case we are adjusting the date until we match the fixed parts
     XASSERT_USE_PRV1
     LDA prv2Flags:AND #prv2FlagYear:BNE YearOpen ; SFTODO: branch if prvDateYear is &FF, i.e. user didn't supply a year
@@ -7891,8 +7892,11 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
     CMP prvDateMonth:BEQ prvDateMatchesFixed
 .prvDateDoesntMatchFixed
     JSR incrementPrvDateRespectingOpenElements:BCC IncLoop
+    ; We've looped round incrementing prvDate* as much as we can and we failed to find a
+    ; matching date. SFTODO: I think this is true but need to go over
+    ; incrementPrvDateRespectingOpenElements properly to be sure.
     LDA prvTmp6:STA prv2Flags ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
-    SEC
+    SEC ; SQUASH: redundant (we didn't BCC just above)
     RTS
 
 .prvDateMatchesFixed
@@ -7922,21 +7926,19 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
     DEX:BPL CopyLoop
 
     ; Set prv2Flags so b4-0 are set iff prv{Century,Year,Month,DayOfMonth,DayOfWeek}
-    ; respectively are &FF ("open").
+    ; respectively is &FF (open).
     LDX #0
     STX prv2Flags
 .SetFlagsLoop
     LDA prvDateCentury,X:CMP #&FF:ROL prv2Flags
     INX:CPX #5:BNE SetFlagsLoop
 
-    JSR SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: RETURNS SOMETHING IN C, ALSO PROBABLY IN prvDateSFTODO0 ("OK" EXIT PATH SETS IT TO 0, I THINK)
-    BCS BadDate3
-    LDA prv2DateDayOfWeek
-    CMP #&FF
-    BNE DayOfWeekNotOpen
+    ; SFTODO: HIGH LEVEL COMMENT(S)
+    JSR SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek:BCS BadDate3
+    LDA prv2DateDayOfWeek:CMP #&FF:BNE DayOfWeekNotOpen
     JSR ValidateDateTimeRespectingLeapYears
     LDA prvDateSFTODO0
-    AND #&F0
+    AND #&F0 ; SFTODO: magic - this is masking off century/year/month/day-of-month error flags
     BNE BadDate3
     CLC
     RTS
@@ -7948,17 +7950,13 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
     RTS
 
 .DayOfWeekNotOpen ; SFTODO: I think this code is adjusting the date we've calculated up until now to satisfy user conditions like "last Tuesday in X" or whatever, but I am guessing - however, I chose this label because we come here if the prv2 *copy* of the user's initial inputs lacks the day of week
-    CMP #&07
-    BCC LB03E
-    CMP #&5B
-    BCC LB086 ; SFTODO: maybe one of the "before/after day of week" type queries???
-    JMP LB0F3 ; SFTODO: ditto???
+    CMP #&07:BCC LB03E
+    CMP #&5B:BCC LB086 ; SFTODO: maybe one of the "before/after day of week" type queries???
+    JMP LB0F3 ; SQUASH: BCS always SFTODO: ditto???
 
 ; SFTODO: *Maybe* the case where we want a specific day of week!? Pure guesswork
 .LB03E
-    LDA prv2Flags
-    AND #&0E ; SFTODO: get bits indicating if prv{Year,Month,DayOfMonth} are &FF
-    BNE SomeOfPrvYearMonthDayOfMonthOpen
+    LDA prv2Flags:AND #prv2FlagYear OR prv2FlagMonth OR prv2FlagDayOfMonth:BNE SomeOfPrvYearMonthDayOfMonthOpen
     JSR ValidateDateTimeRespectingLeapYears
     LDA prvDateSFTODO0
     AND #&F0 ; SFTODO: get century, year, month, day of month flags?
@@ -7970,12 +7968,9 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
     CMP prvDateDayOfWeek
     BEQ LB071
 .LB05A
-    JSR incrementPrvDateRespectingOpenElements
-    BCS BadDate2
+    JSR incrementPrvDateRespectingOpenElements:BCS BadDate2
     BVC LB068
-    LDA #&08
-    BIT prv2Flags
-    BEQ LB083
+    LDA #prv2FlagYear:BIT prv2Flags:BEQ LB083
 .LB068
     JSR calculateDayOfWeekInA
     STA prvDateDayOfWeek
