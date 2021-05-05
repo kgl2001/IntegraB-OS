@@ -8155,27 +8155,28 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
     JSR InterpretParsedYear
 .DateArgumentParsed
 
-    ; SFTODO: UP TO HERE WITH NEW PASS - NEED TO WRITE A NICE HIGH-ISH LEVEL COMMENT FOR FOLLOWING BLOCK OF CODE
+    ; Validate the non-open components of prvDate*.
     JSR ValidateDateTimeAssumingLeapYear ; SFTODO: *just possibly* it would be better to validate *respecting* leap year *iff* prvDateYear/prvDateCentury are not &FF (i.e. we have a specific year) - but I could very easily be missing some subtlety here - note that in LAFF9 we redo the validation respecting leap year after filling in the blanks, so this is probably *not* a helpful tweak here - OK, LAFF9 will *sometimes* redo the validation, so just maybe (it's all very unclear right now) this tweak would add a tiny bit of value
     ; Stash the date validation result (shifted into the low nybble) on the stack.
     LDA prvDateSFTODO0
     LSR A:LSR A:LSR A:LSR A ; SQUASH: JSR LsrA4
     PHA
-    ; Set prvDateSFTODO0 so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is &FF.
+    ; Set prvDateSFTODO0 so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is &FF (open).
     LDX #0
     STX prvDateSFTODO0
-.loop
-    LDA prvDateCentury,X
-    CMP #&FF:ROL prvDateSFTODO0							;rotate carry into prvOswordBlockCopy
-    INX:CPX #4:BNE loop
-; Invert prvDateSFTODO0 b0-3, so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is not &FF. SFTODO: I THINK I MAY HAVE HAD THE SENSE OF THIS THE WRONG WAY ROUND IN SOME OF MY CODE ANALYSIS
+.Loop
+    LDA prvDateCentury,X:CMP #&FF:ROL prvDateSFTODO0
+    INX:CPX #4:BNE Loop
+    ; Invert prvDateSFTODO0 b0-3, so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is not &FF (open). SFTODO: I THINK I MAY HAVE HAD THE SENSE OF THIS THE WRONG WAY ROUND IN SOME OF MY CODE ANALYSIS
     LDA prvDateSFTODO0:EOR #&0F:STA prvDateSFTODO0
-; AND prvDateSFTODO0 with the date validation mask we stacked earlier; this will ignore validation errors
-; where the corresponding prvDate* address was &FF.
+    ; AND prvDateSFTODO0 with the date validation mask we stacked earlier; this will ignore
+    ; validation errors where the corresponding date element is open.
     PLA
     AND prvDateSFTODO0
-    AND #&0F ; SFTODO: redundant? the value we just pulled with PLA had undergone 4xLSR A so high nybble was already 0
-    BNE BadDateIndirect ; branch if still some validation errors after masking off open (&FF) values
+    AND #&0F ; SQUASH: redundant? the value we just pulled with PLA had undergone 4xLSR A so high nybble was already 0
+    BNE BadDateIndirect
+
+    ; SFTODO: PROPER COMMENT - "NOW DO WHATEVER LAFF9 DOES"!
     JMP LAFF9
 
 .BadDateIndirect
