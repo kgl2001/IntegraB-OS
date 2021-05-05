@@ -8246,6 +8246,7 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
 .SFTODOProbParsePlusMinusDate
 {
 SpecificDayOfWeekFlag = transientDateSFTODO1
+DayOfWeekSuffix = prvTmp5
 OriginalY = prvTmp2
 
     XASSERT_USE_PRV1
@@ -8323,6 +8324,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
     LDX #rtcRegDayOfWeek:JSR ReadRtcRam:STA CurrentDayNumber
     LDA #&FF:STA SpecificDayOfWeekFlag ; SQUASH: Just DEC SpecificDayOfWeekFlag?
 .SpecificDayOfWeek
+    ; Now set DayOfWeekSuffix to reflect the suffix (+, -, *, 1-9) or lack of suffix.
     LDX #0
     LDA (transientCmdPtr),Y
     CMP #'+':BNE LB285
@@ -8336,14 +8338,13 @@ EndIndex = transientDateSFTODO2 ; exclusive
 .LB291
     CMP #'1':BCC LB29C
     CMP #'9'+1:BCS LB29C
-    AND #&0F
-    TAX
+    AND #&0F:TAX
 .LB29C
-    CPX #&00:BEQ LB2A1
-    INY
-.LB2A1
+    CPX #0:BEQ NoSuffixParsed
+    INY ; skip the suffix we parsed
+.NoSuffixParsed
     DEC prvTmp4
-    STX prvTmp5
+    STX DayOfWeekSuffix
     TXA
     ASL A
     ASL A
