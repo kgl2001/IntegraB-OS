@@ -6791,66 +6791,29 @@ osfileBlock = L02EE
 .^ValidateDateTimeAssumingLeapYear ; SFTODO: perhaps not ideal name
     SEC
 .Common
+     ; SFTODO: Does anything actually check the individual bits in the result we build up? If not this code could potentially be simplified. Pretty sure we do but need to check.
     XASSERT_USE_PRV1
     PHP
-    LDA prvDateCentury:LDX #0:LDY #99:JSR CheckABetweenXAndY
-    LDA #&80 ; SFTODO: Does anything actually check the individual bits in the result we build up? If not this code could potentially be simplified.
-    JSR RecordCheckResultForA
-    LDA prvDateYear
-    LDX #0
-    LDY #99
-    JSR CheckABetweenXAndY
-    LDA #&40
-    JSR RecordCheckResultForA
-    LDA prvDateMonth
-    LDX #1
-    LDY #12
-    JSR CheckABetweenXAndY
-    LDA #&20
-    JSR RecordCheckResultForA
-    PLP
-    BCC LookupMonthDays
-    LDA prvDateMonth
-    CMP #&FF ; SFTODO: why would we have &FF in month? Not saying we can't, just superficially odd without having been over all code yet...
-    BNE HaveMonth
-    LDY #31 ; if we can't tell what month, err on the side of caution.
-    BNE MonthDaysInY ; always branch
-.HaveMonth
-    CMP #2 									; February
-    BNE LookupMonthDays
-    LDY #29
-    BNE MonthDaysInY ; always branch
+    LDA prvDateCentury:LDX #0:LDY #99:JSR CheckABetweenXAndY:LDA #&80:JSR RecordCheckResultForA
+    LDA prvDateYear:LDX #0:LDY #99:JSR CheckABetweenXAndY:LDA #&40:JSR RecordCheckResultForA
+    LDA prvDateMonth:LDX #1:LDY #12:JSR CheckABetweenXAndY:LDA #&20:JSR RecordCheckResultForA
+    ; Set Y to the maximum acceptable day of the month; if the month is open we can allow days up to and including 31.
+    PLP:BCC LookupMonthDays
+    LDA prvDateMonth:CMP #&FF:BNE MonthNotOpen
+    LDY #31:BNE MaxDayOfMonthInY ; always branch
+.MonthNotOpen
+    CMP #2:BNE LookupMonthDays
+    LDY #29:BNE MaxDayOfMonthInY ; always branch
 .LookupMonthDays
-    LDY prvDateMonth
-    JSR GetDaysInMonthY
-    TAY
-.MonthDaysInY
-    LDA prvDateDayOfMonth
-    LDX #1
-    JSR CheckABetweenXAndY
-    LDA #&10
-    JSR RecordCheckResultForA
-    LDA prvDateDayOfWeek
-    LDX #&00
-    LDY #&07
-    JSR CheckABetweenXAndY
-    LDA #&08
-    JSR RecordCheckResultForA
-    LDA prvDateHours
-    LDX #&00
-    LDY #&17
-    JSR CheckABetweenXAndY
-    LDA #&04
-    JSR RecordCheckResultForA
-    LDA prvDateMinutes
-    LDX #&00
-    LDY #&3B
-    JSR CheckABetweenXAndY
-    LDA #&02
-    JSR RecordCheckResultForA
-    LDA prvDateSeconds
-    JSR CheckABetweenXAndY
-    LDA #&01
+    LDY prvDateMonth:JSR GetDaysInMonthY:TAY
+.MaxDayOfMonthInY
+    LDA prvDateDayOfMonth:LDX #1:JSR CheckABetweenXAndY:LDA #&10:JSR RecordCheckResultForA
+    ; SFTODO: Why do we allow prvDateDayOfWeek to be 0?
+    LDA prvDateDayOfWeek:LDX #0:LDY #7:JSR CheckABetweenXAndY:LDA #&08:JSR RecordCheckResultForA
+    LDA prvDateHours:LDX #0:LDY #23:JSR CheckABetweenXAndY:LDA #&04:JSR RecordCheckResultForA
+    LDA prvDateMinutes:LDX #0:LDY #59:JSR CheckABetweenXAndY:LDA #&02:JSR RecordCheckResultForA
+    LDA prvDateSeconds:JSR CheckABetweenXAndY:LDA #&01:FALLTHROUGH_TO RecordCheckResultForA
+
 ; Set the bits set in A in prvOswordBlock if C is set, clear them if C is clear.
 .RecordCheckResultForA
     BCC RecordOk ; SFTODO: could we just BCC rts if we knew prvDateSFTODO0 was 0 to start with? Do we re-use A values?
