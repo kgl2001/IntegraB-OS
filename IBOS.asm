@@ -6790,93 +6790,96 @@ osfileBlock = L02EE
             BCC LA83C
 ; SFTODO: This entry point always allows 29th February regardless
 .^ValidateDateTimeAssumingLeapYear ; SFTODO: perhaps not ideal name
-            SEC
+    SEC
 .LA83C
     XASSERT_USE_PRV1
-      PHP
-            LDA prvDateCentury
-            LDX #0
-            LDY #99
-            JSR checkABetweenXAndY
-            LDA #&80 ; SFTODO: Does anything actually check the individual bits in the result we build up? If not this code could potentially be simplified.
-            JSR recordCheckResultForA
-            LDA prvDateYear
-            LDX #0
-            LDY #99
-            JSR checkABetweenXAndY
-            LDA #&40
-            JSR recordCheckResultForA
-            LDA prvDateMonth
-            LDX #1
-            LDY #12
-            JSR checkABetweenXAndY
-            LDA #&20
-            JSR recordCheckResultForA
-            PLP
-            BCC lookupMonthDays
-            LDA prvDateMonth
-            CMP #&FF ; SFTODO: why would we have &FF in month? Not saying we can't, just superficially odd without having been over all code yet...
-            BNE haveMonth
-            LDY #31 ; if we can't tell what month, err on the side of caution.
-            BNE monthDaysInY ; always branch
-.haveMonth  CMP #2 									; February
-            BNE lookupMonthDays
-            LDY #29
-            BNE monthDaysInY ; always branch
+    PHP
+    LDA prvDateCentury
+    LDX #0
+    LDY #99
+    JSR checkABetweenXAndY
+    LDA #&80 ; SFTODO: Does anything actually check the individual bits in the result we build up? If not this code could potentially be simplified.
+    JSR recordCheckResultForA
+    LDA prvDateYear
+    LDX #0
+    LDY #99
+    JSR checkABetweenXAndY
+    LDA #&40
+    JSR recordCheckResultForA
+    LDA prvDateMonth
+    LDX #1
+    LDY #12
+    JSR checkABetweenXAndY
+    LDA #&20
+    JSR recordCheckResultForA
+    PLP
+    BCC lookupMonthDays
+    LDA prvDateMonth
+    CMP #&FF ; SFTODO: why would we have &FF in month? Not saying we can't, just superficially odd without having been over all code yet...
+    BNE haveMonth
+    LDY #31 ; if we can't tell what month, err on the side of caution.
+    BNE monthDaysInY ; always branch
+.haveMonth
+    CMP #2 									; February
+    BNE lookupMonthDays
+    LDY #29
+    BNE monthDaysInY ; always branch
 .lookupMonthDays
-	  LDY prvDateMonth
-            JSR GetDaysInMonthY
-            TAY
+    LDY prvDateMonth
+    JSR GetDaysInMonthY
+    TAY
 .monthDaysInY
-	  LDA prvDateDayOfMonth
-            LDX #1
-            JSR checkABetweenXAndY
-            LDA #&10
-            JSR recordCheckResultForA
-            LDA prvDateDayOfWeek
-            LDX #&00
-            LDY #&07
-            JSR checkABetweenXAndY
-            LDA #&08
-            JSR recordCheckResultForA
-            LDA prvDateHours
-            LDX #&00
-            LDY #&17
-            JSR checkABetweenXAndY
-            LDA #&04
-            JSR recordCheckResultForA
-            LDA prvDateMinutes
-            LDX #&00
-            LDY #&3B
-            JSR checkABetweenXAndY
-            LDA #&02
-            JSR recordCheckResultForA
-            LDA prvDateSeconds
-            JSR checkABetweenXAndY
-            LDA #&01
+    LDA prvDateDayOfMonth
+    LDX #1
+    JSR checkABetweenXAndY
+    LDA #&10
+    JSR recordCheckResultForA
+    LDA prvDateDayOfWeek
+    LDX #&00
+    LDY #&07
+    JSR checkABetweenXAndY
+    LDA #&08
+    JSR recordCheckResultForA
+    LDA prvDateHours
+    LDX #&00
+    LDY #&17
+    JSR checkABetweenXAndY
+    LDA #&04
+    JSR recordCheckResultForA
+    LDA prvDateMinutes
+    LDX #&00
+    LDY #&3B
+    JSR checkABetweenXAndY
+    LDA #&02
+    JSR recordCheckResultForA
+    LDA prvDateSeconds
+    JSR checkABetweenXAndY
+    LDA #&01
 ; Set the bits set in A in prvOswordBlock if C is set, clear them if C is clear.
 .recordCheckResultForA
-	  BCC recordOk ; SFTODO: could we just BCC rts if we knew prvDateSFTODO0 was 0 to start with? Do we re-use A values?
-            ORA prvDateSFTODO0
-            STA prvDateSFTODO0
-            RTS
-.recordOk   EOR #&FF
-            AND prvDateSFTODO0
-            STA prvDateSFTODO0
-            RTS
+    BCC recordOk ; SFTODO: could we just BCC rts if we knew prvDateSFTODO0 was 0 to start with? Do we re-use A values?
+    ORA prvDateSFTODO0
+    STA prvDateSFTODO0
+    RTS
+.recordOk
+    EOR #&FF
+    AND prvDateSFTODO0
+    STA prvDateSFTODO0
+    RTS
 
 ; Return with C clear iff X<=A<=Y.
 .checkABetweenXAndY
-	  STA prvTmp2
-            CPY prvTmp2
-            BCC secRts
-            STX prvTmp2
-            CMP prvTmp2
-            BCC secRts ; SFTODO: Any chance of using another copy of these instructions?
-            CLC
-            RTS
-.secRts     SEC
-            RTS
+    STA prvTmp2
+    CPY prvTmp2
+    BCC secRts
+    STX prvTmp2
+    CMP prvTmp2
+    BCC secRts ; SFTODO: Any chance of using another copy of these instructions?
+    CLC
+    RTS
+.secRts
+    SEC
+    RTS
 }
 
 ; SFTODO: The following block is dead code
