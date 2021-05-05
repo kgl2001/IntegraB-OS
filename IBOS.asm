@@ -6785,11 +6785,11 @@ osfileBlock = L02EE
 ;    b2: hours
 ;    b1: minutes
 ;    b0: seconds
-.^validateDateTimeRespectingLeapYears
+.^ValidateDateTimeRespectingLeapYears
             CLC
             BCC LA83C
 ; SFTODO: This entry point always allows 29th February regardless
-.^validateDateTimeAssumingLeapYear ; SFTODO: perhaps not ideal name
+.^ValidateDateTimeAssumingLeapYear ; SFTODO: perhaps not ideal name
             SEC
 .LA83C
     XASSERT_USE_PRV1
@@ -7000,7 +7000,7 @@ osfileBlock = L02EE
             BCS rts
             CMP prvDateDayOfWeek
             BEQ LA9DF
-            LDA #&08 ; SFTODO: This bit is the same one validateDateTimeRespectingLeapYear uses to indicate day of week invalid, but the meaning of SFTODO0 seems to change a bit and I'm not entirely sure I am interpreting this correctly
+            LDA #&08 ; SFTODO: This bit is the same one ValidateDateTimeRespectingLeapYear uses to indicate day of week invalid, but the meaning of SFTODO0 seems to change a bit and I'm not entirely sure I am interpreting this correctly
             ORA prvDateSFTODO0
             STA prvDateSFTODO0
 .LA9DF      LDA prvA
@@ -7972,7 +7972,7 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
     LDA prv2DateDayOfWeek
     CMP #&FF
     BNE DayOfWeekNotOpen
-    JSR validateDateTimeRespectingLeapYears
+    JSR ValidateDateTimeRespectingLeapYears
     LDA prvDateSFTODO0
     AND #&F0
     BNE BadDate3
@@ -7997,7 +7997,7 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
     LDA prv2Flags
     AND #&0E ; SFTODO: get bits indicating if prv{Year,Month,DayOfMonth} are &FF
     BNE SomeOfPrvYearMonthDayOfMonthOpen
-    JSR validateDateTimeRespectingLeapYears
+    JSR ValidateDateTimeRespectingLeapYears
     LDA prvDateSFTODO0
     AND #&F0 ; SFTODO: get century, year, month, day of month flags?
     BNE BadDate2
@@ -8020,7 +8020,7 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
     JMP LB052 ; SFTODO: Looks like we're looping round, and incrementPrvDateRespectingOpenElements at least sometimes increments day of month, so I wonder if this is implementing one of the "search for date where day of week is X" operations - maybe
 			
 .LB071
-    JSR validateDateTimeRespectingLeapYears
+    JSR ValidateDateTimeRespectingLeapYears
     LDA prvOswordBlockCopy
     AND #&F0
     BNE LB05A
@@ -8161,40 +8161,40 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
     STA prvDateCentury,X
     DEX:BPL SetOpenLoop
 
-    ; If there's nothing on the command line, we're done (the date is fully open).
+    ; If there's nothing on the command line, the date is fully open and we're done parsing.
     JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:CMP #vduCr:BEQ DateArgumentParsed
-
-    JSR SFTODOProbParsePlusMinusDate:BCS BadDate
-    STA prvDateDayOfWeek
+    ; Otherwise parse the command line and fill in prvDate* accordingly.
+    JSR SFTODOProbParsePlusMinusDate:BCS BadDate:STA prvDateDayOfWeek
     CMP #&FF:BEQ DayOfWeekOpen
-    ; The user has specified a day of the week; if there's no trailing comma this is the end of the user-specified partial date.
+    ; The user has specified a day of the week; if there's no trailing comma this is the end of
+    ; the user-specified partial date.
     JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:CMP #',':BNE DateArgumentParsed
-    INY
+    INY ; skip ','
 .DayOfWeekOpen
     JSR ConvertIntegerDefaultDecimal:BCC DayOfMonthInA
-    LDA #&FF
+    LDA #&FF ; day of month is open
 .DayOfMonthInA
     STA prvDateDayOfMonth
-    ; After the day of the month there may be a '/' followed by month/year components; if there's no '/' we have finished parsing the user-specified partial date.
+    ; After the day of the month there may be a '/' followed by month/year components; if
+    ; there's no '/' we have finished parsing the user-specified partial date.
     JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:CMP #'/':BNE DateArgumentParsed
-    INY
+    INY ; skip '/'
     JSR ConvertIntegerDefaultDecimal:BCC MonthInA
-    LDA #&FF
+    LDA #&FF ; month is open
 .MonthInA
     STA prvDateMonth
     ; After the month there may be a '/' followed by a year component; if there's no '/' we have finished parsing the user-specified partial date.
     JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:CMP #'/':BNE DateArgumentParsed
-    INY
+    INY ; skip '/'
     JSR ConvertIntegerDefaultDecimal:BCC ParsedYearOK
-    LDA #&FF
-    STA prvDateYear
-    STA prvDateCentury
+    LDA #&FF:STA prvDateYear:STA prvDateCentury ; century/year are open
     JMP DateArgumentParsed ; SQUASH: BNE always branch
 .ParsedYearOK
     JSR InterpretParsedYear
 .DateArgumentParsed
-    ; SFTODO: I am kind of guessing that at this point the command argument has been parsed and anything "provided" has been filled in over the &FF defaults we put in place at the start. So if we're doing a simple "*DATE", *everything* (date-ish, not time-ish) will be &FF.
-    JSR validateDateTimeAssumingLeapYear ; SFTODO: *just possibly* it would be better to validate *respecting* leap year *iff* prvDateYear/prvDateCentury are not &FF (i.e. we have a specific year) - but I could very easily be missing some subtlety here - note that in LAFF9 we redo the validation respecting leap year after filling in the blanks, so this is probably *not* a helpful tweak here - OK, LAFF9 will *sometimes* redo the validation, so just maybe (it's all very unclear right now) this tweak would add a tiny bit of value
+
+    ; SFTODO: UP TO HERE WITH NEW PASS - NEED TO WRITE A NICE HIGH-ISH LEVEL COMMENT FOR FOLLOWING BLOCK OF CODE
+    JSR ValidateDateTimeAssumingLeapYear ; SFTODO: *just possibly* it would be better to validate *respecting* leap year *iff* prvDateYear/prvDateCentury are not &FF (i.e. we have a specific year) - but I could very easily be missing some subtlety here - note that in LAFF9 we redo the validation respecting leap year after filling in the blanks, so this is probably *not* a helpful tweak here - OK, LAFF9 will *sometimes* redo the validation, so just maybe (it's all very unclear right now) this tweak would add a tiny bit of value
     ; Stash the date validation result (shifted into the low nybble) on the stack.
     LDA prvDateSFTODO0
     LSR A:LSR A:LSR A:LSR A ; SQUASH: JSR LsrA4
@@ -8243,6 +8243,7 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
 
 ; SFTODO: This seems to be parsing the "+"/"-" support for *DATE/*CALENDAR and returning with the offset in some form in A (&FF meaning not present/couldn't parse or something like that), probably returns with C clear iff parsed OK. - I think as a whole it's parsing +/- a number of days, a specific day of the week or the +/-day-of-week stuff - this is *probably* why A seems to get shifted round, as I think all this different functionality is mapped into A on return, but not sure
 ; SFTODO: This has only one caller
+; SFTODO: Note the flags reflect A on exit.
 .SFTODOProbParsePlusMinusDate
 {
 SpecificDayOfWeekFlag = transientDateSFTODO1
@@ -8310,9 +8311,9 @@ EndIndex = transientDateSFTODO2 ; exclusive
     LDY OriginalY
     LDX CurrentDayNumber
     INX:CPX #daysPerWeek + 1:BCC DayNameLoop ; +1 as calOffsetTable has "today" as well
-    ; We didn't match anything.
+    ; We didn't match anything. Note that this isn't an error; we return with C clear.
     LDY OriginalY
-    LDA #&FF
+    LDA #&FF ; day of week is open
     CLC
     RTS
 
@@ -8386,7 +8387,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
 .secondsInA STA prvDateSeconds
             TYA
             PHA
-            JSR validateDateTimeAssumingLeapYear
+            JSR ValidateDateTimeAssumingLeapYear
             PLA
             TAY
             LDA prvOswordBlockCopy
@@ -8422,7 +8423,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
             JSR ConvertIntegerDefaultDecimal
             BCS LB32F
             JSR InterpretParsedYear
-            JSR validateDateTimeAssumingLeapYear
+            JSR ValidateDateTimeAssumingLeapYear
             LDA prvDateSFTODO0
             AND #&F0
             BNE LB32F
