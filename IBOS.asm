@@ -7760,8 +7760,8 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; SFTODO: I am still figuring this code out, but what I think this is doing is incrementing the date part of PrvDate* - it's not a simple increment by 1, because we do *not* change anything the user has explicitly specified, we only change "open" elements the user didn't specify. Note that we need to continue to respect openness (it's really more that we're respecting *non*-openness) as we cascade the change into more significant parts of the date when the increment moves an element out of range.
 ; SFTODO: Whether we succeeded or not is indicated by C and V flags - there is probably a common pattern of these across all the date code, once I get a clearer picture
 ; Increment the open elements (as specified by prv2Flags) of prvDate* by one step. On exit:
-;    C=1 means the century wrapped from 99xx to 00x (SFTODO: bit odd threshold, as we don't generally cope with dates outside 19/20xx, do we?)
-;    C=0 means the century didn't wrap; V is set iff the year was incremented.
+;     C=1 means the century wrapped from 99xx to 00x (SFTODO: bit odd threshold, as we don't generally cope with dates outside 19/20xx, do we?)
+;     C=0 means the century didn't wrap; V is set iff the year was incremented.
 .^IncrementPrvDateOpenElements
     XASSERT_USE_PRV1
     LDA #prv2FlagDayOfMonth:BIT prv2Flags:BEQ DayOfMonthNotOpen
@@ -7800,8 +7800,9 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     RTS
 }
 
-; SFTODO: Note that unlike IncrementPrvDateOpenElements, this does *not* respect open elements - I suspect this is correct given how it's called (e.g. - making this up - by the time we get to this point we have "picked" a date and we're just moving it back one day at a time to meet some additional criterion) but it *is* a difference worth noting in final comments.
-; SFTODO: I think we return with C and V clear if things are OK; we return with C clear and V set if the year gets decremented, or C set (not sure about V, probably clear) if the century gets decremented below 0
+; Decrement prvDate* by one day; this does not respect the open/closed flags. On exit:
+;     C=1 means the century wrapped from 00xx to 255x (SFTODO: bit odd threshold, as we don't generally cope with dates outside 19/20xx, do we?)
+;     C=0 means the century didn't wrap; V is set iff the year was decremented.
 .decrementPrvDateBy1
 {
     XASSERT_USE_PRV1
