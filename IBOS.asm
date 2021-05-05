@@ -8160,7 +8160,9 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
     STA prvDateCentury,X
     DEX:BPL SetOpenLoop
 
+    ; If there's nothing on the command line, we're done (the date is fully open).
     JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:CMP #vduCr:BEQ DateArgumentParsed
+
     JSR SFTODOProbParsePlusMinusDate:BCS BadDate
     STA prvDateDayOfWeek
     CMP #&FF:BEQ DayOfWeekOpen
@@ -8243,117 +8245,134 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
 .SFTODOProbParsePlusMinusDate
 {
     XASSERT_USE_PRV1
-            STY prvTmp2
-            LDA #&00
-            STA transientDateSFTODO1
-            JSR FindNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (transientCmdPtr),Y
-            CMP #'+'
-            BEQ plus
-            CMP #'-'
-            BNE notMinus
-	  ; SFTODO: Similar chunk of code here and at .plus, could we factor out?
-            INY
-            JSR ConvertIntegerDefaultDecimal
-            BCS LB20B ; SFTODO: Branch if parsing failed
-            CMP #&00
-            BNE LB20D
-.LB20B      LDA #&01
-.LB20D      CMP #63+2 ; SFTODO: user guide says 63 is max value, not sure why +2 instead of +1 (+1 make sense as we bcs == branch-if-greater-or-equal)
-            BCS LB229
-            ADC #&5A ; SFTODO!?
-            CLC
-            RTS
+   STY prvTmp2
+   LDA #&00
+   STA transientDateSFTODO1
+   JSR FindNextCharAfterSpace								;find next character. offset stored in Y
+   LDA (transientCmdPtr),Y
+   CMP #'+'
+   BEQ plus
+   CMP #'-'
+   BNE notMinus
+; SFTODO: Similar chunk of code here and at .plus, could we factor out?
+   INY
+   JSR ConvertIntegerDefaultDecimal
+   BCS LB20B ; SFTODO: Branch if parsing failed
+   CMP #&00
+   BNE LB20D
+.LB20B
+   LDA #&01
+.LB20D
+   CMP #63+2 ; SFTODO: user guide says 63 is max value, not sure why +2 instead of +1 (+1 make sense as we bcs == branch-if-greater-or-equal)
+   BCS LB229
+   ADC #&5A ; SFTODO!?
+   CLC
+   RTS
 			
-.plus       INY
-            JSR ConvertIntegerDefaultDecimal
-            BCS LB21F ; SFTODO: Branch if parsing failed
-            CMP #&00
-            BNE LB221
-.LB21F      LDA #&01
-.LB221      CMP #99+2 ; SFTODO: user gide says 99 is max value, as above not sure why +2 instead of +1
-            BCS LB229
-            ADC #&9A ; SFTODO!?
-            CLC
-            RTS
+.plus
+    INY
+    JSR ConvertIntegerDefaultDecimal
+    BCS LB21F ; SFTODO: Branch if parsing failed
+    CMP #&00
+    BNE LB221
+.LB21F
+    LDA #&01
+.LB221
+    CMP #99+2 ; SFTODO: user gide says 99 is max value, as above not sure why +2 instead of +1
+    BCS LB229
+    ADC #&9A ; SFTODO!?
+    CLC
+    RTS
 
 ; SFTODO: THIS LABEL IS PROBABLY "PARSING FOR THIS FRAGMENT FAILED"
-.LB229      LDA #&FF
-            SEC
-            RTS
+.LB229
+    LDA #&FF
+    SEC
+    RTS
 
 ; SFTODO: It looks like this is parsing a day name from the command line, returning with A populated and C clear if parsed OK, otherwise returning with A=&FF and C set.
-.notMinus   LDX #&00 ; SFTODO: Rename label "notPlusMinus"?
-.LB22F      STX prvTmp4
-            LDA calOffsetTable+1,X
-            STA transientDateSFTODO2
-            LDA calOffsetTable,X
-            STA prvTmp3
-            TAX
-.LB23E      LDA (transientCmdPtr),Y
-            ORA #&20								;force lower case (imperfectly)
-            CMP calText,X
-            BNE LB24F
-            INY
-            INX
-            CPX transientDateSFTODO2
-            BEQ LB26A
-            BNE LB23E
-.LB24F      SEC
-            TXA
-            SBC prvTmp3
-            CMP #&02
-            BCS LB26A
-            LDY prvTmp2
-            LDX prvTmp4
-            INX
-            CPX #&08
-            BCC LB22F
-            LDY prvTmp2
-            LDA #&FF
-            CLC
-            RTS
+.notMinus
+    LDX #&00 ; SFTODO: Rename label "notPlusMinus"?
+.LB22F
+    STX prvTmp4
+    LDA calOffsetTable+1,X
+    STA transientDateSFTODO2
+    LDA calOffsetTable,X
+    STA prvTmp3
+    TAX
+.LB23E
+    LDA (transientCmdPtr),Y
+    ORA #&20								;force lower case (imperfectly)
+    CMP calText,X
+    BNE LB24F
+    INY
+    INX
+    CPX transientDateSFTODO2
+    BEQ LB26A
+    BNE LB23E
+.LB24F
+    SEC
+    TXA
+    SBC prvTmp3
+    CMP #&02
+    BCS LB26A
+    LDY prvTmp2
+    LDX prvTmp4
+    INX
+    CPX #&08
+    BCC LB22F
+    LDY prvTmp2
+    LDA #&FF
+    CLC
+    RTS
 
 ; SFTODO: This bit looks like it's probably checking for +/- *after* a day name (e.g. "*DATE TU+,23/10/19")
-.LB26A      LDA prvTmp4
-            BNE LB27B
-            LDX #&06								;Select 'Day of Week' register on RTC: Register &06
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            STA prvTmp4
-            LDA #&FF
-            STA transientDateSFTODO1
-.LB27B      LDX #&00
-            LDA (transientCmdPtr),Y
-            CMP #'+'
-            BNE LB285
-            LDX #&0B
-.LB285      CMP #'-'
-            BNE LB28B
-            LDX #&0C
-.LB28B      CMP #'*'
-            BNE LB291
-            LDX #&0A
-.LB291      CMP #'1'
-            BCC LB29C
-            CMP #'9'+1								;':' Between 0..9 SFTODO: between 1..9?
-            BCS LB29C
-            AND #&0F
-            TAX
-.LB29C      CPX #&00
-            BEQ LB2A1
-            INY
-.LB2A1      DEC prvTmp4
-            STX prvTmp5
-            TXA
-            ASL A
-            ASL A
-            ASL A
-            SEC
-            SBC prvTmp5
-            CLC
-            ADC prvTmp4
-            CLC
-            RTS
+.LB26A
+    LDA prvTmp4
+    BNE LB27B
+    LDX #&06								;Select 'Day of Week' register on RTC: Register &06
+    JSR ReadRtcRam								;Read data from RTC memory location X into A
+    STA prvTmp4
+    LDA #&FF
+    STA transientDateSFTODO1
+.LB27B
+    LDX #&00
+    LDA (transientCmdPtr),Y
+    CMP #'+'
+    BNE LB285
+    LDX #&0B
+.LB285
+    CMP #'-'
+    BNE LB28B
+    LDX #&0C
+.LB28B
+    CMP #'*'
+    BNE LB291
+    LDX #&0A
+.LB291
+    CMP #'1'
+    BCC LB29C
+    CMP #'9'+1								;':' Between 0..9 SFTODO: between 1..9?
+    BCS LB29C
+    AND #&0F
+    TAX
+.LB29C
+    CPX #&00
+    BEQ LB2A1
+    INY
+.LB2A1
+    DEC prvTmp4
+    STX prvTmp5
+    TXA
+    ASL A
+    ASL A
+    ASL A
+    SEC
+    SBC prvTmp5
+    CLC
+    ADC prvTmp4
+    CLC
+    RTS
 }
 
 ; Parse a time from the command line, populating prvDate* and returning with C clear iff parsing succeeded.
