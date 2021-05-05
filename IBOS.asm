@@ -8343,16 +8343,17 @@ EndIndex = transientDateSFTODO2 ; exclusive
     CPX #0:BEQ NoSuffixParsed
     INY ; skip the suffix we parsed
 .NoSuffixParsed
-    DEC prvTmp4
+    DEC CurrentDayNumber ; make CurrentDayNumber 0-based instead of 1-based
     STX DayOfWeekSuffix
+    ; Return with A=(DayOfWeekSuffix << 3)
     TXA
     ASL A
     ASL A
     ASL A
     SEC
-    SBC prvTmp5
+    SBC DayOfWeekSuffix
     CLC
-    ADC prvTmp4
+    ADC CurrentDayNumber
     CLC
     RTS
 }
