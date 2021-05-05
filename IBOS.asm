@@ -677,6 +677,7 @@ opcodeStaAbs = &8D
 
 daysPerWeek = 7
 daysPerYear = 365
+MonthsPerYear = 12
 
 ; SFTODO: Define romselCopy = &F4, romsel = &FE30, ramselCopy = &37F, ramsel =
 ; &FE34 and use those everywhere instead of the raw hex or SHEILA+&xx we have
@@ -7742,9 +7743,10 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 }
 
 {
-; SFTODO: This is like incrementPrvDateRespectingOpenElements but (presumably) we know the day of month is open and we increment it by a week not the one day incrementPrvDateRespectingOpenElements would do when it's open.
-; SFTODO: This has only one caller
-.^incrementPrvDateByOneWeek
+; As IncrementPrvDateOpenElements, but it assumes prvDateDayOfMonth is open and advances it by
+; seven days instead of one day as IncrementPrvDateOpenElements would.
+; SQUASH: This has only one caller
+.^IncrementPrvDateOpenElementsByOneWeek
     XASSERT_USE_PRV1
     CLC:LDA prvDateDayOfMonth:ADC #daysPerWeek:STA prvDateDayOfMonth
     LDY prvDateMonth:JSR GetDaysInMonthY
@@ -7753,53 +7755,36 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     ; compensate.
     STA prvTmp2
     SEC:LDA prvDateDayOfMonth:SBC prvTmp2:STA prvDateDayOfMonth
-    JMP LAEF8 ; SQUASH: BCS always? SFTODO: This is probably "incrementPrvDateMonthBy1"
+    JMP DayOfMonthIncremented ; SQUASH: BCS always?
 
 ; SFTODO: I am still figuring this code out, but what I think this is doing is incrementing the date part of PrvDate* - it's not a simple increment by 1, because we do *not* change anything the user has explicitly specified, we only change "open" elements the user didn't specify. Note that we need to continue to respect openness (it's really more that we're respecting *non*-openness) as we cascade the change into more significant parts of the date when the increment moves an element out of range.
 ; SFTODO: Whether we succeeded or not is indicated by C and V flags - there is probably a common pattern of these across all the date code, once I get a clearer picture
-.^incrementPrvDateRespectingOpenElements
+; Increment the open elements (as specified by prv2Flags) of prvDate* by one step. On exit:
+;    C=1 means the century wrapped from 99xx to 00x (SFTODO: bit odd threshold, as we don't generally cope with dates outside 19/20xx, do we?)
+;    C=0 means the century didn't wrap; V is set iff the year was incremented.
+.^IncrementPrvDateOpenElements
     XASSERT_USE_PRV1
-    LDA #prv2FlagDayOfMonth
-    BIT prv2Flags
-    BEQ prvDayOfMonthNotOpen ; SFTODO: Not quite sure about this - I think this is saying "it wasn't specified by the user", but *we* may have filled it in the meantime - the fact we go and INC it kind of implies we have
+    LDA #prv2FlagDayOfMonth:BIT prv2Flags:BEQ DayOfMonthNotOpen
     INC prvDateDayOfMonth
-    LDY prvDateMonth
-    JSR GetDaysInMonthY
-    CMP prvDateDayOfMonth
-    BCS clvClcRts
-    LDA #1
-    STA prvDateDayOfMonth
-.prvDayOfMonthNotOpen
-.LAEF8
-    LDA #prv2FlagMonth
-    BIT prv2Flags
-    BEQ prvMonthNotOpen
+    LDY prvDateMonth:JSR GetDaysInMonthY
+    CMP prvDateDayOfMonth:BCS clvClcRts
+    LDA #1:STA prvDateDayOfMonth
+.DayOfMonthNotOpen
+.DayOfMonthIncremented
+    LDA #prv2FlagMonth:BIT prv2Flags:BEQ MonthNotOpen
     INC prvDateMonth
-    LDA prvDateMonth
-    CMP #13
-    BCC clvClcRts
-    LDA #1
-    STA prvDateMonth
-.prvMonthNotOpen
-    LDA #prv2FlagYear
-    BIT prv2Flags
-    BEQ prvYearNotOpen
+    LDA prvDateMonth:CMP #MonthsPerYear + 1:BCC clvClcRts
+    LDA #1:STA prvDateMonth
+.MonthNotOpen
+    LDA #prv2FlagYear:BIT prv2Flags:BEQ YearNotOpen
     INC prvDateYear ; SFTODO: *probably* sets prvDateYear to 0 - but then why would we do the following, so maybe it doesn't?
-    LDA prvDateYear
-    CMP #100
-    BCC sevClcRts
-    LDA #0
-    STA prvDateYear
-.prvYearNotOpen
-    LDA #prv2FlagCentury
-    BIT prv2Flags
-    BEQ sevClcRts ; SFTODO: branch if prvCentury not open
+    LDA prvDateYear:CMP #100:BCC sevClcRts
+    LDA #0:STA prvDateYear
+.YearNotOpen
+    LDA #prv2FlagCentury:BIT prv2Flags:BEQ sevClcRts
     INC prvDateCentury
-    LDA prvDateCentury
-    CMP #100
-    BCC sevClcRts
-    LDA #0
-    STA prvDateCentury
+    LDA prvDateCentury:CMP #100:BCC sevClcRts
+    LDA #0:STA prvDateCentury
     SEC
     RTS
 			
@@ -7815,7 +7800,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     RTS
 }
 
-; SFTODO: Note that unlike incrementPrvDateRespectingOpenElements, this does *not* respect open elements - I suspect this is correct given how it's called (e.g. - making this up - by the time we get to this point we have "picked" a date and we're just moving it back one day at a time to meet some additional criterion) but it *is* a difference worth noting in final comments.
+; SFTODO: Note that unlike IncrementPrvDateOpenElements, this does *not* respect open elements - I suspect this is correct given how it's called (e.g. - making this up - by the time we get to this point we have "picked" a date and we're just moving it back one day at a time to meet some additional criterion) but it *is* a difference worth noting in final comments.
 ; SFTODO: I think we return with C and V clear if things are OK; we return with C clear and V set if the year gets decremented, or C set (not sure about V, probably clear) if the century gets decremented below 0
 .decrementPrvDateBy1
 {
@@ -7882,7 +7867,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     ; The user has left at least one non-day-of-week element open.
     LDA prv2Flags:STA prvTmp6 ; SFTODO: TEMP STASH ORIGINAL prv2Flags?
     LDA #NOT(prv2FlagDayOfWeek) AND prv2FlagMask
-    STA prv2Flags ; SFTODO: We must be doing this for the benefit of incrementPrvDateRespectingOpenElements
+    STA prv2Flags ; SFTODO: We must be doing this for the benefit of IncrementPrvDateOpenElements
 .IncLoop
     LDA prv2DateDayOfMonth
     CMP #&FF:BEQ prvDayOfMonthMatchesFixed
@@ -7892,10 +7877,10 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     CMP #&FF:BEQ prvDateMatchesFixed
     CMP prvDateMonth:BEQ prvDateMatchesFixed
 .prvDateDoesntMatchFixed
-    JSR incrementPrvDateRespectingOpenElements:BCC IncLoop
+    JSR IncrementPrvDateOpenElements:BCC IncLoop
     ; We've looped round incrementing prvDate* as much as we can and we failed to find a
     ; matching date. SFTODO: I think this is true but need to go over
-    ; incrementPrvDateRespectingOpenElements properly to be sure.
+    ; IncrementPrvDateOpenElements properly to be sure.
     LDA prvTmp6:STA prv2Flags ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
     SEC ; SQUASH: redundant (we didn't BCC just above)
     RTS
@@ -7967,13 +7952,13 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     CMP prvDateDayOfWeek
     BEQ LB071
 .LB05A
-    JSR incrementPrvDateRespectingOpenElements:BCS BadDate2
+    JSR IncrementPrvDateOpenElements:BCS BadDate2
     BVC LB068
     LDA #prv2FlagYear:BIT prv2Flags:BEQ LB083
 .LB068
     JSR calculateDayOfWeekInA
     STA prvDateDayOfWeek
-    JMP LB052 ; SFTODO: Looks like we're looping round, and incrementPrvDateRespectingOpenElements at least sometimes increments day of month, so I wonder if this is implementing one of the "search for date where day of week is X" operations - maybe
+    JMP LB052 ; SFTODO: Looks like we're looping round, and IncrementPrvDateOpenElements at least sometimes increments day of month, so I wonder if this is implementing one of the "search for date where day of week is X" operations - maybe
 			
 .LB071
     JSR ValidateDateTimeRespectingLeapYears
@@ -8012,7 +7997,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     PHA
 .LB0B1
     JSR calculateDayOfWeekInA:CMP prvDateDayOfWeek:BEQ LB0C1
-    JSR incrementPrvDateRespectingOpenElements:BCC LB0B1
+    JSR IncrementPrvDateOpenElements:BCC LB0B1
     PLA:BCS BadDate2
 .LB0C1
     PLA
@@ -8020,13 +8005,13 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .LB0C3
     DEX
     BEQ LB07B
-    JSR incrementPrvDateByOneWeek
+    JSR IncrementPrvDateOpenElementsByOneWeek
     BCC LB0C3
     CLV
     RTS
 
 .LB0CD
-    JSR incrementPrvDateRespectingOpenElements
+    JSR IncrementPrvDateOpenElements
     JSR calculateDayOfWeekInA
     CMP prvDateDayOfWeek
     BNE LB0CD
@@ -8051,7 +8036,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     SBC #&9A
     TAX
 .LB102
-    JSR incrementPrvDateRespectingOpenElements
+    JSR IncrementPrvDateOpenElements
     BCC LB10A
     JMP BadDate2 ; SQUASH: BCS always?
 			
