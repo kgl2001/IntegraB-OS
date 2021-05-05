@@ -7947,7 +7947,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     INC prv2DateDayOfWeek
 .SFTODOLOOP
     LDA prv2DateDayOfWeek:CMP prvDateDayOfWeek:BEQ LB071
-.LB05A
+.SFTODOLOOP2
     JSR IncrementPrvDateOpenElements:BCS BadDate2
     BVC YearNotIncremented
     ; IncrementPrvDateOpenElements has just incremented the year; this is only OK if it's open.
@@ -7955,10 +7955,9 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .YearNotIncremented
     JSR calculateDayOfWeekInA:STA prvDateDayOfWeek
     JMP SFTODOLOOP ; SFTODO: Looks like we're looping round, and IncrementPrvDateOpenElements at least sometimes increments day of month, so I wonder if this is implementing one of the "search for date where day of week is X" operations - maybe
-			
 .LB071
     JSR ValidateDateTimeRespectingLeapYears
-    LDA prvDateSFTODOQ:AND #prvDateSFTODOQCenturyYearMonthDayOfMonth:BNE LB05A
+    LDA prvDateSFTODOQ:AND #prvDateSFTODOQCenturyYearMonthDayOfMonth:BNE SFTODOLOOP2
 .LB07B
     CLV
     CLC
