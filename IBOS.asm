@@ -8245,8 +8245,10 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
 ; SFTODO: This has only one caller
 .SFTODOProbParsePlusMinusDate
 {
+OriginalY = prvTmp2
+
     XASSERT_USE_PRV1
-    STY prvTmp2
+    STY OriginalY
     LDA #0:STA transientDateSFTODO1
     JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y
     CMP #'+':BEQ Plus
@@ -8284,11 +8286,12 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
 
 ; SFTODO: It looks like this is parsing a day name from the command line, returning with A populated and C clear if parsed OK, otherwise returning with A=&FF and C set.
 .NotPlusOrMinus
+CurrentDayNumber = prvTmp4
 StartIndex = prvTmp3
 EndIndex = transientDateSFTODO2 ; exclusive
     LDX #0
 .DayNameLoop
-    STX prvTmp4
+    STX CurrentDayNumber
     LDA calOffsetTable+1,X:STA EndIndex
     LDA calOffsetTable,X:STA StartIndex
     TAX
@@ -8301,17 +8304,19 @@ EndIndex = transientDateSFTODO2 ; exclusive
 .NotExactlyThisDayName
     ; We failed to match exactly, but if we matched at least 2 characters that's OK.
     SEC:TXA:SBC StartIndex:CMP #2:BCS DayNameMatched
-    LDY prvTmp2
-    LDX prvTmp4
+    ; We didn't match, so loop round to try another day if there is one.
+    LDY OriginalY
+    LDX CurrentDayNumber
     INX:CPX #daysPerWeek + 1:BCC DayNameLoop ; +1 as calOffsetTable has "today" as well
-    LDY prvTmp2
+    ; We didn't match anything.
+    LDY OriginalY
     LDA #&FF
     CLC
     RTS
 
 ; SFTODO: This bit looks like it's probably checking for +/- *after* a day name (e.g. "*DATE TU+,23/10/19")
 .DayNameMatched
-    LDA prvTmp4
+    LDA CurrentDayNumber
     BNE LB27B
     LDX #&06								;Select 'Day of Week' register on RTC: Register &06
     JSR ReadRtcRam								;Read data from RTC memory location X into A
