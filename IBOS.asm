@@ -6485,9 +6485,9 @@ osfileBlock = L02EE
     ROL prvD
     ROL A
     CMP prvC
-    BCC LA640
+    BCC NeedBorrow
     SBC prvC
-.LA640
+.NeedBorrow
     DEX:BNE Loop
     ROL prvD
 .Rts
