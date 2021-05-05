@@ -6094,17 +6094,17 @@ osfileBlock = L02EE
             LDA (transientCmdPtr),Y
             CMP #'*'
             BNE LA429
-            BVS secRts ; branch if not at end of line SFTODO: isn't this redundant? We just successfully checked and found a '*' not a CR? So we'll never branch, right? Should we have checked this earlier (e.g. at .noBankNumber)? Have I just got confused?
+            BVS SecRts ; branch if not at end of line SFTODO: isn't this redundant? We just successfully checked and found a '*' not a CR? So we'll never branch, right? Should we have checked this earlier (e.g. at .noBankNumber)? Have I just got confused?
             INY
             JSR invertTransientRomBankMask
 .LA429      LDA transientRomBankMask
             ORA transientRomBankMask + 1
-            BEQ secRts
+            BEQ SecRts
             CLC
             RTS
 
 ; SFTODO: There's probably another copy of these two instructions we could re-use, though it might require shuffling code round and be more trouble than it's worth
-.secRts
+.SecRts
             SEC
             RTS
 }
@@ -6722,7 +6722,7 @@ osfileBlock = L02EE
 ; Return number of days in month Y in prvDate{Century,Year} in A.
 .GetDaysInMonthY
 {
-   DEY:LDA MonthDaysTable,Y:INY ; SQUASH: Just do "LDA monthDaysTable-1,Y" to avoid DEY/INY
+   DEY:LDA MonthDaysTable,Y:INY ; SQUASH: Just do "LDA MonthDaysTable-1,Y" to avoid DEY/INY
    ; Add the leap day if this is February in a leap year.
    CPY #2:BNE Rts
    PHA:JSR TestLeapYear:PLA:BCC Rts
@@ -6786,98 +6786,94 @@ osfileBlock = L02EE
 ;    b1: minutes
 ;    b0: seconds
 .^ValidateDateTimeRespectingLeapYears
-            CLC
-            BCC LA83C
+    CLC:BCC Common ; always branch
 ; SFTODO: This entry point always allows 29th February regardless
 .^ValidateDateTimeAssumingLeapYear ; SFTODO: perhaps not ideal name
     SEC
-.LA83C
+.Common
     XASSERT_USE_PRV1
     PHP
-    LDA prvDateCentury
-    LDX #0
-    LDY #99
-    JSR checkABetweenXAndY
+    LDA prvDateCentury:LDX #0:LDY #99:JSR CheckABetweenXAndY
     LDA #&80 ; SFTODO: Does anything actually check the individual bits in the result we build up? If not this code could potentially be simplified.
-    JSR recordCheckResultForA
+    JSR RecordCheckResultForA
     LDA prvDateYear
     LDX #0
     LDY #99
-    JSR checkABetweenXAndY
+    JSR CheckABetweenXAndY
     LDA #&40
-    JSR recordCheckResultForA
+    JSR RecordCheckResultForA
     LDA prvDateMonth
     LDX #1
     LDY #12
-    JSR checkABetweenXAndY
+    JSR CheckABetweenXAndY
     LDA #&20
-    JSR recordCheckResultForA
+    JSR RecordCheckResultForA
     PLP
-    BCC lookupMonthDays
+    BCC LookupMonthDays
     LDA prvDateMonth
     CMP #&FF ; SFTODO: why would we have &FF in month? Not saying we can't, just superficially odd without having been over all code yet...
-    BNE haveMonth
+    BNE HaveMonth
     LDY #31 ; if we can't tell what month, err on the side of caution.
-    BNE monthDaysInY ; always branch
-.haveMonth
+    BNE MonthDaysInY ; always branch
+.HaveMonth
     CMP #2 									; February
-    BNE lookupMonthDays
+    BNE LookupMonthDays
     LDY #29
-    BNE monthDaysInY ; always branch
-.lookupMonthDays
+    BNE MonthDaysInY ; always branch
+.LookupMonthDays
     LDY prvDateMonth
     JSR GetDaysInMonthY
     TAY
-.monthDaysInY
+.MonthDaysInY
     LDA prvDateDayOfMonth
     LDX #1
-    JSR checkABetweenXAndY
+    JSR CheckABetweenXAndY
     LDA #&10
-    JSR recordCheckResultForA
+    JSR RecordCheckResultForA
     LDA prvDateDayOfWeek
     LDX #&00
     LDY #&07
-    JSR checkABetweenXAndY
+    JSR CheckABetweenXAndY
     LDA #&08
-    JSR recordCheckResultForA
+    JSR RecordCheckResultForA
     LDA prvDateHours
     LDX #&00
     LDY #&17
-    JSR checkABetweenXAndY
+    JSR CheckABetweenXAndY
     LDA #&04
-    JSR recordCheckResultForA
+    JSR RecordCheckResultForA
     LDA prvDateMinutes
     LDX #&00
     LDY #&3B
-    JSR checkABetweenXAndY
+    JSR CheckABetweenXAndY
     LDA #&02
-    JSR recordCheckResultForA
+    JSR RecordCheckResultForA
     LDA prvDateSeconds
-    JSR checkABetweenXAndY
+    JSR CheckABetweenXAndY
     LDA #&01
 ; Set the bits set in A in prvOswordBlock if C is set, clear them if C is clear.
-.recordCheckResultForA
-    BCC recordOk ; SFTODO: could we just BCC rts if we knew prvDateSFTODO0 was 0 to start with? Do we re-use A values?
+.RecordCheckResultForA
+    BCC RecordOk ; SFTODO: could we just BCC rts if we knew prvDateSFTODO0 was 0 to start with? Do we re-use A values?
     ORA prvDateSFTODO0
     STA prvDateSFTODO0
     RTS
-.recordOk
+.RecordOk
     EOR #&FF
     AND prvDateSFTODO0
     STA prvDateSFTODO0
     RTS
 
 ; Return with C clear iff X<=A<=Y.
-.checkABetweenXAndY
+.CheckABetweenXAndY
     STA prvTmp2
     CPY prvTmp2
-    BCC secRts
+    BCC SecRts
     STX prvTmp2
     CMP prvTmp2
-    BCC secRts ; SFTODO: Any chance of using another copy of these instructions?
+    BCC SecRts ; SFTODO: Any chance of using another copy of these instructions?
     CLC
     RTS
-.secRts
+.SecRts
     SEC
     RTS
 }
