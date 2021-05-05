@@ -7821,11 +7821,10 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     RTS
 }
 
+; SFTODO: I *BELIEVE* THIS POPULATES THE DOM/MONTH/YEAR/CENTURY BITS OF PRVDATE WITH THE EARLIEST DATE COMPATIBLE WITH THE CORRESPONDING BITS OF THE USER'S PARTIAL SPECIFICATION. THE RESULT MAY NOT MATCH - EG THE USER MAY HAVE SAID "SUNDAY" AND THIS DATE IS A MONDAY.
+; SFTODO: ON EXIT C CLEAR MEANS WE POPULATED THOSE BITS OK, C SET MEANS WE COULDN'T FIND ANYTHING MATCHING THE RELEVANT BITS OF USER'S PARTIAL SPEC
+.SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: I think this is a poor (incomplete) label, because in the YearOpen case we are adjusting the date until we match the fixed parts
 {
-; SFTODO: This seems (ignoring for the moment the work done when it does JMP SFTODOProbCalculateDayOfWeekClcRts) to fix up missing parts (&FF) of the date (not time) with the relevant component of 1900/01/01 (ish; I haven't traced the LAFAA branch yet either)
-; SFTODO: CARRY INDICATES SOMETHING ON EXIT
-; SFTODO: This has only one caller
-.^SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: I think this is a poor (incomplete) label, because in the YearOpen case we are adjusting the date until we match the fixed parts
     XASSERT_USE_PRV1
     LDA prv2Flags:AND #prv2FlagYear:BNE YearOpen
 
@@ -7844,21 +7843,19 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .ElementNotOpen
     STA prvDateCentury,X
     INX:CPX #4:BNE DefaultLoop
-    ; Finish by populating prvDateDayOfWeek correctly.
-    JMP SFTODOProbCalculateDayOfWeekClcRts ; SQUASH: BEQ always
+    JMP FoundMatchingDate ; SQUASH: BEQ always
 
 ; SFTODOWIP
 .YearOpen
     ; The user has left the year open; this is a special case because use today as the starting
     ; point, not 1st January 1900.
-    JSR GetRtcDayMonthYear ; SFTODO: COMMENT/DRAW ATTENTION TO THIS
+    JSR GetRtcDayMonthYear
     ; If the user partial date specification has everything except (perhaps) day-of-week
-    ; specified, all we need to is calculate the initial prvDateDayOfWeek. (If the user
-    ; specified day-of-week, we will ignore it and calculate it.)
+    ; specified, the date is already fully specified.
     LDA prv2Flags
     AND #NOT(prv2FlagDayOfWeek) AND prv2FlagMask
     CMP #NOT(prv2FlagDayOfWeek) AND prv2FlagMask
-    BEQ SFTODOProbCalculateDayOfWeekClcRts
+    BEQ FoundMatchingDate
     ; The user has left at least one non-day-of-week element open. Step forward through time
     ; until we find a date matching the day-of-month and month specified, if any. Note that
     ; because the year is open, this will interpret a partial specification of "March" as
@@ -7888,7 +7885,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 
 .prvDateMatchesFixed
     LDA prvTmp6:STA prv2Flags ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
-.SFTODOProbCalculateDayOfWeekClcRts
+.FoundMatchingDate
     JSR calculateDayOfWeekInA:STA prvDateDayOfWeek
     ; SFTODO: Speculation but I think correct: At this point prvDate is a concrete date which
     ; is the earliest possible candidate matching the user's partial date specification. We
