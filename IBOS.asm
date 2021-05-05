@@ -580,6 +580,15 @@ prvDateBuffer2 = prv80 + &C8 ; SFTODO: how big? not a great name either
 
 ; SFTODO: EXPERIMENTAL LABELS USED BY DATE/CALENDAR CODE
 prvDateSFTODO0 = prvOswordBlockCopy ; SFTODO: sometimes - maybe always? - used as flags regarding validation - the meaning of the flags is changed (at least) by DateCalculation so just possibly it would be helpful to give this location a different name depending on which style of flags it contains???
+prvDateSFTODO0Century = 1<<7
+prvDateSFTODO0Year = 1<<6
+prvDateSFTODO0Month = 1<<5
+prvDateSFTODO0DayOfMonth = 1<<4
+prvDateSFTODO0DayOfWeek = 1<<3
+prvDateSFTODO0Hours = 1<<2
+prvDateSFTODO0Minutes = 1<<1
+prvDateSFTODO0Seconds = 1<<0
+prvDateSFTODO0CenturyYearMonthDayOfMonth = prvDateSFTODO0Century OR prvDateSFTODO0Year OR prvDateSFTODO0Month OR prvDateSFTODO0DayOfMonth
 prvDateSFTODO1 = prvOswordBlockCopy + 1 ; SFTODO: Use as a bitfield controlling formatting
 prvDateSFTODO1b = prvOswordBlockCopy + 1 ; SFTODO: Use as a copy of "final" transientDateBufferIndex
 prvDateSFTODO2 = prvOswordBlockCopy + 2
@@ -8006,25 +8015,17 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     TAX
     INX
     STX prvDateDayOfWeek
-    LDA #prv2FlagCentury OR prv2FlagYear OR prv2FlagMonth OR prv2FlagDayOfMonth
-    STA prv2Flags
+    LDA #prv2FlagCentury OR prv2FlagYear OR prv2FlagMonth OR prv2FlagDayOfMonth:STA prv2Flags
     LDX prvD
-    CPX #10
-    BEQ LB0E7
-    CPX #11
-    BEQ LB0CD
-    CPX #12
-    BEQ LB0DA
+    CPX #10:BEQ LB0E7
+    CPX #11:BEQ LB0CD
+    CPX #12:BEQ LB0DA
     TXA
     PHA
 .LB0B1
-    JSR calculateDayOfWeekInA
-    CMP prvDateDayOfWeek
-    BEQ LB0C1
-    JSR incrementPrvDateRespectingOpenElements
-    BCC LB0B1
-    PLA
-    BCS BadDate2
+    JSR calculateDayOfWeekInA:CMP prvDateDayOfWeek:BEQ LB0C1
+    JSR incrementPrvDateRespectingOpenElements:BCC LB0B1
+    PLA:BCS BadDate2
 .LB0C1
     PLA
     TAX
@@ -8041,32 +8042,30 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     JSR calculateDayOfWeekInA
     CMP prvDateDayOfWeek
     BNE LB0CD
-    BEQ LB07B
+    BEQ LB07B ; always branch
 .LB0DA
     JSR decrementPrvDateBy1
     JSR calculateDayOfWeekInA
     CMP prvDateDayOfWeek
     BNE LB0DA
-    BEQ LB07B
+    BEQ LB07B ; always branch
 .LB0E7
     JSR calculateDayOfWeekInA
     CMP prvDateDayOfWeek
     BEQ LB07B
     BCS LB0DA
-    BCC LB0CD
+    BCC LB0CD ; always branch
 
 .LB0F3
-    LDA #&1E
-    STA prv2Flags
+    LDA #prv2FlagCentury OR prv2FlagYear OR prv2FlagMonth OR prv2FlagDayOfMonth:STA prv2Flags
     LDA prv2DateDayOfWeek
-    CMP #&9B
-    BCC LB116
+    CMP #&9B:BCC LB116
     SBC #&9A
     TAX
 .LB102
     JSR incrementPrvDateRespectingOpenElements
     BCC LB10A
-    JMP BadDate2
+    JMP BadDate2 ; SQUASH: BCS always?
 			
 .LB10A
     DEX
@@ -8076,17 +8075,15 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     JMP LB07B
 			
 .LB116
-    SEC
-    SBC #&5A
+    SEC:SBC #&5A
     TAX
 .LB11A
     JSR decrementPrvDateBy1
     BCC LB122
-    JMP BadDate2
+    JMP BadDate2 ; SQUASH: BCS always?
 			
 .LB122
-    DEX
-    BNE LB11A
+    DEX:BNE LB11A
     JSR calculateDayOfWeekInA
     STA prvDateDayOfWeek
     JMP LB07B
