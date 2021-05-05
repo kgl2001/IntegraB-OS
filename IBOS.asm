@@ -7794,9 +7794,9 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     RTS
 			
 .^sevClcRts
-    BIT rts
+    BIT Rts
     CLC
-.rts
+.Rts
     RTS
 }
 
