@@ -8188,32 +8188,23 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
     STA prvDateCentury
     JMP DateArgumentParsed ; SQUASH: BNE always branch
 .ParsedYearOK
-    JSR interpretParsedYear
+    JSR InterpretParsedYear
 .DateArgumentParsed
     ; SFTODO: I am kind of guessing that at this point the command argument has been parsed and anything "provided" has been filled in over the &FF defaults we put in place at the start. So if we're doing a simple "*DATE", *everything* (date-ish, not time-ish) will be &FF.
     JSR validateDateTimeAssumingLeapYear ; SFTODO: *just possibly* it would be better to validate *respecting* leap year *iff* prvDateYear/prvDateCentury are not &FF (i.e. we have a specific year) - but I could very easily be missing some subtlety here - note that in LAFF9 we redo the validation respecting leap year after filling in the blanks, so this is probably *not* a helpful tweak here - OK, LAFF9 will *sometimes* redo the validation, so just maybe (it's all very unclear right now) this tweak would add a tiny bit of value
     ; Stash the date validation result (shifted into the low nybble) on the stack.
     LDA prvDateSFTODO0
-    ; SFTODO: Use LsrA4
-    LSR A
-    LSR A
-    LSR A
-    LSR A
+    LSR A:LSR A:LSR A:LSR A ; SQUASH: JSR LsrA4
     PHA
     ; Set prvDateSFTODO0 so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is &FF.
-    LDX #&00
+    LDX #0
     STX prvDateSFTODO0
 .loop
     LDA prvDateCentury,X
-    CMP #&FF								;set carry iff A=&FF
-    ROL prvDateSFTODO0							;rotate carry into prvOswordBlockCopy
-    INX
-    CPX #&04
-    BNE loop
+    CMP #&FF:ROL prvDateSFTODO0							;rotate carry into prvOswordBlockCopy
+    INX:CPX #4:BNE loop
 ; Invert prvDateSFTODO0 b0-3, so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is not &FF. SFTODO: I THINK I MAY HAVE HAD THE SENSE OF THIS THE WRONG WAY ROUND IN SOME OF MY CODE ANALYSIS
-    LDA prvDateSFTODO0
-    EOR #&0F
-    STA prvDateSFTODO0
+    LDA prvDateSFTODO0:EOR #&0F:STA prvDateSFTODO0
 ; AND prvDateSFTODO0 with the date validation mask we stacked earlier; this will ignore validation errors
 ; where the corresponding prvDate* address was &FF.
     PLA
@@ -8227,7 +8218,7 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
 }
 
 ; Take the parsed 2-byte integer year at L00B0 and populate prvDate{Year,Century}, defaulting the century to the current century if a two digit year is specified.
-.interpretParsedYear
+.InterpretParsedYear
 {
     XASSERT_USE_PRV1
             LDA L00B0 ; SFTODO: low byte of parsed year from command line
@@ -8428,7 +8419,7 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
             BNE LB32F
             JSR ConvertIntegerDefaultDecimal
             BCS LB32F
-            JSR interpretParsedYear
+            JSR InterpretParsedYear
             JSR validateDateTimeAssumingLeapYear
             LDA prvDateSFTODO0
             AND #&F0
