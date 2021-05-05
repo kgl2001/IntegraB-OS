@@ -7751,8 +7751,8 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     CLC:LDA prvDateDayOfMonth:ADC #daysPerWeek:STA prvDateDayOfMonth
     LDY prvDateMonth:JSR GetDaysInMonthY
     CMP prvDateDayOfMonth:BCS clvClcRts
-    ; Our addition made prvDateDayOfMonth > DaysInMonth, so fix that and bump the month by 1 to
-    ; compensate.
+    ; Our addition made prvDateDayOfMonth > DaysInMonth, so fix that and bump the next open
+    ; unit to compensate.
     STA prvTmp2
     SEC:LDA prvDateDayOfMonth:SBC prvTmp2:STA prvDateDayOfMonth
     JMP DayOfMonthIncremented ; SQUASH: BCS always?
@@ -7805,29 +7805,18 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .decrementPrvDateBy1
 {
     XASSERT_USE_PRV1
-            DEC prvDateDayOfMonth
-            BNE clvClcRts
-            LDY prvDateMonth
-            DEY
-            BNE wrapMonth
-            LDY #12
-.wrapMonth  JSR GetDaysInMonthY
-            STA prvDateDayOfMonth
-            STY prvDateMonth
-            CPY #12
-            BCC clvClcRts
-            DEC prvDateYear
-            LDA prvDateYear
-            CMP #&FF
-            BNE sevClcRts
-            LDA #99
-            STA prvDateYear
-            DEC prvDateCentury
-            LDA prvDateCentury
-            CMP #&FF
-            BNE sevClcRts
-            SEC ; SFTODO: redundant?
-            RTS
+    DEC prvDateDayOfMonth:BNE clvClcRts
+    LDY prvDateMonth:DEY:BNE MonthOk
+    LDY #MonthsPerYear
+.MonthOk
+    JSR GetDaysInMonthY:STA prvDateDayOfMonth
+    STY prvDateMonth
+    CPY #MonthsPerYear:BCC clvClcRts
+    DEC prvDateYear:LDA prvDateYear:CMP #&FF:BNE sevClcRts
+    LDA #99:STA prvDateYear
+    DEC prvDateCentury:LDA prvDateCentury:CMP #&FF:BNE sevClcRts
+    SEC ; SFTODO: redundant?
+    RTS
 }
 
 {
