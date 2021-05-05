@@ -7762,6 +7762,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; Increment the open elements (as specified by prv2Flags) of prvDate* by one step. On exit:
 ;     C=1 means the century wrapped from 99xx to 00x (SFTODO: bit odd threshold, as we don't generally cope with dates outside 19/20xx, do we?)
 ;     C=0 means the century didn't wrap; V is set iff the year was incremented.
+; SFTODO: Make permanent comment this does *not* pay any attention at all to day-of-week (neither does the ByOneWeek variant)
 .^IncrementPrvDateOpenElements
     XASSERT_USE_PRV1
     LDA #prv2FlagDayOfMonth:BIT prv2Flags:BEQ DayOfMonthNotOpen
@@ -7800,7 +7801,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     RTS
 }
 
-; Decrement prvDate* by one day; this does not respect the open/closed flags. On exit:
+; Decrement prvDate* by one day; this does not respect the open flags. On exit:
 ;     C=1 means the century wrapped from 00xx to 255x (SFTODO: bit odd threshold, as we don't generally cope with dates outside 19/20xx, do we?)
 ;     C=0 means the century didn't wrap; V is set iff the year was decremented.
 .decrementPrvDateBy1
@@ -7826,7 +7827,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; SFTODO: This has only one caller
 .^SFTODOProbDefaultMissingDateBitsAndCalculateDayOfWeek ; SFTODO: I think this is a poor (incomplete) label, because in the YearOpen case we are adjusting the date until we match the fixed parts
     XASSERT_USE_PRV1
-    LDA prv2Flags:AND #prv2FlagYear:BNE YearOpen ; SFTODO: branch if prvDateYear is &FF, i.e. user didn't supply a year
+    LDA prv2Flags:AND #prv2FlagYear:BNE YearOpen
 
     ; The year is not open. Default the century if it's open.
     LDA prv2Flags:AND #prv2FlagCentury:BEQ CenturyNotOpen
@@ -7834,7 +7835,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     LDA prv2Flags:AND #NOT(prv2FlagCentury) AND prv2FlagMask:STA prv2Flags ; clear bit indicating prvDateCentury is open
 .CenturyNotOpen
     ; Now fill in open elements of prvDate{Century,Year,Month,DayOfMonth} with the
-    ; corresponding elements of 1900/01/00.
+    ; corresponding elements of 1900/01/01.
     LDX #0
 .DefaultLoop
     LDA prvDateCentury,X
@@ -7848,16 +7849,25 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 
 ; SFTODOWIP
 .YearOpen
+    ; The user has left the year open; this is a special case because use today as the starting
+    ; point, not 1st January 1900.
     JSR GetRtcDayMonthYear ; SFTODO: COMMENT/DRAW ATTENTION TO THIS
-    ; If the user partial date specification has everything except (perhaps) day-of-week specified, all we need to is calculate the initial prvDateDayofWeek. SFTODO: REWRITE THIS COMMENT ONCE I GET A FULLER PICTURE, I SEE WHAT'S GOING ON BUT EXPRESSING IT BADLY.
+    ; If the user partial date specification has everything except (perhaps) day-of-week
+    ; specified, all we need to is calculate the initial prvDateDayOfWeek. (If the user
+    ; specified day-of-week, we will ignore it and calculate it.)
     LDA prv2Flags
     AND #NOT(prv2FlagDayOfWeek) AND prv2FlagMask
     CMP #NOT(prv2FlagDayOfWeek) AND prv2FlagMask
     BEQ SFTODOProbCalculateDayOfWeekClcRts
-    ; The user has left at least one non-day-of-week element open.
-    LDA prv2Flags:STA prvTmp6 ; SFTODO: TEMP STASH ORIGINAL prv2Flags?
-    LDA #NOT(prv2FlagDayOfWeek) AND prv2FlagMask
-    STA prv2Flags ; SFTODO: We must be doing this for the benefit of IncrementPrvDateOpenElements
+    ; The user has left at least one non-day-of-week element open. Step forward through time
+    ; until we find a date matching the day-of-month and month specified, if any. Note that
+    ; because the year is open, this will interpret a partial specification of "March" as
+    ; "March 2022" if it's currently April 2021.
+    ;
+    ; Temporarily set prv2Flags so IncrementPrvDateOpenElements will treat everything as open.
+    ; (Note that it doesn't touch day-of-week anyway, so it's irrelevant that we set that to be
+    ; non-open here.) SFTODO: I *think* we need to do this because otherwise a partial specification of TODO!!!
+    LDA prv2Flags:STA prvTmp6:LDA #NOT(prv2FlagDayOfWeek) AND prv2FlagMask:STA prv2Flags
 .IncLoop
     LDA prv2DateDayOfMonth
     CMP #&FF:BEQ prvDayOfMonthMatchesFixed
@@ -7869,9 +7879,8 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .prvDateDoesntMatchFixed
     JSR IncrementPrvDateOpenElements:BCC IncLoop
     ; We've looped round incrementing prvDate* as much as we can and we failed to find a
-    ; matching date. SFTODO: I think this is true but need to go over
-    ; IncrementPrvDateOpenElements properly to be sure.
-    LDA prvTmp6:STA prv2Flags ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
+    ; matching date.
+    LDA prvTmp6:STA prv2Flags ; restore original prv2Flags
     SEC ; SQUASH: redundant (we didn't BCC just above)
     RTS
 
