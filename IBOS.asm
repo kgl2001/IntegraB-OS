@@ -8245,11 +8245,12 @@ prv2FlagMask = %00011111 ; SFTODO: this is probably technically redundant - we c
 ; SFTODO: This has only one caller
 .SFTODOProbParsePlusMinusDate
 {
+SpecificDayOfWeekFlag = transientDateSFTODO1
 OriginalY = prvTmp2
 
     XASSERT_USE_PRV1
     STY OriginalY
-    LDA #0:STA transientDateSFTODO1
+    LDA #0:STA SpecificDayOfWeekFlag
     JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y
     CMP #'+':BEQ Plus
     CMP #'-':BNE NotPlusOrMinus
@@ -8316,37 +8317,29 @@ EndIndex = transientDateSFTODO2 ; exclusive
 
 ; SFTODO: This bit looks like it's probably checking for +/- *after* a day name (e.g. "*DATE TU+,23/10/19")
 .DayNameMatched
-    LDA CurrentDayNumber
-    BNE LB27B
-    LDX #&06								;Select 'Day of Week' register on RTC: Register &06
-    JSR ReadRtcRam								;Read data from RTC memory location X into A
-    STA prvTmp4
-    LDA #&FF
-    STA transientDateSFTODO1
-.LB27B
-    LDX #&00
+    LDA CurrentDayNumber:BNE SpecificDayOfWeek
+    ; The user specified "today" rather than a specific day of the week, so convert that into
+    ; the current day of the week.
+    LDX #rtcRegDayOfWeek:JSR ReadRtcRam:STA CurrentDayNumber
+    LDA #&FF:STA SpecificDayOfWeekFlag ; SQUASH: Just DEC SpecificDayOfWeekFlag?
+.SpecificDayOfWeek
+    LDX #0
     LDA (transientCmdPtr),Y
-    CMP #'+'
-    BNE LB285
+    CMP #'+':BNE LB285
     LDX #&0B
 .LB285
-    CMP #'-'
-    BNE LB28B
+    CMP #'-':BNE LB28B
     LDX #&0C
 .LB28B
-    CMP #'*'
-    BNE LB291
+    CMP #'*':BNE LB291
     LDX #&0A
 .LB291
-    CMP #'1'
-    BCC LB29C
-    CMP #'9'+1								;':' Between 0..9 SFTODO: between 1..9?
-    BCS LB29C
+    CMP #'1':BCC LB29C
+    CMP #'9'+1:BCS LB29C
     AND #&0F
     TAX
 .LB29C
-    CPX #&00
-    BEQ LB2A1
+    CPX #&00:BEQ LB2A1
     INY
 .LB2A1
     DEC prvTmp4
