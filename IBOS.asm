@@ -6791,15 +6791,6 @@ osfileBlock = L02EE
 {
 ; SFTODO: Both of these return with bits set in prvDateSFTODO0 for errors - does anything actually check this except to see if it's 0/non-0?
 ; SFTODO: This entry point validates days in February based on prvDate{Century,Year}
-; SFTODO: Bits in pprvDateSFTODO0 are set to indicate errors: SFTODO: maybe have named constants for these bits
-;    b7: century
-;    b6: year
-;    b5: month
-;    b4: day of month
-;    b3: day of week
-;    b2: hours
-;    b1: minutes
-;    b0: seconds
 .^ValidateDateTimeRespectingLeapYears
     CLC:BCC Common ; always branch
 ; SFTODO: This entry point always allows 29th February regardless
@@ -6809,9 +6800,9 @@ osfileBlock = L02EE
      ; SFTODO: Does anything actually check the individual bits in the result we build up? If not this code could potentially be simplified. Pretty sure we do but need to check.
     XASSERT_USE_PRV1
     PHP
-    LDA prvDateCentury:LDX #0:LDY #99:JSR CheckABetweenXAndY:LDA #&80:JSR RecordCheckResultForA
-    LDA prvDateYear:LDX #0:LDY #99:JSR CheckABetweenXAndY:LDA #&40:JSR RecordCheckResultForA
-    LDA prvDateMonth:LDX #1:LDY #12:JSR CheckABetweenXAndY:LDA #&20:JSR RecordCheckResultForA
+    LDA prvDateCentury:LDX #0:LDY #99:JSR CheckABetweenXAndY:LDA #prvDateSFTODO0Century:JSR RecordCheckResultForA
+    LDA prvDateYear:LDX #0:LDY #99:JSR CheckABetweenXAndY:LDA #prvDateSFTODO0Year:JSR RecordCheckResultForA
+    LDA prvDateMonth:LDX #1:LDY #12:JSR CheckABetweenXAndY:LDA #prvDateSFTODO0Month:JSR RecordCheckResultForA
     ; Set Y to the maximum acceptable day of the month; if the month is open we can allow days up to and including 31.
     PLP:BCC LookupMonthDays
     LDA prvDateMonth:CMP #&FF:BNE MonthNotOpen
@@ -6822,12 +6813,12 @@ osfileBlock = L02EE
 .LookupMonthDays
     LDY prvDateMonth:JSR GetDaysInMonthY:TAY
 .MaxDayOfMonthInY
-    LDA prvDateDayOfMonth:LDX #1:JSR CheckABetweenXAndY:LDA #&10:JSR RecordCheckResultForA
+    LDA prvDateDayOfMonth:LDX #1:JSR CheckABetweenXAndY:LDA #prvDateSFTODO0DayOfMonth:JSR RecordCheckResultForA
     ; SFTODO: Why do we allow prvDateDayOfWeek to be 0?
-    LDA prvDateDayOfWeek:LDX #0:LDY #7:JSR CheckABetweenXAndY:LDA #&08:JSR RecordCheckResultForA
-    LDA prvDateHours:LDX #0:LDY #23:JSR CheckABetweenXAndY:LDA #&04:JSR RecordCheckResultForA
-    LDA prvDateMinutes:LDX #0:LDY #59:JSR CheckABetweenXAndY:LDA #&02:JSR RecordCheckResultForA
-    LDA prvDateSeconds:JSR CheckABetweenXAndY:LDA #&01:FALLTHROUGH_TO RecordCheckResultForA
+    LDA prvDateDayOfWeek:LDX #0:LDY #7:JSR CheckABetweenXAndY:LDA #prvDateSFTODO0DayOfWeek:JSR RecordCheckResultForA
+    LDA prvDateHours:LDX #0:LDY #23:JSR CheckABetweenXAndY:LDA #prvDateSFTODO0Hours:JSR RecordCheckResultForA
+    LDA prvDateMinutes:LDX #0:LDY #59:JSR CheckABetweenXAndY:LDA #prvDateSFTODO0Minutes:JSR RecordCheckResultForA
+    LDA prvDateSeconds:JSR CheckABetweenXAndY:LDA #prvDateSFTODO0Seconds:FALLTHROUGH_TO RecordCheckResultForA
 
 ; Set the bits set in A in prvOswordBlock if C is set, clear them if C is clear.
 .RecordCheckResultForA
