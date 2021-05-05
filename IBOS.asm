@@ -8006,7 +8006,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     TAX
     INX
     STX prvDateDayOfWeek
-    LDA #&1E
+    LDA #prv2FlagCentury OR prv2FlagYear OR prv2FlagMonth OR prv2FlagDayOfMonth
     STA prv2Flags
     LDX prvD
     CPX #10
