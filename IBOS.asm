@@ -598,6 +598,7 @@ prvDateSFTODO2 = prvOswordBlockCopy + 2
     prvDateSFTODO212Hour = 1<<0 ; use 12 hour clock if set
     prvDateSFTODO2NoLeadingZero = 1<<1 ; use space instead of leading zero on hours if set
     prvDateSFTODO2UseHours = 1<<2 ; show hours iff set
+    prvDateSFTODO2SFTODOSeparator = 1<<3
 prvDateSFTODO3 = prvOswordBlockCopy + 3
 prvDateSFTODO4 = prvOswordBlockCopy + 4 ; 2 bytes SFTODO!?
 prvDateSFTODO6 = prvOswordBlockCopy + 6 ; SFTODO: I am thinking 6/7 are actually the high word of the 32-bit address at SFTODO4, and so we should probably refer to them as SFTODO4+2/3
@@ -7303,21 +7304,16 @@ Options = transientDateSFTODO1
     LDA #':':JSR emitAToDateBuffer
 
 .DontShowHours
-    LDX #&00
+    LDX #0 ; X is formatting option for emitADecimalFormatted; 0 means "00" style.
     LDA Options
-    CMP #&04
-    BCS LAC34								;branch if >=4
-    CMP #&01
-    BEQ LAC34								;branch if =1
-    TAX
+    CMP #prvDateSFTODO2UseHours:BCS LAC34
+    CMP #prvDateSFTODO212Hour:BEQ LAC34
+    TAX ; use Options (0, 2 or 3) as formatting option for emitADecimalFormatted
 .LAC34
-    LDA prvDateMinutes							;read Minutes
-    JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+    LDA prvDateMinutes:JSR emitADecimalFormatted
     LDA Options
-    CMP #&08
-    BCC separatorColon
-    CMP #&0C
-    BCC SFTODOMAYBESTEP3
+    CMP #prvDateSFTODO2SFTODOSeparator:BCC separatorColon
+    CMP #prvDateSFTODO2SFTODOSeparator OR prvDateSFTODO2UseHours:BCC SFTODOMAYBESTEP3
     LDA #'/'
     BNE separatorInA ; always branch
 .separatorColon
