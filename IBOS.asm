@@ -7156,7 +7156,7 @@ unitsChar = prv82 + &4F
             INY									;increase buffer pointer
 .skipLeadingZero
             LDA unitsChar								;get 1s
-            JMP emitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return.
+            JMP EmitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return.
 
 ;postfix for dates. eg 25th, 1st, 2nd, 3rd
 .dateSuffixes
@@ -7190,7 +7190,7 @@ unitsChar = prv82 + &4F
             LDA dateSuffixes+1,X							;get 2nd character from table + offset
             BCC noCaps2								;don't capitalise
             AND #CapitaliseMask								;capitalise
-.noCaps2    JMP emitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
+.noCaps2    JMP EmitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
 
 ;Split number in register A into 10s and 1s, characterise and store 1s in &824F and 10s in &824E
 .convertAToTensUnitsChars
@@ -7214,7 +7214,7 @@ unitsChar = prv82 + &4F
 
 ; Emit time suffix for hour A (<=23) into transientDateBuffer.
 ; SFTODO: This only has one caller, could it just be inlined?
-.^emitTimeSuffixForA
+.^EmitAmPmForA
 .LABC5      TAX
             CPX #&00								;is it 00 hrs?
             BNE not0Hours								;branch if not 00 hrs
@@ -7229,12 +7229,12 @@ unitsChar = prv82 + &4F
             STA (transientDateBufferPtr),Y						;save contents of A to Buffer Address+Y
             INY									;increase buffer pointer
             LDA timeSuffixes + 1,X							;get 'm'
-            JMP emitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
+            JMP EmitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
 }
 
 IF FALSE
-; SFTODO: emitTimeSuffixForA is a bit more complex than necessary - here's a shorter alternative implementation, not tested!
-.emitTimeSuffixForA
+; SFTODO: EmitAmPmForA is a bit more complex than necessary - here's a shorter alternative implementation, not tested!
+.EmitAmPmForA
 {
 	LDX #'a'
 	TAY:BEQ suffixInX 								;branch if 00 hrs ('am')
@@ -7242,8 +7242,8 @@ IF FALSE
 	BCC suffixInX								;branch if A<13 (hrs) ('am')
 	LDX #'p'									;('pm')
 .suffixInX
-	TXA:JSR emitAToDateBuffer
-	LDA #'m':FALLTHROUGH_TO emitAToDateBuffer
+	TXA:JSR EmitAToDateBuffer
+	LDA #'m':FALLTHROUGH_TO EmitAToDateBuffer
 }
 ENDIF
 			
@@ -7251,9 +7251,9 @@ ENDIF
 ;&00A8 stores the address of buffer address
 ;this code saves the contents of A to buffer address + buffer address offset
 {
-.^emitAToDateBuffer
+.^EmitAToDateBuffer
 .LABE2      LDY transientDateBufferIndex								;read buffer pointer
-.^emitAToDateBufferUsingY
+.^EmitAToDateBufferUsingY
 .LABE4      STA (transientDateBufferPtr),Y								;save contents of A to Buffer Address+Y
             INY									;increase buffer pointer
             STY transientDateBufferIndex								;save buffer pointer
@@ -7283,7 +7283,7 @@ Options = transientDateSFTODO1
     SEC
     RTS
 .SomethingToDo
-    LDA Options:CMP #prvDateSFTODO2UseHours:BCC DontShowHours
+    LDA Options:CMP #prvDateSFTODO2UseHours:BCC ShowMinutes
     ; Emit hours.
     LDX #0 ; X is formatting option for emitADecimalFormatted; 0 means "00" style.
     ; SQUASH: Omit EOR and use BEQ instead of BNE?
@@ -7301,9 +7301,9 @@ Options = transientDateSFTODO1
     LDA #12 ; 12am
 .HoursInA
     JSR emitADecimalFormatted
-    LDA #':':JSR emitAToDateBuffer
+    LDA #':':JSR EmitAToDateBuffer
 
-.DontShowHours
+.ShowMinutes
     LDX #0 ; X is formatting option for emitADecimalFormatted; 0 means "00" style.
     LDA Options
     CMP #prvDateSFTODO2UseHours:BCS LAC34
@@ -7313,20 +7313,21 @@ Options = transientDateSFTODO1
     LDA prvDateMinutes:JSR emitADecimalFormatted
     LDA Options
     CMP #prvDateSFTODO2SFTODOSeparator:BCC separatorColon
-    CMP #prvDateSFTODO2SFTODOSeparator OR prvDateSFTODO2UseHours:BCC SFTODOMAYBESTEP3
+    CMP #prvDateSFTODO2SFTODOSeparator OR prvDateSFTODO2UseHours:BCC ShowAmPm
     LDA #'/'
     BNE separatorInA ; always branch
 .separatorColon
     LDA #':'
 .separatorInA
-    JSR emitAToDateBuffer
+    JSR EmitAToDateBuffer
     LDX #0:LDA prvDateSeconds:JSR emitADecimalFormatted ; emit seconds using "00" format
-.SFTODOMAYBESTEP3
-    LDA Options:CMP #&04:BCC LAC6C
-    LDA Options:AND #&01:BEQ LAC6C ; SQUASH: "LDA options" is redundant
-    LDA #' ':JSR emitAToDateBuffer
-    LDA prvDateHours:JSR emitTimeSuffixForA
-.LAC6C
+
+.ShowAmPm
+    LDA Options:CMP #prvDateSFTODO2UseHours:BCC Finish
+    LDA Options:AND #prvDateSFTODO212Hour:BEQ Finish ; SQUASH: "LDA options" is redundant
+    LDA #' ':JSR EmitAToDateBuffer
+    LDA prvDateHours:JSR EmitAmPmForA
+.Finish
     CLC
     RTS
 }
@@ -7421,12 +7422,12 @@ Options = transientDateSFTODO1
             CMP #&04
             BCC LACB6
             LDA #','
-            JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR EmitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDA transientDateSFTODO1
             CMP #&08
             BCC SFTODOSTEP2
 .LACB6      LDA #' '
-            JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR EmitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
     }
 .SFTODOSTEP2
     {
@@ -7458,7 +7459,7 @@ Options = transientDateSFTODO1
             AND #&03								;mask lower 3 bits
             TAX
             LDA dateSeparators,X							;get character from look up table
-            JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR EmitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
     }
 ; 3. Look at b3-5 of prvDateSFTODO3; if they're 0, jump to step 4. Otherwise emit the month with optional formatting. Then stop if b5-6 of prvDateSFTODO3 are 0. Otherwise emit a dateSeparator based on low two bits of prvDateSFTODO1.
 .SFTODOSTEP3MAYBE
@@ -7496,7 +7497,7 @@ Options = transientDateSFTODO1
             AND #&03								;mask lower 3 bits
             TAX
             LDA dateSeparators,X								;get character from look up table
-            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR EmitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
     }
 .SFTODOSTEP4MAYBE ; SFTODO: THESE STEP N LABELS SHOULD BE CHANGED TO REFLECT THINGS LIKE DAYOFWEEK, DAY, MONTH
     {
@@ -7517,7 +7518,7 @@ Options = transientDateSFTODO1
 
 .emitCenturyTick
 	  LDA #'''								;'''
-            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR EmitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             JMP emitYear
     }
 }
@@ -7531,7 +7532,7 @@ Options = transientDateSFTODO1
     LDA prvDateSFTODO4:STA transientDateBufferPtr:LDA prvDateSFTODO4 + 1:STA transientDateBufferPtr + 1
     LDA #0:STA transientDateBufferIndex
     JSR EmitTimeAndDateToDateBuffer
-    LDA #vduCr:JSR emitAToDateBuffer
+    LDA #vduCr:JSR EmitAToDateBuffer
     LDY transientDateBufferIndex:STY prvDateSFTODO1b
 .^LAD7Erts
     RTS
@@ -7573,17 +7574,17 @@ Options = transientDateSFTODO1
             LDX #'.'
 .separatorInX
             TXA
-            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR EmitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDA transientDateSFTODO1
             AND #&10
             BEQ LAD7Erts
 .emitSpace      LDA #' '
-            JMP emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JMP EmitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
 			
 .emitSpaceAtSpace      LDA #' '
-            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR EmitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDA #'@'
-            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR EmitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             JMP emitSpace
 }
 
@@ -8686,7 +8687,7 @@ column = prvC
             LDA #&00
             STA column
 .columnLoop LDA #' '
-            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR EmitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDX cellIndex
             LDA prvDateBuffer2,X
             LDX #3 ; SFTODO: named constants for these values? Anyway, this is right-aligned in a two character field with no leading zeroes and 0 shown as blank
@@ -8697,7 +8698,7 @@ column = prvC
             CMP #6 ; SFTODO: prob use one of named constants I plan to introduce in generateInternalCalendar
             BCC columnLoop
             LDA #vduCr
-            JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+            JSR EmitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
             LDX #&00
 .printLoop  LDA prvDateBuffer,X
             JSR OSASCI
