@@ -6642,20 +6642,14 @@ osfileBlock = L02EE
             RTS
 }
 
-;Read 'Sec Alarm', 'Min Alarm' & 'Hr Alarm' from Private RAM (&82xx) and write to RTC
-.copyPrvAlarmToRtc
+; Copy time in prvDate{Hours,Minutes,Seconds} into the RTC alarm registers.
+.CopyPrvAlarmToRtc
 {
     XASSERT_USE_PRV1
-            JSR WaitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
-            LDX #&01								;Select 'Sec Alarm' register on RTC: Register &01
-            LDA prvOswordBlockCopy + 15								;Get 'Sec Alarm' from &822F
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            LDX #&03								;Select 'Min Alarm' register on RTC: Register &03
-            LDA prvOswordBlockCopy + 14								;Get 'Min Alarm' from &822E
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            LDX #&05								;Select 'Hr Alarm' register on RTC: Register &05
-            LDA prvOswordBlockCopy + 13								;Get 'Hr Alarm' from &822D
-            JMP WriteRtcRam								;Write data from A to RTC memory location X
+    JSR WaitOutRTCUpdate
+    LDX #rtcRegAlarmSeconds:LDA prvDateSeconds:JSR WriteRtcRam
+    LDX #rtcRegAlarmMinutes:LDA prvDateMinutes:JSR WriteRtcRam
+    LDX #rtcRegAlarmHours:LDA prvDateHours:JMP WriteRtcRam
 }
 
 .GetRtcDateTime
@@ -6664,8 +6658,8 @@ osfileBlock = L02EE
 
 ; SQUASH: Dead code
 {
-            JSR WriteRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC						***not used. nothing jumps into this code***
-            JMP writeRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
+    JSR WriteRtcTime
+    JMP writeRtcDate
 }
 
 ; Wait until any RTC update in progress	is complete.
@@ -6774,7 +6768,7 @@ osfileBlock = L02EE
 
 ; Set prvDateSFTODO4 to the day number of prvDate{DayOfMonth,Month} in the current year, with
 ; 1st January being 0.
-; ENHANCE: That's what this should do, there's a bug; see ENHANCE: comment below.
+; ENHANCE: That's what this should do but there's a bug; see ENHANCE: comment below.
 ; SQUASH: This has only one caller
 .ConvertDateToRelativeDayNumber
 {
@@ -8736,7 +8730,7 @@ column = prvC
 
 .ParsedTimeOk
     PLP
-    JSR copyPrvAlarmToRtc
+    JSR CopyPrvAlarmToRtc
     JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'R'
     PHP:PLA:LSR A:LSR A:PHP:ASSERT flagZ = 1 << 1 ; get Z flag into C and save
     LDX #userRegAlarm:JSR ReadUserReg
@@ -9123,7 +9117,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;OSWORD &49 (73) - Integra-B calls
 .LB8E2
     XASSERT_USE_PRV1
-    JSR copyPrvAlarmToRtc
+    JSR CopyPrvAlarmToRtc
     LDA prvOswordBlockCopy + 1
     AND #rtcRegBPIE OR rtcRegBAIE
     STA prvOswordBlockCopy + 1
