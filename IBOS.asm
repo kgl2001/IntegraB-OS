@@ -8754,7 +8754,8 @@ column = prvC
     JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'R'
     PHP:PLA:LSR A:LSR A:PHP:ASSERT flagZ = 1 << 1 ; get Z flag into C and save
     LDX #userRegAlarm:JSR ReadUserReg
-    ASL A:PLP:ROR A ; overwrite b7 of userRegAlarm value with saved Z flag, i.e. 1 iff 'R' seen
+    ; Set b7 (userRegAlarmRBit) of userRegAlarm value to saved Z flag, i.e. 1 iff 'R' seen.
+    ASSERT userRegAlarmRBit = 1<<7:ASL A:PLP:ROR A
     JMP TurnAlarmOn
 			
 ;*ALARM Command
