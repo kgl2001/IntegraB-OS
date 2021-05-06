@@ -6661,17 +6661,19 @@ osfileBlock = L02EE
 
 {
 ;Initialisation lookup table for RTC registers &00 to &09
-.LA786		EQUB &00								;Register &00 - Seconds:	 	00
-		EQUB &00								;Register &01 - Sec Alarm:	 	00
-		EQUB &00								;Register &02 - Minutes:	 	00
-		EQUB &00								;Register &03 - Min Alarm:	 	00
-		EQUB &00								;Register &04 - Hours:		00
-		EQUB &00								;Register &05 - Hr Alarm:	 	00
+.LA786
+    EQUB &00								;Register &00 - Seconds:	 	00
+    EQUB &00								;Register &01 - Sec Alarm:	 	00
+    EQUB &00								;Register &02 - Minutes:	 	00
+    EQUB &00								;Register &03 - Min Alarm:	 	00
+    EQUB &00								;Register &04 - Hours:		00
+    EQUB &00								;Register &05 - Hr Alarm:	 	00
 ;		EQUB &07								;Register &06 - Day of Week:		Saturday	Note: This was set to 2 (Mon), which was correct when century was 1900. Changed in IBOS 1.21
-		EQUB &02								;Register &06 - Day of Week:		Monday
-		EQUB &01								;Register &07 - Day of Month:		01
-		EQUB &01								;Register &08 - Month:		January
-		EQUB &00								;Register &09 - Year:		00
+    EQUB &02								;Register &06 - Day of Week:		Monday
+    EQUB &01								;Register &07 - Day of Month:		01
+    EQUB &01								;Register &08 - Month:		January
+    EQUB &00								;Register &09 - Year:		00
+    ASSERT P% - LA786 == (rtcRegYear - rtcRegSeconds) + 1
 
 ;Stop Clock and Initialise RTC registers &00 to &0B
 ; SFTODO: Is this responsible for forcing reg B DSE bit off? This *would* matter if we wanted to use DSE.
