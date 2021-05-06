@@ -7542,29 +7542,24 @@ ENDIF
 .initDateBufferAndEmitTimeAndDate
 {
     XASSERT_USE_PRV1
-            LDA prvDateSFTODO4							;get OSWORD X register (lookup table LSB) SFTODO: not sure this comment is always true, e.g. we can be called via *TIME
-            STA transientDateBufferPtr							;and save
-            LDA prvDateSFTODO4 + 1							;get OSWORD Y register (lookup table MSB) SFTODO: ditto
-            STA transientDateBufferPtr + 1						;and save
-            LDA #&00
-            STA transientDateBufferIndex						;set buffer pointer to 0
-            JSR emitTimeAndDateToDateBuffer
-            LDA #vduCr
-            JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-            LDY transientDateBufferIndex						;get buffer pointer
-            STY prvDateSFTODO1b
-.^LAD7Erts     RTS
+    LDA prvDateSFTODO4:STA transientDateBufferPtr:LDA prvDateSFTODO4 + 1:STA transientDateBufferPtr + 1
+    LDA #0:STA transientDateBufferIndex
+    JSR EmitTimeAndDateToDateBuffer
+    LDA #vduCr:JSR emitAToDateBuffer
+    LDY transientDateBufferIndex:STY prvDateSFTODO1b
+.^LAD7Erts
+    RTS
 
-; SFTODO: Next line implies b7 of prvDateSFTODO1 "mainly" controls ordering
-.emitTimeAndDateToDateBuffer
-            BIT prvDateSFTODO1							;b7 of prvDateSFTODO1 controls whether time or date comes first
-            BMI dateFirst
-            JSR emitTimeToDateBuffer
-            JSR emitSeparatorToDateBuffer
-            JMP emitDateToDateBuffer
-.dateFirst  JSR emitDateToDateBuffer
-            JSR emitSeparatorToDateBuffer
-            JMP emitTimeToDateBuffer
+; SFTODO: Next line implies b7 of prvDateSFTODO1 "mainly" controls ordering (whether time or date comes first)
+.EmitTimeAndDateToDateBuffer
+    BIT prvDateSFTODO1:BMI DateFirst
+    JSR emitTimeToDateBuffer
+    JSR emitSeparatorToDateBuffer
+    JMP emitDateToDateBuffer
+.DateFirst
+    JSR emitDateToDateBuffer
+    JSR emitSeparatorToDateBuffer
+    JMP emitTimeToDateBuffer
 }
 
 ; SFTODO WIP COMMENT
@@ -8787,7 +8782,7 @@ column = prvC
     LDA #lo(prvDateBuffer):STA prvDateSFTODO4:LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
     JSR copyRtcAlarmToPrv
     JSR initDateBufferAndEmitTimeAndDate
-    DEC prvDateSFTODO1b:JSR printDateBuffer ; SFTODO: DEC chops off last character? If so, what is that?
+    DEC prvDateSFTODO1b:JSR printDateBuffer ; DEC chops off trailing vduCr
     LDA #'/':JSR OSWRCH:JSR printSpace
     LDX #rtcRegB:JSR ReadRtcRam:AND #rtcRegBAIE:JSR PrintOnOff
     LDX #userRegAlarm:JSR ReadUserReg:AND #userRegAlarmRBit:BEQ NewlineAndFinish
