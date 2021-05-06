@@ -2088,7 +2088,7 @@ InputBufSize = 256
             BPL userRegLoop
 
 FullResetPrv = &2800
-            JSR LA790								;Stop Clock and Initialise RTC registers &00 to &0B
+            JSR InitialiseRtcTime								;Stop Clock and Initialise RTC registers &00 to &0B
             LDX #&00								;Relocate 256 bytes of code to main memory
 .CopyLoop   LDA FullResetPrvTemplate,X
             STA FullResetPrv,X
@@ -6661,23 +6661,23 @@ osfileBlock = L02EE
 
 {
 ;Initialisation lookup table for RTC registers &00 to &09
-.LA786
-    EQUB &00								;Register &00 - Seconds:	 	00
-    EQUB &00								;Register &01 - Sec Alarm:	 	00
-    EQUB &00								;Register &02 - Minutes:	 	00
-    EQUB &00								;Register &03 - Min Alarm:	 	00
-    EQUB &00								;Register &04 - Hours:		00
-    EQUB &00								;Register &05 - Hr Alarm:	 	00
-;		EQUB &07								;Register &06 - Day of Week:		Saturday	Note: This was set to 2 (Mon), which was correct when century was 1900. Changed in IBOS 1.21
-    EQUB &02								;Register &06 - Day of Week:		Monday
-    EQUB &01								;Register &07 - Day of Month:		01
-    EQUB &01								;Register &08 - Month:		January
-    EQUB &00								;Register &09 - Year:		00
-    ASSERT P% - LA786 == (rtcRegYear - rtcRegSeconds) + 1
+.InitialRtcTimeValues
+    EQUB 0  ; rtcRegSeconds
+    EQUB 0  ; rtcRegAlarmSeconds
+    EQUB 0  ; rtcRegMinutes
+    EQUB 0  ; rtcRegAlarmMinutes
+    EQUB 0  ; rtcRegHours
+    EQUB 0  ; rtcRegAlarmHours
+    EQUB 2  ; rtcRegDayOfWeek: Monday SFTODO: This will be 7 (Saturday) for IBOS 1.21, where we presumably default to 2000 not 1900
+    EQUB 1  ; rtcRegDayOfMonth: 1st
+    EQUB 1  ; rtcRegMonth: January
+    EQUB 0  ; rtcRegYear: 1900 SFTODO: presumably 2000 in IBOS 1.21 as a result of changes elsewhere?
+    ASSERT P% - InitialRtcTimeValues == (rtcRegYear - rtcRegSeconds) + 1
 
-;Stop Clock and Initialise RTC registers &00 to &0B
 ; SFTODO: Is this responsible for forcing reg B DSE bit off? This *would* matter if we wanted to use DSE.
-.^LA790
+; Initialise RTC time registers.
+; SQUASH: This has only one caller.
+.^InitialiseRtcTime
     LDX #rtcRegB:LDA #rtcRegBSET OR rtcRegBDM or rtcRegB2412:JSR WriteRtcRam
     ; SQUASH: Could we save code here by populating prvDate* with defaults and using
     ; WriteRtc{Time,Date} to do the update?
@@ -6686,9 +6686,9 @@ osfileBlock = L02EE
     ASSERT rtcRegB - 1 == rtcRegA:DEX
     LDA #rtcRegAUIP OR rtcRegADV2 OR rtcRegADV1:JSR WriteRtcRam
     ASSERT rtcRegA - 1 == rtcRegYear:DEX
-.LA79E
-    LDA LA786,X:JSR WriteRtcRam
-    DEX:BPL LA79E:ASSERT rtcRegSeconds == 0
+.Loop
+    LDA InitialRtcTimeValues,X:JSR WriteRtcRam
+    DEX:BPL Loop:ASSERT rtcRegSeconds == 0
     RTS
 }
 
