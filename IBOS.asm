@@ -185,7 +185,7 @@ transientDynamicSyntaxState = &AE ; 1 byte
 transientDateBufferPtr = &A8 ; SFTODO!?
 transientDateBufferIndex = &AA ; SFTODO!?
 transientDateSFTODO2 = &AA ; SFTODO: prob just temp storage
-Options = &AB ; SFTODO!? 2 bytes?
+transientDateSFTODO1 = &AB ; SFTODO!? 2 bytes?
 
 FilingSystemWorkspace = &B0; IBOS repurposes this, which feels a bit risky but presumably works in practice
 ConvertIntegerResult = FilingSystemWorkspace ; 4 bytes
@@ -7001,14 +7001,14 @@ daysInMonth = transientDateSFTODO2
             JMP makePrvDateDayOfWeekGe37Loop
 .prvDateDayOfWeekGe37
             LDA prvDateSFTODO4
-            STA Options
+            STA transientDateSFTODO1
             LDA prvDateSFTODO4 + 1
-            STA Options + 1
+            STA transientDateSFTODO1 + 1
             LDA #0
             LDY #42
 .zeroBufferLoop
 	  DEY
-            STA (Options),Y
+            STA (transientDateSFTODO1),Y
             BNE zeroBufferLoop
             INC daysInMonth ; bump daysInMonth so the following loop can use a strictly less than comparison
 .DayOfMonthLoop
@@ -7032,7 +7032,7 @@ daysInMonth = transientDateSFTODO2
             ADC prvC ; SFTODO: add the stashed pseudo-division result to the low byte of the multiplication we just did (we *probably* know the high byte in prvD is zero and can be ignored)
             TAY
             LDA prvDateDayOfMonth
-            STA (Options),Y ; SFTODO: I think what we're doing here is putting the day-of-month numbers into the order we need to output them a line at a time (although the exact nature of how we're doing that via the above calculations isn't completely clear yet)
+            STA (transientDateSFTODO1),Y ; SFTODO: I think what we're doing here is putting the day-of-month numbers into the order we need to output them a line at a time (although the exact nature of how we're doing that via the above calculations isn't completely clear yet)
             INC prvDateDayOfMonth
             JMP DayOfMonthLoop
 }
@@ -7272,7 +7272,7 @@ ENDIF
 ; Normal return has C clear
 .emitTimeToDateBuffer ; SFTODO: "time" as in "hour/min/sec, not day of month etc"
 {
-Options = Options
+Options = transientDateSFTODO1
     XASSERT_USE_PRV1
     LDA prvDateSFTODO2:AND #&0F:STA Options
     BNE LABF5
@@ -7412,12 +7412,12 @@ Options = Options
             LSR A
             LSR A
             LSR A
-            STA Options
+            STA transientDateSFTODO1
             BEQ SFTODOSTEP2
             AND #&01
             EOR #&01
             TAY
-            LDA Options
+            LDA transientDateSFTODO1
             LDX #&00
             CMP #&05
             BCS maxCharsInX
@@ -7435,12 +7435,12 @@ Options = Options
 
 .LACA0      LDA prvDateSFTODO1
             AND #&0F
-            STA Options
+            STA transientDateSFTODO1
             CMP #&04
             BCC LACB6
             LDA #','
             JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-            LDA Options
+            LDA transientDateSFTODO1
             CMP #&08
             BCC SFTODOSTEP2
 .LACB6      LDA #' '
@@ -7451,7 +7451,7 @@ Options = Options
 ; 2. Optionally print the day of the month with optional formatting/capitalisation. Options controlled by b0-2 of prvDateSFTODO3. If b3-7 of prvDateSFTODO3 are zero we return early. Otherwise we output dataSeparators[b0-2 of prvDataSFTODO1].
             LDA prvDateSFTODO3
             AND #&07
-            STA Options
+            STA transientDateSFTODO1
             BEQ SFTODOSTEP3MAYBE
             LDX #&01
             CMP #&04
@@ -7462,7 +7462,7 @@ Options = Options
             TAX
 .LACD0      LDA prvDateDayOfMonth							;read Day of Month
             JSR emitADecimalFormatted							;X controls formatting
-            LDA Options
+            LDA transientDateSFTODO1
             CMP #&04
             BCC LACE5
             BEQ LACDF
@@ -7486,7 +7486,7 @@ Options = Options
             LSR A
             LSR A
             AND #&07
-            STA Options
+            STA transientDateSFTODO1
             BEQ SFTODOSTEP4MAYBE
             CMP #&04
             BCS LAD18
@@ -7581,10 +7581,10 @@ Options = Options
             AND #&F0
             CMP #&D0
             BEQ emitSpaceAtSpace
-            STA Options
+            STA transientDateSFTODO1
             AND #&40
             BNE emitSpace
-.LADA5      LDA Options
+.LADA5      LDA transientDateSFTODO1
             LDX #','
             AND #&20
             BNE separatorInX
@@ -7592,7 +7592,7 @@ Options = Options
 .separatorInX
             TXA
             JSR emitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-            LDA Options
+            LDA transientDateSFTODO1
             AND #&10
             BEQ LAD7Erts
 .emitSpace      LDA #' '
@@ -8156,7 +8156,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; SFTODO: Note the flags reflect A on exit.
 .SFTODOProbParsePlusMinusDate
 {
-SpecificDayOfWeekFlag = Options
+SpecificDayOfWeekFlag = transientDateSFTODO1
 DayOfWeekSuffix = prvTmp5
 OriginalY = prvTmp2
 
