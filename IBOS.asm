@@ -7169,7 +7169,7 @@ unitsChar = prv82 + &4F
 
 ; Emit ordinal suffix for A (<=99) into transientDateBuffer; if C is set it will be capitalised.
 ; SFTODO: This only has one caller, can it just be inlined?
-.^emitOrdinalSuffix
+.^EmitOrdinalSuffix
     XASSERT_USE_PRV1
             PHP									;save carry flag. Used to select capitalisation
             JSR convertAToTensUnitsChars						;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
@@ -7455,7 +7455,7 @@ Options = transientDateSFTODO1
             BEQ LACDF
             CLC									;don't capitalise
 .LACDF      LDA prvDateDayOfMonth							;Get Day of Month from RTC
-            JSR emitOrdinalSuffix							;Convert to text, then save to buffer XY?Y, increment buffer address offset.
+            JSR EmitOrdinalSuffix							;Convert to text, then save to buffer XY?Y, increment buffer address offset.
 .LACE5      LDA prvDateSFTODO3
             AND #&F8
             BEQ LAD5Arts
@@ -7594,7 +7594,8 @@ Options = transientDateSFTODO1
 
 ; SFTODO: "Ish" in name because I think this will be affected by the bug in CalculateDaysBetween1stJanAndPrvDateSFTODOIsh
 ; SFTODO: This has only one caller
-.CalculateDaysBetween1stJan1900AndPrvDateSFTODOIsh
+; Set prvDateSFTODO4 to be the 16-bit absolute day number of prvDate*, where 1st January 1900 is day 0.
+.CalculateAbsoluteDayNumber
 {
     XASSERT_USE_PRV1
             LDA #0
@@ -7654,8 +7655,8 @@ Options = transientDateSFTODO1
 }
 
 ; SFTODO: This has only one caller
-; SFTODO: I suspect this subroutine is (intended to be) the inverse of JSR CalculateDaysBetween1stJan1900AndPrvDateSFTODOIsh - yes, I haven't followed the logic through step by step but it looks very much like it
-.convertDaysSince1stJan1900ToDate
+; SFTODO: I suspect this subroutine is (intended to be) the inverse of JSR CalculateAbsoluteDayNumber - yes, I haven't followed the logic through step by step but it looks very much like it
+.ConvertAbsoluteDayNumberToDate
 {
 daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 
@@ -9137,14 +9138,14 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;XY?0=&6A
 ;OSWORD &49 (73) - Integra-B calls
 .LB8FC
-    JSR CalculateDaysBetween1stJan1900AndPrvDateSFTODOIsh
+    JSR CalculateAbsoluteDayNumber
     CLC
     RTS
 			
 ;XY?0=&6B
 ;OSWORD &49 (73) - Integra-B calls
 .LB901
-    JSR convertDaysSince1stJan1900ToDate
+    JSR ConvertAbsoluteDayNumberToDate
     CLC
     RTS
 
