@@ -1187,11 +1187,11 @@ LastEntry = &A9
 {
 .^CmdRefDynamicSyntaxGenerationForTransientCmdIdx
     JSR CmdRef
-    JMP common
+    JMP Common
 			
 .^ConfRefDynamicSyntaxGenerationForTransientCmdIdx
     JSR ConfRef
-.common
+.Common
     CLC
     BIT rts ; set V
     LDA transientCommandIndex
@@ -1504,21 +1504,17 @@ TmpCommandIndex = &AC
 
 ; Return with A=Y=0 and (transientCmdPtr),Y accessing the same byte as (osCmdPtr),Y on entry.
 .SetTransientCmdPtr
-{
     CLC:TYA:ADC osCmdPtr:STA transientCmdPtr
     LDA osCmdPtr + 1:ADC #0:STA transientCmdPtr + 1
     LDA #0:TAY
     RTS
-}
-			
+
 .GenerateSyntaxErrorForTransientCommandIndex
-{
     PRVDIS
     LDA transientCommandIndex
     JSR CmdRef
     SEC
     JMP DynamicSyntaxGenerationForAUsingYX
-}
 
 ;service entry point
 .service
@@ -8523,7 +8519,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
     JMP ExitAndClaimServiceCall
 }
 
-.PrvDisMismatch
+.PrvDisGenerateMismatch
     PRVDIS
     JSR RaiseError
     EQUB &80
@@ -8583,7 +8579,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
             JSR DateCalculation
             BCC calculationOk
             BVS PrvDisGenerateBadDateIndirect
-            JMP PrvDisMismatch								;Error with Mismatch
+            JMP PrvDisGenerateMismatch								;Error with Mismatch
 
 .PrvDisGenerateBadDateIndirect
             JMP PrvDisGenerateBadDate								;Error with Bad Date
@@ -8619,7 +8615,7 @@ column = prvC
             JSR DateCalculation
             BCC calculationOk
             BVS PrvDisGenerateBadDateIndirect
-            JMP PrvDisMismatch
+            JMP PrvDisGenerateMismatch
 
 .PrvDisGenerateBadDateIndirect
             JMP PrvDisGenerateBadDate
