@@ -6677,9 +6677,12 @@ osfileBlock = L02EE
 ; SFTODO: Is this responsible for forcing reg B DSE bit off? This *would* matter if we wanted to use DSE.
 .^LA790
     LDX #rtcRegB:LDA #rtcRegBSET OR rtcRegBDM or rtcRegB2412:JSR WriteRtcRam
+    ; SQUASH: Could we save code here by populating prvDate* with defaults and using
+    ; WriteRtc{Time,Date} to do the update?
+    ; Turn the divider off, temporarily stopping the RTC clock while we set it. We also try to
+    ; set the read-only "update in progress" bit!
     ASSERT rtcRegB - 1 == rtcRegA:DEX
-    LDA #rtcRegAUIP OR rtcRegADV2 OR rtcRegADV1;Divider Off, Invalid write 'Update in Progress' bit!
-    JSR WriteRtcRam
+    LDA #rtcRegAUIP OR rtcRegADV2 OR rtcRegADV1:JSR WriteRtcRam
     ASSERT rtcRegA - 1 == rtcRegYear:DEX
 .LA79E
     LDA LA786,X:JSR WriteRtcRam
