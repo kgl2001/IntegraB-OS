@@ -8732,7 +8732,7 @@ column = prvC
 }
 
 {
-.setAlarm   INY
+.SetAlarm   INY
 .LB61B      PHP
             JSR parseAndValidateTime
             BCC LB62D
@@ -8765,29 +8765,20 @@ column = prvC
 .^alarm
     PRVEN
     LDA (transientCmdPtr),Y
-    CMP #'='
-    CLC
-    BEQ setAlarm
-    CMP #'?'
-    BEQ ShowAlarm
-    CMP #vduCr
-    BEQ ShowAlarm
-    JSR ParseOnOff
-    BCS LB61B
+    CMP #'=':CLC:BEQ SetAlarm
+    CMP #'?':BEQ ShowAlarm
+    CMP #vduCr:BEQ ShowAlarm
+    JSR ParseOnOff:BCS LB61B ; branch if we couldn't parse "ON" or "OFF"
     PHP
     LDX #userRegAlarm:JSR ReadUserReg
-    PLP
-    BNE LB67C
-    AND #&BF
-    JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
-    LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
-    JSR ReadRtcRam								;Read data from RTC memory location X into A
-    AND_NOT rtcRegBPIE OR rtcRegBAIE
-    JSR WriteRtcRam								;Write data from A to RTC memory location X
+    PLP:BNE LB67C
+    AND_NOT &40:JSR WriteUserReg ; SFTODO: MAGIC
+    ; Force PIE (periodic interrupt enable) and AIE (alarm interrupt enable) off.
+    LDX #rtcRegB:JSR ReadRtcRam:AND_NOT rtcRegBPIE OR rtcRegBAIE:JSR WriteRtcRam
     JMP LB6E3
 			
 .LB67C
-    ORA #&40:JSR WriteUserReg
+    ORA #&40:JSR WriteUserReg ; SFTODO: MAGIC
     ; Force PIE (periodic interrupt enable) off and AIE (alarm interrupt enable) on.
     LDX #rtcRegB:JSR ReadRtcRam:AND_NOT rtcRegBPIE OR rtcRegBAIE:ORA #rtcRegBAIE:JSR WriteRtcRam
     JMP LB6E3
