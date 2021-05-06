@@ -6581,7 +6581,7 @@ osfileBlock = L02EE
     INX:ASSERT rtcRegMonth + 1 == rtcRegYear:LDA prvDateYear:JSR WriteRtcRam
     LDX #userRegCentury:LDA prvDateCentury:JMP WriteUserReg
 
-;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
+; Copy the RTC time registers to prvDate{Hours,Minutes,Seconds}.
 .CopyRtcTimeToPrv
     XASSERT_USE_PRV1
     JSR WaitOutRTCUpdate
