@@ -6570,10 +6570,9 @@ osfileBlock = L02EE
     JMP WriteRtcRam
 }
 
-; Copy prvDate{DayOfWeek,DayOfMonth,Month,Year} to the RTC date registers and prvDateCentury to
+; Copy prvDate{DayOfWeek,DayOfMonth,Month,Year,Century} to the RTC date registers and
 ; userRegCentury.
 .WriteRtcDate
-{
     XASSERT_USE_PRV1
     JSR WaitOutRTCUpdate
     LDX #rtcRegDayOfWeek:LDA prvDateDayOfWeek:JSR WriteRtcRam
@@ -6581,7 +6580,6 @@ osfileBlock = L02EE
     INX:ASSERT rtcRegDayOfMonth + 1 == rtcRegMonth:LDA prvDateMonth:JSR WriteRtcRam
     INX:ASSERT rtcRegMonth + 1 == rtcRegYear:LDA prvDateYear:JSR WriteRtcRam
     LDX #userRegCentury:LDA prvDateCentury:JMP WriteUserReg
-}
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
 .GetRtcSecondsMinutesHours
@@ -6592,25 +6590,16 @@ osfileBlock = L02EE
     LDX #rtcRegHours:JSR ReadRtcRam:STA prvDateHours
     RTS
 
-;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from RTC and Store in Private RAM (&82xx)
+; Copy the RTC date registers and userRegCentury to
+; prvDate{DayOfWeek,DayOfMonth,Month,Year,Century}.
 .GetRtcDayMonthYear
-{
     XASSERT_USE_PRV1
-            JSR WaitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
-            LDX #rtcRegDayOfWeek							;Select 'Day of Week' register on RTC: Register &06
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            STA prvDateDayOfWeek							;Store 'Day of Week' at &822C
-            INX:ASSERT rtcRegDayOfWeek + 1 == rtcRegDayOfMonth				;Select 'Day of Month' register on RTC: Register &07
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            STA prvDateDayOfMonth							;Store 'Day of Month' at &822B
-            INX:ASSERT rtcRegDayOfMonth + 1 == rtcRegMonth					;Select 'Month' register on RTC: Register &08
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            STA prvDateMonth								;Store 'Month' at &822A
-            INX:ASSERT rtcRegMonth + 1 == rtcRegYear					;Select 'Year' register on RTC: Register &09
-.LA729      JSR ReadRtcRam								;Read data from RTC memory location X into A
-            STA prvDateYear								;Store 'Year' at &8229
-            JMP defaultPrvDateCentury
-}
+    JSR WaitOutRTCUpdate
+    LDX #rtcRegDayOfWeek:JSR ReadRtcRam:STA prvDateDayOfWeek
+    INX:ASSERT rtcRegDayOfWeek + 1 == rtcRegDayOfMonth:JSR ReadRtcRam:STA prvDateDayOfMonth
+    INX:ASSERT rtcRegDayOfMonth + 1 == rtcRegMonth:JSR ReadRtcRam:STA prvDateMonth
+    INX:ASSERT rtcRegMonth + 1 == rtcRegYear:JSR ReadRtcRam:STA prvDateYear
+    JMP GetUserRegCentury
 
 ; Copy time in RTC alarm registers to prvDate{Hours,Minutes,Seconds}.
 .CopyRtcAlarmToPrv
@@ -8106,7 +8095,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
             STA prvDateYear
             LDA prvD
             BNE centuryInA
-.^defaultPrvDateCentury
+.^GetUserRegCentury
             LDX #userRegCentury
             JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
 .centuryInA STA prvDateCentury
