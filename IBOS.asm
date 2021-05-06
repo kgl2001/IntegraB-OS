@@ -6700,17 +6700,17 @@ osfileBlock = L02EE
             AND #&40
             LSR A
             STA L00AE
-            LDX #&0B								;Select 'Register B' register on RTC: Register &0B
+            LDX #rtcRegB
             JSR ReadRtcRam								;Read data from RTC memory location X into A
-            ORA #&08
+            ORA #rtcRegBSQWE
             ORA L00AE
             JSR WriteRtcRam								;Write data from A to RTC memory location X
 .ClcRts      CLC
             RTS
 
-.LA7C2      LDX #&0B								;Select 'Register B' register on RTC: Register &0B
+.LA7C2      LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
             JSR ReadRtcRam								;Read data from RTC memory location X into A
-            AND #&08
+            AND #rtcRegBSQWE
             BNE ClcRts
             SEC
             RTS
@@ -8400,9 +8400,9 @@ EndIndex = transientDateSFTODO2 ; exclusive
             AND #&F0
             ORA #&0E
             JSR WriteRtcRam								;Write data from A to RTC memory location X
-            LDX #&0B								;Select 'Register B' register on RTC: Register &0B
+            LDX #rtcRegB
             JSR ReadRtcRam								;Read data from RTC memory location X into A
-            ORA #&40								;Enable Periodic Interrupts
+            ORA #rtcRegBPIE
             JSR WriteRtcRam								;Write data from A to RTC memory location X
             LDA #&01
             STA prv82+&76
@@ -8448,7 +8448,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
             LSR A
             AND #&20
             STA prv82+&76
-            LDX #&0B								;Select 'Register B' register on RTC: Register &0B
+            LDX #rtcRegB
             JSR ReadRtcRam								;Read data from RTC memory location X into A
             AND #&9F
             ORA prv82+&76
