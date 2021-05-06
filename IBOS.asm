@@ -597,6 +597,7 @@ prvDateSFTODO1b = prvOswordBlockCopy + 1 ; SFTODO: Use as a copy of "final" tran
 prvDateSFTODO2 = prvOswordBlockCopy + 2
     prvDateSFTODO212Hour = 1<<0 ; use 12 hour clock if set
     prvDateSFTODO2NoLeadingZero = 1<<1 ; use space instead of leading zero on hours if set
+    prvDateSFTODO2UseHours = 1<<2 ; show hours iff set
 prvDateSFTODO3 = prvOswordBlockCopy + 3
 prvDateSFTODO4 = prvOswordBlockCopy + 4 ; 2 bytes SFTODO!?
 prvDateSFTODO6 = prvOswordBlockCopy + 6 ; SFTODO: I am thinking 6/7 are actually the high word of the 32-bit address at SFTODO4, and so we should probably refer to them as SFTODO4+2/3
@@ -7281,13 +7282,11 @@ Options = transientDateSFTODO1
     SEC
     RTS
 .SomethingToDo
-    LDA Options:CMP #&04:BCC SFTODOSTEP2MAYBE
+    LDA Options:CMP #prvDateSFTODO2UseHours:BCC DontShowHours
     ; Emit hours.
-; X=0 => "00"  "05"  "25"	Right-aligned in a two character field with leading 0s
-; X=1 => "0"   "5"   "25"	Left-aligned with no padding, 1 or 2 characters
-; X=2 => " 0"  " 5"  "25"	Right-aligned in a two character field with no leading 0s
     LDX #0 ; X is formatting option for emitADecimalFormatted; 0 means "00" style.
-    AND #prvDateSFTODO2NoLeadingZero:EOR #prvDateSFTODO2NoLeadingZero:BNE LeadingZero ; SQUASH: Omit EOR and use BEQ instead of BNE?
+    ; SQUASH: Omit EOR and use BEQ instead of BNE?
+    AND #prvDateSFTODO2NoLeadingZero:EOR #prvDateSFTODO2NoLeadingZero:BNE LeadingZero
     INX:INX ; X=2 => emitADecimalFormatted will use " 0" style
 .LeadingZero
     LDA Options:AND #prvDateSFTODO212Hour:PHP
@@ -7303,7 +7302,7 @@ Options = transientDateSFTODO1
     JSR emitADecimalFormatted
     LDA #':':JSR emitAToDateBuffer
 
-.SFTODOSTEP2MAYBE
+.DontShowHours
     LDX #&00
     LDA Options
     CMP #&04
