@@ -155,6 +155,7 @@ userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Dat
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX / b4: automatic daylight saving time adjust SFTODO: Should rename this now we've discovered b4
 ; SFTODO: b4 of userRegOsModeShx doesn't seem to be exposed via *CONFIGURE/*STATUS - should it be? Might be interesting to try setting this bit manually and seeing if it works. If it's not going to be exposed we could save some code by deleting the support for it.
 userRegAlarm = &33 ; SFTODO? bits 0-5?? SFTODO: bit 7 seems to be the "R" flag from *ALARM command ("repeat"???)
+    userRegAlarmRBit = &80
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegBankWriteProtectStatus = &38 ; 2 bytes, 1 bit per bank
@@ -8786,14 +8787,12 @@ column = prvC
     LDA #lo(prvDateBuffer):STA prvDateSFTODO4:LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
     JSR copyRtcAlarmToPrv
     JSR initDateBufferAndEmitTimeAndDate
-    DEC prvDateSFTODO1
+    DEC prvDateSFTODO1 ; SFTODO: does this have any effect?
     JSR printDateBuffer
-    LDA #'/':JSR OSWRCH
-    JSR printSpace
+    LDA #'/':JSR OSWRCH:JSR printSpace
     LDX #rtcRegB:JSR ReadRtcRam:AND #rtcRegBAIE:JSR PrintOnOff
-    LDX #userRegAlarm:JSR ReadUserReg:AND #&80:BEQ NewlineAndFinish
-    JSR printSpace
-    LDA #'R':JSR OSWRCH
+    LDX #userRegAlarm:JSR ReadUserReg:AND #userRegAlarmRBit:BEQ NewlineAndFinish
+    JSR printSpace:LDA #'R':JSR OSWRCH
 .NewlineAndFinish
     JSR OSNEWL
 .Finish
