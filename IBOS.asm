@@ -595,10 +595,14 @@ prvDateSFTODOQCenturyYearMonthDayOfMonth = prvDateSFTODOQCentury OR prvDateSFTOD
 prvDateSFTODO1 = prvOswordBlockCopy + 1 ; SFTODO: Use as a bitfield controlling formatting
 prvDateSFTODO1b = prvOswordBlockCopy + 1 ; SFTODO: Use as a copy of "final" transientDateBufferIndex
 prvDateSFTODO2 = prvOswordBlockCopy + 2
+    ; The low four bits of prvDateSFTODO2 control time formatting. They're not quite a bitmap
+    ; but in practice this is a reasonable way to think about them.
     prvDateSFTODO212Hour = 1<<0 ; use 12 hour clock if set
     prvDateSFTODO2NoLeadingZero = 1<<1 ; use space instead of leading zero on hours if set
     prvDateSFTODO2UseHours = 1<<2 ; show hours iff set
-    prvDateSFTODO2SFTODOSeparator = 1<<3
+    prvDateSFTODO2MinutesControl = 1<<3 ; 0 => show ":" separator before minutes
+                                         ; 1 and prvDateSFTODO2UseHours 0 => don't show minutes
+				 ; 1 and prvDateSFTODO2UseHours 1 => show "/" separator before minutes
 prvDateSFTODO3 = prvOswordBlockCopy + 3
 prvDateSFTODO4 = prvOswordBlockCopy + 4 ; 2 bytes SFTODO!?
 prvDateSFTODO6 = prvOswordBlockCopy + 6 ; SFTODO: I am thinking 6/7 are actually the high word of the 32-bit address at SFTODO4, and so we should probably refer to them as SFTODO4+2/3
@@ -7314,8 +7318,8 @@ Options = transientDateSFTODO1
 .ShowMinutesAs00
     LDA prvDateMinutes:JSR emitADecimalFormatted
     LDA Options
-    CMP #prvDateSFTODO2SFTODOSeparator:BCC separatorColon
-    CMP #prvDateSFTODO2SFTODOSeparator OR prvDateSFTODO2UseHours:BCC ShowAmPm
+    CMP #prvDateSFTODO2MinutesControl:BCC separatorColon
+    CMP #prvDateSFTODO2MinutesControl OR prvDateSFTODO2UseHours:BCC ShowAmPm
     LDA #'/'
     BNE separatorInA ; always branch
 .separatorColon
