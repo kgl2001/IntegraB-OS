@@ -8795,26 +8795,23 @@ column = prvC
 }
 			
 ;OSWORD &0E (14) Read real time clock
+.osword0e
 {
-.^osword0e	JSR SaveTransientZP						;save 8 bytes of data from &A8 onto the stack
-            PRVEN								;switch in private RAM
-            LDA oswdbtX								;get X register value of most recent OSWORD call
-            STA prvOswordBlockOrigAddr							;and save to &8230
-            LDA oswdbtY								;get Y register value of most recent OSWORD call
-            STA prvOswordBlockOrigAddr + 1							;and save to &8231
-            JSR oswordsv								;save XY entry table
-            JSR oswd0e_1								;execute OSWORD &0E
-            BCS osword0ea								;successful so don't restore XY entry table
-            JSR oswordrs								;restore XY entry table
-.osword0ea	LDA prvOswordBlockOrigAddr						;get X register value of most recent OSWORD call
-            STA oswdbtX								;and restore to &F0
-            LDA prvOswordBlockOrigAddr + 1						;get Y register value of most recent OSWORD call
-            STA oswdbtY								;and restore to &F1
-            LDA #&0E								;load A register value of most recent OSWORD call (&0E)
-            STA oswdbtA								;and restore to &EF
-            PRVDIS								;switch out private RAM
-
-            JMP RestoreTransientZPAndExitSC						;restore 8 bytes of data to &A8 from the stack and exit
+    JSR SaveTransientZP
+    PRVEN
+    LDA oswdbtX:STA prvOswordBlockOrigAddr
+    LDA oswdbtY:STA prvOswordBlockOrigAddr + 1
+    JSR oswordsv
+    JSR oswd0e_1
+    BCS osword0ea
+    JSR oswordrs
+.osword0ea
+    ; Restore original A/X/Y. SQUASH: Do we need to do this? Did we modify them?
+    LDA prvOswordBlockOrigAddr:STA oswdbtX
+    LDA prvOswordBlockOrigAddr + 1:STA oswdbtY
+    LDA #&0E:STA oswdbtA
+    PRVDIS
+    JMP RestoreTransientZPAndExitSC
 }
 			
 ;OSWORD &49 (73) - Integra-B calls
