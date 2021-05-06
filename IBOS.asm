@@ -7306,9 +7306,11 @@ Options = transientDateSFTODO1
 .ShowMinutes
     LDX #0 ; X is formatting option for emitADecimalFormatted; 0 means "00" style.
     LDA Options
-    CMP #prvDateSFTODO2UseHours:BCS ShowMinutesAs00
-    CMP #prvDateSFTODO212Hour:BEQ ShowMinutesAs00
-    TAX ; use Options (0, 2 or 3) as formatting option for emitADecimalFormatted
+    CMP #prvDateSFTODO2UseHours:BCS ShowMinutesAs00 ; branch if hour shown
+    CMP #prvDateSFTODO212Hour:BEQ ShowMinutesAs00 ; branch if 24 hour clock
+    ; Options could be 0, 2 or 3 here but I suspect in practice it will either be 0 or 2, and
+    ; thus this is effectively using prvDateSFTODO2NoLeadingZero to select "00" or " 0" format.
+    TAX ; X is formatting option for emitADecimalFormatted
 .ShowMinutesAs00
     LDA prvDateMinutes:JSR emitADecimalFormatted
     LDA Options
