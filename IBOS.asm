@@ -8738,11 +8738,10 @@ column = prvC
 .LB61B
     PHP
     JSR parseAndValidateTime:BCC ParsedTimeOk
-    PLP:BCC LB62A
+    PLP:BCC PrvDisGenerateBadTimeIndirect ; branch if we are trying to set the alarm
     PRVDIS
     JMP GenerateSyntaxErrorForTransientCommandIndex
-			
-.LB62A
+.PrvDisGenerateBadTimeIndirect
     JMP PrvDisGenerateBadTime
 
 .ParsedTimeOk
