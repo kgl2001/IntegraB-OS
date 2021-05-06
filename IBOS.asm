@@ -156,6 +156,7 @@ userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX / b4: automatic daylight saving 
 ; SFTODO: b4 of userRegOsModeShx doesn't seem to be exposed via *CONFIGURE/*STATUS - should it be? Might be interesting to try setting this bit manually and seeing if it works. If it's not going to be exposed we could save some code by deleting the support for it.
 userRegAlarm = &33 ; SFTODO? bits 0-5?? SFTODO: bit 7 seems to be the "R" flag from *ALARM command ("repeat"???)
     userRegAlarmRBit = &80
+    userRegAlarmSFTODO1 = &40
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegBankWriteProtectStatus = &38 ; 2 bytes, 1 bit per bank
@@ -6678,17 +6679,20 @@ osfileBlock = L02EE
 Tmp = TransientZP + 6
 
     BCS LA7C2
-    LDX #userRegAlarm:JSR ReadUserReg:AND #&40:ASSERT &40 >> 1 == rtcRegBAIE:LSR A:STA Tmp ; SFTODO: MAGIC
+    ; Set SQWE (square-wave enable) and if userRegAlarmSFTODO1 is set, additionally set AIE
+    ; (alarm interrupt enable). Note that we *don't* clear AIE if it's currently set and
+    ; userRegAlarmSFTODO1 isn't set. SFTODO: That's probably fine, but without more context
+    ; it's possible this is a bug.
+    LDX #userRegAlarm:JSR ReadUserReg:AND #userRegAlarmSFTODO1
+    ASSERT userRegAlarmSFTODO1 >> 1 == rtcRegBAIE:LSR A:STA Tmp
     LDX #rtcRegB:JSR ReadRtcRam:ORA #rtcRegBSQWE:ORA L00AE:JSR WriteRtcRam
 .ClcRts
     CLC
     RTS
 
+    ; Return with the current SQWE (square-wave enable) state in C.
 .LA7C2
-    LDX #rtcRegB
-    JSR ReadRtcRam
-    AND #rtcRegBSQWE
-    BNE ClcRts
+    LDX #rtcRegB:JSR ReadRtcRam:AND #rtcRegBSQWE:BNE ClcRts
     SEC
     RTS
 
