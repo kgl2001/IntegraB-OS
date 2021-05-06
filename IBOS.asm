@@ -2003,7 +2003,7 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
     LDX #(yesStringEnd - yesString) - 1
 .yesLoop
     LDA yesString,X:JSR OSWRCH:DEX:BPL yesLoop
-    JMP fullReset ; SQUASH: any chance of falling through?
+    JMP FullReset ; SQUASH: any chance of falling through?
 .NotYes
     LDA #vduCls:JSR OSWRCH
     JMP nle
@@ -2067,7 +2067,7 @@ InputBufSize = 256
 
 ;Start of full reset
 ; SFTODO: This has only one caller
-.fullReset
+.FullReset
 {
 	  ; Zero user registers &00-&32 inclusive, except userRegLangFile which is treated as a special case.
 .L89C2      LDX #&32								;Start with register &32
@@ -2087,17 +2087,17 @@ InputBufSize = 256
             DEX
             BPL userRegLoop
 
-fullResetPrv = &2800
+FullResetPrv = &2800
             JSR LA790								;Stop Clock and Initialise RTC registers &00 to &0B
             LDX #&00								;Relocate 256 bytes of code to main memory
-.CopyLoop   LDA fullResetPrvTemplate,X
-            STA fullResetPrv,X
+.CopyLoop   LDA FullResetPrvTemplate,X
+            STA FullResetPrv,X
             INX
             BNE CopyLoop
-            JMP fullResetPrv
+            JMP FullResetPrv
 
 ;This code is relocated from IBOS ROM to RAM starting at &2800
-.fullResetPrvTemplate
+.FullResetPrvTemplate
 ptr = &00 ; 2 bytes
 .L89E9      LDA romselCopy								;Get current SWR bank number.
             PHA									;Save it
@@ -2106,7 +2106,7 @@ ptr = &00 ; 2 bytes
 	  STX romselCopy								;Select memory bank
             STX romsel
             LDA #&80								;Start at address &8000
-	  JSR zeroPageAUpToC0-fullResetPrvTemplate+fullResetPrv				;Fill bank with &00 (will try both RAM & ROM)
+	  JSR zeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv				;Fill bank with &00 (will try both RAM & ROM)
             DEX
             BPL zeroSWRLoop								;Until all RAM banks are wiped.
             LDA #ramselShen OR ramselPrvs841						;Set Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
@@ -2116,7 +2116,7 @@ ptr = &00 ; 2 bytes
             STA romselCopy
             STA romsel
             LDA #&30								;Start at shadow address &3000
-	  JSR zeroPageAUpToC0-fullResetPrvTemplate+fullResetPrv				;Fill shadow and private memory with &00
+	  JSR zeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv				;Fill shadow and private memory with &00
             LDA #&FF								;Write &FF to PRVS1 &830C..&830F
             STA prvSFTODOFOURBANKS
             STA prvSFTODOFOURBANKS + 1
@@ -2130,8 +2130,8 @@ ptr = &00 ; 2 bytes
             STA romsel
 	  ; SFTODO: I may be misreading this code, but won't it access one double-byte entry *past* intDefaultEnd? Effectively treating PHP:SEI as a pair of bytes &08,&78? (Assuming they fit in the 256 bytes copied to main RAM.) I would have expected to write -2 on the next line not -0. Does user reg &08 get used at all? If it never gets overwritten, we could test this by seeing if it holds &78 after a reset. If I'm right, this will overwrite the 0 we wrote in userRegLoop above.
             LDY #(intDefaultEnd - intDefault) - 0						;Number of entries in lookup table for IntegraB defaults
-.L8A2D	  LDX intDefault-fullResetPrvTemplate+fullResetPrv+&00,Y				;address of relocated intDefault table:		(address for data)
-	  LDA intDefault-fullResetPrvTemplate+fullResetPrv+&01,Y				;address of relocated intDefault table+1:	(data)
+.L8A2D	  LDX intDefault-FullResetPrvTemplate+FullResetPrv+&00,Y				;address of relocated intDefault table:		(address for data)
+	  LDA intDefault-FullResetPrvTemplate+FullResetPrv+&01,Y				;address of relocated intDefault table+1:	(data)
             JSR WriteUserReg								;Write IntegraB default value to RTC User RAM
             DEY
             DEY
@@ -2183,7 +2183,7 @@ ptr = &00 ; 2 bytes
 		EQUB userRegPrvPrintBufferStart,&90
 		EQUB userRegRamPresenceFlags,&0F						;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks).
 .intDefaultEnd
-	  ASSERT (P% + 2) - fullResetPrvTemplate <= 256 ; SFTODO: +2 because as per above SFTODO I think we actually use an extra entry off the end of this table
+	  ASSERT (P% + 2) - FullResetPrvTemplate <= 256 ; SFTODO: +2 because as per above SFTODO I think we actually use an extra entry off the end of this table
 }
 
 
@@ -6675,18 +6675,16 @@ osfileBlock = L02EE
 
 ;Stop Clock and Initialise RTC registers &00 to &0B
 ; SFTODO: Is this responsible for forcing reg B DSE bit off? This *would* matter if we wanted to use DSE.
-.^LA790      LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
-            LDA #&86								;Stop Clock, Set Binary mode, Set 24hr mode
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            DEX									;Select 'Register A' register on RTC: Register &0A
-            LDA #&E0								;Divider Off, Invalid write 'Update in Progress' bit!
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            DEX									;Start at Register &09
-.LA79E      LDA LA786,X								;Read data from table
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            DEX									;Next register
-            BPL LA79E								;Until <0
-            RTS									;Exit
+.^LA790
+    LDX #rtcRegB:LDA #rtcRegBSET OR rtcRegBDM or rtcRegB2412:JSR WriteRtcRam
+    ASSERT rtcRegB - 1 == rtcRegA:DEX
+    LDA #rtcRegAUIP OR rtcRegADV2 OR rtcRegADV1;Divider Off, Invalid write 'Update in Progress' bit!
+    JSR WriteRtcRam
+    ASSERT rtcRegA - 1 == rtcRegYear:DEX
+.LA79E
+    LDA LA786,X:JSR WriteRtcRam
+    DEX:BPL LA79E:ASSERT rtcRegSeconds == 0
+    RTS
 }
 
 .SFTODOALARMSOMETHING
