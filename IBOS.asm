@@ -8450,7 +8450,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
             STA prv82+&76
             LDX #rtcRegB
             JSR ReadRtcRam								;Read data from RTC memory location X into A
-            AND #&9F
+            AND_NOT rtcRegBPIE OR rtcRegBAIE
             ORA prv82+&76
             JSR WriteRtcRam								;Write data from A to RTC memory location X
             LDX #&0A								;Select 'Register A' register on RTC: Register &0A
