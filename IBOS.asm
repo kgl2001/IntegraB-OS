@@ -8733,12 +8733,15 @@ column = prvC
 }
 
 {
+; We enter here with C clear when we see "=" on the command line.
 .SetAlarm
     INY
-.LB61B
+; We enter here with C set if we didn't see "=" but couldn't parse anything else so are trying
+; to parse this as an alarm set operation anyway.
+.TryParsingAsSetAlarm
     PHP
     JSR parseAndValidateTime:BCC ParsedTimeOk
-    PLP:BCC PrvDisGenerateBadTimeIndirect ; branch if we are trying to set the alarm
+    PLP:BCC PrvDisGenerateBadTimeIndirect ; branch if we saw "=" when parsing command line
     PRVDIS
     JMP GenerateSyntaxErrorForTransientCommandIndex
 .PrvDisGenerateBadTimeIndirect
@@ -8760,7 +8763,7 @@ column = prvC
     CMP #'=':CLC:BEQ SetAlarm
     CMP #'?':BEQ ShowAlarm
     CMP #vduCr:BEQ ShowAlarm
-    JSR ParseOnOff:BCS LB61B ; branch if we couldn't parse "ON" or "OFF"
+    JSR ParseOnOff:BCS TryParsingAsSetAlarm ; branch if we couldn't parse "ON" or "OFF"
     PHP
     LDX #userRegAlarm:JSR ReadUserReg
     PLP:BNE TurnAlarmOn
