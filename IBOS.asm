@@ -46,13 +46,13 @@
 ;&26:
 ;&27:
 ;&28:	RTC &35 - Century
-;&29:	RTC &09 - Year (Set at WriteRtcDate)
-;&2A:	RTC &08 - Month (Set at WriteRtcDate)
-;&2B:	RTC &07 - Day of Month (Set at WriteRtcDate)
-;&2C:	RTC &06 - Day of Week (Set at WriteRtcDate)
-;&2D:	RTC &04 - Hours (Set at WriteRtcTime)
-;&2E:	RTC &02 - Minutes (Set at WriteRtcTime)
-;&2F:	RTC &00 - Seconds (Set at WriteRtcTime)
+;&29:	RTC &09 - Year (Set at CopyPrvDateToRtc)
+;&2A:	RTC &08 - Month (Set at CopyPrvDateToRtc)
+;&2B:	RTC &07 - Day of Month (Set at CopyPrvDateToRtc)
+;&2C:	RTC &06 - Day of Week (Set at CopyPrvDateToRtc)
+;&2D:	RTC &04 - Hours (Set at CopyPrvTimeToRtc)
+;&2E:	RTC &02 - Minutes (Set at CopyPrvTimeToRtc)
+;&2F:	RTC &00 - Seconds (Set at CopyPrvTimeToRtc)
 ;&52:	
 ;&53:	
 
@@ -6538,7 +6538,7 @@ osfileBlock = L02EE
 
 ; Copy prvDate{Hours,Minutes,Seconds} to the RTC time registers, and set the RTC DSE flag
 ; according to userRegOsModeShx.
-.WriteRtcTime
+.CopyPrvTimeToRtc
 {
     ; Force DV2/1/0 in register A on; this temporarily stops the RTC clock while we set it.
     LDX #rtcRegA:JSR ReadRtcRam:ORA #rtcRegADV2 OR rtcRegADV1 OR rtcRegADV0:JSR WriteRtcRam
@@ -6572,7 +6572,7 @@ osfileBlock = L02EE
 
 ; Copy prvDate{DayOfWeek,DayOfMonth,Month,Year,Century} to the RTC date registers and
 ; userRegCentury.
-.WriteRtcDate
+.CopyPrvDateToRtc
     XASSERT_USE_PRV1
     JSR WaitOutRTCUpdate
     LDX #rtcRegDayOfWeek:LDA prvDateDayOfWeek:JSR WriteRtcRam
@@ -6582,7 +6582,7 @@ osfileBlock = L02EE
     LDX #userRegCentury:LDA prvDateCentury:JMP WriteUserReg
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
-.GetRtcSecondsMinutesHours
+.CopyRtcTimeToPrv
     XASSERT_USE_PRV1
     JSR WaitOutRTCUpdate
     LDX #rtcRegSeconds:JSR ReadRtcRam:STA prvDateSeconds
@@ -6592,7 +6592,7 @@ osfileBlock = L02EE
 
 ; Copy the RTC date registers and userRegCentury to
 ; prvDate{DayOfWeek,DayOfMonth,Month,Year,Century}.
-.GetRtcDayMonthYear
+.CopyRtcDateToPrv
     XASSERT_USE_PRV1
     JSR WaitOutRTCUpdate
     LDX #rtcRegDayOfWeek:JSR ReadRtcRam:STA prvDateDayOfWeek
@@ -6616,16 +6616,16 @@ osfileBlock = L02EE
     JSR WaitOutRTCUpdate
     LDX #rtcRegAlarmSeconds:LDA prvDateSeconds:JSR WriteRtcRam
     LDX #rtcRegAlarmMinutes:LDA prvDateMinutes:JSR WriteRtcRam
-    LDX #rtcRegAlarmHours:LDA prvDateHours:JMP WriteRtcRam
+    LDX #rtcRegAlarmHours:LDA prvDateHours:JMP WriteRtcRam ; SQUASH: move and fall through?
 
-.GetRtcDateTime
-    JSR GetRtcDayMonthYear
-    JMP GetRtcSecondsMinutesHours
+.CopyRtcDateTimeToPrv
+    JSR CopyRtcDateToPrv
+    JMP CopyRtcTimeToPrv ; SQUASH: move and fall through?
 
 ; SQUASH: Dead code
 {
-    JSR WriteRtcTime
-    JMP WriteRtcDate
+    JSR CopyPrvTimeToRtc
+    JMP CopyPrvDateToRtc
 }
 
 ; Wait until any RTC update in progress	is complete.
@@ -7791,7 +7791,7 @@ daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .YearOpen
     ; The user has left the year open; this is a special case because we use today as the
     ; starting point, not 1st January 1900.
-    JSR GetRtcDayMonthYear
+    JSR CopyRtcDateToPrv
     ; If the user partial date specification has everything except (perhaps) day-of-week
     ; specified, the date is already fully specified.
     LDA prv2Flags
@@ -8534,7 +8534,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
             STA prvDateSFTODO4							;store #&00 to address &8224
             LDA #hi(prvDateBuffer)
             STA prvDateSFTODO4 + 1							;store #&80 to address &8225
-            JSR GetRtcDateTime							;read TIME & DATE information from RTC and store in Private RAM (&82xx)
+            JSR CopyRtcDateTimeToPrv							;read TIME & DATE information from RTC and store in Private RAM (&82xx)
             JSR InitDateBufferAndEmitTimeAndDate								;format text for output to screen?
             JSR printDateBuffer								;output TIME & DATE data from address &8000 to screen
 .PrvDisExitAndClaimServiceCall
@@ -8545,7 +8545,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
             JSR parseAndValidateTime
             BCC parseOk
             JMP PrvDisGenerateBadTime								;Error with Bad time
-.parseOk    JSR WriteRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
+.parseOk    JSR CopyPrvTimeToRtc								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
             JMP PrvDisExitAndClaimServiceCall								;switch out private RAM and exit
 }
 
@@ -8583,7 +8583,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
             BCC LB55B
             JMP PrvDisGenerateBadDate								;Error with Bad date
 			
-.LB55B      JSR WriteRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
+.LB55B      JSR CopyPrvDateToRtc								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
             JMP PrvDisexitSc								;switch out private RAM and exit
 }
 			
@@ -8929,7 +8929,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=0: Read time and date in string format
 .^oswd0eReadString
-    JSR GetRtcDateTime
+    JSR CopyRtcDateTimeToPrv
 .^oswd0eReadStringInternal
     XASSERT_USE_PRV1
     JSR InitDateSFTODOS
@@ -8944,7 +8944,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;OSWORD &0E (14) Read real time clock
 ;XY&0=1: Read time and date in binary coded decimal (BCD) format
 .^oswd0eReadBCD
-   JSR GetRtcDateTime
+   JSR CopyRtcDateTimeToPrv
    LDY #6
 .Loop
    JSR ConvertBinaryToBcd:STA (oswdbtX),Y
@@ -9020,14 +9020,14 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;OSWORD &49 (73) - Integra-B calls
 .LB891
     JSR ClearPrvOswordBlockCopy
-    JSR GetRtcDateTime
+    JSR CopyRtcDateTimeToPrv
     CLC
     RTS
 			
 ;XY?0=&60
 ;OSWORD &49 (73) - Integra-B calls
 .LB899
-    JSR GetRtcDateTime
+    JSR CopyRtcDateTimeToPrv
     FALLTHROUGH_TO LB89C
 
 ;XY?0=&62
@@ -9072,13 +9072,13 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ; SFTODO: Don't these next two calls contain most of the logic we'd need to implement OSWORD &F?
 ;XY?0=&65
 ;OSWORD &49 (73) - Integra-B calls
-.LB8D8	  JSR WriteRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
+.LB8D8	  JSR CopyPrvTimeToRtc								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
             SEC
             RTS
 			
 ;XY?0=&66
 ;OSWORD &49 (73) - Integra-B calls
-.LB8DD	  JSR WriteRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
+.LB8DD	  JSR CopyPrvDateToRtc								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
             SEC
             RTS
 			
