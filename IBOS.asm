@@ -6776,7 +6776,7 @@ osfileBlock = L02EE
 ; 1st January being 0.
 ; ENHANCE: That's what this should do, there's a bug; see ENHANCE: comment below.
 ; SQUASH: This has only one caller
-.CalculateDaysBetween1stJanAndPrvDateSFTODOIsh
+.ConvertDateToRelativeDayNumber
 {
     XASSERT_USE_PRV1
     LDA #0:STA prvDateSFTODO4:STA prvDateSFTODO4 + 1
@@ -7592,10 +7592,10 @@ Options = transientDateSFTODO1
             JMP emitSpace
 }
 
-; SFTODO: "Ish" in name because I think this will be affected by the bug in CalculateDaysBetween1stJanAndPrvDateSFTODOIsh
+; SFTODO: "Ish" in name because I think this will be affected by the bug in ConvertDateToRelativeDayNumber
 ; SFTODO: This has only one caller
 ; Set prvDateSFTODO4 to be the 16-bit absolute day number of prvDate*, where 1st January 1900 is day 0.
-.CalculateAbsoluteDayNumber
+.ConvertDateToAbsoluteDayNumber
 {
     XASSERT_USE_PRV1
             LDA #0
@@ -7637,7 +7637,7 @@ Options = transientDateSFTODO1
 	  ; prvDC += yearsSince1900 DIV 4
             BCS LAE26 ; branch if we've overflowed SFTODO: seems a little pointless, we didn't check for overflow above so why only here? Just maybe this works out correctly, but I'm a little dubious.
 	  ; We have prvDC = yearsSince1900*daysPerYear + yearsSince1900 DIV 4 = days since January 1st 1900.
-            JSR CalculateDaysBetween1stJanAndPrvDateSFTODOIsh
+            JSR ConvertDateToRelativeDayNumber
             CLC
             LDA prvDateSFTODO4
             ADC prvDC
@@ -7645,7 +7645,7 @@ Options = transientDateSFTODO1
             LDA prvDateSFTODO4 + 1
             ADC prvDC + 1
             STA prvDateSFTODO4 + 1
-	  ; We have now (SFTODO: ignoring possible bug in CalculateDaysBetween1stJanAndPrvDateSFTODOIsh) calculated the number of days from January 1st 1900 to prvDate.
+	  ; We have now (SFTODO: ignoring possible bug in ConvertDateToRelativeDayNumber) calculated the number of days from January 1st 1900 to prvDate.
             BCS LAE26 ; branch if we've overflowed SFTODO: pointless? well, at least inconsistent/incomplete?
             RTS
 			
@@ -7655,7 +7655,7 @@ Options = transientDateSFTODO1
 }
 
 ; SFTODO: This has only one caller
-; SFTODO: I suspect this subroutine is (intended to be) the inverse of JSR CalculateAbsoluteDayNumber - yes, I haven't followed the logic through step by step but it looks very much like it
+; SFTODO: I suspect this subroutine is (intended to be) the inverse of JSR ConvertDateToAbsoluteDayNumber - yes, I haven't followed the logic through step by step but it looks very much like it
 .ConvertAbsoluteDayNumberToDate
 {
 daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
@@ -9138,7 +9138,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;XY?0=&6A
 ;OSWORD &49 (73) - Integra-B calls
 .LB8FC
-    JSR CalculateAbsoluteDayNumber
+    JSR ConvertDateToAbsoluteDayNumber
     CLC
     RTS
 			
