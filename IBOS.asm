@@ -701,6 +701,7 @@ ramselPrvs841 = ramselPrvs81 OR ramselPrvs4
 ; bits in the 6502 flags register (as stacked via PHP)
 flagC = &01
 flagZ = &02
+; SFTODO: DELETE flagI = &04
 flagV = &40
 
 ; Convenience macro to avoid the annoyance of writing this out every time.
@@ -8732,34 +8733,27 @@ column = prvC
 }
 
 {
-.SetAlarm   INY
-.LB61B      PHP
-            JSR parseAndValidateTime
-            BCC LB62D
-            PLP
-            BCC LB62A
-            PRVDIS								;switch out private RAM
-            JMP GenerateSyntaxErrorForTransientCommandIndex
+.SetAlarm
+    INY
+.LB61B
+    PHP
+    JSR parseAndValidateTime:BCC ParsedTimeOk
+    PLP:BCC LB62A
+    PRVDIS
+    JMP GenerateSyntaxErrorForTransientCommandIndex
 			
-.LB62A      JMP PrvDisBadTime
+.LB62A
+    JMP PrvDisBadTime
 
-.LB62D      PLP
-            JSR copyPrvAlarmToRtc
-            JSR FindNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (transientCmdPtr),Y
-            AND #CapitaliseMask                                                                                ; convert to upper case (imperfectly)
-            CMP #'R'
-            PHP
-            PLA
-            LSR A
-            LSR A
-            PHP
-            LDX #userRegAlarm
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            ASL A
-            PLP
-            ROR A
-            JMP TurnAlarmOn
+.ParsedTimeOk
+    PLP
+    JSR copyPrvAlarmToRtc
+    JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'R'
+    PHP:PLA:LSR A:LSR A:PHP:ASSERT flagZ = 1 << 1 ; get Z flag into C and save
+    LDX #userRegAlarm:JSR ReadUserReg:ASL A
+    PLP ; restore saved Z-in-C flag
+    ROR A
+    JMP TurnAlarmOn
 			
 ;*ALARM Command
 .^alarm
