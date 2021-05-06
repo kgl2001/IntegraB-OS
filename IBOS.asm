@@ -154,7 +154,7 @@ userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7: Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX / b4: automatic daylight saving time adjust SFTODO: Should rename this now we've discovered b4
 ; SFTODO: b4 of userRegOsModeShx doesn't seem to be exposed via *CONFIGURE/*STATUS - should it be? Might be interesting to try setting this bit manually and seeing if it works. If it's not going to be exposed we could save some code by deleting the support for it.
-userRegAlarm = &33 ; SFTODO? bits 0-5??
+userRegAlarm = &33 ; SFTODO? bits 0-5?? SFTODO: bit 7 seems to be the "R" flag from *ALARM command ("repeat"???)
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegBankWriteProtectStatus = &38 ; 2 bytes, 1 bit per bank
@@ -8558,13 +8558,13 @@ EndIndex = transientDateSFTODO2 ; exclusive
     EQUB &80
     EQUS "Mismatch", &00
 
-.PrvDisBadDate
+.PrvDisGenerateBadDate
     PRVDIS
     JSR RaiseError
     EQUB &80
     EQUS "Bad date", &00
 
-.PrvDisBadTime
+.PrvDisGenerateBadTime
     PRVDIS
     JSR RaiseError
     EQUB &80
@@ -8594,7 +8594,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
 .setTime    INY
             JSR parseAndValidateTime
             BCC parseOk
-            JMP PrvDisBadTime								;Error with Bad time
+            JMP PrvDisGenerateBadTime								;Error with Bad time
 .parseOk    JSR WriteRtcTime								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
             JMP PrvDisExitAndClaimServiceCall								;switch out private RAM and exit
 }
@@ -8611,11 +8611,11 @@ EndIndex = transientDateSFTODO2 ; exclusive
             STA prvDateSFTODO2							;store #&40 to address &8222, updating value set by initDateSFTODOS
             JSR DateCalculation
             BCC calculationOk
-            BVS PrvDisBadDateIndirect
+            BVS PrvDisGenerateBadDateIndirect
             JMP PrvDisMismatch								;Error with Mismatch
 
-.PrvDisBadDateIndirect
-            JMP PrvDisBadDate								;Error with Bad Date
+.PrvDisGenerateBadDateIndirect
+            JMP PrvDisGenerateBadDate								;Error with Bad Date
 
 .calculationOk
             LDA #lo(prvDateBuffer)
@@ -8631,7 +8631,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
 .setDate    INY
             JSR LB2F5
             BCC LB55B
-            JMP PrvDisBadDate								;Error with Bad date
+            JMP PrvDisGenerateBadDate								;Error with Bad date
 			
 .LB55B      JSR writeRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
             JMP PrvDisexitSc								;switch out private RAM and exit
@@ -8647,11 +8647,11 @@ column = prvC
 	  ; SFTODO: Can we share the next few lines of code with *DATE?
             JSR DateCalculation
             BCC calculationOk
-            BVS PrvDisBadDateIndirect
+            BVS PrvDisGenerateBadDateIndirect
             JMP PrvDisMismatch
 
-.PrvDisBadDateIndirect
-            JMP PrvDisBadDate
+.PrvDisGenerateBadDateIndirect
+            JMP PrvDisGenerateBadDate
 
 .calculationOk
 	  ; Output the month name and year centred (with respect to the calendar width as a whole, not the string).
@@ -8743,16 +8743,15 @@ column = prvC
     JMP GenerateSyntaxErrorForTransientCommandIndex
 			
 .LB62A
-    JMP PrvDisBadTime
+    JMP PrvDisGenerateBadTime
 
 .ParsedTimeOk
     PLP
     JSR copyPrvAlarmToRtc
     JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'R'
     PHP:PLA:LSR A:LSR A:PHP:ASSERT flagZ = 1 << 1 ; get Z flag into C and save
-    LDX #userRegAlarm:JSR ReadUserReg:ASL A
-    PLP ; restore saved Z-in-C flag
-    ROR A
+    LDX #userRegAlarm:JSR ReadUserReg
+    ASL A:PLP:ROR A ; overwrite b7 of userRegAlarm value with saved Z flag, i.e. 1 iff 'R' seen
     JMP TurnAlarmOn
 			
 ;*ALARM Command
