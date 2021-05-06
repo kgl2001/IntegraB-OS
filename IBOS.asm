@@ -7306,10 +7306,10 @@ Options = transientDateSFTODO1
 .ShowMinutes
     LDX #0 ; X is formatting option for emitADecimalFormatted; 0 means "00" style.
     LDA Options
-    CMP #prvDateSFTODO2UseHours:BCS LAC34
-    CMP #prvDateSFTODO212Hour:BEQ LAC34
+    CMP #prvDateSFTODO2UseHours:BCS ShowMinutesAs00
+    CMP #prvDateSFTODO212Hour:BEQ ShowMinutesAs00
     TAX ; use Options (0, 2 or 3) as formatting option for emitADecimalFormatted
-.LAC34
+.ShowMinutesAs00
     LDA prvDateMinutes:JSR emitADecimalFormatted
     LDA Options
     CMP #prvDateSFTODO2SFTODOSeparator:BCC separatorColon
