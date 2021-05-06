@@ -596,7 +596,7 @@ prvDateSFTODO1 = prvOswordBlockCopy + 1 ; SFTODO: Use as a bitfield controlling 
 prvDateSFTODO1b = prvOswordBlockCopy + 1 ; SFTODO: Use as a copy of "final" transientDateBufferIndex
 prvDateSFTODO2 = prvOswordBlockCopy + 2
     ; The low four bits of prvDateSFTODO2 control time formatting. They're not quite a bitmap
-    ; but in practice this is a reasonable way to think about them.
+    ; but in practice this is a reasonable way to think about them. All-bits-zero means "show nothing".
     prvDateSFTODO212Hour = 1<<0 ; use 12 hour clock if set
     prvDateSFTODO2NoLeadingZero = 1<<1 ; use space instead of leading zero on hours if set
     prvDateSFTODO2UseHours = 1<<2 ; show hours iff set
@@ -7264,9 +7264,9 @@ ENDIF
             RTS
 }
 
-; SFTODOWIP
-; SFTODOWIP COMMENT
-; This roughly emits "<hour><minute><second><time suffix>"
+; Emit hours/minutes/seconds to the date buffer with formatting controlled by prvDateSFTODO2. C
+; is clear on exit iff something was emitted.
+; SFTODOWIP COMMENT - CAN PROBABLY DELETE THE BELOW NOW I HAVE prvDateSFTODo2* BIT CONSTANTS, BUT KEEP AROUND FOR NOW
 ; prvDateSFTODO2:
 ;     b0..3: 0 => return with C set
 ;            <4 => don't emit hour or time suffix
@@ -7277,7 +7277,7 @@ ENDIF
 ;            <12 (and >=8) => don't emit seconds
 ;	   >=12 => use '/' after minute
 ; Normal return has C clear
-.emitTimeToDateBuffer ; SFTODO: "time" as in "hour/min/sec, not day of month etc"
+.emitTimeToDateBuffer
 {
 Options = transientDateSFTODO1
 
