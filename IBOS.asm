@@ -597,6 +597,7 @@ prvDateSFTODO1b = prvOswordBlockCopy + 1 ; SFTODO: Use as a copy of "final" tran
 prvDateSFTODO2 = prvOswordBlockCopy + 2
     ; The low four bits of prvDateSFTODO2 control time formatting. They're not quite a bitmap
     ; but in practice this is a reasonable way to think about them. All-bits-zero means "show nothing".
+    prvDateSFTODO2TimeMask = %00001111
     prvDateSFTODO212Hour = 1<<0 ; use 12 hour clock if set
     prvDateSFTODO2NoLeadingZero = 1<<1 ; use space instead of leading zero on hours if set
     prvDateSFTODO2UseHours = 1<<2 ; show hours iff set
@@ -6449,7 +6450,7 @@ osfileBlock = L02EE
     XASSERT_USE_PRV1
     LDA #&05:STA prvDateSFTODO0 ; SFTODO: Is this really used? It just possibly is visible to caller via some Integra-B oswords...
     LDA #&84:STA prvDateSFTODO1 ; SFTODO: b7 of this is tested e.g. at LAD7F
-    LDA #&44:STA prvDateSFTODO2
+    LDA #&40 OR prvDateSFTODO2UseHours:STA prvDateSFTODO2
     LDA #&EB:STA prvDateSFTODO3
     RTS
 }
@@ -7282,7 +7283,7 @@ ENDIF
 Options = transientDateSFTODO1
 
     XASSERT_USE_PRV1
-    LDA prvDateSFTODO2:AND #&0F:STA Options ; mask off just the time part of prvDateSFTODO2
+    LDA prvDateSFTODO2:AND #prvDateSFTODO2TimeMask:STA Options
     BNE SomethingToDo ; SQUASH: BEQ to a nearby SEC:RTS?
     SEC
     RTS
@@ -8651,7 +8652,7 @@ column = prvC
             STA prvDateSFTODO0 ; SFTODO: Is this used? I suspect it may be used as a return value to a caller via an Integra-B OSWORD but not sure
             LDA #&40 ; SFTODO: use just a single space as separator between (empty) time and the date?
             STA prvDateSFTODO1
-            LDA #&00 ; SFTODO: don't emit time?
+            LDA #&00 ; SFTODO: don't emit time? not sure what high nybble means atm
             STA prvDateSFTODO2
             LDA #&F8 ; SFTODO: just emit month name (capitalised) and 4-digit year?
             STA prvDateSFTODO3
@@ -8769,7 +8770,7 @@ column = prvC
 			
 .ShowAlarm
     LDA #&40:STA prvDateSFTODO1
-    LDA #&04:STA prvDateSFTODO2
+    LDA #prvDateSFTODO2UseHours:STA prvDateSFTODO2
     LDA #&00:STA prvDateSFTODO3
     LDA #&FF:STA prvDateSFTODO7:STA prvDateSFTODO6
     LDA #lo(prvDateBuffer):STA prvDateSFTODO4:LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
