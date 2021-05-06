@@ -6544,7 +6544,7 @@ osfileBlock = L02EE
     LDX #rtcRegA:JSR ReadRtcRam:ORA #rtcRegADV2 OR rtcRegADV1 OR rtcRegADV0:JSR WriteRtcRam
     ; Force SET (set mode), DM (binary mode) and 2412 (24 hour mode) on in register B and
     ; force SQWE (square wave enable) and DSE (auto daylight savings adjust) off.
-    LDX #rtcRegB:JSR ReadRtcRam
+    LDX #rtcRegB:JSR ReadRtcRam ; SQUASH: ASSERT rtcRegA + 1 == rtcRegB:INX
     AND_NOT rtcRegBSET OR rtcRegBSQWE OR rtcRegBDM OR rtcRegB2412 OR rtcRegBDSE
     ORA #rtcRegBSET OR rtcRegBDM OR rtcRegB2412
     JSR WriteRtcRam
@@ -8395,7 +8395,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
             TAX
             LDA LB344,X								;read forth byte from 2 byte lookup table
             STA prv82+&74								;save at &8274
-            LDX #&0A								;Select 'Register A' register on RTC: Register &0A
+            LDX #rtcRegA
             JSR ReadRtcRam								;Read data from RTC memory location X into A
             AND #&F0
             ORA #&0E
@@ -8453,7 +8453,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
             AND_NOT rtcRegBPIE OR rtcRegBAIE
             ORA prv82+&76
             JSR WriteRtcRam								;Write data from A to RTC memory location X
-            LDX #&0A								;Select 'Register A' register on RTC: Register &0A
+            LDX #rtcRegA
             JSR ReadRtcRam								;Read data from RTC memory location X into A
             AND #&F0
             JSR WriteRtcRam								;Write data from A to RTC memory location X
