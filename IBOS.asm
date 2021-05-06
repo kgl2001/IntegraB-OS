@@ -595,7 +595,7 @@ prvDateSFTODOQCenturyYearMonthDayOfMonth = prvDateSFTODOQCentury OR prvDateSFTOD
 prvDateSFTODO1 = prvOswordBlockCopy + 1 ; SFTODO: Use as a bitfield controlling formatting
 prvDateSFTODO1b = prvOswordBlockCopy + 1 ; SFTODO: Use as a copy of "final" transientDateBufferIndex
 prvDateSFTODO2 = prvOswordBlockCopy + 2
-;    prvDateSFTODO
+    prvDateSFTODO212Hour = 1<<0 ; use 12 hour clock if set
 prvDateSFTODO3 = prvOswordBlockCopy + 3
 prvDateSFTODO4 = prvOswordBlockCopy + 4 ; 2 bytes SFTODO!?
 prvDateSFTODO6 = prvOswordBlockCopy + 6 ; SFTODO: I am thinking 6/7 are actually the high word of the 32-bit address at SFTODO4, and so we should probably refer to them as SFTODO4+2/3
@@ -7273,41 +7273,33 @@ ENDIF
 .emitTimeToDateBuffer ; SFTODO: "time" as in "hour/min/sec, not day of month etc"
 {
 Options = transientDateSFTODO1
+
     XASSERT_USE_PRV1
-    LDA prvDateSFTODO2:AND #&0F:STA Options
-    BNE LABF5
+    LDA prvDateSFTODO2:AND #&0F:STA Options ; mask off just the time part of prvDateSFTODO2
+    BNE SomethingToDo ; SQUASH: BEQ to a nearby SEC:RTS?
     SEC
     RTS
-			
-.LABF5
-    LDA Options
-    CMP #&04
-    BCC SFTODOSTEP2MAYBE								;branch if <4
-    LDX #&00
+.SomethingToDo
+    LDA Options:CMP #&04:BCC SFTODOSTEP2MAYBE
+    LDX #0
     AND #&02
     EOR #&02
     BNE LAC05
     INX
     INX
 .LAC05
-    LDA Options
-    AND #&01
-    PHP
-    LDA prvDateHours								;read Hours
-    PLP
-    BEQ hoursInA
-    LDA prvDateHours								;read Hours
-    BEQ zeroHours								;check for 00hrs. If so, convert to 12
-    CMP #13 								;
-    BCC hoursInA								;check for 13hrs and above
-    SBC #12 								;if so, subtract 12
-    BCS hoursInA
-.zeroHours
-    LDA #12									;12am
-.hoursInA
-    JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
-    LDA #':'
-    JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+    LDA Options:AND #prvDateSFTODO212Hour:PHP
+    LDA prvDateHours
+    PLP:BEQ HoursInA
+    ; Convert 24 hour to 12 hour time.
+    LDA prvDateHours:BEQ ZeroHours
+    CMP #13:BCC HoursInA
+    SBC #12:BCS HoursInA ; always branch
+.ZeroHours
+    LDA #12 ; 12am
+.HoursInA
+    JSR emitADecimalFormatted
+    LDA #':':JSR emitAToDateBuffer
 .SFTODOSTEP2MAYBE
     LDX #&00
     LDA Options
