@@ -6439,15 +6439,11 @@ osfileBlock = L02EE
 .initDateSFTODOS
 {
     XASSERT_USE_PRV1
-            LDA #&05
-            STA prvDateSFTODO0 ; SFTODO: Is this really used? It just possibly is visible to caller via some Integra-B oswords...
-            LDA #&84
-            STA prvDateSFTODO1 ; SFTODO: b7 of this is tested e.g. at LAD7F
-            LDA #&44
-            STA prvDateSFTODO2
-            LDA #&EB
-            STA prvDateSFTODO3
-            RTS
+    LDA #&05:STA prvDateSFTODO0 ; SFTODO: Is this really used? It just possibly is visible to caller via some Integra-B oswords...
+    LDA #&84:STA prvDateSFTODO1 ; SFTODO: b7 of this is tested e.g. at LAD7F
+    LDA #&44:STA prvDateSFTODO2
+    LDA #&EB:STA prvDateSFTODO3
+    RTS
 }
 
 ; Multiply 8-bit values prvA and prvB to give a 16-bit result at prvDC.
