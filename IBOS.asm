@@ -8811,7 +8811,7 @@ column = prvC
     LDA prvOswordBlockOrigAddr + 1:STA oswdbtY
     LDA #&0E:STA oswdbtA
     PRVDIS
-    JMP RestoreTransientZPAndExitSC
+    JMP RestoreTransientZPAndExitAndClaimServiceCall
 }
 			
 ;OSWORD &49 (73) - Integra-B calls
@@ -8831,7 +8831,7 @@ column = prvC
     LDA prvOswordBlockOrigAddr + 1:STA oswdbtY
     LDA #&49:STA oswdbtA
     PRVDIS
-.^RestoreTransientZPAndExitSC
+.^RestoreTransientZPAndExitAndClaimServiceCall
     JSR RestoreTransientZP
     JMP ExitAndClaimServiceCall
 }
