@@ -6445,7 +6445,7 @@ osfileBlock = L02EE
 }
 
 ;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223, but why???
-.initDateSFTODOS
+.InitDateSFTODOS
 {
     XASSERT_USE_PRV1
     LDA #&05:STA prvDateSFTODO0 ; SFTODO: Is this really used? It just possibly is visible to caller via some Integra-B oswords...
@@ -7267,7 +7267,13 @@ ENDIF
 
 ; Emit hours/minutes/seconds to the date buffer with formatting controlled by prvDateSFTODO2. C
 ; is clear on exit iff something was emitted.
-; SFTODO: Is most of this complexity actually used? Superficially the code always seems to call this with just prvDateSFTODO2UseHours set and everything else clear, but I suspect I'm missing something.
+;
+; SQUASH: I believe most of this complexity is only used via OSWORD &49 with XY?0=&62; all the
+; internal callers seem to have prvDateSFTODO2 AND prvDateSFTODO2TimeMask ==
+; prvDateSFTODO2UseHours.
+; SFTODO: It would perhaps be nice to verify my analysis of prvDateSFTODO2* flags by invoking
+; that OSWORD call from a test program.
+
 ; SFTODOWIP COMMENT - CAN PROBABLY DELETE THE BELOW NOW I HAVE prvDateSFTODo2* BIT CONSTANTS, BUT KEEP AROUND FOR NOW
 ; prvDateSFTODO2:
 ;     b0..3: 0 => return with C set
@@ -7279,7 +7285,7 @@ ENDIF
 ;            <12 (and >=8) => don't emit seconds
 ;	   >=12 => use '/' after minute
 ; Normal return has C clear
-.emitTimeToDateBuffer
+.EmitTimeToDateBuffer
 {
 Options = transientDateSFTODO1
 
@@ -7534,7 +7540,7 @@ Options = transientDateSFTODO1
 
 ;read buffer address from &8224 and store at &A8
 ;set buffer pointer to 0
-.initDateBufferAndEmitTimeAndDate
+.InitDateBufferAndEmitTimeAndDate
 {
     XASSERT_USE_PRV1
     LDA prvDateSFTODO4:STA transientDateBufferPtr:LDA prvDateSFTODO4 + 1:STA transientDateBufferPtr + 1
@@ -7548,13 +7554,13 @@ Options = transientDateSFTODO1
 ; SFTODO: Next line implies b7 of prvDateSFTODO1 "mainly" controls ordering (whether time or date comes first)
 .EmitTimeAndDateToDateBuffer
     BIT prvDateSFTODO1:BMI DateFirst
-    JSR emitTimeToDateBuffer
+    JSR EmitTimeToDateBuffer
     JSR emitSeparatorToDateBuffer
     JMP emitDateToDateBuffer
 .DateFirst
     JSR emitDateToDateBuffer
     JSR emitSeparatorToDateBuffer
-    JMP emitTimeToDateBuffer
+    JMP EmitTimeToDateBuffer
 }
 
 ; SFTODO WIP COMMENT
@@ -8566,7 +8572,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
             LDA (transientCmdPtr),Y							;read first character of command parameter
             CMP #'='								;check for '='
             BEQ setTime								;if '=' then set time, else read time
-            JSR initDateSFTODOS							;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
+            JSR InitDateSFTODOS							;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
             LDA #&FF
             STA prvDateSFTODO7							;store #&FF to address &8227
             STA prvDateSFTODO6							;store #&FF to address &8226
@@ -8575,7 +8581,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
             LDA #hi(prvDateBuffer)
             STA prvDateSFTODO4 + 1							;store #&80 to address &8225
             JSR GetRtcDateTime							;read TIME & DATE information from RTC and store in Private RAM (&82xx)
-            JSR initDateBufferAndEmitTimeAndDate								;format text for output to screen?
+            JSR InitDateBufferAndEmitTimeAndDate								;format text for output to screen?
             JSR printDateBuffer								;output TIME & DATE data from address &8000 to screen
 .PrvDisExitAndClaimServiceCall
             PRVDIS								;switch out private RAM
@@ -8595,10 +8601,10 @@ EndIndex = transientDateSFTODO2 ; exclusive
             LDA (transientCmdPtr),Y							;read first character of command parameter
             CMP #'='								;check for '='
             BEQ setDate								;if '=' then set date, else read date
-            JSR initDateSFTODOS								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
+            JSR InitDateSFTODOS								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
             LDA prvDateSFTODO2 ; SFTODO: It would be shorter just to do LDA #xx:STA prvDateSFTODO2
             AND #&F0
-            STA prvDateSFTODO2							;store #&40 to address &8222, updating value set by initDateSFTODOS
+            STA prvDateSFTODO2							;store #&40 to address &8222, updating value set by InitDateSFTODOS
             JSR DateCalculation
             BCC calculationOk
             BVS PrvDisGenerateBadDateIndirect
@@ -8612,7 +8618,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
             STA prvDateSFTODO4							;store #&00 to address &8224
             LDA #hi(prvDateBuffer)
             STA prvDateSFTODO4 + 1							;store #&80 to address &8225
-            JSR initDateBufferAndEmitTimeAndDate								;format text for output to screen?
+            JSR InitDateBufferAndEmitTimeAndDate								;format text for output to screen?
             JSR printDateBuffer								;output DATE data from address &8000 to screen
 .PrvDisexitSc
             PRVDIS								;switch out private RAM
@@ -8657,7 +8663,7 @@ column = prvC
             STA prvDateSFTODO2
             LDA #&F8 ; SFTODO: just emit month name (capitalised) and 4-digit year?
             STA prvDateSFTODO3
-            JSR initDateBufferAndEmitTimeAndDate
+            JSR InitDateBufferAndEmitTimeAndDate
             SEC
             LDA #23
             SBC transientDateBufferIndex
@@ -8776,7 +8782,7 @@ column = prvC
     LDA #&FF:STA prvDateSFTODO7:STA prvDateSFTODO6
     LDA #lo(prvDateBuffer):STA prvDateSFTODO4:LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
     JSR copyRtcAlarmToPrv
-    JSR initDateBufferAndEmitTimeAndDate
+    JSR InitDateBufferAndEmitTimeAndDate
     DEC prvDateSFTODO1b:JSR printDateBuffer ; DEC chops off trailing vduCr
     LDA #'/':JSR OSWRCH:JSR printSpace
     LDX #rtcRegB:JSR ReadRtcRam:AND #rtcRegBAIE:JSR PrintOnOff
@@ -8972,10 +8978,10 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     JSR GetRtcDateTime
 .^oswd0eReadStringInternal
     XASSERT_USE_PRV1
-    JSR initDateSFTODOS
+    JSR InitDateSFTODOS
     LDA prvOswordBlockOrigAddr:STA prvDateSFTODO4
     LDA prvOswordBlockOrigAddr + 1:STA prvDateSFTODO4 + 1
-    JSR initDateBufferAndEmitTimeAndDate
+    JSR InitDateBufferAndEmitTimeAndDate
     SEC
     RTS
 }
@@ -9077,7 +9083,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     ; SQUASH: We probably do the next two lines a lot and could factor them out.
     LDA #lo(prvDateBuffer):STA prvDateSFTODO4
     LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
-    JSR initDateBufferAndEmitTimeAndDate
+    JSR InitDateBufferAndEmitTimeAndDate
     JMP CopyPrvDateBuffer ; SQUASH: rearrange and fall through?
 			
 ;XY?0=&68
