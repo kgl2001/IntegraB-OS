@@ -6426,14 +6426,13 @@ osfileBlock = L02EE
 .printDateBuffer
 {
     XASSERT_USE_PRV1
-            LDX #&00
-.LA5E0      LDA prvDateBuffer,X
-            BEQ LA5EE
-            JSR OSASCI
-            INX
-            CPX prvDateSFTODO1b
-            BCC LA5E0
-.LA5EE      RTS
+    LDX #0
+.Loop
+    LDA prvDateBuffer,X:BEQ Rts
+    JSR OSASCI
+    INX:CPX prvDateSFTODO1b:BCC Loop
+.Rts
+    RTS
 }
 
 ;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223, but why???
@@ -8788,8 +8787,7 @@ column = prvC
     LDA #lo(prvDateBuffer):STA prvDateSFTODO4:LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
     JSR copyRtcAlarmToPrv
     JSR initDateBufferAndEmitTimeAndDate
-    DEC prvDateSFTODO1 ; SFTODO: does this have any effect?
-    JSR printDateBuffer
+    DEC prvDateSFTODO1b:JSR printDateBuffer ; SFTODO: DEC chops off last character? If so, what is that?
     LDA #'/':JSR OSWRCH:JSR printSpace
     LDX #rtcRegB:JSR ReadRtcRam:AND #rtcRegBAIE:JSR PrintOnOff
     LDX #userRegAlarm:JSR ReadUserReg:AND #userRegAlarmRBit:BEQ NewlineAndFinish
