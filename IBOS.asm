@@ -6675,26 +6675,22 @@ osfileBlock = L02EE
 
 .SFTODOALARMSOMETHING
 {
-            BCS LA7C2
-            LDX #userRegAlarm
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            AND #&40
-            LSR A
-            STA L00AE
-            LDX #rtcRegB
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            ORA #rtcRegBSQWE
-            ORA L00AE
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-.ClcRts      CLC
-            RTS
+Tmp = TransientZP + 6
 
-.LA7C2      LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            AND #rtcRegBSQWE
-            BNE ClcRts
-            SEC
-            RTS
+    BCS LA7C2
+    LDX #userRegAlarm:JSR ReadUserReg:AND #&40:ASSERT &40 >> 1 == rtcRegBAIE:LSR A:STA Tmp ; SFTODO: MAGIC
+    LDX #rtcRegB:JSR ReadRtcRam:ORA #rtcRegBSQWE:ORA L00AE:JSR WriteRtcRam
+.ClcRts
+    CLC
+    RTS
+
+.LA7C2
+    LDX #rtcRegB
+    JSR ReadRtcRam
+    AND #rtcRegBSQWE
+    BNE ClcRts
+    SEC
+    RTS
 
 ; Return with C set iff prvDate{Century,Year} is a leap year.
 .^TestLeapYear
