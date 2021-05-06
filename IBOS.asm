@@ -7177,7 +7177,7 @@ unitsChar = prv82 + &4F
             CMP #'1'								;check for '1'
             BNE not1x								;branch if not 1.
 .thSuffix   LDX #&00								;if the number is in 10s, then always 'th'
-            JMP suffixInX ; SFTODO: Could BEQ ; always
+            JMP SuffixInX ; SFTODO: Could BEQ ; always
 			
 .not1x      LDA unitsChar								;get 1s
             CMP #'4'								;check if '4'
@@ -7185,7 +7185,7 @@ unitsChar = prv82 + &4F
             AND #&0F								;mask lower 4 bits, converting ASCII digit to binary
             ASL A									;x2 - 1 becomes 2, 2 becomes 4, 3 becomes 6
             TAX
-.suffixInX  PLP									;restore carry flag. Used to select capitalisation
+.SuffixInX  PLP									;restore carry flag. Used to select capitalisation
             LDY transientDateBufferIndex						;get buffer pointer
             LDA dateSuffixes,X							;get 1st character from table + offset
             BCC noCaps1								;don't capitalise
@@ -7229,17 +7229,16 @@ unitsChar = prv82 + &4F
 }
 
 IF FALSE
-; SFTODO: EmitAmPmForHourA is a bit more complex than necessary - here's a shorter alternative implementation, not tested!
+; SQUASH: EmitAmPmForHourA is a bit more complex than necessary - here's a shorter alternative implementation, not tested!
 .EmitAmPmForHourA
 {
-	LDX #'a'
-	TAY:BEQ suffixInX 								;branch if 00 hrs ('am')
-	CMP #13
-	BCC suffixInX								;branch if A<13 (hrs) ('am')
-	LDX #'p'									;('pm')
-.suffixInX
-	TXA:JSR EmitAToDateBuffer
-	LDA #'m':FALLTHROUGH_TO EmitAToDateBuffer
+    LDX #'a'
+    TAY:BEQ SuffixInX ; branch if 00 hrs ('am')
+    CMP #13:BCC SuffixInX ; branch if A<13 (hrs) ('am')
+    LDX #'p' ; ('pm')
+.SuffixInX
+    TXA:JSR EmitAToDateBuffer
+    LDA #'m':FALLTHROUGH_TO EmitAToDateBuffer
 }
 ENDIF
 			
