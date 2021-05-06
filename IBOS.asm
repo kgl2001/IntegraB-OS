@@ -595,6 +595,7 @@ prvDateSFTODOQCenturyYearMonthDayOfMonth = prvDateSFTODOQCentury OR prvDateSFTOD
 prvDateSFTODO1 = prvOswordBlockCopy + 1 ; SFTODO: Use as a bitfield controlling formatting
 prvDateSFTODO1b = prvOswordBlockCopy + 1 ; SFTODO: Use as a copy of "final" transientDateBufferIndex
 prvDateSFTODO2 = prvOswordBlockCopy + 2
+;    prvDateSFTODO
 prvDateSFTODO3 = prvOswordBlockCopy + 3
 prvDateSFTODO4 = prvOswordBlockCopy + 4 ; 2 bytes SFTODO!?
 prvDateSFTODO6 = prvOswordBlockCopy + 6 ; SFTODO: I am thinking 6/7 are actually the high word of the 32-bit address at SFTODO4, and so we should probably refer to them as SFTODO4+2/3
@@ -7272,73 +7273,81 @@ ENDIF
 .emitTimeToDateBuffer ; SFTODO: "time" as in "hour/min/sec, not day of month etc"
 {
     XASSERT_USE_PRV1
-            LDA prvDateSFTODO2								;&44 for OSWORD 0E
-            AND #&0F								;&04 for OSWORD 0E
-            STA transientDateSFTODO1
-            BNE LABF5
-            SEC
-            RTS
+    LDA prvDateSFTODO2								;&44 for OSWORD 0E
+    AND #&0F								;&04 for OSWORD 0E
+    STA transientDateSFTODO1
+    BNE LABF5
+    SEC
+    RTS
 			
-.LABF5      LDA transientDateSFTODO1
-            CMP #&04
-            BCC SFTODOSTEP2MAYBE								;branch if <4
-            LDX #&00
-            AND #&02
-            EOR #&02
-            BNE LAC05
-            INX
-            INX
-.LAC05      LDA transientDateSFTODO1
-            AND #&01
-            PHP
-            LDA prvDateHours								;read Hours
-            PLP
-            BEQ hoursInA
-            LDA prvDateHours								;read Hours
-            BEQ zeroHours								;check for 00hrs. If so, convert to 12
-            CMP #13 								;
-            BCC hoursInA								;check for 13hrs and above
-            SBC #12 								;if so, subtract 12
-            BCS hoursInA
-.zeroHours  LDA #12									;12am
-.hoursInA   JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
-            LDA #':'
-            JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-.SFTODOSTEP2MAYBE      LDX #&00
-            LDA transientDateSFTODO1
-            CMP #&04
-            BCS LAC34								;branch if >=4
-            CMP #&01
-            BEQ LAC34								;branch if =1
-            TAX
-.LAC34      LDA prvDateMinutes							;read Minutes
-            JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
-            LDA transientDateSFTODO1
-            CMP #&08
-            BCC separatorColon
-            CMP #&0C
-            BCC SFTODOMAYBESTEP3
-            LDA #'/'
-            BNE separatorInA ; always branch
+.LABF5
+    LDA transientDateSFTODO1
+    CMP #&04
+    BCC SFTODOSTEP2MAYBE								;branch if <4
+    LDX #&00
+    AND #&02
+    EOR #&02
+    BNE LAC05
+    INX
+    INX
+.LAC05
+    LDA transientDateSFTODO1
+    AND #&01
+    PHP
+    LDA prvDateHours								;read Hours
+    PLP
+    BEQ hoursInA
+    LDA prvDateHours								;read Hours
+    BEQ zeroHours								;check for 00hrs. If so, convert to 12
+    CMP #13 								;
+    BCC hoursInA								;check for 13hrs and above
+    SBC #12 								;if so, subtract 12
+    BCS hoursInA
+.zeroHours
+    LDA #12									;12am
+.hoursInA
+    JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+    LDA #':'
+    JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+.SFTODOSTEP2MAYBE
+    LDX #&00
+    LDA transientDateSFTODO1
+    CMP #&04
+    BCS LAC34								;branch if >=4
+    CMP #&01
+    BEQ LAC34								;branch if =1
+    TAX
+.LAC34
+    LDA prvDateMinutes							;read Minutes
+    JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+    LDA transientDateSFTODO1
+    CMP #&08
+    BCC separatorColon
+    CMP #&0C
+    BCC SFTODOMAYBESTEP3
+    LDA #'/'
+    BNE separatorInA ; always branch
 .separatorColon
-	  LDA #':'
+    LDA #':'
 .separatorInA
-	  JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-            LDX #&00
-            LDA prvDateSeconds							;read seconds
-            JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
-.SFTODOMAYBESTEP3      LDA transientDateSFTODO1
-            CMP #&04
-            BCC LAC6C
-            LDA transientDateSFTODO1
-            AND #&01
-            BEQ LAC6C
-            LDA #' '
-            JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-            LDA prvDateHours								;read hours
-            JSR emitTimeSuffixForA								;write am / pm to
-.LAC6C      CLC
-            RTS
+    JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+    LDX #&00
+    LDA prvDateSeconds							;read seconds
+    JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+.SFTODOMAYBESTEP3
+    LDA transientDateSFTODO1
+    CMP #&04
+    BCC LAC6C
+    LDA transientDateSFTODO1
+    AND #&01
+    BEQ LAC6C
+    LDA #' '
+    JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+    LDA prvDateHours								;read hours
+    JSR emitTimeSuffixForA								;write am / pm to
+.LAC6C
+    CLC
+    RTS
 }
 
 ;Separators for Time Display? SFTODO: seems probable, need to update this comment when it becomes clear
