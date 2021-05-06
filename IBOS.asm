@@ -7264,7 +7264,7 @@ ENDIF
 ; SFTODO: It would perhaps be nice to verify my analysis of prvDateSFTODO2* flags by invoking
 ; that OSWORD call from a test program.
 
-; SFTODOWIP COMMENT - CAN PROBABLY DELETE THE BELOW NOW I HAVE prvDateSFTODo2* BIT CONSTANTS, BUT KEEP AROUND FOR NOW
+; SFTODOWIP COMMENT - CAN PROBABLY DELETE THE BELOW NOW I HAVE prvDateSFTODO2* BIT CONSTANTS, BUT KEEP AROUND FOR NOW
 ; prvDateSFTODO2:
 ;     b0..3: 0 => return with C set
 ;            <4 => don't emit hour or time suffix
