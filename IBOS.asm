@@ -7252,17 +7252,17 @@ IF FALSE
 }
 ENDIF
 			
-;&AA stores the buffer address offset
-;&00A8 stores the address of buffer address
-;this code saves the contents of A to buffer address + buffer address offset
 {
+; Store A in transientDateBuffer at offset transientDateBufferIndex, incrementing it afterwards.
 .^EmitAToDateBuffer
-.LABE2      LDY transientDateBufferIndex								;read buffer pointer
+    LDY transientDateBufferIndex
+
+; Store A in transientDateBuffer at offset Y, incrementing it and setting
+; transientDateBufferIndex to Y afterwards.
 .^EmitAToDateBufferUsingY
-.LABE4      STA (transientDateBufferPtr),Y								;save contents of A to Buffer Address+Y
-            INY									;increase buffer pointer
-            STY transientDateBufferIndex								;save buffer pointer
-            RTS
+    STA (transientDateBufferPtr),Y
+    INY:STY transientDateBufferIndex
+    RTS
 }
 
 ; Emit hours/minutes/seconds to the date buffer with formatting controlled by prvDateSFTODO2. C
