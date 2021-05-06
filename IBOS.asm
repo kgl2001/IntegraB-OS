@@ -6536,8 +6536,8 @@ osfileBlock = L02EE
     JMP Nop3 ; SQUASH: could we just move Nop3 here and fall through? But this is hardware and maybe the delay is very precisely calibrated...
 }
 
-;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
-; SFTODO: Document this also updates DSE?
+; Copy prvDate{Hours,Minutes,Seconds} to the RTC time registers, and set the RTC DSE flag
+; according to userRegOsModeShx.
 .WriteRtcTime
 {
     ; Force DV2/1/0 in register A on; this temporarily stops the RTC clock while we set it.
@@ -6569,27 +6569,18 @@ osfileBlock = L02EE
     ORA prvTmp2
     JMP WriteRtcRam
 }
-			
-;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
-.WriteRtcDate ; SFTODO: as in "not time" - maybe rename all this later?
+
+; Copy prvDate{DayOfWeek,DayOfMonth,Month,Year} to the RTC date registers and prvDateCentury to
+; userRegCentury.
+.WriteRtcDate
 {
     XASSERT_USE_PRV1
-            JSR WaitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
-            LDX #rtcRegDayOfWeek							;Select 'Day of Week' register on RTC: Register &06
-            LDA prvDateDayOfWeek							;Get 'Day of Week' from &822C
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            INX:ASSERT rtcRegDayOfWeek + 1 == rtcRegDayOfMonth		 		;Select 'Day of Month' register on RTC: Register &07
-            LDA prvDateDayOfMonth							;Get 'Day of Month' from &822B
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            INX:ASSERT rtcRegDayOfMonth + 1 == rtcRegMonth					;Select 'Month' register on RTC: Register &08
-            LDA prvDateMonth								;Get 'Month' from &822A
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            INX:ASSERT rtcRegMonth + 1 == rtcRegYear					;Select 'Year' register on RTC: Register &09
-            LDA prvDateYear								;Get 'Year' from &8229
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            LDX #userRegCentury
-            LDA prvDateCentury
-            JMP WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
+    JSR WaitOutRTCUpdate
+    LDX #rtcRegDayOfWeek:LDA prvDateDayOfWeek:JSR WriteRtcRam
+    INX:ASSERT rtcRegDayOfWeek + 1 == rtcRegDayOfMonth:LDA prvDateDayOfMonth:JSR WriteRtcRam
+    INX:ASSERT rtcRegDayOfMonth + 1 == rtcRegMonth:LDA prvDateMonth:JSR WriteRtcRam
+    INX:ASSERT rtcRegMonth + 1 == rtcRegYear:LDA prvDateYear:JSR WriteRtcRam
+    LDX #userRegCentury:LDA prvDateCentury:JMP WriteUserReg
 }
 
 ;Read 'Seconds', 'Minutes' & 'Hours' from RTC and Store in Private RAM (&82xx)
