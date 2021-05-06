@@ -6625,32 +6625,22 @@ osfileBlock = L02EE
             JMP defaultPrvDateCentury
 }
 
-;Read 'Sec Alarm', 'Min Alarm' & 'Hr Alarm' from RTC and Store in Private RAM (&82xx)
-.copyRtcAlarmToPrv
-{
+; Copy time in RTC alarm registers to prvDate{Hours,Minutes,Seconds}.
+.CopyRtcAlarmToPrv
     XASSERT_USE_PRV1
-            JSR WaitOutRTCUpdate							;Check if RTC Update in Progress, and wait if necessary
-            LDX #rtcRegAlarmSeconds							;Select 'Sec Alarm' register on RTC: Register &01
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            STA prvDateSeconds							;Store 'Sec Alarm' at &822F
-            LDX #rtcRegAlarmMinutes							;Select 'Min Alarm' register on RTC: Register &03
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            STA prvDateMinutes							;Store 'Min Alarm' at &822E
-            LDX #rtcRegAlarmHours							;Select 'Hr Alarm' register on RTC: Register &05
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            STA prvDateHours								;Store 'Hr Alarm' at &822D
-            RTS
-}
+    JSR WaitOutRTCUpdate
+    LDX #rtcRegAlarmSeconds:JSR ReadRtcRam:STA prvDateSeconds
+    LDX #rtcRegAlarmMinutes:JSR ReadRtcRam:STA prvDateMinutes
+    LDX #rtcRegAlarmHours:JSR ReadRtcRam:STA prvDateHours
+    RTS
 
 ; Copy time in prvDate{Hours,Minutes,Seconds} into the RTC alarm registers.
 .CopyPrvAlarmToRtc
-{
     XASSERT_USE_PRV1
     JSR WaitOutRTCUpdate
     LDX #rtcRegAlarmSeconds:LDA prvDateSeconds:JSR WriteRtcRam
     LDX #rtcRegAlarmMinutes:LDA prvDateMinutes:JSR WriteRtcRam
     LDX #rtcRegAlarmHours:LDA prvDateHours:JMP WriteRtcRam
-}
 
 .GetRtcDateTime
     JSR GetRtcDayMonthYear
@@ -8766,7 +8756,7 @@ column = prvC
     LDA #&00:STA prvDateSFTODO3
     LDA #&FF:STA prvDateSFTODO7:STA prvDateSFTODO6
     LDA #lo(prvDateBuffer):STA prvDateSFTODO4:LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
-    JSR copyRtcAlarmToPrv
+    JSR CopyRtcAlarmToPrv
     JSR InitDateBufferAndEmitTimeAndDate
     DEC prvDateSFTODO1b:JSR printDateBuffer ; DEC chops off trailing vduCr
     LDA #'/':JSR OSWRCH:JSR printSpace
@@ -9093,7 +9083,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 .LB8C6
     XASSERT_USE_PRV1
     JSR ClearPrvOswordBlockCopy
-    JSR copyRtcAlarmToPrv
+    JSR CopyRtcAlarmToPrv
     LDX #rtcRegB:JSR ReadRtcRam
     AND #rtcRegBPIE OR rtcRegBAIE
     STA prvOswordBlockCopy + 1 ; SFTODO: Alternate label?
