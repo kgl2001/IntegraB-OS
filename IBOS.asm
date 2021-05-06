@@ -7267,6 +7267,7 @@ ENDIF
 
 ; Emit hours/minutes/seconds to the date buffer with formatting controlled by prvDateSFTODO2. C
 ; is clear on exit iff something was emitted.
+; SFTODO: Is most of this complexity actually used? Superficially the code always seems to call this with just prvDateSFTODO2UseHours set and everything else clear, but I suspect I'm missing something.
 ; SFTODOWIP COMMENT - CAN PROBABLY DELETE THE BELOW NOW I HAVE prvDateSFTODo2* BIT CONSTANTS, BUT KEEP AROUND FOR NOW
 ; prvDateSFTODO2:
 ;     b0..3: 0 => return with C set
