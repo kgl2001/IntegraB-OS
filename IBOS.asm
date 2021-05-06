@@ -8762,73 +8762,57 @@ column = prvC
             JMP LB67C
 			
 ;*ALARM Command
-.^alarm     PRVEN								;switch in private RAM
-            LDA (transientCmdPtr),Y
-            CMP #'='
-            CLC
-            BEQ setAlarm
-            CMP #'?'
-            BEQ showAlarm
-            CMP #vduCr
-            BEQ showAlarm
-            JSR ParseOnOff
-            BCS LB61B
-            PHP
-            LDX #userRegAlarm
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            PLP
-            BNE LB67C
-            AND #&BF
-            JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
-            LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            AND_NOT rtcRegBPIE OR rtcRegBAIE
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            JMP LB6E3
+.^alarm
+    PRVEN
+    LDA (transientCmdPtr),Y
+    CMP #'='
+    CLC
+    BEQ setAlarm
+    CMP #'?'
+    BEQ ShowAlarm
+    CMP #vduCr
+    BEQ ShowAlarm
+    JSR ParseOnOff
+    BCS LB61B
+    PHP
+    LDX #userRegAlarm:JSR ReadUserReg
+    PLP
+    BNE LB67C
+    AND #&BF
+    JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
+    LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
+    JSR ReadRtcRam								;Read data from RTC memory location X into A
+    AND_NOT rtcRegBPIE OR rtcRegBAIE
+    JSR WriteRtcRam								;Write data from A to RTC memory location X
+    JMP LB6E3
 			
-.LB67C      ORA #&40
-            JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
-            LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            AND_NOT rtcRegBPIE OR rtcRegBAIE
-            ORA #rtcRegBAIE
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            JMP LB6E3
+.LB67C
+    ORA #&40:JSR WriteUserReg
+    ; Force PIE (periodic interrupt enable) off and AIE (alarm interrupt enable) on.
+    LDX #rtcRegB:JSR ReadRtcRam:AND_NOT rtcRegBPIE OR rtcRegBAIE:ORA #rtcRegBAIE:JSR WriteRtcRam
+    JMP LB6E3
 			
-.showAlarm  LDA #&40
-            STA prvDateSFTODO1
-            LDA #&04
-            STA prvDateSFTODO2
-            LDA #&00
-            STA prvDateSFTODO3
-            LDA #&FF
-            STA prvDateSFTODO7
-            STA prvDateSFTODO6
-            LDA #lo(prvDateBuffer)
-            STA prvDateSFTODO4
-            LDA #hi(prvDateBuffer)
-            STA prvDateSFTODO4 + 1
-            JSR copyRtcAlarmToPrv
-            JSR initDateBufferAndEmitTimeAndDate
-            DEC prvDateSFTODO1
-            JSR printDateBuffer
-            LDA #'/'
-            JSR OSWRCH								;write to screen
-            JSR printSpace								;write ' ' to screen
-            LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            AND #rtcRegBAIE
-            JSR PrintOnOff
-            LDX #userRegAlarm
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            AND #&80
-            BEQ LB6E0
-            JSR printSpace								;write ' ' to screen
-            LDA #'R'
-            JSR OSWRCH								;write to screen
-.LB6E0      JSR OSNEWL								;new line
-.LB6E3      PRVDIS								;switch out private RAM
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+.ShowAlarm
+    LDA #&40:STA prvDateSFTODO1
+    LDA #&04:STA prvDateSFTODO2
+    LDA #&00:STA prvDateSFTODO3
+    LDA #&FF:STA prvDateSFTODO7:STA prvDateSFTODO6
+    LDA #lo(prvDateBuffer):STA prvDateSFTODO4:LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
+    JSR copyRtcAlarmToPrv
+    JSR initDateBufferAndEmitTimeAndDate
+    DEC prvDateSFTODO1
+    JSR printDateBuffer
+    LDA #'/':JSR OSWRCH
+    JSR printSpace
+    LDX #rtcRegB:JSR ReadRtcRam:AND #rtcRegBAIE:JSR PrintOnOff
+    LDX #userRegAlarm:JSR ReadUserReg:AND #&80:BEQ LB6E0
+    JSR printSpace
+    LDA #'R':JSR OSWRCH
+.LB6E0
+    JSR OSNEWL
+.LB6E3
+    PRVDIS
+    JMP ExitAndClaimServiceCall
 }
 			
 ;OSWORD &0E (14) Read real time clock
