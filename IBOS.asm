@@ -9110,7 +9110,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     LDA prvOswordBlockCopy + 1
     AND #rtcRegBPIE OR rtcRegBAIE
     STA prvOswordBlockCopy + 1
-    LDX #rtcRegB								;Select 'Register B' register on RTC: Register &0B
+    LDX #rtcRegB
     JSR ReadRtcRam								;Read data from RTC memory location X into A
     AND_NOT rtcRegBPIE OR rtcRegBAIE
     ORA prvOswordBlockCopy + 1
