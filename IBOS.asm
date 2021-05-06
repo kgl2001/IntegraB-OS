@@ -6624,6 +6624,7 @@ osfileBlock = L02EE
 
 ; SQUASH: Dead code
 {
+.CopyPrvDateTimeToRtc
     JSR CopyPrvTimeToRtc
     JMP CopyPrvDateToRtc
 }
