@@ -7214,32 +7214,23 @@ unitsChar = prv82 + &4F
 }
 
 {
-.timeSuffixes
+.AmPmSuffixes
 	  EQUS "am", "pm"
 
-; Emit time suffix for hour A (<=23) into transientDateBuffer.
+; Emit "am" or "pm" time suffix for hour A (<=23) into transientDateBuffer.
 ; SFTODO: This only has one caller, could it just be inlined?
-.^EmitAmPmForA
-.LABC5      TAX
-            CPX #&00								;is it 00 hrs?
-            BNE not0Hours								;branch if not 00 hrs
-            LDX #24 								;else set X=24 (hrs)
-.not0Hours  LDA #&00
-            CPX #13 								;carry set if X>=13 (hrs) ('pm')
-            ADC #&00								;otherwise ('am')
-            ASL A									;x2 - A=0 ('am') or A=2 ('pm')
-            TAX
-            LDY transientDateBufferIndex						;get buffer pointer
-            LDA timeSuffixes,X							;get 'a' or 'p'
-            STA (transientDateBufferPtr),Y						;save contents of A to Buffer Address+Y
-            INY									;increase buffer pointer
-            LDA timeSuffixes + 1,X							;get 'm'
-            JMP EmitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
+.^EmitAmPmForHourA
+    TAX:CPX #0:BNE Not0Hours ; SQUASH: "CPX #0" is redundant
+    LDX #24
+.Not0Hours
+    LDA #0:CPX #13:ADC #0:ASL A:TAX ; set X=0 if X<13, X=2 if X>=13
+    LDY transientDateBufferIndex:LDA AmPmSuffixes,X:STA (transientDateBufferPtr),Y:INY
+    LDA AmPmSuffixes + 1,X:JMP EmitAToDateBufferUsingY
 }
 
 IF FALSE
-; SFTODO: EmitAmPmForA is a bit more complex than necessary - here's a shorter alternative implementation, not tested!
-.EmitAmPmForA
+; SFTODO: EmitAmPmForHourA is a bit more complex than necessary - here's a shorter alternative implementation, not tested!
+.EmitAmPmForHourA
 {
 	LDX #'a'
 	TAY:BEQ suffixInX 								;branch if 00 hrs ('am')
@@ -7340,7 +7331,7 @@ Options = transientDateSFTODO1
     LDA Options:CMP #prvDateSFTODO2UseHours:BCC Finish
     LDA Options:AND #prvDateSFTODO212Hour:BEQ Finish ; SQUASH: "LDA options" is redundant
     LDA #' ':JSR EmitAToDateBuffer
-    LDA prvDateHours:JSR EmitAmPmForA
+    LDA prvDateHours:JSR EmitAmPmForHourA
 .Finish
     CLC
     RTS
