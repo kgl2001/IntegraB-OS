@@ -46,10 +46,10 @@
 ;&26:
 ;&27:
 ;&28:	RTC &35 - Century
-;&29:	RTC &09 - Year (Set at writeRtcDate)
-;&2A:	RTC &08 - Month (Set at writeRtcDate)
-;&2B:	RTC &07 - Day of Month (Set at writeRtcDate)
-;&2C:	RTC &06 - Day of Week (Set at writeRtcDate)
+;&29:	RTC &09 - Year (Set at WriteRtcDate)
+;&2A:	RTC &08 - Month (Set at WriteRtcDate)
+;&2B:	RTC &07 - Day of Month (Set at WriteRtcDate)
+;&2C:	RTC &06 - Day of Week (Set at WriteRtcDate)
 ;&2D:	RTC &04 - Hours (Set at WriteRtcTime)
 ;&2E:	RTC &02 - Minutes (Set at WriteRtcTime)
 ;&2F:	RTC &00 - Seconds (Set at WriteRtcTime)
@@ -6575,7 +6575,7 @@ osfileBlock = L02EE
 }
 			
 ;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
-.writeRtcDate ; SFTODO: as in "not time" - maybe rename all this later?
+.WriteRtcDate ; SFTODO: as in "not time" - maybe rename all this later?
 {
     XASSERT_USE_PRV1
             JSR WaitOutRTCUpdate								;Check if RTC Update in Progress, and wait if necessary
@@ -6649,7 +6649,7 @@ osfileBlock = L02EE
 ; SQUASH: Dead code
 {
     JSR WriteRtcTime
-    JMP writeRtcDate
+    JMP WriteRtcDate
 }
 
 ; Wait until any RTC update in progress	is complete.
@@ -8604,7 +8604,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
             BCC LB55B
             JMP PrvDisGenerateBadDate								;Error with Bad date
 			
-.LB55B      JSR writeRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
+.LB55B      JSR WriteRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
             JMP PrvDisexitSc								;switch out private RAM and exit
 }
 			
@@ -9099,7 +9099,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 			
 ;XY?0=&66
 ;OSWORD &49 (73) - Integra-B calls
-.LB8DD	  JSR writeRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
+.LB8DD	  JSR WriteRtcDate								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
             SEC
             RTS
 			
