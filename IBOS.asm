@@ -7319,21 +7319,13 @@ Options = transientDateSFTODO1
 .separatorColon
     LDA #':'
 .separatorInA
-    JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-    LDX #&00
-    LDA prvDateSeconds							;read seconds
-    JSR emitADecimalFormatted							;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+    JSR emitAToDateBuffer
+    LDX #0:LDA prvDateSeconds:JSR emitADecimalFormatted ; emit seconds using "00" format
 .SFTODOMAYBESTEP3
-    LDA Options
-    CMP #&04
-    BCC LAC6C
-    LDA Options
-    AND #&01
-    BEQ LAC6C
-    LDA #' '
-    JSR emitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-    LDA prvDateHours								;read hours
-    JSR emitTimeSuffixForA								;write am / pm to
+    LDA Options:CMP #&04:BCC LAC6C
+    LDA Options:AND #&01:BEQ LAC6C ; SQUASH: "LDA options" is redundant
+    LDA #' ':JSR emitAToDateBuffer
+    LDA prvDateHours:JSR emitTimeSuffixForA
 .LAC6C
     CLC
     RTS
