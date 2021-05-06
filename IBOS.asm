@@ -8759,7 +8759,7 @@ column = prvC
             ASL A
             PLP
             ROR A
-            JMP LB67C
+            JMP TurnAlarmOn
 			
 ;*ALARM Command
 .^alarm
@@ -8771,17 +8771,17 @@ column = prvC
     JSR ParseOnOff:BCS LB61B ; branch if we couldn't parse "ON" or "OFF"
     PHP
     LDX #userRegAlarm:JSR ReadUserReg
-    PLP:BNE LB67C
+    PLP:BNE TurnAlarmOn
     AND_NOT &40:JSR WriteUserReg ; SFTODO: MAGIC
     ; Force PIE (periodic interrupt enable) and AIE (alarm interrupt enable) off.
     LDX #rtcRegB:JSR ReadRtcRam:AND_NOT rtcRegBPIE OR rtcRegBAIE:JSR WriteRtcRam
-    JMP LB6E3
+    JMP Finish
 			
-.LB67C
+.TurnAlarmOn
     ORA #&40:JSR WriteUserReg ; SFTODO: MAGIC
     ; Force PIE (periodic interrupt enable) off and AIE (alarm interrupt enable) on.
     LDX #rtcRegB:JSR ReadRtcRam:AND_NOT rtcRegBPIE OR rtcRegBAIE:ORA #rtcRegBAIE:JSR WriteRtcRam
-    JMP LB6E3
+    JMP Finish
 			
 .ShowAlarm
     LDA #&40:STA prvDateSFTODO1
@@ -8796,12 +8796,12 @@ column = prvC
     LDA #'/':JSR OSWRCH
     JSR printSpace
     LDX #rtcRegB:JSR ReadRtcRam:AND #rtcRegBAIE:JSR PrintOnOff
-    LDX #userRegAlarm:JSR ReadUserReg:AND #&80:BEQ LB6E0
+    LDX #userRegAlarm:JSR ReadUserReg:AND #&80:BEQ NewlineAndFinish
     JSR printSpace
     LDA #'R':JSR OSWRCH
-.LB6E0
+.NewlineAndFinish
     JSR OSNEWL
-.LB6E3
+.Finish
     PRVDIS
     JMP ExitAndClaimServiceCall
 }
