@@ -230,6 +230,8 @@ keycodeAt = &47 ; internal keycode for "@"
 keycodeNone = &FF ; internal keycode returned if no key is pressed
 
 osargsReadFilingSystemNumber = 0
+    FilingSystemDfs = 4
+    FilingSystemNfs = 5
 osargsWritePtr = 1
 osargsReadExtent = 2
 
@@ -335,6 +337,8 @@ BRKVL       = &0202
 
 XKEYV       = &0DDB
 XKEYVBank   = XKEYV + 2
+XFILEV      = &0DBA
+XFILEVBank  = XFILEV + 2
 
 RESET       = &FFFC
 OSCLI       = &FFF7
@@ -2924,10 +2928,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
             JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
             LDA #&00
             STA tubePresenceFlag
-            LDA #osargsReadFilingSystemNumber
-            LDX #&A8 ; SFTODO: is this relevant?
-            LDY #&00 ; handle = 0 for this call
-            JSR OSARGS
+            LDA #osargsReadFilingSystemNumber:LDX #TransientZP:LDY #0:JSR OSARGS ; SQUASH: don't set X?
             TAY
             LDX #serviceSelectFilingSystem
             JSR doOsbyteIssueServiceRequest
@@ -4085,33 +4086,25 @@ tmp = &A8
 }
 
 ;Vectors claimed - Service call &0F
+.service0F
 {
-.^service0F  LDX #prvSFTODOFILEISH - prv83
-            JSR ReadPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            AND #&80
-            PHA
-            LDA #&00
-            LDX #&A8
-            LDY #&00
-            JSR OSARGS
-            TSX
-            LDY #&00
-            CMP #&05
-            BEQ L988D
-            LDY #&80
-            CMP #&04
-            BEQ L988D
-            LDA L0DBC
-            JMP L9896
+    LDX #prvSFTODOFILEISH - prv83:JSR ReadPrivateRam8300X:AND #&80:PHA
+    LDA #osargsReadFilingSystemNumber:LDX #TransientZP:LDY #0:JSR OSARGS ; SQUASH: don't set X?
+    TSX
+    LDY #0:CMP #FilingSystemNfs:BEQ L988D
+    LDY #&80:CMP #FilingSystemDfs:BEQ L988D
+    LDA XFILEVBank:JMP L9896 ; SFTODO!?
 			
-.L988D      LDA L0DBC
-            AND #&0F
-            TSX
-            ORA L0101,X
-.L9896      LDX #prvSFTODOFILEISH - prv83
-            JSR WritePrivateRam8300X								;write data to Private RAM &83xx (Addr = X, Data = A)
-            PLA
-            JMP ExitServiceCall								;restore service call parameters and exit
+.L988D
+    LDA XFILEVBank
+    AND #&0F
+    TSX
+    ORA L0101,X
+.L9896
+    LDX #prvSFTODOFILEISH - prv83
+    JSR WritePrivateRam8300X
+    PLA
+    JMP ExitServiceCall
 }
 
 ; SFTODO: This has only one caller
