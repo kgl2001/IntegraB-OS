@@ -8362,11 +8362,9 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 .SoundBlockCopyLoop
     LDA OswordSoundBlock,Y:STA OswordSoundBlockCopy,Y
     DEY:BPL SoundBlockCopyLoop
-    LDA prvSFTODOALARMISH3
-    STA OswordSoundBlockCopy + OswordSoundAmplitudeOffset
-    LDA prvSFTODOALARMISH4
-    STA OswordSoundBlockCopy + OswordSoundPitchOffset
-    LDA #oswordSound:LDX #lo(OswordSoundBlockCopy):LDY #hi(OswordSoundBlockCopy):JSR OSWORD								;OSWORD &07, buffer &00A8
+    LDA prvSFTODOALARMISH3:STA OswordSoundBlockCopy + OswordSoundAmplitudeOffset ; SFTODO: seems odd given this is a signed quantity
+    LDA prvSFTODOALARMISH4:STA OswordSoundBlockCopy + OswordSoundPitchOffset
+    LDA #oswordSound:LDX #lo(OswordSoundBlockCopy):LDY #hi(OswordSoundBlockCopy):JSR OSWORD
     LDY #0
 .SoundBlockCopyRestoreLoop
     PLA:STA OswordSoundBlockCopy,Y
