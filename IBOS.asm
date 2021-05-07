@@ -725,6 +725,10 @@ crtcHorzDisplayed = SHEILA + &01
 systemViaBase = &40
 viaRegisterB = 0
 viaRegisterInterruptEnable = 14
+addressableLatchCapsLock = 6
+addressableLatchShiftLock = 7
+addressableLatchData0 = 0<<3
+addressableLatchData1 = 1<<3
 
 romselPrvEn  = &40
 romselMemsel = &80
@@ -8302,11 +8306,11 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     EQUB &5A,&82,&B0,&D2
 
 .SystemViaRegisterBLookup1
-    EQUB %0110
-    EQUB %1110
+    EQUB addressableLatchCapsLock OR addressableLatchData0
+    EQUB addressableLatchCapsLock OR addressableLatchData1
 .SystemViaRegisterBLookup2
-    EQUB %1111
-    EQUB %0111
+    EQUB addressableLatchShiftLock OR addressableLatchData1
+    EQUB addressableLatchShiftLock OR addressableLatchData0
 
 .^LB34E
     ; Set bit 6 of userRegAlarm to be a copy of bit 7. SFTODO: PROB RIGHT BUT COME BACK TO THIS
