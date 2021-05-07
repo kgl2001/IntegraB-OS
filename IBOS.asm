@@ -660,7 +660,8 @@ prvShx = prv83 + &3D ; working copy of SHX, initialised from relevant bit of use
 prvSFTODOTUBE2ISH = prv83 + &40
 prvSFTODOTUBEISH = prv83 + &41
 prvTubeReleasePending = prv83 + &42 ; used during OSWORD 42; &FF means we have claimed the tube and need to release it at end of transfer, 0 means we don't
-prvSFTODOFILEISH = prv83 + &43
+; prvLastFilingSystem is used to track the last filing system selected, so we can preserve the current filing system on a soft reset.
+prvLastFilingSystem = prv83 + &43
 ; SFTODO: If private RAM is battery backed, could we just keep OSMODE in
 ; prvOsMode and not bother with the copy in the low bits of userRegOsModeShx?
 ; That would save some code.
@@ -3840,11 +3841,12 @@ Tmp = TransientZP + 6
 
     ; SFTODO: Why do we have two different "ways" to call SetDfsNfsPriority?
     LDA lastBreakType:BNE NotSoftReset1
-    LDX #prvSFTODOFILEISH - prv83:JSR ReadPrivateRam8300X
-    PHA ; SFTODO: Why can't we just do the read from prvSFTODOFILEISH *after* JSR SetDfsNfsPriority and avoid this PHA/PLA?
+    ; It's a soft reset, so reselect the last filing system selected.
+    LDX #prvLastFilingSystem - prv83:JSR ReadPrivateRam8300X
+    PHA ; SFTODO: Why can't we just do the read from prvLastFilingSystem *after* JSR SetDfsNfsPriority and avoid this PHA/PLA?
     JSR SetDfsNfsPriority ; SFTODO: Note this does *not* use the value in A - I suspect the way the code worked got changed at one point and we're seeing some redundant code left behind
     PLA
-    AND #&7F
+    AND #&7F ; SQUASH: probably not useful, see SQUASH: comment on service0F
     TAX
     CPX romselCopy:BCC SelectFirstFilingSystemROMLessEqualXAndLanguage
 .NotSoftReset1
@@ -4087,11 +4089,19 @@ tmp = &A8
 
 ; Vectors claimed - Service call &0F
 ;
-; If the current filing system is DFS or NFS, set prvSFTODOFILEISH = (prvSFTODOFILEISH AND &80)
-; OR (filing system bank AND &0F). Otherwise, set prvSFTODOFILEISH = filing system bank.
+; If the current filing system is DFS or NFS, set prvLastFilingSystem = (prvLastFilingSystem AND &80)
+; OR (filing system bank AND &0F). Otherwise, set prvLastFilingSystem = filing system bank.
+;
+; SQUASH: I think there is some semi-dead code here related to DFS/NFS priority. The only place
+; prvLastFilingSystem is used is in service03, which has some slightly odd code and masks off
+; bit 7 of prvLastFilingSystem value before using it. I think it's therefore pointless to
+; maintain that bit, and this code should probably just to prvLastFilingSystem = XFILEVBank, or
+; possibly prvLastFilingSystem = XFILEVBank AND maxBank, since DNFS *may* be using bit 7 of its
+; bank number as a DFS/NFS flag and we don't want that breaking things in service03. (service03
+; currently does AND &7F; we don't need both that *and* AND maxBank here.)
 .service0F
 {
-    LDX #prvSFTODOFILEISH - prv83:JSR ReadPrivateRam8300X:AND #&80:PHA
+    LDX #prvLastFilingSystem - prv83:JSR ReadPrivateRam8300X:AND #&80:PHA
     LDA #osargsReadFilingSystemNumber:LDX #TransientZP:LDY #0:JSR OSARGS ; SQUASH: don't set X?
     TSX ; SQUASH: redundant?
     ; SQUASH: The LDY operations here are redundant, aren't they? ExitServiceCall will restore Y.
@@ -4100,10 +4110,10 @@ tmp = &A8
     LDA XFILEVBank:JMP L9896
 .L988D
     LDA XFILEVBank:AND #maxBank ; SFTODO: is the AND particularly significant here? We don't do it on the other branch
-    TSX:ORA L0101,X ; access stacked prvSFTODOFILEISH value
+    TSX:ORA L0101,X ; access stacked prvLastFilingSystem value
 .L9896
-    LDX #prvSFTODOFILEISH - prv83:JSR WritePrivateRam8300X
-    PLA ; discard stacked prvSFTODOFILEISH value
+    LDX #prvLastFilingSystem - prv83:JSR WritePrivateRam8300X
+    PLA ; discard stacked prvLastFilingSystem value
     JMP ExitServiceCall
 }
 
