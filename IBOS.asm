@@ -8403,7 +8403,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     AND_NOT rtcRegARS3 OR rtcRegARS2 OR rtcRegARS1 OR rtcRegARS0:JSR WriteRtcRam
     ; Set the keyboard LEDs up to reflect the real state after we used them as alarm indicators. SFTODO: Probably, but I am guessing at this point.
     LDA #osbyteReflectKeyboardStatusInLeds:JSR OSBYTE
-    JMP LB460
+    JMP RestoreRamselRomselAndExit
 			
 .LB444
     DEC prvSFTODOALARMISH1
@@ -8423,13 +8423,9 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     AND_NOT addressableLatchMask:ORA ShiftLockLookup,X
     STA SHEILA + systemViaBase + viaRegisterB
 
-.LB460
-    PLA
-    STA ramselCopy
-    STA ramsel
-    PLA
-    STA romselCopy
-    STA romsel
+.RestoreRamselRomselAndExit
+    PLA:STA ramselCopy:STA ramsel
+    PLA:STA romselCopy:STA romsel
     RTS
 }
 
