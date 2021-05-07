@@ -3727,16 +3727,17 @@ ENDIF
 {
     BCS ConfTVWrite
     JSR GetConfigValue
-    PHA:JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx:PLA ; SQUASH: worth factoring this line out?
-    PHA
+    ; We have a 4-bit value; bit 0 is the interlace bit, bits 1-3 are a *signed* vertical shift.
+    PHA:JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx:PLA
+    PHA ; save value for handling interlace bit below
+    ; Get the vertical shift option from bits 1-3 and sign extend it.
     LSR A
-    CMP #&04
-    BCC L959A
-    ORA #&F8
-.L959A
+    CMP #4:BCC Positive
+    ORA #%11111000
+.Positive
     JSR PrintADecimalPad
     LDA #',':JSR OSWRCH
-    PLA:AND #&01:JMP PrintADecimalPadNewline
+    PLA:AND #1:JMP PrintADecimalPadNewline
 
 .ConfTVWrite
     JSR ConvertIntegerDefaultDecimalChecked
