@@ -8285,7 +8285,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
 {
 OswordSoundBlockCopy = TransientZP
 
-; Return with N set if Ctrl is pressed and/or V set if Shift is pressed.
+; Return with N set iff Ctrl is pressed and V set iff Shift is pressed.
 .TestShiftCtrl
     CLV:CLC:JMP (KEYVL)
 
