@@ -8409,6 +8409,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     DEC prvSFTODOALARMISH1
 .NotShiftAndCtrlPressed
 .LB447
+    ; SFTODO: This seems to force b1-2 on and (rapidly) toggle b0 and b3, leaving b4-7 alone. I don't yet know why though. Bits 0-3 of register B on the system VIA form the addressable latch (b0-2 address, b3 data)
     LDX prvSFTODOALARMISH5
     LDA SHEILA + systemViaBase + viaRegisterB
     AND #&F0:ORA SystemViaRegisterBLookup1,X
