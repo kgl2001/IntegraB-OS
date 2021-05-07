@@ -8294,7 +8294,8 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     EQUB &02,&08
 .SFTODOALARMISH2Lookup
     EQUB &0F,&1E,&3C,&78
-.LB344		EQUB &F6,&F1
+.SFTODOALARMISH3Lookup
+    EQUB &F6,&F1
 .SFTODOALARMISH4Lookup
     EQUB &5A,&82,&B0,&D2
 
@@ -8348,7 +8349,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     LSR A									;ditch next two lsbs - already used
     AND #&01								;read next bit (0)
     TAX
-    LDA LB344,X:STA prvSFTODOALARMISH3
+    LDA SFTODOALARMISH3Lookup,X:STA prvSFTODOALARMISH3
     ; Force RTC register A ARS3/2/1 on and ARS0 off.
     LDX #rtcRegA:JSR ReadRtcRam
     AND_NOT rtcRegARS3 OR rtcRegARS2 OR rtcRegARS1 OR rtcRegARS0
