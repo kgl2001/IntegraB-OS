@@ -8298,9 +8298,9 @@ OswordSoundPitchOffset = P% - OswordSoundBlock
     EQUW   5 ; duration
 OswordSoundBlockSize = P% - OswordSoundBlock
 
-.SFTODOALARMISH1Lookup
+.SFTODOALARMISH1Lookup ; SFTODO: I think this might be control over how long the alarm will persist if not explicitly acknowledged by the user
     EQUB &02,&08
-.SFTODOALARMISH2Lookup
+.SFTODOALARMISH2Lookup ; SFTODO: This also seems to be some kind of alarm length control - not yet sure how ALARMISH1 and ALARMISH2 differ
     EQUB &0F,&1E,&3C,&78
 .SFTODOALARMISH3Lookup ; SFTODO: amplitude
     EQUB -10 AND &FF
