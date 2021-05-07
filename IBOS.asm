@@ -8283,147 +8283,151 @@ EndIndex = transientDateSFTODO2 ; exclusive
 .LB34C		EQUB &0F,&07
 
 .^LB34E
-      LDX #userRegAlarm
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            ASL A
-            PHP
-            ASL A
-            PLP
-            PHP
-            ROR A
-            PLP
-            ROR A
-            JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
-.^LB35E      SEC
+    ; Set bit 6 of userRegAlarm to be a copy of bit 7. SFTODO: PROB RIGHT BUT COME BACK TO THIS
+    LDX #userRegAlarm:JSR ReadUserReg
+    ASL A:PHP
+    ASL A:PLP:PHP:ROR A
+    PLP:ROR A
+    JSR WriteUserReg
+.^LB35E
+    SEC
 .^LB35F
     XASSERT_USE_PRV1
-      LDA romselCopy
-            PHA
-            LDA ramselCopy
-            PHA
-            AND #ramselShen
-            ORA #ramselPrvs1
-            STA ramselCopy
-            STA ramsel
-            LDA romselCopy
-            ORA #romselPrvEn
-            STA romselCopy
-            STA romsel
-            BCC LB3CA
+    LDA romselCopy
+    PHA
+    LDA ramselCopy
+    PHA
+    AND #ramselShen
+    ORA #ramselPrvs1
+    STA ramselCopy
+    STA ramsel
+    LDA romselCopy
+    ORA #romselPrvEn
+    STA romselCopy
+    STA romsel
+    BCC LB3CA
 
-	  LDX #userRegAlarm
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            PHA									;and save value
-            AND #&01								;read first bit (0)
-            TAX
-            LDA LB33E,X								;read first byte from 2 byte lookup table
-            STA prv82+&72								;save at &8272
-            PLA
-            LSR A									;ditch lsb - already used
-            PHA
-            AND #&03								;read next two bits (1&2)
-            TAX
-            LDA LB340,X								;read second byte from 4 byte lookup table
-            STA prv82+&73								;save at &8273
-            PLA
-            LSR A
-            LSR A									;ditch next two lsbs - already used
-            PHA
-            AND #&03								;read next two bits (3&4)
-            TAX
-            LDA LB346,X								;read third byte from 4 byte lookup table
-            STA prv82+&75								;save at &8275
-            PLA
-            LSR A
-            LSR A									;ditch next two lsbs - already used
-            AND #&01								;read next bit (0)
-            TAX
-            LDA LB344,X								;read forth byte from 2 byte lookup table
-            STA prv82+&74								;save at &8274
-            LDX #rtcRegA
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            AND #&F0
-            ORA #&0E
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            LDX #rtcRegB
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            ORA #rtcRegBPIE
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            LDA #&01
-            STA prv82+&76
-.LB3CA      LDA prv82+&76
-            EOR #&01
-            STA prv82+&76
-            BEQ LB447
-            LDA prv82+&73
-            BEQ LB40E
-            LDY #&07
-.LB3DB      LDA L00A8,Y
-            PHA
-            DEY
-            BPL LB3DB
-	  ; SFTODO: I am not sure this is necessary, can't we do OSWORD 7 with a parameter block in SWR?
-            LDY #&07
-.LB3E4      LDA LB336,Y								;Relocate sound data from &B336-&B33D
-            STA L00A8,Y								;to &00A8-&00AF
-            DEY
-            BPL LB3E4
-            LDA prv82+&74
-            STA L00AA
-            LDA prv82+&75
-            STA L00AC
-            LDA #&07								;Perform SOUND command
-            LDX #&A8								;buffer address &00A8
-            LDY #&00
-            JSR OSWORD								;OSWORD &07, buffer &00A8
-            LDY #&00
-.LB402      PLA
-            STA L00A8,Y
-            INY
-            CPY #&08
-            BNE LB402
-            DEC prv82+&73
-.LB40E      LDA prv82+&72
-            BNE LB444
-            JSR LB331
-            BVC LB447
-            BPL LB447
-            LDX #userRegAlarm
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            LSR A
-            AND #&20
-            STA prv82+&76
-            LDX #rtcRegB
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            AND_NOT rtcRegBPIE OR rtcRegBAIE
-            ORA prv82+&76
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            LDX #rtcRegA
-            JSR ReadRtcRam								;Read data from RTC memory location X into A
-            AND #&F0
-            JSR WriteRtcRam								;Write data from A to RTC memory location X
-            LDA #&76								;Reflect keyboard status in keyboard LEDs
-            JSR OSBYTE								;Call OSBYTE
-            JMP LB460
+LDX #userRegAlarm
+    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
+    PHA									;and save value
+    AND #&01								;read first bit (0)
+    TAX
+    LDA LB33E,X								;read first byte from 2 byte lookup table
+    STA prv82+&72								;save at &8272
+    PLA
+    LSR A									;ditch lsb - already used
+    PHA
+    AND #&03								;read next two bits (1&2)
+    TAX
+    LDA LB340,X								;read second byte from 4 byte lookup table
+    STA prv82+&73								;save at &8273
+    PLA
+    LSR A
+    LSR A									;ditch next two lsbs - already used
+    PHA
+    AND #&03								;read next two bits (3&4)
+    TAX
+    LDA LB346,X								;read third byte from 4 byte lookup table
+    STA prv82+&75								;save at &8275
+    PLA
+    LSR A
+    LSR A									;ditch next two lsbs - already used
+    AND #&01								;read next bit (0)
+    TAX
+    LDA LB344,X								;read forth byte from 2 byte lookup table
+    STA prv82+&74								;save at &8274
+    LDX #rtcRegA
+    JSR ReadRtcRam								;Read data from RTC memory location X into A
+    AND #&F0
+    ORA #&0E
+    JSR WriteRtcRam								;Write data from A to RTC memory location X
+    LDX #rtcRegB
+    JSR ReadRtcRam								;Read data from RTC memory location X into A
+    ORA #rtcRegBPIE
+    JSR WriteRtcRam								;Write data from A to RTC memory location X
+    LDA #&01
+    STA prv82+&76
+.LB3CA
+    LDA prv82+&76
+    EOR #&01
+    STA prv82+&76
+    BEQ LB447
+    LDA prv82+&73
+    BEQ LB40E
+    LDY #&07
+.LB3DB
+    LDA L00A8,Y
+    PHA
+    DEY
+    BPL LB3DB
+; SFTODO: I am not sure this is necessary, can't we do OSWORD 7 with a parameter block in SWR?
+    LDY #&07
+.LB3E4
+    LDA LB336,Y								;Relocate sound data from &B336-&B33D
+    STA L00A8,Y								;to &00A8-&00AF
+    DEY
+    BPL LB3E4
+    LDA prv82+&74
+    STA L00AA
+    LDA prv82+&75
+    STA L00AC
+    LDA #&07								;Perform SOUND command
+    LDX #&A8								;buffer address &00A8
+    LDY #&00
+    JSR OSWORD								;OSWORD &07, buffer &00A8
+    LDY #&00
+.LB402
+    PLA
+    STA L00A8,Y
+    INY
+    CPY #&08
+    BNE LB402
+    DEC prv82+&73
+.LB40E
+    LDA prv82+&72
+    BNE LB444
+    JSR LB331
+    BVC LB447
+    BPL LB447
+    LDX #userRegAlarm
+    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
+    LSR A
+    AND #&20
+    STA prv82+&76
+    LDX #rtcRegB
+    JSR ReadRtcRam								;Read data from RTC memory location X into A
+    AND_NOT rtcRegBPIE OR rtcRegBAIE
+    ORA prv82+&76
+    JSR WriteRtcRam								;Write data from A to RTC memory location X
+    LDX #rtcRegA
+    JSR ReadRtcRam								;Read data from RTC memory location X into A
+    AND #&F0
+    JSR WriteRtcRam								;Write data from A to RTC memory location X
+    LDA #&76								;Reflect keyboard status in keyboard LEDs
+    JSR OSBYTE								;Call OSBYTE
+    JMP LB460
 			
-.LB444      DEC prv82+&72
-.LB447      LDX prv82+&76
-            LDA SHEILA+&40							;VIA 6522
-            AND #&F0
-            ORA LB34A,X								;OR with byte from 2 byte lookup table
-            STA SHEILA+&40
-            LDA SHEILA+&40
-            AND #&F0
-            ORA LB34C,X								;OR with byte from 2 byte lookup table
-            STA SHEILA+&40
+.LB444
+    DEC prv82+&72
+.LB447
+    LDX prv82+&76
+    LDA SHEILA+&40							;VIA 6522
+    AND #&F0
+    ORA LB34A,X								;OR with byte from 2 byte lookup table
+    STA SHEILA+&40
+    LDA SHEILA+&40
+    AND #&F0
+    ORA LB34C,X								;OR with byte from 2 byte lookup table
+    STA SHEILA+&40
 
-.LB460      PLA
-            STA ramselCopy
-            STA ramsel
-            PLA
-            STA romselCopy
-            STA romsel
-            RTS
+.LB460
+    PLA
+    STA ramselCopy
+    STA ramsel
+    PLA
+    STA romselCopy
+    STA romsel
+    RTS
 }
 
 ; On entry, X=rtcRegC and A is the value read from rtcRegC.
