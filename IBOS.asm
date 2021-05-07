@@ -7618,69 +7618,56 @@ Options = transientDateSFTODO1
             RTS
 }
 
-; SFTODO: This has only one caller
-; SFTODO: I suspect this subroutine is (intended to be) the inverse of JSR ConvertDateToAbsoluteDayNumber - yes, I haven't followed the logic through step by step but it looks very much like it
+; Convert a 16-bit absolute day number (1st January 1900 being day 0) in prvDateSFTODO4 into a
+; component-based date in prvDate{DayOfWeek,DayOfMonth,Month,Year,Century}.
+; SQUASH: This has only one caller
 .ConvertAbsoluteDayNumberToDate
 {
-daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
+DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 
     XASSERT_USE_PRV1
-    LDA #19
-    STA prvDateCentury
+    ; If prvDateSFTODO4 < DaysBetween1stJan1900And2000, this is a 19xx date, otherwise it's a
+    ; 20xx date. If it's a 20xx date we set prvDateSFTODO4 -= DaysBetween1stJan1900And2000.
+    LDA #19:STA prvDateCentury
     SEC
-    LDA prvDateSFTODO4
-    SBC #lo(daysBetween1stJan1900And2000)
-    STA prvA
-    LDA prvDateSFTODO4 + 1
-    SBC #hi(daysBetween1stJan1900And2000)
-    BCC prvDateCenturyOK
+    LDA prvDateSFTODO4:SBC #lo(DaysBetween1stJan1900And2000):STA prvA
+    LDA prvDateSFTODO4 + 1:SBC #hi(DaysBetween1stJan1900And2000):BCC CenturyOK
     STA prvDateSFTODO4 + 1
-    LDA prvA
-    STA prvDateSFTODO4
+    LDA prvA:STA prvDateSFTODO4
     INC prvDateCentury
-.prvDateCenturyOK
-    ; By this point we've adjusted prvDateSFTODO4 and prvDateCentury so we now SFTODO: GUESSING want to calculate the number of days between prvDate and 1st January (prvCentury 00)
-    LDA #0
-    STA prvDateYear
-.LAE52
+.CenturyOK
+    ; By this point we've adjusted prvDateSFTODO4 and prvDateCentury so we now want to
+    ; calculate the number of days between prvDate and 1st January (prvCentury 00). Count up
+    ; from year 0, subtracting off the number of days in the year until prvDateSFTODO4 would go
+    ; negative, indicating we don't have a full year left.
+    LDA #0:STA prvDateYear
+.FullYearLoop
     JSR TestLeapYear ; set C iff prvDateYear is a leap year
-    LDA #lo(daysPerYear)
-    ADC #0
-    STA prvA
-    LDA #hi(daysPerYear)
-    STA prvB
+    LDA #lo(daysPerYear):ADC #0:STA prvA
+    LDA #hi(daysPerYear):STA prvB
     SEC
-    LDA prvDateSFTODO4
-    SBC prvA
-    STA prvA
-    LDA prvDateSFTODO4 + 1
-    SBC prvB
-    BCC LAE82
+    LDA prvDateSFTODO4:SBC prvA:STA prvA
+    LDA prvDateSFTODO4 + 1:SBC prvB:BCC NotFullYear
     STA prvDateSFTODO4 + 1
-    LDA prvA
-    STA prvDateSFTODO4
+    LDA prvA:STA prvDateSFTODO4
     INC prvDateYear
-    JMP LAE52
-			
-.LAE82
-    LDA #&01:STA prvDateMonth
-.LAE87
+    JMP FullYearLoop ; SQUASH: BPL always branch?
+.NotFullYear
+    ; Now count up through the full months, subtracting off the nubmer of days in each month
+    ; until prvDateSFTODO4 would go negative, indicating we don't have a full month left.
+    LDA #1:STA prvDateMonth
+.FullMonthLoop
     LDY prvDateMonth:JSR GetDaysInMonthY
     STA prvA
-    SEC
-    LDA prvDateSFTODO4
-    SBC prvA
-    STA prvA
-    LDA prvDateSFTODO4 + 1
-    SBC #&00
-    BCC LAEB0
+    SEC:LDA prvDateSFTODO4:SBC prvA:STA prvA
+    LDA prvDateSFTODO4 + 1:SBC #0:BCC NotFullMonth
     STA prvDateSFTODO4 + 1
-    LDA prvA
-    STA prvDateSFTODO4
+    LDA prvA:STA prvDateSFTODO4
     INC prvDateMonth
-    JMP LAE87
-			
-.LAEB0
+    JMP FullMonthLoop ; SQUASH: BPL always branch?
+.NotFullMonth
+    ; prvDateSFTODO4 is now the 0-based day within the month; add 1 to convert to the normal
+    ; convention and finish by calculating the day of week.
     LDX prvDateSFTODO4:INX:STX prvDateDayOfMonth
     JMP calculateDayOfWeekInPrvDateDayOfWeek
 }
