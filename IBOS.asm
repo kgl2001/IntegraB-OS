@@ -8375,11 +8375,12 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     JSR TestShiftCtrl:BVC NotShiftAndCtrlPressed:BPL NotShiftAndCtrlPressed
     LDX #userRegAlarm:JSR ReadUserReg
     LSR A
-    AND #&20
+    AND #rtcRegBAIE
     STA prvSFTODOALARMISH5
     ; Force RTC register B PIE and AIE off and set the bits from prvSFTODOALARIMISH5.
     LDX #rtcRegB:JSR ReadRtcRam
     AND_NOT rtcRegBPIE OR rtcRegBAIE:ORA prvSFTODOALARMISH5:JSR WriteRtcRam
+    ; Force RTC register A ARS3/2/1/0 off.
     LDX #rtcRegA:JSR ReadRtcRam
     AND_NOT rtcRegARS3 OR rtcRegARS2 OR rtcRegARS1 OR rtcRegARS0:JSR WriteRtcRam
     LDA #&76								;Reflect keyboard status in keyboard LEDs
