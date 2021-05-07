@@ -3928,7 +3928,8 @@ tmp = &A8
 
     ; Implement the *CONFIGURE TV setting.
     LDX #userRegModeShadowTV:JSR ReadUserReg
-    ; Arithmetic shift A right 5 bits to get a sign-extended version of the TV setting in A.
+    ; Arithmetic shift A right 5 bits to get a sign-extended version of the vertical shift
+    ; setting in A.
     ; SQUASH: Could we optimise this using technique from http://wiki.nesdev.com/w/index.php/6502_assembly_optimisations#Arithmetic_shift_right?
     PHA
     ROL A:PHP:ROR A ; save sign bit on stack
