@@ -3978,7 +3978,7 @@ tmp = &A8
     LDX #userRegFdriveCaps:JSR ReadUserReg:PHA
 
     ; Implement *CONFIGURE xCAPS.
-    AND #%00111000 ; get *CONFIGURE CAPS bits
+                   AND #%00111000             ; get *CONFIGURE CAPS bits
     LDX #%10100000:CMP #%00001000:BEQ CapsInX ; *CONFIGURE SHCAPS?
     LDX #%00110000:CMP #%00010000:BEQ CapsInX ; *CONFIGURE NOCAPS?
     LDX #%00100000                            ; *CONFIGURE CAPS
