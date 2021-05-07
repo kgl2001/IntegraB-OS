@@ -8276,6 +8276,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
 {
 OswordSoundBlockCopy = TransientZP
 
+; Return with N set if Ctrl is pressed and/or V set if Shift is pressed.
 .TestShiftCtrl
     CLV:CLC:JMP (KEYVL)
 
@@ -8349,7 +8350,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 
     ; Make a sound using OSWORD 7.
     ; SQUASH: I think we can just use OSWORD 7 directly on the original OswordSoundBlock and
-    ; not bother with the save/copy/restore code.
+    ; not bother with the save/copy/restore code. SFTODO: OK, looks like we are mutating the block, so *maybe* we do need this.
     LDY #OswordSoundBlockSize - 1
 .SoundBlockCopySaveLoop
     LDA OswordSoundBlockCopy,Y:PHA
@@ -8371,11 +8372,8 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     DEC prvSFTODOALARMISH2
 .LB40E
     LDA prvSFTODOALARMISH1:BNE LB444
-    JSR TestShiftCtrl
-    BVC LB447
-    BPL LB447
-    LDX #userRegAlarm
-    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
+    JSR TestShiftCtrl:BVC NotShiftAndCtrlPressed:BPL NotShiftAndCtrlPressed
+    LDX #userRegAlarm:JSR ReadUserReg
     LSR A
     AND #&20
     STA prvSFTODOALARMISH5
@@ -8394,6 +8392,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 			
 .LB444
     DEC prvSFTODOALARMISH1
+.NotShiftAndCtrlPressed
 .LB447
     LDX prvSFTODOALARMISH5
     LDA SHEILA+&40							;VIA 6522
