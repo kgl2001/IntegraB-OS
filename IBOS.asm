@@ -3418,7 +3418,7 @@ ConfParBitBitCountOffset = 2
 		EQUW Conf1-1							;DELAY <0-255>		Type 1: Number starting 0
 		EQUW Conf1-1							;REPEAT <0-255>		Type 1: Number starting 0
 		EQUW Conf3-1							;CAPS /NOCAPS/SHCAPS	Type 3: 
-		EQUW Conf4-1							;TV <0-255>,<0-1>		Type 4: 
+		EQUW ConfTV - 1							;TV <0-255>,<0-1>		Type 4:
 		EQUW Conf5-1							;MODE (<0-7>/<128-135>)	Type 5: 
 		EQUW Conf6-1							;TUBE /NOTUBE		Type 6: Optional NO Prefix
 		EQUW Conf6-1							;BOOT /NOBOOT		Type 6: Optional NO Prefix
@@ -3723,35 +3723,33 @@ ENDIF
     JMP SetConfigValueA
 }
 
+.ConfTV
 {
-.^Conf4	  BCS Conf4Write
-            JSR GetConfigValue
-            PHA
-            JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
-            PLA
-            PHA
-            LSR A
-            CMP #&04
-            BCC L959A
-            ORA #&F8
-.L959A      JSR PrintADecimalPad
-            LDA #','
-            JSR OSWRCH
-            PLA
-            AND #&01
-            JMP PrintADecimalPadNewline
+    BCS ConfTVWrite
+    JSR GetConfigValue
+    PHA:JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx:PLA ; SQUASH: worth factoring this line out?
+    PHA
+    LSR A
+    CMP #&04
+    BCC L959A
+    ORA #&F8
+.L959A
+    JSR PrintADecimalPad
+    LDA #',':JSR OSWRCH
+    PLA:AND #&01:JMP PrintADecimalPadNewline
 
-.Conf4Write JSR ConvertIntegerDefaultDecimalChecked
-            AND #&07
-            ASL A
-            PHA
-            JSR FindNextCharAfterSpaceSkippingComma
-            JSR ConvertIntegerDefaultDecimalChecked
-            AND #&01
-            STA L00AE
-            PLA
-            ORA L00AE
-            JMP SetConfigValueA
+.ConfTVWrite
+    JSR ConvertIntegerDefaultDecimalChecked
+    AND #&07
+    ASL A
+    PHA
+    JSR FindNextCharAfterSpaceSkippingComma
+    JSR ConvertIntegerDefaultDecimalChecked
+    AND #&01
+    STA L00AE
+    PLA
+    ORA L00AE
+    JMP SetConfigValueA
 }
 
 ; SFTODO: This entire block is dead code
