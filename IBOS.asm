@@ -7625,64 +7625,64 @@ Options = transientDateSFTODO1
 daysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 
     XASSERT_USE_PRV1
-            LDA #19
-            STA prvDateCentury
-            SEC
-            LDA prvDateSFTODO4
-            SBC #lo(daysBetween1stJan1900And2000)
-            STA prvA
-            LDA prvDateSFTODO4 + 1
-            SBC #hi(daysBetween1stJan1900And2000)
-            BCC prvDateCenturyOK
-            STA prvDateSFTODO4 + 1
-            LDA prvA
-            STA prvDateSFTODO4
-            INC prvDateCentury
+    LDA #19
+    STA prvDateCentury
+    SEC
+    LDA prvDateSFTODO4
+    SBC #lo(daysBetween1stJan1900And2000)
+    STA prvA
+    LDA prvDateSFTODO4 + 1
+    SBC #hi(daysBetween1stJan1900And2000)
+    BCC prvDateCenturyOK
+    STA prvDateSFTODO4 + 1
+    LDA prvA
+    STA prvDateSFTODO4
+    INC prvDateCentury
 .prvDateCenturyOK
-	  ; By this point we've adjusted prvDateSFTODO4 and prvDateCentury so we now SFTODO: GUESSING want to calculate the number of days between prvDate and 1st January (prvCentury 00)
-	  LDA #0
-            STA prvDateYear
-.LAE52      JSR TestLeapYear ; set C iff prvDateYear is a leap year
-            LDA #lo(daysPerYear)
-            ADC #0
-            STA prvA
-            LDA #hi(daysPerYear)
-            STA prvB
-            SEC
-            LDA prvDateSFTODO4
-            SBC prvA
-            STA prvA
-            LDA prvDateSFTODO4 + 1
-            SBC prvB
-            BCC LAE82
-            STA prvDateSFTODO4 + 1
-            LDA prvA
-            STA prvDateSFTODO4
-            INC prvDateYear
-            JMP LAE52
+    ; By this point we've adjusted prvDateSFTODO4 and prvDateCentury so we now SFTODO: GUESSING want to calculate the number of days between prvDate and 1st January (prvCentury 00)
+    LDA #0
+    STA prvDateYear
+.LAE52
+    JSR TestLeapYear ; set C iff prvDateYear is a leap year
+    LDA #lo(daysPerYear)
+    ADC #0
+    STA prvA
+    LDA #hi(daysPerYear)
+    STA prvB
+    SEC
+    LDA prvDateSFTODO4
+    SBC prvA
+    STA prvA
+    LDA prvDateSFTODO4 + 1
+    SBC prvB
+    BCC LAE82
+    STA prvDateSFTODO4 + 1
+    LDA prvA
+    STA prvDateSFTODO4
+    INC prvDateYear
+    JMP LAE52
 			
-.LAE82      LDA #&01
-            STA prvDateMonth
-.LAE87      LDY prvDateMonth
-            JSR GetDaysInMonthY
-            STA prvA
-            SEC
-            LDA prvDateSFTODO4
-            SBC prvA
-            STA prvA
-            LDA prvDateSFTODO4 + 1
-            SBC #&00
-            BCC LAEB0
-            STA prvDateSFTODO4 + 1
-            LDA prvA
-            STA prvDateSFTODO4
-            INC prvDateMonth
-            JMP LAE87
+.LAE82
+    LDA #&01:STA prvDateMonth
+.LAE87
+    LDY prvDateMonth:JSR GetDaysInMonthY
+    STA prvA
+    SEC
+    LDA prvDateSFTODO4
+    SBC prvA
+    STA prvA
+    LDA prvDateSFTODO4 + 1
+    SBC #&00
+    BCC LAEB0
+    STA prvDateSFTODO4 + 1
+    LDA prvA
+    STA prvDateSFTODO4
+    INC prvDateMonth
+    JMP LAE87
 			
-.LAEB0      LDX prvDateSFTODO4
-            INX
-            STX prvDateDayOfMonth
-            JMP calculateDayOfWeekInPrvDateDayOfWeek
+.LAEB0
+    LDX prvDateSFTODO4:INX:STX prvDateDayOfMonth
+    JMP calculateDayOfWeekInPrvDateDayOfWeek
 }
 
 {
