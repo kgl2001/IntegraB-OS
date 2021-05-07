@@ -8318,6 +8318,13 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     BCC LB3CA
 
     LDX #userRegAlarm:JSR ReadUserReg
+    ; SFTODO: userRegAlarm structure is:
+    ; b0 - LB33E,X->ALARMISH1
+    ; b1-2 - LB340,X->ALARMISH2
+    ; b3-4 - LB346,X->ALARMISH4
+    ; b5 - LB344,X->ALARMISH3
+    ; b6 - used to set reg B AIE, so probably an enable/disable flag
+    ; b7 - userRegAlarmRBit *probably* a repeat flag but not verified via code, just guessing
     PHA
     AND #1:TAX:LDA LB33E,X:STA prvSFTODOALARMISH1
     PLA
@@ -8325,14 +8332,14 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     PHA
     AND #&03								;read next two bits (1&2)
     TAX
-    LDA LB340,X:STA prvSFTODOALARMISH2								;save at &8273
+    LDA LB340,X:STA prvSFTODOALARMISH2
     PLA
     LSR A
     LSR A									;ditch next two lsbs - already used
     PHA
     AND #&03								;read next two bits (3&4)
     TAX
-    LDA LB346,X:STA prvSFTODOALARMISH4								;save at &8275
+    LDA LB346,X:STA prvSFTODOALARMISH4
     PLA
     LSR A
     LSR A									;ditch next two lsbs - already used
