@@ -8300,8 +8300,10 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 .SFTODOALARMISH4Lookup
     EQUB &5A,&82,&B0,&D2
 
-.LB34A		EQUB &06,&0E
-.LB34C		EQUB &0F,&07
+.SystemViaRegisterBLookup1
+    EQUB &06,&0E
+.SystemViaRegisterBLookup2
+    EQUB &0F,&07
 
 .^LB34E
     ; Set bit 6 of userRegAlarm to be a copy of bit 7. SFTODO: PROB RIGHT BUT COME BACK TO THIS
@@ -8407,11 +8409,11 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     LDX prvSFTODOALARMISH5
     LDA SHEILA + systemViaBase + viaRegisterB
     AND #&F0
-    ORA LB34A,X								;OR with byte from 2 byte lookup table
+    ORA SystemViaRegisterBLookup1,X
     STA SHEILA + systemViaBase + viaRegisterB
     LDA SHEILA + systemViaBase + viaRegisterB
     AND #&F0
-    ORA LB34C,X								;OR with byte from 2 byte lookup table
+    ORA SystemViaRegisterBLookup2,X
     STA SHEILA + systemViaBase + viaRegisterB
 
 .LB460
