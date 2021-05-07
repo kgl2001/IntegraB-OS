@@ -663,6 +663,7 @@ prvSFTODOALARMISH2 = prv82 + &73
 prvSFTODOALARMISH3 = prv82 + &74
 prvSFTODOALARMISH4 = prv82 + &75
 prvSFTODOALARMISH5 = prv82 + &76
+prvSFTODOALARMISH5b = prv82 + &76 ; SFTODO: SAME ADDRESS BUT USED DIFFERENTLY
 
 ; SFTODO: The following constants are maybe a bit badly named, but I didn't just want to call them "on" and "off". They are used for some booleans which are e.g. handled via ParseOnOff and PrintOnOff
 prvOn = &FF
@@ -8301,9 +8302,11 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     EQUB &5A,&82,&B0,&D2
 
 .SystemViaRegisterBLookup1
-    EQUB &06,&0E
+    EQUB %0110
+    EQUB %1110
 .SystemViaRegisterBLookup2
-    EQUB &0F,&07
+    EQUB %1111
+    EQUB %0111
 
 .^LB34E
     ; Set bit 6 of userRegAlarm to be a copy of bit 7. SFTODO: PROB RIGHT BUT COME BACK TO THIS
@@ -8360,9 +8363,9 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     JSR WriteRtcRam
     ; Force RTC register B PIE (periodic interrupt enable) on.
     LDX #rtcRegB:JSR ReadRtcRam:ORA #rtcRegBPIE:JSR WriteRtcRam
-    LDA #&01:STA prvSFTODOALARMISH5
+    LDA #1:STA prvSFTODOALARMISH5
 .LB3CA
-    LDA prvSFTODOALARMISH5:EOR #&01:STA prvSFTODOALARMISH5:BEQ LB447
+    LDA prvSFTODOALARMISH5:EOR #1:STA prvSFTODOALARMISH5:BEQ LB447
     LDA prvSFTODOALARMISH2:BEQ LB40E
 
     ; Make a sound using OSWORD 7.
@@ -8391,10 +8394,10 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     LDX #userRegAlarm:JSR ReadUserReg
     LSR A ; SFTODO : SO b6 of userRegAlarm corresponds to reg B AIE (b5)
     AND #rtcRegBAIE
-    STA prvSFTODOALARMISH5
+    STA prvSFTODOALARMISH5b
     ; Force RTC register B PIE and AIE off and set the bits from prvSFTODOALARIMISH5.
     LDX #rtcRegB:JSR ReadRtcRam
-    AND_NOT rtcRegBPIE OR rtcRegBAIE:ORA prvSFTODOALARMISH5:JSR WriteRtcRam
+    AND_NOT rtcRegBPIE OR rtcRegBAIE:ORA prvSFTODOALARMISH5b:JSR WriteRtcRam
     ; Force RTC register A ARS3/2/1/0 off.
     LDX #rtcRegA:JSR ReadRtcRam
     AND_NOT rtcRegARS3 OR rtcRegARS2 OR rtcRegARS1 OR rtcRegARS0:JSR WriteRtcRam
@@ -8408,12 +8411,10 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 .LB447
     LDX prvSFTODOALARMISH5
     LDA SHEILA + systemViaBase + viaRegisterB
-    AND #&F0
-    ORA SystemViaRegisterBLookup1,X
+    AND #&F0:ORA SystemViaRegisterBLookup1,X
     STA SHEILA + systemViaBase + viaRegisterB
     LDA SHEILA + systemViaBase + viaRegisterB
-    AND #&F0
-    ORA SystemViaRegisterBLookup2,X
+    AND #&F0:ORA SystemViaRegisterBLookup2,X
     STA SHEILA + systemViaBase + viaRegisterB
 
 .LB460
