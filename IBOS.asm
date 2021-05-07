@@ -8379,8 +8379,9 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     LDA prvSFTODOALARMISH2:BEQ LB40E
 
     ; Make a sound using OSWORD 7.
-    ; SQUASH: I think we can just use OSWORD 7 directly on the original OswordSoundBlock and
-    ; not bother with the save/copy/restore code. SFTODO: OK, looks like we are mutating the block, so *maybe* we do need this.
+    ; SQUASH: Couldn't we use some private RAM to hold the OSWORD 7 block? The OS is executing
+    ; OSWORD 7 - we're using a standard sound channel, not something fancy - and can see
+    ; sideways RAM just fine. That way we could avoid the save/restore overhead.
     LDY #OswordSoundBlockSize - 1
 .SoundBlockCopySaveLoop
     LDA OswordSoundBlockCopy,Y:PHA
