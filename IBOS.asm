@@ -645,8 +645,12 @@ prvTmp5 = prv82 + &51
 
 prvTmp = prv82 + &52 ; 1 byte, SFTODO: seems to be used as scratch space by some code without relying on value being preserved
 
+; SFTODO: The following constants are maybe a bit badly named, but I didn't just want to call them "on" and "off". They are used for some booleans which are e.g. handled via ParseOnOff and PrintOnOff
+prvOn = &FF
+prvOff = 0
+
 prvOsMode = prv83 + &3C ; working copy of OSMODE, initialised from relevant bits of userRegOsModeShx in service01
-prvShx = prv83 + &3D ; working copy of SHX, initialised from relevant bit of userRegOsModeShx in service01 (&00 on, &FF off)
+prvShx = prv83 + &3D ; working copy of SHX, initialised from relevant bit of userRegOsModeShx in service01 (uses prvOn/prvOff convention)
 prvSFTODOTUBE2ISH = prv83 + &40
 prvSFTODOTUBEISH = prv83 + &41
 prvTubeReleasePending = prv83 + &42 ; used during OSWORD 42; &FF means we have claimed the tube and need to release it at end of transfer, 0 means we don't
@@ -3062,7 +3066,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 .SwitchInShadow ; SFTODO: Should maybe change this and related labels, since *S* really does "weird stuff"
     LDA #4:JSR SetOsModeA
     LDA #0:STA osShadowRamFlag
-    LDX #prvShx - prv83:LDA #&FF:JSR WritePrivateRam8300X ; set SHX off SFTODO: magic
+    LDX #prvShx - prv83:LDA #prvOn:JSR WritePrivateRam8300X ; set SHX off SFTODO: magic
     LDA #vduSetMode:JSR OSWRCH:LDA currentMode:JSR OSWRCH
     BIT tubePresenceFlag:BPL NoTube
     JSR disableTube
@@ -3927,7 +3931,7 @@ tmp = &A8
     JSR assignDefaultPseudoRamBanks
     PLA
     AND #8:BEQ ShxInA
-    LDA #&FF
+    LDA #prvOn
 .ShxInA
     LDX #prvShx - prv83:JSR WritePrivateRam8300X
 .SoftReset
