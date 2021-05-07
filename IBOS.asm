@@ -8293,18 +8293,12 @@ EndIndex = transientDateSFTODO2 ; exclusive
     SEC
 .^LB35F
     XASSERT_USE_PRV1
-    LDA romselCopy
-    PHA
-    LDA ramselCopy
-    PHA
-    AND #ramselShen
-    ORA #ramselPrvs1
-    STA ramselCopy
-    STA ramsel
-    LDA romselCopy
-    ORA #romselPrvEn
-    STA romselCopy
-    STA romsel
+    LDA romselCopy:PHA
+    LDA ramselCopy:PHA
+    ; SFTODO: How are we called? Do we need to do this romsel/ramsel stuff or will our caller have done it already?
+    AND #ramselShen:ORA #ramselPrvs1:STA ramselCopy:STA ramsel
+    ; SQUASH: Can we do the next line above to save redoing LDA romselCopy?
+    LDA romselCopy:ORA #romselPrvEn:STA romselCopy:STA romsel
     BCC LB3CA
 
 LDX #userRegAlarm
