@@ -725,6 +725,7 @@ crtcHorzDisplayed = SHEILA + &01
 systemViaBase = &40
 viaRegisterB = 0
 viaRegisterInterruptEnable = 14
+addressableLatchMask = %1111
 addressableLatchCapsLock = 6
 addressableLatchShiftLock = 7
 addressableLatchData0 = 0<<3
@@ -8417,10 +8418,10 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     ; calls to this code we alternate which of the Shift and Caps Lock LEDs is lit.
     LDX prvSFTODOALARMISH5
     LDA SHEILA + systemViaBase + viaRegisterB
-    AND #&F0:ORA CapsLockLookup,X
+    AND_NOT addressableLatchMask:ORA CapsLockLookup,X
     STA SHEILA + systemViaBase + viaRegisterB
     LDA SHEILA + systemViaBase + viaRegisterB
-    AND #&F0:ORA ShiftLockLookup,X
+    AND_NOT addressableLatchMask:ORA ShiftLockLookup,X
     STA SHEILA + systemViaBase + viaRegisterB
 
 .LB460
