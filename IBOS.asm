@@ -8343,8 +8343,8 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     ; SFTODO: userRegAlarm structure is:
     ; b0 - LB33E,X->ALARMISH1
     ; b1-2 - LB340,X->ALARMISH2
-    ; b3-4 - LB346,X->ALARMISH4
-    ; b5 - LB344,X->ALARMISH3
+    ; b3-4 - LB346,X->ALARMISH4 pitch
+    ; b5 - LB344,X->ALARMISH3 amplitude
     ; b6 - used to set reg B AIE, so probably an enable/disable flag
     ; b7 - userRegAlarmRBit *probably* a repeat flag but not verified via code, just guessing
     PHA
@@ -8409,6 +8409,10 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     DEC prvSFTODOALARMISH1
 .NotShiftAndCtrlPressed
 .LB447
+    ; SFTODO: I am *guessing* that by exiting via this code path, we have not acknowledged the
+    ; alarm interrupt and will therefore be re-entered again PDQ. This presumably avoids
+    ; locking the machine up by busy-waiting in here while allowing us to continue to execute.
+
     ; prvSFTODOALARMISH5 is 0 or 1 here; as we toggle between those two values over multiple
     ; calls to this code we alternate which of the Shift and Caps Lock LEDs is lit.
     LDX prvSFTODOALARMISH5
