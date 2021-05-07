@@ -3703,24 +3703,24 @@ ENDIF
     JMP SetConfigValueA
 }
 
+.Conf5
 {
-.^Conf5	  BCS Conf5Write
-            JSR GetConfigValue
-            PHA
-            JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
-            PLA
-	  ; Map a "compressed mode" in the range 0-15 to 0-7 or 128-135.
-            CMP #maxMode + 1
-            BCC modeInA
-            ADC #(shadowModeOffset - (maxMode + 1)) - 1 ; -1 because C is set
-.modeInA	  JMP PrintADecimalPadNewline
+    BCS Conf5Write
+    JSR GetConfigValue
+    PHA:JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx:PLA
+    ; Map a "compressed mode" in the range 0-15 to 0-7 or 128-135.
+    CMP #maxMode + 1:BCC ScreenModeInA
+    ADC #(shadowModeOffset - (maxMode + 1)) - 1 ; -1 because C is set
+.ScreenModeInA
+    JMP PrintADecimalPadNewline
 
-.Conf5Write JSR ConvertIntegerDefaultDecimalChecked
-	  ; Map a mode 0-7 or 128-135 to a "compressed mode" in the range 0-15.
-            CMP #shadowModeOffset
-            BCC valueInA
-            SBC #shadowModeOffset - (maxMode + 1)
-.valueInA   JMP SetConfigValueA
+.Conf5Write
+    JSR ConvertIntegerDefaultDecimalChecked
+    ; Map a mode 0-7 or 128-135 to a "compressed mode" in the range 0-15.
+    CMP #shadowModeOffset:BCC CompressedModeInA
+    SBC #shadowModeOffset - (maxMode + 1)
+.CompressedModeInA
+    JMP SetConfigValueA
 }
 
 {
@@ -3960,6 +3960,7 @@ tmp = &A8
 .DontPreserveScreenMode
     LDX #userRegModeShadowTV:JSR ReadUserReg:AND #&0F
     ; Map the "compressed mode" in the range 0-15 to 0-7 or 128-135.
+    ; SQUASH: We have at least two copies of this, worth sharing?
     CMP #maxMode + 1:BCC ScreenModeInA
     ADC #(shadowModeOffset - (maxMode + 1)) - 1 ; -1 because C is set
 .ScreenModeInA
