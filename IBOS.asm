@@ -4099,6 +4099,10 @@ tmp = &A8
 ; possibly prvLastFilingSystem = XFILEVBank AND maxBank, since DNFS *may* be using bit 7 of its
 ; bank number as a DFS/NFS flag and we don't want that breaking things in service03. (service03
 ; currently does AND &7F; we don't need both that *and* AND maxBank here.)
+; SFTODO: Ken - *if* it's easy at some point, could you please try "PRINT ?&DBC" on a BBC B
+; with DNFS (i.e. DFS 1.20 and NFS whatever-it-is) and *NET as the current filing system? If
+; it's not easy don't worry, it's not urgent and I may be able to find the answer somewhere
+; online.
 .service0F
 {
     LDX #prvLastFilingSystem - prv83:JSR ReadPrivateRam8300X:AND #&80:PHA
