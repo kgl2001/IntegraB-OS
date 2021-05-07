@@ -3027,21 +3027,12 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 			
 
 {
-;execute '*S*' command
-;switches to shadow, executes command, then switches back out of shadow?
-; SFTODO: Having finally looked at this code properly, that's not really what *S* does; it's a
-; bit weird TBH. I don't see why it *couldn't* be the inverse of *X* (although I don't know how
-; useful that would be, really), but as written it seems to do *OSMODE 4, *SHADOW 0 (i.e. force
-; shadow mode on when changing mode), *SHX OFF, re-select the current screen mode (which will
-; therefore be the shadow version, whether it was before or not), disable the tube if enabled
-; and then run the command, returning to the caller if we didn't disable the tube and otherwise
-; entering the NLE. I am really not sure what's going on - I might *guess* this is an attempt
-; to allow a user to "force" shadow RAM to be used by a language ROM (e.g. an early version of
-; View) in a simple way, but I'm not sure. Disabling the tube seems particularly odd.
-; Particularly as we force SHX OFF (presumably for speed), if you use *S* to do anything other
-; than launch a language ROM or new application the running application is likely to be pretty
-; confused when it gets control back, which is partly what makes me think this is intended for
-; launching languages.
+; Execute '*S*' command. This is intended for running languages (particularly non-tube
+; compatible ones in PALPROMs) conveniently. It disables the tube (if present), enters OSMODE
+; 4, forces shadow mode and SHX on, re-selects the current mode (thereby entering shadow mode
+; if we weren't currently in one) and the executes whatever follows *S*. If that command
+; returns (which it won't, if it *is* a language), we enter the NLE if we had to disable the
+; tube, otherwise we return normally.
 .^commandS
     CLV ; start with V clear, it's set during execution of *S* if we disabled the tube
     SEC:BCS Common ; always branch
@@ -3059,11 +3050,11 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     CLC:TYA:ADC transientCmdPtr:PHA
     LDA transientCmdPtr + 1:ADC #0:PHA
     TSX:LDA L0103,X ; get stacked flags from earlier PHP
-    ASSERT flagC == 1:LSR A:BCS SwitchInShadow ; branch if C set in stacked flags
+    ASSERT flagC == 1:LSR A:BCS CommandSSetup ; branch if C set in stacked flags
     LDX #&80:JSR L8A7B ; push current RAM state and select video RAM
     JMP CallSubCommand
 			
-.SwitchInShadow ; SFTODO: Should maybe change this and related labels, since *S* really does "weird stuff"
+.CommandSSetup ; SFTODO: Should maybe change this and related labels, since *S* really does "weird stuff"
     LDA #4:JSR SetOsModeA
     LDA #0:STA osShadowRamFlag
     LDX #prvShx - prv83:LDA #prvOn:JSR WritePrivateRam8300X ; set SHX off SFTODO: magic
@@ -3073,16 +3064,17 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     TSX:LDA L0103,X:ORA #flagV:STA L0103,X ; set V in stacked flags to indicate tube disabled
     LDA romselCopy:AND #maxBank:STA currentLanguageRom
     JSR setBrkv
+
 .NoTube
 .CallSubCommand
     PLA:TAY:PLA:TAX:JSR OSCLI
     PLP
-    BCS CheckVAfterSwitchInShadow
+    BCS CheckVAfterCommandS
     LDX #&C0:JSR L8A7B ; pop and select stacked shadow RAM state
 .ExitAndClaimServiceCallIndirect
     JMP ExitAndClaimServiceCall
 
-.CheckVAfterSwitchInShadow
+.CheckVAfterCommandS
     BVC ExitAndClaimServiceCallIndirect
     FALLTHROUGH_TO nle
 }
