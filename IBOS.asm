@@ -8273,16 +8273,17 @@ EndIndex = transientDateSFTODO2 ; exclusive
 
 ; SFTODO: Mostly un-decoded
 {
+OswordSoundBlockCopy = TransientZP
 .LB331      CLV
             CLC
             JMP (KEYVL)
 
-;OSBYTE &07 buffer data
-;Equivalent to SOUND 3,-15,210,5
-.LB336		EQUW &0003							;Channel:	 3
-		EQUW &FFF1							;Amplitude:	-15
-		EQUW &00D2							;Pitch:		 210
-		EQUW &0005							;Duration:	 5
+;OSWORD &07 buffer data
+.OswordSoundBlock
+    EQUW   3 ; channel
+    EQUW -15 ; amplitude
+    EQUW 210 ; pitch
+    EQUW   5 ; duration
 
 .LB33E		EQUB &02,&08
 .LB340		EQUB &0F,&1E,&3C,&78
@@ -8333,11 +8334,12 @@ EndIndex = transientDateSFTODO2 ; exclusive
     AND #&01								;read next bit (0)
     TAX
     LDA LB344,X:STA prvSFTODOALARMISH3
-    ; Force RTC register A ARS3/2/1 on and ARS0 off. SFTODO DOUBLE CHECK
+    ; Force RTC register A ARS3/2/1 on and ARS0 off.
     LDX #rtcRegA:JSR ReadRtcRam
     AND_NOT rtcRegARS3 OR rtcRegARS2 OR rtcRegARS1 OR rtcRegARS0
     ORA #rtcRegARS3 OR rtcRegARS2 OR rtcRegARS1
     JSR WriteRtcRam
+    ; Force RTC register B PIE (periodic interrupt enable) on.
     LDX #rtcRegB:JSR ReadRtcRam:ORA #rtcRegBPIE:JSR WriteRtcRam
     LDA #&01:STA prvSFTODOALARMISH5
 .LB3CA
@@ -8352,7 +8354,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
     ; SFTODO: I am not sure this is necessary, can't we do OSWORD 7 with a parameter block in SWR?
     LDY #&07
 .LB3E4
-    LDA LB336,Y								;Relocate sound data from &B336-&B33D
+    LDA OswordSoundBlock,Y								;Relocate sound data from &B336-&B33D
     STA L00A8,Y								;to &00A8-&00AF
     DEY
     BPL LB3E4
