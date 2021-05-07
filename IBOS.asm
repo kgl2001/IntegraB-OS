@@ -3750,26 +3750,29 @@ Tmp = TransientZP + 6
 
 ; SFTODO: This entire block is dead code
 {
-.L95BF      LDA #&00
-            ASL L00AE
-            ROL A
-            ASL L00AE
-            ROL A
-            RTS
+.L95BF
+    LDA #&00
+    ASL L00AE
+    ROL A
+    ASL L00AE
+    ROL A
+    RTS
 
-            JSR L95BF								;Missing address label?
-            JSR PrintADecimalPad
-            LDA #','
-            JMP OSWRCH
-			
-            ASL L00AE								;Missing address label?
-            ASL L00AE
-            JSR FindNextCharAfterSpaceSkippingComma
-            JSR ConvertIntegerDefaultDecimalChecked
-            AND #&03
-            ORA L00AE
-            STA L00AE
-            RTS
+.Dead1
+    JSR L95BF
+    JSR PrintADecimalPad
+    LDA #','
+    JMP OSWRCH
+
+.Dead2
+    ASL L00AE
+    ASL L00AE
+    JSR FindNextCharAfterSpaceSkippingComma
+    JSR ConvertIntegerDefaultDecimalChecked
+    AND #&03
+    ORA L00AE
+    STA L00AE
+    RTS
 }
 			
 ; Autoboot - Service call &03
