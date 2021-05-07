@@ -8315,7 +8315,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     EQUB addressableLatchShiftLock OR addressableLatchData0
 
 .^LB34E
-    ; Set bit 6 of userRegAlarm to be a copy of bit 7. SFTODO: PROB RIGHT BUT COME BACK TO THIS
+    ; Set bit 6 of userRegAlarm to be a copy of bit 7. SFTODO: PROB RIGHT BUT COME BACK TO THIS - this would make some sense, it would essentially copy the "R" (repeat?) bit into the "enable" bit, so we'd turn the alarm off iff it's not repeating
     LDX #userRegAlarm:JSR ReadUserReg
     ASL A:PHP
     ASL A:PLP:PHP:ROR A
