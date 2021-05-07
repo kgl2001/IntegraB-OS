@@ -7733,7 +7733,7 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 ; Decrement prvDate* by one day; this does not respect the open flags. On exit:
 ;     C=1 means the century wrapped from 00xx to 255x (SFTODO: bit odd threshold, as we don't generally cope with dates outside 19/20xx, do we?)
 ;     C=0 means the century didn't wrap; V is set iff the year was decremented.
-.decrementPrvDateBy1
+.DecrementPrvDateBy1
 {
     XASSERT_USE_PRV1
     DEC prvDateDayOfMonth:BNE clvClcRts
@@ -7941,7 +7941,7 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     BNE LB0CD
     BEQ LB07B ; always branch
 .LB0DA
-    JSR decrementPrvDateBy1
+    JSR DecrementPrvDateBy1
     JSR calculateDayOfWeekInA
     CMP prvDateDayOfWeek
     BNE LB0DA
@@ -7975,7 +7975,7 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     SEC:SBC #&5A
     TAX
 .LB11A
-    JSR decrementPrvDateBy1
+    JSR DecrementPrvDateBy1
     BCC LB122
     JMP BadDate2 ; SQUASH: BCS always?
 			
@@ -8071,22 +8071,23 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     JMP BadDate
 }
 
-; Take the parsed 2-byte integer year at L00B0 and populate prvDate{Year,Century}, defaulting the century to the current century if a two digit year is specified.
+; Take the parsed 2-byte integer year at CovnertIntegerResult and populate
+; prvDate{Year,Century}, defaulting the century to the current century if a two digit year is
+; specified.
 .InterpretParsedYear
 {
     XASSERT_USE_PRV1
-            LDA ConvertIntegerResult:STA prvA
-            LDA ConvertIntegerResult + 1:STA prvB
-            LDA #100:STA prvC
-            JSR SFTODOPSEUDODIV ; SFTODO: IN PRACTICE THIS WILL ALWAYS DO DIVISION WITH NO WEIRDNESS (9999 WOULD GIVE PRVB=39<100)
-            STA prvDateYear
-            LDA prvD
-            BNE centuryInA
+    LDA ConvertIntegerResult:STA prvA
+    LDA ConvertIntegerResult + 1:STA prvB
+    LDA #100:STA prvC
+    JSR SFTODOPSEUDODIV ; SFTODO: IN PRACTICE THIS WILL ALWAYS DO DIVISION WITH NO WEIRDNESS (9999 WOULD GIVE PRVB=39<100)
+    STA prvDateYear
+    LDA prvD:BNE CenturyInA
 .^GetUserRegCentury
-            LDX #userRegCentury
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-.centuryInA STA prvDateCentury
-            RTS
+    LDX #userRegCentury:JSR ReadUserReg
+.CenturyInA
+    STA prvDateCentury
+    RTS
 }
 
 ; SFTODO: This seems to be parsing the "+"/"-" support for *DATE/*CALENDAR and returning with the offset in some form in A (&FF meaning not present/couldn't parse or something like that), probably returns with C clear iff parsed OK. - I think as a whole it's parsing +/- a number of days, a specific day of the week or the +/-day-of-week stuff - this is *probably* why A seems to get shifted round, as I think all this different functionality is mapped into A on return, but not sure
