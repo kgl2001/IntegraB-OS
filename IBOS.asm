@@ -8309,35 +8309,28 @@ EndIndex = transientDateSFTODO2 ; exclusive
 
     LDX #userRegAlarm:JSR ReadUserReg
     PHA
-    AND #1
-    TAX
-    LDA LB33E,X								;read first byte from 2 byte lookup table
-    STA prvSFTODOALARMISH1								;save at &8272
+    AND #1:TAX:LDA LB33E,X:STA prvSFTODOALARMISH1
     PLA
     LSR A									;ditch lsb - already used
     PHA
     AND #&03								;read next two bits (1&2)
     TAX
-    LDA LB340,X								;read second byte from 4 byte lookup table
-    STA prvSFTODOALARMISH2								;save at &8273
+    LDA LB340,X:STA prvSFTODOALARMISH2								;save at &8273
     PLA
     LSR A
     LSR A									;ditch next two lsbs - already used
     PHA
     AND #&03								;read next two bits (3&4)
     TAX
-    LDA LB346,X								;read third byte from 4 byte lookup table
-    STA prvSFTODOALARMISH4								;save at &8275
+    LDA LB346,X:STA prvSFTODOALARMISH4								;save at &8275
     PLA
     LSR A
     LSR A									;ditch next two lsbs - already used
     AND #&01								;read next bit (0)
     TAX
-    LDA LB344,X								;read forth byte from 2 byte lookup table
-    STA prvSFTODOALARMISH3								;save at &8274
-    LDX #rtcRegA
-    JSR ReadRtcRam								;Read data from RTC memory location X into A
-    AND #&F0
+    LDA LB344,X:STA prvSFTODOALARMISH3								;save at &8274
+    LDX #rtcRegA:JSR ReadRtcRam
+    AND #rtcRegAUIP OR rtcRegADV2 OR rtcRegADV1 OR rtcRegADV0
     ORA #&0E
     JSR WriteRtcRam								;Write data from A to RTC memory location X
     LDX #rtcRegB
