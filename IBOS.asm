@@ -8346,13 +8346,12 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 .LB3CA
     LDA prvSFTODOALARMISH5:EOR #&01:STA prvSFTODOALARMISH5:BEQ LB447
     LDA prvSFTODOALARMISH2:BEQ LB40E
-    LDY #&07
-.LB3DB
-    LDA L00A8,Y
-    PHA
-    DEY
-    BPL LB3DB
-    ; SQUASH: I am not sure we need to copy the OSWORD 7 block, we can use it directly from our bank.
+    ; SQUASH: I think we can just use OSWORD 7 directly on the original OswordSoundBlock and
+    ; not bother with the save/copy/restore code.
+    LDY #OswordSoundBlockSize - 1
+.SoundBlockCopySaveLoop
+    LDA OswordSoundBlockCopy,Y:PHA
+    DEY:BPL SoundBlockCopySaveLoop
     LDY #OswordSoundBlockSize - 1
 .SoundBlockCopyLoop
     LDA OswordSoundBlock,Y:STA OswordSoundBlockCopy,Y
@@ -8365,13 +8364,10 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     LDX #&A8								;buffer address &00A8
     LDY #&00
     JSR OSWORD								;OSWORD &07, buffer &00A8
-    LDY #&00
-.LB402
-    PLA
-    STA L00A8,Y
-    INY
-    CPY #&08
-    BNE LB402
+    LDY #0
+.SoundBlockCopyRestoreLoop
+    PLA:STA OswordSoundBlockCopy,Y
+    INY:CPY #OswordSoundBlockSize:BNE SoundBlockCopyRestoreLoop
     DEC prvSFTODOALARMISH2
 .LB40E
     LDA prvSFTODOALARMISH1
