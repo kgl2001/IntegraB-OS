@@ -3841,8 +3841,8 @@ Tmp = TransientZP + 6
     ; SFTODO: Why do we have two different "ways" to call SetDfsNfsPriority?
     LDA lastBreakType:BNE NotSoftReset1
     LDX #prvSFTODOFILEISH - prv83:JSR ReadPrivateRam8300X
-    PHA ; SFTODO: Why can't we just do the read from &8343 *after* JSR SetDfsNfsPriority and avoid this PHA/PLA?
-    JSR SetDfsNfsPriority
+    PHA ; SFTODO: Why can't we just do the read from prvSFTODOFILEISH *after* JSR SetDfsNfsPriority and avoid this PHA/PLA?
+    JSR SetDfsNfsPriority ; SFTODO: Note this does *not* use the value in A - I suspect the way the code worked got changed at one point and we're seeing some redundant code left behind
     PLA
     AND #&7F
     TAX
