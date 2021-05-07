@@ -8374,7 +8374,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     LDA prvSFTODOALARMISH1:BNE LB444
     JSR TestShiftCtrl:BVC NotShiftAndCtrlPressed:BPL NotShiftAndCtrlPressed
     LDX #userRegAlarm:JSR ReadUserReg
-    LSR A
+    LSR A ; SFTODO : SO b6 of userRegAlarm corresponds to reg B AIE (b5)
     AND #rtcRegBAIE
     STA prvSFTODOALARMISH5
     ; Force RTC register B PIE and AIE off and set the bits from prvSFTODOALARIMISH5.
