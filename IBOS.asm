@@ -8336,27 +8336,19 @@ EndIndex = transientDateSFTODO2 ; exclusive
     LDX #rtcRegA:JSR ReadRtcRam
     AND #rtcRegAUIP OR rtcRegADV2 OR rtcRegADV1 OR rtcRegADV0
     ORA #rtcRegARS3 OR rtcRegARS2 OR rtcRegARS1
-    JSR WriteRtcRam								;Write data from A to RTC memory location X
-    LDX #rtcRegB
-    JSR ReadRtcRam								;Read data from RTC memory location X into A
-    ORA #rtcRegBPIE
-    JSR WriteRtcRam								;Write data from A to RTC memory location X
-    LDA #&01
-    STA prvSFTODOALARMISH5
+    JSR WriteRtcRam
+    LDX #rtcRegB:JSR ReadRtcRam:ORA #rtcRegBPIE:JSR WriteRtcRam
+    LDA #&01:STA prvSFTODOALARMISH5
 .LB3CA
-    LDA prvSFTODOALARMISH5
-    EOR #&01
-    STA prvSFTODOALARMISH5
-    BEQ LB447
-    LDA prvSFTODOALARMISH2
-    BEQ LB40E
+    LDA prvSFTODOALARMISH5:EOR #&01:STA prvSFTODOALARMISH5:BEQ LB447
+    LDA prvSFTODOALARMISH2:BEQ LB40E
     LDY #&07
 .LB3DB
     LDA L00A8,Y
     PHA
     DEY
     BPL LB3DB
-; SFTODO: I am not sure this is necessary, can't we do OSWORD 7 with a parameter block in SWR?
+    ; SFTODO: I am not sure this is necessary, can't we do OSWORD 7 with a parameter block in SWR?
     LDY #&07
 .LB3E4
     LDA LB336,Y								;Relocate sound data from &B336-&B33D
