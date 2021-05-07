@@ -4090,20 +4090,17 @@ tmp = &A8
 {
     LDX #prvSFTODOFILEISH - prv83:JSR ReadPrivateRam8300X:AND #&80:PHA
     LDA #osargsReadFilingSystemNumber:LDX #TransientZP:LDY #0:JSR OSARGS ; SQUASH: don't set X?
-    TSX
+    TSX ; SQUASH: redundant?
     LDY #0:CMP #FilingSystemNfs:BEQ L988D
     LDY #&80:CMP #FilingSystemDfs:BEQ L988D
     LDA XFILEVBank:JMP L9896 ; SFTODO!?
 			
 .L988D
-    LDA XFILEVBank
-    AND #&0F
-    TSX
-    ORA L0101,X
+    LDA XFILEVBank:AND #maxBank
+    TSX:ORA L0101,X ; access stacked prvSFTODOFILEISH value
 .L9896
-    LDX #prvSFTODOFILEISH - prv83
-    JSR WritePrivateRam8300X
-    PLA
+    LDX #prvSFTODOFILEISH - prv83:JSR WritePrivateRam8300X
+    PLA ; discard stacked prvSFTODOFILEISH value
     JMP ExitServiceCall
 }
 
