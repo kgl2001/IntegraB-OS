@@ -722,6 +722,7 @@ MonthsPerYear = 12
 crtcHorzTotal = SHEILA + &00
 crtcHorzDisplayed = SHEILA + &01
 systemViaBase = &40
+viaRegisterB = 0
 viaRegisterInterruptEnable = 14
 
 romselPrvEn  = &40
@@ -8404,14 +8405,14 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 .NotShiftAndCtrlPressed
 .LB447
     LDX prvSFTODOALARMISH5
-    LDA SHEILA+&40							;VIA 6522
+    LDA SHEILA + systemViaBase + viaRegisterB
     AND #&F0
     ORA LB34A,X								;OR with byte from 2 byte lookup table
-    STA SHEILA+&40
-    LDA SHEILA+&40
+    STA SHEILA + systemViaBase + viaRegisterB
+    LDA SHEILA + systemViaBase + viaRegisterB
     AND #&F0
     ORA LB34C,X								;OR with byte from 2 byte lookup table
-    STA SHEILA+&40
+    STA SHEILA + systemViaBase + viaRegisterB
 
 .LB460
     PLA
