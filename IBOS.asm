@@ -8377,15 +8377,11 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     LSR A
     AND #&20
     STA prvSFTODOALARMISH5
-    LDX #rtcRegB
-    JSR ReadRtcRam								;Read data from RTC memory location X into A
-    AND_NOT rtcRegBPIE OR rtcRegBAIE
-    ORA prvSFTODOALARMISH5
-    JSR WriteRtcRam								;Write data from A to RTC memory location X
-    LDX #rtcRegA
-    JSR ReadRtcRam								;Read data from RTC memory location X into A
-    AND #&F0
-    JSR WriteRtcRam								;Write data from A to RTC memory location X
+    ; Force RTC register B PIE and AIE off and set the bits from prvSFTODOALARIMISH5.
+    LDX #rtcRegB:JSR ReadRtcRam
+    AND_NOT rtcRegBPIE OR rtcRegBAIE:ORA prvSFTODOALARMISH5:JSR WriteRtcRam
+    LDX #rtcRegA:JSR ReadRtcRam
+    AND_NOT rtcRegARS3 OR rtcRegARS2 OR rtcRegARS1 OR rtcRegARS0:JSR WriteRtcRam
     LDA #&76								;Reflect keyboard status in keyboard LEDs
     JSR OSBYTE								;Call OSBYTE
     JMP LB460
