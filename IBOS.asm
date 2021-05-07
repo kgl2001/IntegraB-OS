@@ -8274,16 +8274,17 @@ EndIndex = transientDateSFTODO2 ; exclusive
 ; SFTODO: Mostly un-decoded
 {
 OswordSoundBlockCopy = TransientZP
+
 .LB331      CLV
             CLC
             JMP (KEYVL)
 
-;OSWORD &07 buffer data
 .OswordSoundBlock
     EQUW   3 ; channel
     EQUW -15 ; amplitude
     EQUW 210 ; pitch
     EQUW   5 ; duration
+OswordSoundBlockSize = P% - OswordSoundBlock
 
 .LB33E		EQUB &02,&08
 .LB340		EQUB &0F,&1E,&3C,&78
@@ -8351,13 +8352,11 @@ OswordSoundBlockCopy = TransientZP
     PHA
     DEY
     BPL LB3DB
-    ; SFTODO: I am not sure this is necessary, can't we do OSWORD 7 with a parameter block in SWR?
-    LDY #&07
-.LB3E4
-    LDA OswordSoundBlock,Y								;Relocate sound data from &B336-&B33D
-    STA L00A8,Y								;to &00A8-&00AF
-    DEY
-    BPL LB3E4
+    ; SQUASH: I am not sure we need to copy the OSWORD 7 block, we can use it directly from our bank.
+    LDY #OswordSoundBlockSize - 1
+.SoundBlockCopyLoop
+    LDA OswordSoundBlock,Y:STA OswordSoundBlockCopy,Y
+    DEY:BPL SoundBlockCopyLoop
     LDA prvSFTODOALARMISH3
     STA L00AA
     LDA prvSFTODOALARMISH4
