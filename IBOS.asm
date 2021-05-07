@@ -8283,7 +8283,9 @@ OswordSoundBlockCopy = TransientZP
 
 .OswordSoundBlock
     EQUW   3 ; channel
+OswordSoundAmplitudeOffset = P% - OswordSoundBlock
     EQUW -15 ; amplitude
+OswordSoundPitchOffset = P% - OswordSoundBlock
     EQUW 210 ; pitch
     EQUW   5 ; duration
 OswordSoundBlockSize = P% - OswordSoundBlock
@@ -8361,9 +8363,9 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     LDA OswordSoundBlock,Y:STA OswordSoundBlockCopy,Y
     DEY:BPL SoundBlockCopyLoop
     LDA prvSFTODOALARMISH3
-    STA L00AA
+    STA OswordSoundBlockCopy + OswordSoundAmplitudeOffset
     LDA prvSFTODOALARMISH4
-    STA L00AC
+    STA OswordSoundBlockCopy + OswordSoundPitchOffset
     LDA #oswordSound:LDX #lo(OswordSoundBlockCopy):LDY #hi(OswordSoundBlockCopy):JSR OSWORD								;OSWORD &07, buffer &00A8
     LDY #0
 .SoundBlockCopyRestoreLoop
