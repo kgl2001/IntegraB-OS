@@ -8209,44 +8209,46 @@ EndIndex = transientDateSFTODO2 ; exclusive
 }
 
 ; Parse a time from the command line, populating prvDate* and returning with C clear iff parsing succeeded.
-.parseAndValidateTime
+.ParseAndValidateTime
 {
     XASSERT_USE_PRV1
-            JSR ConvertIntegerDefaultDecimal
-            BCS parseError
-            STA prvDateHours
-            LDA (transientCmdPtr),Y
-            INY
-            CMP #':'
-            BNE parseError
-            JSR ConvertIntegerDefaultDecimal
-            BCS parseError
-            STA prvDateMinutes
-            LDA (transientCmdPtr),Y
-            CMP #':'
-            BEQ skipCharAndParseSeconds
-            CMP #'/'
-            BEQ skipCharAndParseSeconds
-            LDA #0 ; default to 0 seconds if not specified
-            BEQ secondsInA ; always branch
-.skipCharAndParseSeconds
-            INY
-            JSR ConvertIntegerDefaultDecimal
-            BCS parseError
-.secondsInA STA prvDateSeconds
-            TYA
-            PHA
-            JSR ValidateDateTimeAssumingLeapYear
-            PLA
-            TAY
-            LDA prvOswordBlockCopy
-            AND #&07								;did hour/minutes/second part fail validation?
-            BNE parseError								;branch if fail
-            CLC
-            RTS
+    JSR ConvertIntegerDefaultDecimal
+    BCS ParseError
+    STA prvDateHours
+    LDA (transientCmdPtr),Y
+    INY
+    CMP #':'
+    BNE ParseError
+    JSR ConvertIntegerDefaultDecimal
+    BCS ParseError
+    STA prvDateMinutes
+    LDA (transientCmdPtr),Y
+    CMP #':'
+    BEQ SkipCharAndParseSeconds
+    CMP #'/'
+    BEQ SkipCharAndParseSeconds
+    LDA #0 ; default to 0 seconds if not specified
+    BEQ SecondsInA ; always branch
+.SkipCharAndParseSeconds
+    INY
+    JSR ConvertIntegerDefaultDecimal
+    BCS ParseError
+.SecondsInA
+    STA prvDateSeconds
+    TYA
+    PHA
+    JSR ValidateDateTimeAssumingLeapYear
+    PLA
+    TAY
+    LDA prvOswordBlockCopy
+    AND #&07								;did hour/minutes/second part fail validation?
+    BNE ParseError								;branch if fail
+    CLC
+    RTS
 			
-.parseError SEC
-            RTS
+.ParseError
+    SEC
+    RTS
 }
 
 {
@@ -8530,7 +8532,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
             JMP ExitAndClaimServiceCall								;Exit Service Call								;
 			
 .setTime    INY
-            JSR parseAndValidateTime
+            JSR ParseAndValidateTime
             BCC parseOk
             JMP PrvDisGenerateBadTime								;Error with Bad time
 .parseOk    JSR CopyPrvTimeToRtc								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
@@ -8678,7 +8680,7 @@ column = prvC
 ; to parse this as an alarm set operation anyway.
 .TryParsingAsSetAlarm
     PHP
-    JSR parseAndValidateTime:BCC ParsedTimeOk
+    JSR ParseAndValidateTime:BCC ParsedTimeOk
     PLP:BCC PrvDisGenerateBadTimeIndirect ; branch if we saw "=" when parsing command line
     PRVDIS
     JMP GenerateSyntaxErrorForTransientCommandIndex
