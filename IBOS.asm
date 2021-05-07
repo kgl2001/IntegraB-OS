@@ -8335,7 +8335,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     AND #ramselShen:ORA #ramselPrvs1:STA ramselCopy:STA ramsel
     ; SQUASH: Can we do the next line above to save redoing LDA romselCopy?
     LDA romselCopy:ORA #romselPrvEn:STA romselCopy:STA romsel
-    BCC LB3CA
+    BCC LB3CA ; SFTODO: C SET OR CLEAR ON ENTRY IS WHAT STOPS US REDOING THE INITIALISATION BELOW EVERY TIME WE'RE ENTERED
 
     LDX #userRegAlarm:JSR ReadUserReg
     ; Shift userRegAlarm in A right as we extract the bitfields and use them to initialise
