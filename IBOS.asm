@@ -248,6 +248,7 @@ osbyteSetSerialTransmitRate = &08
 osbyteSetAutoRepeatDelay = &0B
 osbyteSetAutoRepeatPeriod = &0C
 osbyteFlushSelectedBuffer = &15
+osbyteReflectKeyboardStatusInLeds = &76
 osbyteKeyboardScanFrom10 = &7A
 osbyteAcknowledgeEscape = &7E
 osbyteCheckEOF = &7F
@@ -8406,8 +8407,8 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     ; Force RTC register A ARS3/2/1/0 off.
     LDX #rtcRegA:JSR ReadRtcRam
     AND_NOT rtcRegARS3 OR rtcRegARS2 OR rtcRegARS1 OR rtcRegARS0:JSR WriteRtcRam
-    LDA #&76								;Reflect keyboard status in keyboard LEDs
-    JSR OSBYTE								;Call OSBYTE
+    ; Set the keyboard LEDs up to reflect the real state after we used them as alarm indicators. SFTODO: Probably, but I am guessing at this point.
+    LDA #osbyteReflectKeyboardStatusInLeds:JSR OSBYTE
     JMP LB460
 			
 .LB444
