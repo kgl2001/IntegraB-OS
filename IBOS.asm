@@ -567,7 +567,7 @@ MaxPrintBufferSwrBanks = 4
 ; the IBOS ROM bank number and the others will be &FF.
 prvPrintBufferBankList  = prv83 + &18 ; 4 bytes
 prvPrvPrintBufferStart = prv83 + &45 ; working copy of userRegPrvPrintBufferStart
-prvPrintBufferPurgeOption = prv83 + &47 ; &FF for *PURGE ON, &00 for *PURGE OFF
+prvPrintBufferPurgeOption = prv83 + &47 ; prvOn for *PURGE ON, prvOff for *PURGE OFF
 
 ; SFTODO: I believe we do this copy because we want to swizzle it and we mustn't corrupt the user's version, but wait until I've examined more code before writing permanent comment to that effect
 prvOswordBlockCopy = prv82 + &20 ; 16 bytes, used for copy of OSWORD &42/&43 parameter block
@@ -618,6 +618,8 @@ prvDateDayOfWeek = prvOswordBlockCopy + 12
 prvDateHours = prvOswordBlockCopy + 13
 prvDateMinutes = prvOswordBlockCopy + 14
 prvDateSeconds = prvOswordBlockCopy + 15
+
+; SFTODO: SHOULD PROBABLY HAVE A CONSTANT "prvOpen" OR SOMETHING =&FF FOR ALL THE DATE CALCULATION CODE
 
 ; SFTODO WIP - THERE IS SEEMS TO BE AN EXTRA COPY OF PART OF DATE/TIME "OSWORD" BLOCK MADE HERE - "prv2" PART OF NAME IS REALLY JUST TEMP
 prv2Flags = prv82 + &42 ; SFTODO: should have "Date" or something in the name
@@ -1607,15 +1609,15 @@ TmpCommandIndex = &AC
 }
 			
 ; Parse "ON" or "OFF" from the command line, returning with C clear if we succeed, in which
-; case A=&FF for ON or 0 for OFF. If parsing fails we return with C set and A=&7F. N/Z reflect
-; value in A on exit.
+; case A=prvOn for ON or prvOff for OFF. If parsing fails we return with C set and A=&7F. N/Z
+; reflect value in A on exit.
 .ParseOnOff
 {
     JSR FindNextCharAfterSpace
     LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'O':BNE Invalid
     INY:LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'N':BNE NotOn
     INY
-    LDA #&FF
+    LDA #prvOn
     CLC
     RTS
 .NotOn
@@ -1624,7 +1626,7 @@ TmpCommandIndex = &AC
     INY:LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'F':BNE Off
     INY
 .Off
-    LDA #0
+    LDA #prvOff
     CLC
     RTS
 .Invalid
@@ -1633,12 +1635,12 @@ TmpCommandIndex = &AC
     RTS
 }
 
-; Print "OFF" if A=0, otherwise print "ON".
+; Print "OFF" if A=prvOff, otherwise print "ON".
 .PrintOnOff
 {
     PHA
     LDA #'O':JSR OSWRCH
-    PLA:BEQ Off
+    PLA:ASSERT prvOff == 0:BEQ Off
     LDA #'N':JMP OSWRCH
 .Off
     LDA #'F':JSR OSWRCH:JMP OSWRCH
@@ -3054,7 +3056,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDX #&80:JSR L8A7B ; push current RAM state and select video RAM
     JMP CallSubCommand
 			
-.CommandSSetup ; SFTODO: Should maybe change this and related labels, since *S* really does "weird stuff"
+.CommandSSetup
     LDA #4:JSR SetOsModeA
     LDA #0:STA osShadowRamFlag
     LDX #prvShx - prv83:LDA #prvOn:JSR WritePrivateRam8300X ; set SHX off SFTODO: magic
