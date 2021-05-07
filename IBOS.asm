@@ -91,6 +91,10 @@ rtcRegDayOfMonth = &07
 rtcRegMonth = &08
 rtcRegYear = &09
 rtcRegA = &0A
+	rtcRegARS0 = 1<<0
+	rtcRegARS1 = 1<<1
+	rtcRegARS2 = 1<<2
+	rtcRegARS3 = 1<<3
 	rtcRegADV0 = 1<<4
 	rtcRegADV1 = 1<<5
 	rtcRegADV2 = 1<<6
@@ -8331,7 +8335,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
     LDA LB344,X:STA prvSFTODOALARMISH3								;save at &8274
     LDX #rtcRegA:JSR ReadRtcRam
     AND #rtcRegAUIP OR rtcRegADV2 OR rtcRegADV1 OR rtcRegADV0
-    ORA #&0E
+    ORA #rtcRegARS3 OR rtcRegARS2 OR rtcRegARS1
     JSR WriteRtcRam								;Write data from A to RTC memory location X
     LDX #rtcRegB
     JSR ReadRtcRam								;Read data from RTC memory location X into A
