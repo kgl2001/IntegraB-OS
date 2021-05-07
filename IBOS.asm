@@ -596,6 +596,7 @@ prvDateSFTODOQDayOfWeek = 1<<3
 prvDateSFTODOQHours = 1<<2
 prvDateSFTODOQMinutes = 1<<1
 prvDateSFTODOQSeconds = 1<<0
+prvDateSFTODOQHoursMinutesSeconds = prvDateSFTODOQHours OR prvDateSFTODOQMinutes OR prvDateSFTODOQSeconds
 prvDateSFTODOQCenturyYearMonthDayOfMonth = prvDateSFTODOQCentury OR prvDateSFTODOQYear OR prvDateSFTODOQMonth OR prvDateSFTODOQDayOfMonth
 prvDateSFTODO1 = prvOswordBlockCopy + 1 ; SFTODO: Use as a bitfield controlling formatting
 prvDateSFTODO1b = prvOswordBlockCopy + 1 ; SFTODO: Use as a copy of "final" transientDateBufferIndex
@@ -8208,7 +8209,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
     RTS
 }
 
-; Parse a time from the command line, populating prvDate* and returning with C clear iff parsing succeeded.
+; Parse a time from the command line, populating prvDate* and returning with C clear iff parsing succeeds.
 .ParseAndValidateTime
 {
     XASSERT_USE_PRV1
@@ -8227,8 +8228,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
 .SecondsInA
     STA prvDateSeconds
     TYA:PHA:JSR ValidateDateTimeAssumingLeapYear:PLA:TAY
-    LDA prvDateSFTODOQ
-    AND #prvDateSFTODOQHours OR prvDateSFTODOQMinutes OR prvDateSFTODOQSeconds:BNE ParseError
+    LDA prvDateSFTODOQ:AND #prvDateSFTODOQHoursMinutesSeconds:BNE ParseError
     CLC
     RTS
 			
@@ -8237,39 +8237,28 @@ EndIndex = transientDateSFTODO2 ; exclusive
     RTS
 }
 
+; Parse a date from the command line, populating PrvDate* and returning with C clear iff parsing succeeds.
+; SQUASH: This has only one caller
+.ParseAndValidateDate
 {
-; SFTODO: This has only one caller
-.^LB2F5
     XASSERT_USE_PRV1
-      LDA #&00
-            STA prvDateDayOfWeek
-            JSR ConvertIntegerDefaultDecimal
-            BCS LB32F
-            STA prvDateDayOfMonth
-            LDA (transientCmdPtr),Y
-            INY
-            CMP #'/'
-            BNE LB32F
-            JSR ConvertIntegerDefaultDecimal
-            BCS LB32F
-            STA prvDateMonth
-            LDA (transientCmdPtr),Y
-            INY
-            CMP #'/'
-            BNE LB32F
-            JSR ConvertIntegerDefaultDecimal
-            BCS LB32F
-            JSR InterpretParsedYear
-            JSR ValidateDateTimeAssumingLeapYear
-            LDA prvDateSFTODOQ ; SFTODO: PROB RIGHT TO BE USING SFTODOQ LABEL BUT NOT SURE
-            AND #prvDateSFTODOQCenturyYearMonthDayOfMonth
-            BNE LB32F
-            JSR calculateDayOfWeekInPrvDateDayOfWeek
-            CLC
-            RTS
+    LDA #0:STA prvDateDayOfWeek
+    JSR ConvertIntegerDefaultDecimal:BCS ParseError:STA prvDateDayOfMonth
+    LDA (transientCmdPtr),Y:INY
+    CMP #'/':BNE ParseError
+    JSR ConvertIntegerDefaultDecimal:BCS ParseError:STA prvDateMonth
+    LDA (transientCmdPtr),Y:INY
+    CMP #'/':BNE ParseError
+    JSR ConvertIntegerDefaultDecimal:BCS ParseError:JSR InterpretParsedYear
+    JSR ValidateDateTimeAssumingLeapYear
+    LDA prvDateSFTODOQ:AND #prvDateSFTODOQCenturyYearMonthDayOfMonth:BNE ParseError
+    JSR calculateDayOfWeekInPrvDateDayOfWeek
+    CLC
+    RTS
 			
-.LB32F      SEC
-            RTS
+.ParseError
+    SEC
+    RTS
 }
 			
 .LB331      CLV
@@ -8555,7 +8544,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
             JMP ExitAndClaimServiceCall								;Exit Service Call								;
 			
 .setDate    INY
-            JSR LB2F5
+            JSR ParseAndValidateDate
             BCC LB55B
             JMP PrvDisGenerateBadDate								;Error with Bad date
 			
