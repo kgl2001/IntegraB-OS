@@ -3867,21 +3867,19 @@ Tmp = TransientZP + 6
     LDA currentLanguageRom:BPL EnterLangA ; SFTODO: Do we expect this to always branch? Not at all sure.
 .NotSoftReset2
     LDX #userRegLangFile:JSR ReadUserReg:JSR LsrA4 ; get *CONFIGURE LANG value
-    JMP EnterLangA
+    JMP EnterLangA ; SQUASH: BPL ; branch always
 			
-.NoTube
-    LDA romselCopy
+.NoLanguageEntryAndNoTube
+    LDA romselCopy ; enter IBOS as the current language
 .EnterLangA
     TAX
     LDA romTypeTable,X:ROL A:BPL NoLanguageEntry
     JMP LDBE6 ;OSBYTE 142 - ENTER LANGUAGE ROM AT &8000 (http://mdfs.net/Docs/Comp/BBC/OS1-20/D940) - we enter one byte early so carry is clear, which might indicate "initialisation" (this based on that mdfs.net page; I can't find anything about this in a quick look at other documentation)
 
 .NoLanguageEntry
-    BIT tubePresenceFlag:BPL NoTube
-    ; SFTODO!?
-    LDA #0
-    CLC
-    JMP L0400 ; SFTODO: assume there is code within this ROM that is being relocated to &0400???
+    BIT tubePresenceFlag:BPL NoLanguageEntryAndNoTube
+    ; Inform tube no language was found at break.
+    LDA #0:CLC:JMP L0400
 
 ; SFTODO: This has only one caller
 .PassServiceCallToROMsLessEqualX
