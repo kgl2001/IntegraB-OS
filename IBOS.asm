@@ -267,6 +267,7 @@ osbyteReadWriteOutputDevice = &EC
 osbyteReadWriteStartupOptions = &FF
 
 oswordInputLine = &00
+oswordSound = &07
 oswordReadPixel = &09
 
 romBinaryVersion = &8008
@@ -8360,10 +8361,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     STA L00AA
     LDA prvSFTODOALARMISH4
     STA L00AC
-    LDA #&07								;Perform SOUND command
-    LDX #&A8								;buffer address &00A8
-    LDY #&00
-    JSR OSWORD								;OSWORD &07, buffer &00A8
+    LDA #oswordSound:LDX #lo(OswordSoundBlockCopy):LDY #hi(OswordSoundBlockCopy):JSR OSWORD								;OSWORD &07, buffer &00A8
     LDY #0
 .SoundBlockCopyRestoreLoop
     PLA:STA OswordSoundBlockCopy,Y
