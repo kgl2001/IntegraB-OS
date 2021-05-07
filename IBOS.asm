@@ -3728,7 +3728,7 @@ ENDIF
     BCS ConfTVWrite
     JSR GetConfigValue
     ; We have a 4-bit value; bit 0 is the interlace bit, bits 1-3 are a *signed* vertical shift.
-    PHA:JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx:PLA
+    PHA:JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx:PLA ; SQUASH: worth factoring out?
     PHA ; save value for handling interlace bit below
     ; Get the vertical shift option from bits 1-3 and sign extend it.
     LSR A
