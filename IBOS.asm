@@ -8305,8 +8305,11 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 .SFTODOALARMISH3Lookup ; SFTODO: amplitude
     EQUB -10 AND &FF
     EQUB -15 AND &FF
-.SFTODOALARMISH4Lookup
-    EQUB &5A,&82,&B0,&D2
+.SFTODOALARMISH4Lookup ; SFTODO: pitch
+    EQUB 90
+    EQUB 130
+    EQUB 176
+    EQUB 210
 
 .CapsLockLookup
     EQUB addressableLatchCapsLock OR addressableLatchData0
