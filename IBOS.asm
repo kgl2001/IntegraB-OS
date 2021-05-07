@@ -8212,37 +8212,22 @@ EndIndex = transientDateSFTODO2 ; exclusive
 .ParseAndValidateTime
 {
     XASSERT_USE_PRV1
-    JSR ConvertIntegerDefaultDecimal
-    BCS ParseError
-    STA prvDateHours
+    JSR ConvertIntegerDefaultDecimal:BCS ParseError:STA prvDateHours
+    LDA (transientCmdPtr),Y:INY
+    CMP #':':BNE ParseError
+    JSR ConvertIntegerDefaultDecimal:BCS ParseError:STA prvDateMinutes
     LDA (transientCmdPtr),Y
-    INY
-    CMP #':'
-    BNE ParseError
-    JSR ConvertIntegerDefaultDecimal
-    BCS ParseError
-    STA prvDateMinutes
-    LDA (transientCmdPtr),Y
-    CMP #':'
-    BEQ SkipCharAndParseSeconds
-    CMP #'/'
-    BEQ SkipCharAndParseSeconds
+    CMP #':':BEQ SkipCharAndParseSeconds
+    CMP #'/':BEQ SkipCharAndParseSeconds
     LDA #0 ; default to 0 seconds if not specified
     BEQ SecondsInA ; always branch
 .SkipCharAndParseSeconds
     INY
-    JSR ConvertIntegerDefaultDecimal
-    BCS ParseError
+    JSR ConvertIntegerDefaultDecimal:BCS ParseError
 .SecondsInA
     STA prvDateSeconds
-    TYA
-    PHA
-    JSR ValidateDateTimeAssumingLeapYear
-    PLA
-    TAY
-    LDA prvOswordBlockCopy
-    AND #&07								;did hour/minutes/second part fail validation?
-    BNE ParseError								;branch if fail
+    TYA:PHA:JSR ValidateDateTimeAssumingLeapYear:PLA:TAY
+    LDA prvDateSFTODOQ:AND #prvDateSFTODOQHours OR prvDateSFTODOQMinutes OR prvDateSFTODOQSeconds:BNE ParseError
     CLC
     RTS
 			
