@@ -8276,9 +8276,8 @@ EndIndex = transientDateSFTODO2 ; exclusive
 {
 OswordSoundBlockCopy = TransientZP
 
-.LB331      CLV
-            CLC
-            JMP (KEYVL)
+.TestShiftCtrl
+    CLV:CLC:JMP (KEYVL)
 
 .OswordSoundBlock
     EQUW   3 ; channel
@@ -8347,6 +8346,8 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 .LB3CA
     LDA prvSFTODOALARMISH5:EOR #&01:STA prvSFTODOALARMISH5:BEQ LB447
     LDA prvSFTODOALARMISH2:BEQ LB40E
+
+    ; Make a sound using OSWORD 7.
     ; SQUASH: I think we can just use OSWORD 7 directly on the original OswordSoundBlock and
     ; not bother with the save/copy/restore code.
     LDY #OswordSoundBlockSize - 1
@@ -8366,11 +8367,11 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 .SoundBlockCopyRestoreLoop
     PLA:STA OswordSoundBlockCopy,Y
     INY:CPY #OswordSoundBlockSize:BNE SoundBlockCopyRestoreLoop
+
     DEC prvSFTODOALARMISH2
 .LB40E
-    LDA prvSFTODOALARMISH1
-    BNE LB444
-    JSR LB331
+    LDA prvSFTODOALARMISH1:BNE LB444
+    JSR TestShiftCtrl
     BVC LB447
     BPL LB447
     LDX #userRegAlarm
