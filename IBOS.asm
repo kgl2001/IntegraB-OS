@@ -8227,7 +8227,8 @@ EndIndex = transientDateSFTODO2 ; exclusive
 .SecondsInA
     STA prvDateSeconds
     TYA:PHA:JSR ValidateDateTimeAssumingLeapYear:PLA:TAY
-    LDA prvDateSFTODOQ:AND #prvDateSFTODOQHours OR prvDateSFTODOQMinutes OR prvDateSFTODOQSeconds:BNE ParseError
+    LDA prvDateSFTODOQ
+    AND #prvDateSFTODOQHours OR prvDateSFTODOQMinutes OR prvDateSFTODOQSeconds:BNE ParseError
     CLC
     RTS
 			
