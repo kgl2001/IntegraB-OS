@@ -4085,18 +4085,21 @@ tmp = &A8
             RTS
 }
 
-;Vectors claimed - Service call &0F
+; Vectors claimed - Service call &0F
+;
+; If the current filing system is DFS or NFS, set prvSFTODOFILEISH = (prvSFTODOFILEISH AND &80)
+; OR (filing system bank AND &0F). Otherwise, set prvSFTODOFILEISH = filing system bank.
 .service0F
 {
     LDX #prvSFTODOFILEISH - prv83:JSR ReadPrivateRam8300X:AND #&80:PHA
     LDA #osargsReadFilingSystemNumber:LDX #TransientZP:LDY #0:JSR OSARGS ; SQUASH: don't set X?
     TSX ; SQUASH: redundant?
+    ; SQUASH: The LDY operations here are redundant, aren't they? ExitServiceCall will restore Y.
     LDY #0:CMP #FilingSystemNfs:BEQ L988D
     LDY #&80:CMP #FilingSystemDfs:BEQ L988D
-    LDA XFILEVBank:JMP L9896 ; SFTODO!?
-			
+    LDA XFILEVBank:JMP L9896
 .L988D
-    LDA XFILEVBank:AND #maxBank
+    LDA XFILEVBank:AND #maxBank ; SFTODO: is the AND particularly significant here? We don't do it on the other branch
     TSX:ORA L0101,X ; access stacked prvSFTODOFILEISH value
 .L9896
     LDX #prvSFTODOFILEISH - prv83:JSR WritePrivateRam8300X
