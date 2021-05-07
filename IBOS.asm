@@ -3725,6 +3725,8 @@ ENDIF
 
 .ConfTV
 {
+Tmp = TransientZP + 6
+
     BCS ConfTVWrite
     JSR GetConfigValue
     ; We have a 4-bit value; bit 0 is the interlace bit, bits 1-3 are a *signed* vertical shift.
@@ -3740,17 +3742,10 @@ ENDIF
     PLA:AND #1:JMP PrintADecimalPadNewline
 
 .ConfTVWrite
-    JSR ConvertIntegerDefaultDecimalChecked
-    AND #&07
-    ASL A
-    PHA
-    JSR FindNextCharAfterSpaceSkippingComma
-    JSR ConvertIntegerDefaultDecimalChecked
-    AND #&01
-    STA L00AE
-    PLA
-    ORA L00AE
-    JMP SetConfigValueA
+    ; SQUASH: Can't we STA Tmp instead of PHA, then omit the Lda Tmp:PLA?
+    JSR ConvertIntegerDefaultDecimalChecked:AND #7:ASL A:PHA
+    JSR FindNextCharAfterSpaceSkippingComma:JSR ConvertIntegerDefaultDecimalChecked:AND #1:STA Tmp
+    PLA:ORA Tmp:JMP SetConfigValueA
 }
 
 ; SFTODO: This entire block is dead code
