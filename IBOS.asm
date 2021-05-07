@@ -8332,7 +8332,11 @@ EndIndex = transientDateSFTODO2 ; exclusive
     LSR A									;ditch next two lsbs - already used
     AND #&01								;read next bit (0)
     TAX
-    LDA LB344,X:STA prvSFTODOALARMISH3								;save at &8274
+    LDA LB344,X:STA prvSFTODOALARMISH3
+    ; Update RTC register A:
+    ; - force DV2/1/0 off
+    ; - force ARS3/2/1 on
+    ; - preserve ARS0 SFTODO: seems a little odd, is this right?
     LDX #rtcRegA:JSR ReadRtcRam
     AND #rtcRegAUIP OR rtcRegADV2 OR rtcRegADV1 OR rtcRegADV0
     ORA #rtcRegARS3 OR rtcRegARS2 OR rtcRegARS1
