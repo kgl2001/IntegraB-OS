@@ -8305,10 +8305,10 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 .SFTODOALARMISH4Lookup
     EQUB &5A,&82,&B0,&D2
 
-.SystemViaRegisterBLookup1
+.CapsLockLookup
     EQUB addressableLatchCapsLock OR addressableLatchData0
     EQUB addressableLatchCapsLock OR addressableLatchData1
-.SystemViaRegisterBLookup2
+.ShiftLockLookup
     EQUB addressableLatchShiftLock OR addressableLatchData1
     EQUB addressableLatchShiftLock OR addressableLatchData0
 
@@ -8417,10 +8417,10 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     ; calls to this code we alternate which of the Shift and Caps Lock LEDs is lit.
     LDX prvSFTODOALARMISH5
     LDA SHEILA + systemViaBase + viaRegisterB
-    AND #&F0:ORA SystemViaRegisterBLookup1,X
+    AND #&F0:ORA CapsLockLookup,X
     STA SHEILA + systemViaBase + viaRegisterB
     LDA SHEILA + systemViaBase + viaRegisterB
-    AND #&F0:ORA SystemViaRegisterBLookup2,X
+    AND #&F0:ORA ShiftLockLookup,X
     STA SHEILA + systemViaBase + viaRegisterB
 
 .LB460
