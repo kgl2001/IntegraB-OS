@@ -8338,6 +8338,8 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     BCC LB3CA
 
     LDX #userRegAlarm:JSR ReadUserReg
+    ; Shift userRegAlarm in A right as we extract the bitfields and use them to initialise
+    ; prvSFTODOALARMISH*.
     ; SFTODO: userRegAlarm structure is:
     ; b0 - LB33E,X->ALARMISH1
     ; b1-2 - LB340,X->ALARMISH2
@@ -8347,25 +8349,12 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     ; b7 - userRegAlarmRBit *probably* a repeat flag but not verified via code, just guessing
     PHA
     AND #1:TAX:LDA SFTODOALARMISH1Lookup,X:STA prvSFTODOALARMISH1
-    PLA
-    LSR A									;ditch lsb - already used
-    PHA
-    AND #&03								;read next two bits (1&2)
-    TAX
-    LDA SFTODOALARMISH2Lookup,X:STA prvSFTODOALARMISH2
-    PLA
-    LSR A
-    LSR A									;ditch next two lsbs - already used
-    PHA
-    AND #&03								;read next two bits (3&4)
-    TAX
-    LDA SFTODOALARMISH4Lookup,X:STA prvSFTODOALARMISH4
-    PLA
-    LSR A
-    LSR A									;ditch next two lsbs - already used
-    AND #&01								;read next bit (0)
-    TAX
-    LDA SFTODOALARMISH3Lookup,X:STA prvSFTODOALARMISH3
+    PLA:LSR A:PHA
+    AND #%11:TAX:LDA SFTODOALARMISH2Lookup,X:STA prvSFTODOALARMISH2
+    PLA:LSR A:LSR A:PHA
+    AND #%11:TAX:LDA SFTODOALARMISH4Lookup,X:STA prvSFTODOALARMISH4
+    PLA:LSR A:LSR A
+    AND #1:TAX:LDA SFTODOALARMISH3Lookup,X:STA prvSFTODOALARMISH3
     ; Force RTC register A ARS3/2/1 on and ARS0 off.
     LDX #rtcRegA:JSR ReadRtcRam
     AND_NOT rtcRegARS3 OR rtcRegARS2 OR rtcRegARS1 OR rtcRegARS0
