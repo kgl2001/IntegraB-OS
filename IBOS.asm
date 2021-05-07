@@ -8290,10 +8290,13 @@ OswordSoundPitchOffset = P% - OswordSoundBlock
     EQUW   5 ; duration
 OswordSoundBlockSize = P% - OswordSoundBlock
 
-.LB33E		EQUB &02,&08
-.LB340		EQUB &0F,&1E,&3C,&78
+.SFTODOALARMISH1Lookup
+    EQUB &02,&08
+.SFTODOALARMISH2Lookup
+    EQUB &0F,&1E,&3C,&78
 .LB344		EQUB &F6,&F1
-.LB346		EQUB &5A,&82,&B0,&D2
+.SFTODOALARMISH4Lookup
+    EQUB &5A,&82,&B0,&D2
 
 .LB34A		EQUB &06,&0E
 .LB34C		EQUB &0F,&07
@@ -8326,20 +8329,20 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     ; b6 - used to set reg B AIE, so probably an enable/disable flag
     ; b7 - userRegAlarmRBit *probably* a repeat flag but not verified via code, just guessing
     PHA
-    AND #1:TAX:LDA LB33E,X:STA prvSFTODOALARMISH1
+    AND #1:TAX:LDA SFTODOALARMISH1Lookup,X:STA prvSFTODOALARMISH1
     PLA
     LSR A									;ditch lsb - already used
     PHA
     AND #&03								;read next two bits (1&2)
     TAX
-    LDA LB340,X:STA prvSFTODOALARMISH2
+    LDA SFTODOALARMISH2Lookup,X:STA prvSFTODOALARMISH2
     PLA
     LSR A
     LSR A									;ditch next two lsbs - already used
     PHA
     AND #&03								;read next two bits (3&4)
     TAX
-    LDA LB346,X:STA prvSFTODOALARMISH4
+    LDA SFTODOALARMISH4Lookup,X:STA prvSFTODOALARMISH4
     PLA
     LSR A
     LSR A									;ditch next two lsbs - already used
