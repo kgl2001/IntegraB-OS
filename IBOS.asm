@@ -7636,10 +7636,9 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     LDA prvA:STA prvDateSFTODO4
     INC prvDateCentury
 .CenturyOK
-    ; By this point we've adjusted prvDateSFTODO4 and prvDateCentury so we now want to
-    ; calculate the number of days between prvDate and 1st January (prvCentury 00). Count up
-    ; from year 0, subtracting off the number of days in the year until prvDateSFTODO4 would go
-    ; negative, indicating we don't have a full year left.
+    ; At this point prvDateSFTODO4 is the number of days from 1st January (prvCentury)00. Count
+    ; up from year 0, subtracting off the number of days in the year until prvDateSFTODO4 would
+    ; go negative, indicating we don't have a full year left.
     LDA #0:STA prvDateYear
 .FullYearLoop
     JSR TestLeapYear ; set C iff prvDateYear is a leap year
@@ -7653,7 +7652,7 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     INC prvDateYear
     JMP FullYearLoop ; SQUASH: BPL always branch?
 .NotFullYear
-    ; Now count up through the full months, subtracting off the nubmer of days in each month
+    ; Now count up through the full months, subtracting off the number of days in each month
     ; until prvDateSFTODO4 would go negative, indicating we don't have a full month left.
     LDA #1:STA prvDateMonth
 .FullMonthLoop
