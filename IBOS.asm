@@ -90,6 +90,7 @@ rtcRegDayOfWeek = &06
 rtcRegDayOfMonth = &07
 rtcRegMonth = &08
 rtcRegYear = &09
+; SFTODO: May be worth reworking constants/comments so things like ARS0/1/2/3 and DV* are treated more like 4-bit constants than a set of 1-bit flag
 rtcRegA = &0A
 	rtcRegARS0 = 1<<0
 	rtcRegARS1 = 1<<1
