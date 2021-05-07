@@ -8260,13 +8260,13 @@ EndIndex = transientDateSFTODO2 ; exclusive
     SEC
     RTS
 }
-			
+
+; SFTODO: Mostly un-decoded
+{
 .LB331      CLV
             CLC
             JMP (KEYVL)
 
-; SFTODO: Mostly un-decoded
-{
 ;OSBYTE &07 buffer data
 ;Equivalent to SOUND 3,-15,210,5
 .LB336		EQUW &0003							;Channel:	 3
