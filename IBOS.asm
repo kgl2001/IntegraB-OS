@@ -167,7 +167,7 @@ userRegAlarm = &33 ; SFTODO? bits 0-5?? SFTODO: bit 7 seems to be the "R" flag f
     ;     5: amplitude (index into AlarmAmplitudeLookup)
     ;     3-4: pitch (index into AlarmPitchLookup)
     ;     1-2: alarm audio duration (index into AlarmAudioDurationLookup)
-    ;     0: SFTODO ALARMISH1
+    ;     0: alarm overall duration (index into AlarmOverallDurationLookup)
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegBankWriteProtectStatus = &38 ; 2 bytes, 1 bit per bank
@@ -667,7 +667,7 @@ prvTmp = prv82 + &52 ; 1 byte, SFTODO: seems to be used as scratch space by some
 
 ; These prvAlarm* addresses are initialised by alarm interrupts and then read by subsequent
 ; periodic interrupts during the same alarm event.
-prvSFTODOALARMISH1 = prv82 + &72
+prvAlarmOverallDuration = prv82 + &72
 prvAlarmAudioDuration = prv82 + &73
 prvAlarmAmplitude = prv82 + &74
 prvAlarmPitch = prv82 + &75
@@ -8312,7 +8312,7 @@ OswordSoundPitchOffset = P% - OswordSoundBlock
     EQUW   5 ; duration
 OswordSoundBlockSize = P% - OswordSoundBlock
 
-.SFTODOALARMISH1Lookup ; SFTODO: I think this might be control over how long the alarm will persist if not explicitly acknowledged by the user
+.AlarmOverallDurationLookup
     EQUB &02,&08
 .AlarmAudioDurationLookup
     EQUB &0F,&1E,&3C,&78
@@ -8360,7 +8360,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     ; Shift userRegAlarm in A right as we extract the bitfields and use them to control
     ; initialisation.
     PHA
-    AND #1:TAX:LDA SFTODOALARMISH1Lookup,X:STA prvSFTODOALARMISH1
+    AND #1:TAX:LDA AlarmOverallDurationLookup,X:STA prvAlarmOverallDuration
     PLA:LSR A:PHA
     AND #%11:TAX:LDA AlarmAudioDurationLookup,X:STA prvAlarmAudioDuration
     PLA:LSR A:LSR A:PHA
@@ -8405,7 +8405,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 
     DEC prvAlarmAudioDuration
 .LB40E
-    LDA prvSFTODOALARMISH1:BNE LB444
+    LDA prvAlarmOverallDuration:BNE LB444
     JSR TestShiftCtrl:BVC NotShiftAndCtrlPressed:BPL NotShiftAndCtrlPressed
     ASSERT userRegAlarmEnableBit >> 1 == rtcRegBAIE
     LDX #userRegAlarm:JSR ReadUserReg:LSR A:AND #rtcRegBAIE:STA prvAlarmTmp
@@ -8420,7 +8420,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     JMP RestoreRamselRomselAndExit
 			
 .LB444
-    DEC prvSFTODOALARMISH1
+    DEC prvAlarmOverallDuration
 .NotShiftAndCtrlPressed
 .DontMakeSound
     ; SFTODO: I am *guessing* that by exiting via this code path, we have not acknowledged the
