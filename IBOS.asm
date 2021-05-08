@@ -2973,8 +2973,8 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDX #serviceSelectFilingSystem:JSR doOsbyteIssueServiceRequest
     LDA #0:LDX #prvSFTODOTUBEISH - prv83:JSR WritePrivateRam8300X
     LDA #&7F
-.L9045
-    BIT tubeReg2Status:BVC L9045
+.TubeReg2Full
+    BIT tubeReg2Status:BVC TubeReg2Full
     STA tubeReg2Data
     JMP L0032 ; SFTODO!?
 
