@@ -9396,37 +9396,29 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     JMP returnViaParentBYTEV
 
 ; Examine buffer status (http://beebwiki.mdfs.net/OSBYTE_%2698)
+; SFTODO: What's going on here? Why do we need to override the OS implementation of this at
+; all? See the ENHANCE: comment above PrintBufferNotEmpty, but I'm not sure that's relevant -
+; note that we are accessing the OS 1.20 buffer via OS pointer &FA, which will *only* work if
+; the buffer is the standard OS one not something else (such as our own printer buffer).
 .osbyte98Handler
-{
+    JSR jmpParentBYTEV:BCS returnFromBYTEV ; branch if buffer empty
+    ; SFTODO: Why is this taking more care than usual (PRVEN or ReadPrivateRam8300X) to
+    ; preserve RAMSEL/ROMSEL? Something to do with printer buffer support? But even so, does
+    ; this suggest there's a risk of undoing user changes to RAMSEL/ROMSEL in other cases?
     XASSERT_USE_PRV1
-    JSR jmpParentBYTEV:BCS returnFromBYTEV
-            LDA ramselCopy
-            PHA
-            ORA #ramselPrvs1
-            STA ramselCopy
-            STA ramsel
-            LDA romselCopy
-            PHA
-            ORA #romselPrvEn
-            STA romselCopy
-            STA romsel
-            LDA prvOsMode
-            CMP #&02
-            PLA
-            STA romselCopy
-            STA romsel
-            PLA
-            STA ramselCopy
-            STA ramsel
-            BCC returnFromBYTEV
-            CLC
-            LDA (L00FA),Y
-            TAY
-            LDA #&98
-.^returnFromBYTEV
-.LBACB      JSR updateOrigVectorRegs
-            JMP returnFromVectorHandler
-}
+    LDA ramselCopy:PHA:ORA #ramselPrvs1:STA ramselCopy:STA ramsel
+    LDA romselCopy:PHA:ORA #romselPrvEn:STA romselCopy:STA romsel
+    LDA prvOsMode:CMP #2
+    PLA:STA romselCopy:STA romsel
+    PLA:STA ramselCopy:STA ramsel
+    BCC returnFromBYTEV ; branch if we're in OSMODE 0 or 1
+    ; SFTODO: Set C/A/Y up exactly as the OS would/should have left them anyway?!
+    CLC
+    LDA (L00FA),Y:TAY ; get character from OS buffer
+    LDA #&98
+.returnFromBYTEV
+    JSR updateOrigVectorRegs
+    JMP returnFromVectorHandler
 
 {
 ; Read top of user memory (http://beebwiki.mdfs.net/OSBYTE_%2684)
