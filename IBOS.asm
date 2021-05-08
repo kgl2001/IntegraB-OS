@@ -2916,103 +2916,108 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 }
 
 ;*TUBE Command
+.tube
 {
-.^tube      JSR ParseOnOff
-            BCC turnTubeOnOrOff
-            LDA (transientCmdPtr),Y
-            CMP #'?'
-            BNE GenerateSyntaxErrorIndirect
-            JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
-            LDA tubePresenceFlag
+    JSR ParseOnOff
+    BCC turnTubeOnOrOff
+    LDA (transientCmdPtr),Y
+    CMP #'?'
+    BNE GenerateSyntaxErrorIndirect
+    JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
+    LDA tubePresenceFlag
 .^PrintOnOffOSNEWLExitSC
-            JSR PrintOnOff
-            JSR OSNEWL
+    JSR PrintOnOff
+    JSR OSNEWL
 .ExitAndClaimServiceCallIndirect
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+    JMP ExitAndClaimServiceCall								;Exit Service Call
 
 .GenerateSyntaxErrorIndirect
-            JMP GenerateSyntaxErrorForTransientCommandIndex
+    JMP GenerateSyntaxErrorForTransientCommandIndex
 
 .turnTubeOnOrOff
-            BNE turnTubeOn
-	  ; Turn the tube off. SFTODO: How? All we seem to do is re-enter the current(ish) language.
-            BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
-            BPL ExitAndClaimServiceCallIndirect							;nothing to do if already off
-	  ; SFTODO: We seem to be using currentLanguageRom if b7 clear, otherwise we take the bank number from romsel (which will be our bank, won't it) - not sure what's going on exactly
-            LDA currentLanguageRom
-            BPL L8FBF
-            LDA romselCopy
-            AND #maxBank
-.L8FBF      PHA
-            JSR disableTube
-            PLA
-            TAX
-            JMP doOsbyteEnterLanguage
+    BNE turnTubeOn
+; Turn the tube off. SFTODO: How? All we seem to do is re-enter the current(ish) language.
+    BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
+    BPL ExitAndClaimServiceCallIndirect							;nothing to do if already off
+; SFTODO: We seem to be using currentLanguageRom if b7 clear, otherwise we take the bank number from romsel (which will be our bank, won't it) - not sure what's going on exactly
+    LDA currentLanguageRom
+    BPL L8FBF
+    LDA romselCopy
+    AND #maxBank
+.L8FBF
+    PHA
+    JSR disableTube
+    PLA
+    TAX
+    JMP doOsbyteEnterLanguage
 
 .^disableTube
-.L8FC8      LDA #&00
-            LDX #prvSFTODOTUBE2ISH - prv83
-            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-            LDA #&FF
-            LDX #prvSFTODOTUBEISH - prv83
-            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-            LDA #&00
-            STA tubePresenceFlag
-            LDA #osargsReadFilingSystemNumber:LDX #TransientZP:LDY #0:JSR OSARGS ; SQUASH: don't set X?
-            TAY
-            LDX #serviceSelectFilingSystem
-            JSR doOsbyteIssueServiceRequest
-            LDA #&00
-            LDX #prvSFTODOTUBEISH - prv83
-            JMP WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+.L8FC8
+    LDA #&00
+    LDX #prvSFTODOTUBE2ISH - prv83
+    JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+    LDA #&FF
+    LDX #prvSFTODOTUBEISH - prv83
+    JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+    LDA #&00
+    STA tubePresenceFlag
+    LDA #osargsReadFilingSystemNumber:LDX #TransientZP:LDY #0:JSR OSARGS ; SQUASH: don't set X?
+    TAY
+    LDX #serviceSelectFilingSystem
+    JSR doOsbyteIssueServiceRequest
+    LDA #&00
+    LDX #prvSFTODOTUBEISH - prv83
+    JMP WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
 
-.turnTubeOn LDA #&81
-            STA SHEILA+&E0
-            LDA SHEILA+&E0
-            LSR A
-            BCS enableTube
-            JSR RaiseError								;Goto error handling, where calling address is pulled from stack
+.turnTubeOn
+    LDA #&81
+    STA SHEILA+&E0
+    LDA SHEILA+&E0
+    LSR A
+    BCS enableTube
+    JSR RaiseError								;Goto error handling, where calling address is pulled from stack
 
-	  EQUB &80
-	  EQUS "No Tube!", &00
+    EQUB &80
+    EQUS "No Tube!", &00
 
 ;Initialise Tube
 ; SFTODO: Some code in common with disableTube here (OSARGS/filing system reselection), could factor it out
 .enableTube
-            BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
-            BMI ExitAndClaimServiceCallIndirect							;nothing to do if already on
-            LDA #&FF
-            LDX #prvSFTODOTUBE2ISH - prv83
-            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-            LDX #prvSFTODOTUBEISH - prv83
-            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-            LDX #&FF								;service type &FF - tube system main initialisation
-            LDY #&00
-            JSR doOsbyteIssueServiceRequest						;issue paged ROM service request
-            LDA #&FF
-            STA tubePresenceFlag
-            LDX #&FE								;service type &FE - tube system post initialisation
-            LDY #&00
-            JSR doOsbyteIssueServiceRequest						;issue paged ROM service request
-            LDA #osargsReadFilingSystemNumber
-            LDX #&A8 ; SFTODO: is this relevant?
-            LDY #&00 ; handle = 0 for this call
-            JSR OSARGS
-            TAY
-            LDX #serviceSelectFilingSystem
-            JSR doOsbyteIssueServiceRequest						;issue paged ROM service request
-            LDA #&00
-            LDX #prvSFTODOTUBEISH - prv83
-            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-            LDA #&7F
-.L9045      BIT SHEILA+&E2
-            BVC L9045
-            STA SHEILA+&E3
-            JMP L0032
+    BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
+    BMI ExitAndClaimServiceCallIndirect							;nothing to do if already on
+    LDA #&FF
+    LDX #prvSFTODOTUBE2ISH - prv83
+    JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+    LDX #prvSFTODOTUBEISH - prv83
+    JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+    LDX #&FF								;service type &FF - tube system main initialisation
+    LDY #&00
+    JSR doOsbyteIssueServiceRequest						;issue paged ROM service request
+    LDA #&FF
+    STA tubePresenceFlag
+    LDX #&FE								;service type &FE - tube system post initialisation
+    LDY #&00
+    JSR doOsbyteIssueServiceRequest						;issue paged ROM service request
+    LDA #osargsReadFilingSystemNumber
+    LDX #&A8 ; SFTODO: is this relevant?
+    LDY #&00 ; handle = 0 for this call
+    JSR OSARGS
+    TAY
+    LDX #serviceSelectFilingSystem
+    JSR doOsbyteIssueServiceRequest						;issue paged ROM service request
+    LDA #&00
+    LDX #prvSFTODOTUBEISH - prv83
+    JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+    LDA #&7F
+.L9045
+    BIT SHEILA+&E2
+    BVC L9045
+    STA SHEILA+&E3
+    JMP L0032
 
 .doOsbyteIssueServiceRequest
-            LDA #osbyteIssueServiceRequest						;issue paged ROM service request
-            JMP OSBYTE								;execute paged ROM service request
+    LDA #osbyteIssueServiceRequest						;issue paged ROM service request
+    JMP OSBYTE								;execute paged ROM service request
 }
 
 {
