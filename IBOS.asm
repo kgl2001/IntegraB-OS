@@ -2363,15 +2363,15 @@ IgnoredBits = %00111110
     PLA:LDA oswdbtY:PHA ; return to caller with Y unaltered
     JMP ExitAndClaimServiceCall							
 			
-;Test for OSBYTE &44 - Test sideways RAM presence
-.osbyte44	  CMP #&44								;OSBYTE &44 (68) - Test sideways RAM presence
-            BNE osbyte45
-            JMP osbyte44Internal
+; Test for OSBYTE &44 - Test sideways RAM presence
+.osbyte44
+    CMP #&44:BNE osbyte45
+    JMP osbyte44Internal
 			
-;Test for OSBYTE &45 (69) - Test PSEUDO/Absolute usage
-.osbyte45	  CMP #&45								;OSBYTE &45 (69) - Test PSEUDO/Absolute usage
-            BNE osbyte49
-            JMP osbyte45Internal
+; Test for OSBYTE &45 (69) - Test PSEUDO/Absolute usage
+.osbyte45
+    CMP #&45:BNE osbyte49
+    JMP osbyte45Internal
 			
 ;Test for OSBYTE &49 (73) - Integra-B calls
 ; SFTODO: Rename these labels so we have something like "CheckOsbyte49" for the test and "Osbyte49" for the actual "yes, now do it"? (Not just 49, all of them.)
