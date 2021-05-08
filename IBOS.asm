@@ -9531,8 +9531,7 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 
 ; We're processing OSWRCH with A=vduSetMode. That is only actually a set mode call if we're not
 ; part-way through a longer VDU sequence (e.g. VDU 23,128,22,...), so check that and set
-; ModeChangeState to ModeChangeStateSeenVduSetMode if we
-; *are* going to change mode.
+; ModeChangeState to ModeChangeStateSeenVduSetMode if we *are* going to change mode.
 .OswrchVduSetMode
     PHA
     LDA negativeVduQueueSize:BNE InLongerVduSequence
@@ -9579,7 +9578,7 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     LDA ModeChangeState:BNE SelectNewMode
     PLA
     CMP #vduSetMode:BEQ OswrchVduSetMode
-.^ProcessWrchv ; SFTODO: not a great name...
+.ProcessWrchv ; SFTODO: not a great name...
     JSR setMemsel
     JSR jmpParentWRCHV
     PHA
@@ -9588,8 +9587,8 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 .AdjustCrtcHorz
     ; DELETE: There seems to be an undocumented feature of IBOS which will perform a horizontal
     ; screen shift (analogous to the vertical shift controlled by *TV/*CONFIGURE TV) based on
-    ; userRegHorzTV. This is not exposed in *CONFIGURE/*STATUS, but it *does seem to work if
-    ; you use *FX162,54 to write directly to the RTC register. In a modified IBOS this should
+    ; userRegHorzTV. This is not exposed in *CONFIGURE/*STATUS, but it does seem to work if you
+    ; use *FX162,54 to write directly to the RTC register. In a modified IBOS this should
     ; probably either be removed to save space or exposed via *CONFIGURE/*STATUS.
     LDX #userRegHorzTV:JSR ReadUserReg
     CLC:ADC #&62
@@ -9602,7 +9601,7 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     LDX #&02:STX crtcHorzTotal
     STA crtcHorzDisplayed
     LDA #ModeChangeStateNone:STA ModeChangeState
-.^WrchvHandlerDone
+.WrchvHandlerDone
     PLA
     JMP returnFromVectorHandler
 }
