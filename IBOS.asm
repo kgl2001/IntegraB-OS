@@ -2261,7 +2261,9 @@ ptr = &00 ; 2 bytes
 .osbyte6FInternal
 {
 StackBit = 1 << 7
-ReadBit = 1<< 6
+ReadBit = 1 << 6
+ProgramRamBit = 1 << 0
+IgnoredBits = %00111110
 
     PHP:SEI
     PRVEN
@@ -2269,14 +2271,10 @@ ReadBit = 1<< 6
     ; value in X to avoid needing to load this later
     TXA:STA prvTmp7
     ASSERT ramselShen == &80:LDA ramselCopy:ROL A:PHP ; stack flags with C=ramselShen
-    LDA prvTmp7:AND #StackBit OR ReadBit:CMP #StackBit:BNE L8A9F ; branch if we're not saving the current RAM state
-    PLP
-    PHP
-    ROR prvOsbyte6FStack ; put ramselShen in b7 of prv83+&3E; I suspect the lower bits form the stack (max depth 8, therefore) used by OSBYTE &6F
-    LDA prvTmp7
-    AND #&41 ; clear b7 (stack=yes) of saved original X now we've deal with pushing to the stack
-    STA prvTmp7
-.L8A9F
+    LDA prvTmp7:AND #StackBit OR ReadBit:CMP #StackBit:BNE NotStackWrite
+    PLP:PHP:ROR prvOsbyte6FStack ; push ramselShen onto the stack
+    LDA prvTmp7:AND_NOT StackBit OR IgnoredBits:STA prvTmp7
+.NotStackWrite
     PLP
     LDA #&00
     ROL A ; get ramselShen in low bit of A
