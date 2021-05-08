@@ -4117,7 +4117,7 @@ tmp = &A8
 
 ; SFTODO: This has only one caller
 ; SFTODO: At least in b-em, I note that with a second processor, we get the INTEGRA-B banner *as well as* the tube banner. This doesn't happen with the standard OS banner. Arguably this is desirable, but we *could* potentially not show our own banner if we have a second processor attached to be more "standard".
-; SFTODO: Perhaps a bit of a novelty, but could we make the startup banner *CONFIGURE-able?
+; ENHANCE: Perhaps a bit of a novelty, but could we make the startup banner *CONFIGURE-able?
 .DisplayBannerIfRequired
 {
 ramPresenceFlags = &A8
@@ -4136,18 +4136,18 @@ ramPresenceFlags = &A8
             LDY #&00
             JSR OSBYTE
             LDX #computechStart - romHeader						;Start at ROM header offset &17
-.bannerLoop1
+.BannerLoop1
 	  LDA romHeader,X								;Read 'Computech ' from ROM header
             JSR OSWRCH								;Write to screen
             INX									;Next Character
             CPX #(computechEnd + 1) - romHeader						;Check for final character
-            BNE bannerLoop1								;Loop
+            BNE BannerLoop1								;Loop
             LDX #(reverseBannerEnd - 1) - reverseBanner					;Lookup table offset
-.bannerLoop2
+.BannerLoop2
 	  LDA reverseBanner,X							;Read INTEGRA-B Text from lookup table
             JSR OSWRCH								;Write to screen
             DEX									;Next Character
-            BPL bannerLoop2								;Loop
+            BPL BannerLoop2								;Loop
             LDA lastBreakType								;Check Break status. 0=soft, 1=power up, 2=hard
             BEQ SoftReset								;No Beep and don't write amount of Memory to screen
             LDA #vduBell								;Beep
