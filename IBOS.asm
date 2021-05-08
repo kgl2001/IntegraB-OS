@@ -9746,11 +9746,9 @@ ScreenStart = &3000
 ; want to note in the comment that this does the paging in
 ; properly/formally/some other term.
 .pageInPrvs81
-{
     LDA romselCopy:ORA #romselPrvEn:STA romselCopy:STA romsel
     LDA ramselCopy:PHA:ORA #ramselPrvs81:STA ramselCopy:STA ramsel:PLA
     RTS
-}
 
 .InsvHandler
 {
