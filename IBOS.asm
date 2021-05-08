@@ -9510,25 +9510,23 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 
 {
 .jmpParentRDCHV
-.LBB6C      JMP (parentVectorTbl + ibosRDCHVIndex * 2)
+    JMP (parentVectorTbl + ibosRDCHVIndex * 2)
 
-; It seems a bit counter-intuitive that IBOS needs a RDCHV handler at all, but I
-; believe this is needed so cursor editing can work - the OS will try to read
-; from screen memory to work out what character is currently on the screen when
-; copying text. OS 1.20 doesn't call OSBYTE &87 to read the character, it just
-; calls its own internal OSBYTE &87 implementation directly via JSR.
+; It seems a bit counter-intuitive that IBOS needs a RDCHV handler at all, but I believe this
+; is needed so cursor editing can work - the OS will try to read from screen memory to work out
+; what character is currently on the screen when copying text. OS 1.20 doesn't call OSBYTE &87
+; to read the character, it just calls its own internal OSBYTE &87 implementation directly via
+; JSR.
 .^rdchvHandler
-.LBB6F	  JSR setMemsel
-            JSR restoreOrigVectorRegs
-            JSR jmpParentRDCHV
-            JSR updateOrigVectorRegs
-            JMP returnFromVectorHandler
+    JSR setMemsel
+    JSR restoreOrigVectorRegs
+    JSR jmpParentRDCHV
+    JSR updateOrigVectorRegs
+    JMP returnFromVectorHandler
 }
 
 .jmpParentWRCHV
-{
-.LBB7E      JMP (parentVectorTbl + ibosWRCHVIndex * 2)
-}
+    JMP (parentVectorTbl + ibosWRCHVIndex * 2)
 
 ; We're processing OSWRCH with A=vduSetMode. That is only actually a set mode call if we're not
 ; part-way through a longer VDU sequence (e.g. VDU 23,128,22,...), so check that and set
