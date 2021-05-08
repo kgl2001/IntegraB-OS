@@ -9316,31 +9316,22 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     RTS
 }
 
-; Restore the registers and pass the call onto the parent vector handler for
-; vector A (using the ibos*Index numbering). At this point the stack should be
-; exactly as described in the big comment in vectorEntry; note that this code is
-; reached via JMP so there's no extra return address on the stack as there is in
-; restoreOrigVectorRegs.
+; Restore the registers and pass the call onto the parent vector handler for vector A (using
+; the ibos*Index numbering). At this point the stack should be exactly as described in the big
+; comment in vectorEntry; note that this code is reached via JMP so there's no extra return
+; address on the stack as there is in restoreOrigVectorRegs.
 .forwardToParentVectorTblEntry
-{
-.LBA1B      TSX
-            ASL A
-            TAY
-            ; We need to subtract 1 from the destination address because we're
-            ; going to transfer control via RTS, which will add 1.
-            SEC
-            LDA parentVectorTbl,Y
-            SBC #&01
-            STA L0108,X ; overwrite low byte of return address from "JSR ramCodeStubCallIBOS"
-            LDA parentVectorTbl+1,Y
-            SBC #&00
-            STA L0109,X ; overwrite high byte
-            PLA
-            TAY
-            PLA
-            TAX
-            RTS
-}
+    TSX
+    ASL A:TAY
+    ; We need to subtract 1 from the destination address because we're going to transfer
+    ; control via RTS, which will add 1. We overwrite the return address from "JSR
+    ; ramCodeStubCallIBOS" on the stack.
+    SEC
+    LDA parentVectorTbl,Y:SBC #1:STA L0108,X
+    LDA parentVectorTbl+1,Y:SBC #0:STA L0109,X
+    PLA:TAY
+    PLA:TAX
+    RTS
 
 ; Aries/Watford shadow RAM access (http://beebwiki.mdfs.net/OSBYTE_%266F)
 .osbyte6FHandler
