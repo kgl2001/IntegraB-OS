@@ -390,6 +390,8 @@ tubeEntryRelease = &80 ; plus claim ID
 ; as long as no one else is using it it will probably be fine, because we won't
 ; be trying to claim the tube while a language is starting up.
 tubeClaimId = &3F
+tubeReg1Status = SHEILA + &E0
+tubeReg1Data = SHEILA + &E1
 tubeReg3Status = SHEILA + &E4
 tubeReg3Data = SHEILA + &E5
 
@@ -2940,26 +2942,18 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     TAX:JMP doOsbyteEnterLanguage
 
 .^DisableTube
-    LDA #&00
-    LDX #prvSFTODOTUBE2ISH - prv83
-    JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-    LDA #&FF
-    LDX #prvSFTODOTUBEISH - prv83
-    JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-    LDA #&00
-    STA tubePresenceFlag
+    LDA #0:LDX #prvSFTODOTUBE2ISH - prv83:JSR WritePrivateRam8300X
+    LDA #&FF:LDX #prvSFTODOTUBEISH - prv83:JSR WritePrivateRam8300X
+    LDA #0:STA tubePresenceFlag
+    ; Re-select the current filing system.
     LDA #osargsReadFilingSystemNumber:LDX #TransientZP:LDY #0:JSR OSARGS ; SQUASH: don't set X?
-    TAY
-    LDX #serviceSelectFilingSystem
-    JSR doOsbyteIssueServiceRequest
-    LDA #&00
-    LDX #prvSFTODOTUBEISH - prv83
-    JMP WritePrivateRam8300X
+    TAY:LDX #serviceSelectFilingSystem:JSR doOsbyteIssueServiceRequest
+    LDA #0:LDX #prvSFTODOTUBEISH - prv83:JMP WritePrivateRam8300X
 
 .TurnTubeOn
     LDA #&81
-    STA SHEILA+&E0
-    LDA SHEILA+&E0
+    STA tubeReg1Status
+    LDA tubeReg1Status
     LSR A
     BCS EnableTube
     JSR RaiseError
