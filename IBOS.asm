@@ -2261,6 +2261,7 @@ ptr = &00 ; 2 bytes
 .osbyte6FInternal
 {
 WorkingX = prvTmp7 ; copy of caller supplied X which we operate on
+ReturnedX = prvTmp
 StackBit = 1 << 7
 ReadBit = 1 << 6
 ProgramRamBit = 1 << 0
@@ -2272,28 +2273,28 @@ IgnoredBits = %00111110
     ; SQUASH: Just do STX in next line and avoid this? *Or* maybe rely on the fact we have this
     ; value in X to avoid needing to load this later
     TXA:STA WorkingX
-    ASSERT ramselShen == &80:LDA ramselCopy:ROL A:PHP ; stack flags with C=ramselShen
+    LDA ramselCopy:ROL A:PHP ; stack flags with C=ramselShen
     LDA WorkingX:AND #StackBit OR ReadBit:CMP #StackBit:BNE NotStackWrite
     PLP:PHP:ROR prvOsbyte6FStack ; push ramselShen onto the stack
     LDA WorkingX:AND_NOT StackBit OR IgnoredBits:STA WorkingX ; clear StackBit
 .NotStackWrite
-    ; Set prvTmp (the value returned in X) to have ramselShen in its low bit and be all 0s
+    ; Set ReturnedX (the value returned in X) to have ramselShen in its low bit and be all 0s
     ; otherwise. SFTODO: BeebWiki seems to imply the return value should have all the other
     ; bits of X preserved ("This gives the following entry *and return* values"), but it
     ; doesn't look as though we do, which *may* be a small incompatibility with true Watford/
     ; Aries implementations.
-    PLP:LDA #0:ROL A:STA prvTmp ; get ramselShen in low bit of prvTmp
+    PLP:LDA #0:ROL A:STA ReturnedX ; copy ramselShen to low bit of ReturnedX
     BIT WorkingX
-    BVC L8AB3 ; branch if ReadBit is 0, i.e. we're writing
-    BPL L8AC1 ; branch if StackBit is 0, i.e. we're not using the stack
+    BVC Write ; branch if ReadBit is 0, i.e. we're writing
+    BPL NonStackRead ; branch if StackBit is 0, i.e. we're not using the stack
     ; We're doing a stack read operation; pop ramselShen from the stack and move it into
     ; ProgramRamBit of WorkingX.
     ASL prvOsbyte6FStack:ROL WorkingX
-.L8AB3
+.Write
     ; Set ramselShen to be a copy of ProgramRamBit from WorkingX.
     LDA ramselCopy:ROL A:ROR WorkingX:ROR A:STA ramselCopy:STA ramsel
-.L8AC1
-    LDA prvTmp:TAX ; SQUASH: Just use LDX? Or take more advatnage of X being mostly untouched.
+.NonStackRead
+    LDA ReturnedX:TAX ; SQUASH: Just use LDX? Or take more advantage of X being mostly untouched.
     PRVDIS
     PLP
     RTS
