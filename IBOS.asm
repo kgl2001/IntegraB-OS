@@ -9170,10 +9170,9 @@ ramCodeStubCallIBOS = ramCodeStub + (romCodeStubCallIBOS - romCodeStub)
 .romCodeStubEnd
 ramCodeStubEnd = ramCodeStub + (romCodeStubEnd - romCodeStub)
 
-; The next part of osPrintBuf is used to hold a table of 7 original OS (parent)
-; vectors. This is really a single table, but because the 7 vectors of interest
-; aren't contiguous in the OS vector table it's sometimes helpful to consider it
-; as having two separate parts.
+; The next part of osPrintBuf is used to hold a table of 7 original OS (parent) vectors. This
+; is really a single table, but because the 7 vectors of interest aren't contiguous in the OS
+; vector table it's sometimes helpful to consider it as having two separate parts.
 parentVectorTbl = ramCodeStubEnd
 parentVectorTbl1 = parentVectorTbl
 ; The original OS (parent) values of BYTEV, WORDV, WRCHV and RDCHV are copied to
@@ -9181,8 +9180,8 @@ parentVectorTbl1 = parentVectorTbl
 parentBYTEV = parentVectorTbl1
 parentWORDV = parentVectorTbl1 + 2
 parentVectorTbl2 = parentVectorTbl1 + 4 * 2 ; 4 vectors, 2 bytes each
-; The original OS (parent) values of INSV, REMV and CNPV are copied to
-; parentVectorTbl2 in that order before installing our own handlers.
+; The original OS (parent) values of INSV, REMV and CNPV are copied to parentVectorTbl2 in that
+; order before installing our own handlers.
 parentVectorTbl2End = parentVectorTbl2 + 3 * 2 ; 3 vectors, 2 bytes each
 ASSERT parentVectorTbl2End <= osPrintBuf + osPrintBufSize
 
@@ -9231,27 +9230,28 @@ ASSERT parentVectorTbl2End <= osPrintBuf + osPrintBufSize
 ; SFTODO: Are they really unused? Maybe there's some code hiding somewhere, but nothing
 ; references this label except the code at vectorEntry. It just seems a bit odd these bytes
 ; aren't 0.
-ibosBYTEVIndex = 0
-ibosWORDVIndex = 1
 ibosWRCHVIndex = 2
 ibosRDCHVIndex = 3
 ibosINSVIndex = 4
 ibosREMVIndex = 5
 ibosCNPVIndex = 6
-.vectorHandlerTbl	EQUW bytevHandler-1
-		EQUB &0A
-		EQUW wordvHandler-1
-		EQUB &0C
-		EQUW WrchvHandler-1
-		EQUB &0E
-		EQUW rdchvHandler-1
-		EQUB &10
-		EQUW InsvHandler-1
-		EQUB &2A
-		EQUW RemvHandler-1
-		EQUB &2C
-		EQUW CnpvHandler-1
-		EQUB &2E
+.vectorHandlerTbl
+ibosBYTEVIndex = (P% - vectorHandlerTbl) DIV 3
+    EQUW bytevHandler-1
+    EQUB &0A
+ibosWORDVIndex = (P% - vectorHandlerTbl) DIV 3
+    EQUW wordvHandler-1
+    EQUB &0C
+    EQUW WrchvHandler-1
+    EQUB &0E
+    EQUW rdchvHandler-1
+    EQUB &10
+    EQUW InsvHandler-1
+    EQUB &2A
+    EQUW RemvHandler-1
+    EQUB &2C
+    EQUW CnpvHandler-1
+    EQUB &2E
 
 ; Control arrives here via ramCodeStub when one of the vectors we've claimed is
 ; called.
@@ -9405,8 +9405,7 @@ ibosCNPVIndex = 6
             BEQ osbyte00Handler
             CMP #&81
             BEQ osbyte81Handler
-            LDA #ibosBYTEVIndex
-            JMP forwardToParentVectorTblEntry
+            LDA #ibosBYTEVIndex:JMP forwardToParentVectorTblEntry
 }
 
 ; Read character at text cursor and screen mode (http://beebwiki.mdfs.net/OSBYTE_%2687)
