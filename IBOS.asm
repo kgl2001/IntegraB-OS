@@ -8548,7 +8548,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 
 .SetDate
     INY ; skip '='
-    JSR ParseAndValidateDate:BCC ParsedOk
+    JSR ParseAndValidateDate:BCC ParsedOk ; SQUASH: BCS PrvDisGenerateBadDate
     JMP PrvDisGenerateBadDate
 .ParsedOk
     JSR CopyPrvDateToRtc
