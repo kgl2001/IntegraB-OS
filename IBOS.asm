@@ -2234,50 +2234,52 @@ ptr = &00 ; 2 bytes
 
 
 ; SFTODO: THIS IS APPROXIMATELY OSBYTE &6F Aries/Watford Shadow RAM Access
+.osbyte6FInternal
 {
-.^L8A7B
-	  PHP
-	  SEI
-	  PRVEN								;switch in private RAM
-            TXA ; SFTODO: Just do STX in next line and avoid this? *Or* maybe rely on the fact we have this value in X to avoid needing to load this later
-            STA prv82+&53
-            LDA ramselCopy
-	  ASSERT ramselShen == &80
-            ROL A ; get ramselShen in C
-            PHP
-            LDA prv82+&53
-            AND #%11000000 ; mask off b7 (stack yes/no) and b6 (read/write)
-            CMP #&80
-            BNE L8A9F ; branch if we're not saving the current RAM state
-            PLP
-            PHP
-            ROR prv83+&3E ; put ramselShen in b7 of prv83+&3E; I suspect the lower bits form the stack (max depth 8, therefore) used by OSBYTE &6F
-            LDA prv82+&53
-            AND #&41 ; clear b7 (stack=yes) of saved original X now we've deal with pushing to the stack
-            STA prv82+&53
-.L8A9F      PLP
-            LDA #&00
-            ROL A ; get ramselShen in low bit of A
-            STA prvTmp
-            BIT prv82+&53
-            BVC L8AB3 ; branch if writing state
-            BPL L8AC1 ; branch if no stack operation
-	  ; So this is a stack pull operation
-            ASL prv83+&3E ; pop stack bit and...
-            ROL prv82+&53 ; move it into low bit of our "X"
+    PHP
+    SEI
+    PRVEN								;switch in private RAM
+    TXA ; SFTODO: Just do STX in next line and avoid this? *Or* maybe rely on the fact we have this value in X to avoid needing to load this later
+    STA prv82+&53
+    LDA ramselCopy
+    ASSERT ramselShen == &80
+    ROL A ; get ramselShen in C
+    PHP
+    LDA prv82+&53
+    AND #%11000000 ; mask off b7 (stack yes/no) and b6 (read/write)
+    CMP #&80
+    BNE L8A9F ; branch if we're not saving the current RAM state
+    PLP
+    PHP
+    ROR prv83+&3E ; put ramselShen in b7 of prv83+&3E; I suspect the lower bits form the stack (max depth 8, therefore) used by OSBYTE &6F
+    LDA prv82+&53
+    AND #&41 ; clear b7 (stack=yes) of saved original X now we've deal with pushing to the stack
+    STA prv82+&53
+.L8A9F
+    PLP
+    LDA #&00
+    ROL A ; get ramselShen in low bit of A
+    STA prvTmp
+    BIT prv82+&53
+    BVC L8AB3 ; branch if writing state
+    BPL L8AC1 ; branch if no stack operation
+    ; So this is a stack pull operation
+    ASL prv83+&3E ; pop stack bit and...
+    ROL prv82+&53 ; move it into low bit of our "X"
 .L8AB3
-	  ; Effectively copy the low bit of "our X" into ramselShen
-	  LDA ramselCopy
-            ROL A
-            ROR prv82+&53
-            ROR A
-            STA ramselCopy
-            STA ramsel
-.L8AC1      LDA prvTmp
-            TAX
-            PRVDIS								;switch out private RAM
-            PLP
-            RTS
+    ; Effectively copy the low bit of "our X" into ramselShen
+    LDA ramselCopy
+    ROL A
+    ROR prv82+&53
+    ROR A
+    STA ramselCopy
+    STA ramsel
+.L8AC1
+    LDA prvTmp
+    TAX
+    PRVDIS
+    PLP
+    RTS
 }
 			
 ;Unrecognised OSBYTE call - Service call &07
@@ -3040,7 +3042,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA transientCmdPtr + 1:ADC #0:PHA
     TSX:LDA L0103,X ; get stacked flags from earlier PHP
     ASSERT flagC == 1:LSR A:BCS CommandSSetup ; branch if C set in stacked flags
-    LDX #&80:JSR L8A7B ; push current RAM state and select video RAM
+    LDX #&80:JSR osbyte6FInternal ; push current RAM state and select video RAM
     JMP CallSubCommand
 			
 .CommandSSetup
@@ -3059,7 +3061,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     PLA:TAY:PLA:TAX:JSR OSCLI
     PLP
     BCS CheckVAfterCommandS
-    LDX #&C0:JSR L8A7B ; pop and select stacked shadow RAM state
+    LDX #&C0:JSR osbyte6FInternal ; pop and select stacked shadow RAM state
 .ExitAndClaimServiceCallIndirect
     JMP ExitAndClaimServiceCall
 
@@ -9350,10 +9352,8 @@ ibosCNPVIndex = 6
 
 ; Aries/Watford shadow RAM access (http://beebwiki.mdfs.net/OSBYTE_%266F)
 .osbyte6FHandler
-{
-.LBA34      JSR L8A7B
-            JMP returnFromBYTEV
-}
+    JSR osbyte6FInternal
+    JMP returnFromBYTEV
 
 ; Read key with time limit/read machine type (http://beebwiki.mdfs.net/OSBYTE_%2681)
 .osbyte81Handler
