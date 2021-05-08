@@ -4120,7 +4120,8 @@ tmp = &A8
 ; ENHANCE: Perhaps a bit of a novelty, but could we make the startup banner *CONFIGURE-able?
 .DisplayBannerIfRequired
 {
-ramPresenceFlags = &A8
+RamPresenceFlags = TransientZP
+
 .L989F      LDX #prvOsMode - prv83							;select OSMODE
             JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&00								;If OSMODE=0 SFTODO: Could save a byte with "TAX"
@@ -4154,10 +4155,10 @@ ramPresenceFlags = &A8
             JSR OSWRCH								;Write to screen
             LDX #userRegRamPresenceFlags						;Read 'RAM installed in banks' register
             JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            STA ramPresenceFlags
+            STA RamPresenceFlags
             LDX #&07								;Check all 8 32k banks for RAM
             LDA #&00								;Start with 0k RAM
-.countLoop  LSR ramPresenceFlags							;Check if RAM bank
+.countLoop  LSR RamPresenceFlags							;Check if RAM bank
             BCC notPresent								;If 0 then no RAM, so don't increment RAM count
             ADC #32 - 1								;Add 32k (-1 because carry is set)
 .notPresent DEX									;Check next 32k bank
