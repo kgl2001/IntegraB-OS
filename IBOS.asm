@@ -279,6 +279,8 @@ oswordInputLine = &00
 oswordSound = &07
 oswordReadPixel = &09
 
+shadowHimem = &8000
+
 romBinaryVersion = &8008
 
 oswdbtA = &EF
@@ -9438,7 +9440,7 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 
 .ShadowMode
     PLA
-    LDX #&00:LDY #&80 ; SFTODO: mildly magic
+    LDX #lo(shadowHimem):LDY #hi(shadowHimem)
     JMP returnFromBYTEV
 }
 
