@@ -7038,9 +7038,13 @@ daysInMonth = transientDateSFTODO2
             JMP DayOfMonthLoop
 }
 
-.DayMonthNames
+{
+.^DayMonthNames
+.Today
     EQUS "today" ; *DATE/*CALENDAR date calculations understand "today"; not used on output
+.Sunday
     EQUS "sunday"
+.Monday
     EQUS "monday"
     EQUS "tuesday"
     EQUS "wednesday"
@@ -7061,9 +7065,14 @@ daysInMonth = transientDateSFTODO2
     EQUS "december"
 	
 ; String offsets in DayMonthNames
-.DayMonthNameOffsetTable	EQUB &00,&05,&0B,&11,&18,&21,&29,&2F
+.^DayMonthNameOffsetTable
+    EQUB Today - DayMonthNames
+    EQUB Sunday - DayMonthNames
+    EQUB Monday - DayMonthNames
+	EQUB &11,&18,&21,&29,&2F
 		EQUB &37,&3E,&46,&4B,&50,&53,&57,&5B
 		EQUB &61,&6A,&71,&79,&81
+}
 
 
 ; Emit name of day (C clear on entry) or month (C set on entry) in A as a string to
