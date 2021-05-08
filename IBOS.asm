@@ -2300,38 +2300,30 @@ IgnoredBits = %00111110
     RTS
 }
 			
-;Unrecognised OSBYTE call - Service call &07
+; Unrecognised OSBYTE call - Service call &07
 .service07
     ; Skip OSBYTE &6C and &72 handling if we're in OSMODE 0.
     ; SQUASH: CMP #0 is redundant.
     LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X:CMP #0:BNE osbyte6C
     LDA oswdbtA:JMP osbyteA1
 
+; Test for OSBYTE &6C - Select Shadow/Screen memory for direct access
+.osbyte6C
 {
-;Test for OSBYTE &6C - Select Shadow/Screen memory for direct access
-.^osbyte6C	  LDA oswdbtA								;get OSBYTE command
-            CMP #&6C								;OSBYTE &6C - Select Shadow/Screen memory for direct access
-            BNE osbyte72
-            LDA oswdbtX
-            BEQ L8AE4
-            LDA #&01
-.L8AE4      PHP
-            SEI
-            ROL ramselCopy
-            PHP
-            EOR #&01
-            ROR A
-            LDA ramselCopy
-            ROR A
-            STA ramselCopy
-            STA ramsel
-            LDA #&00
-.L8AF9      PLP
-            ROL A
-            EOR #&01
-            STA oswdbtX
-            PLP
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+    LDA oswdbtA:CMP #&6C:BNE osbyte72
+    ; Turn non-0 X into a 1 for the following code.
+    LDA oswdbtX:BEQ HaveAdjustedXInA
+    LDA #1
+.HaveAdjustedXInA
+    ASSERT ramselShen == 1 << 7
+    PHP:SEI
+    ROL ramselCopy:PHP ; stash C=ramselShen
+    EOR #1:ROR A ; toggle user-supplied "X" and move it into C
+    LDA ramselCopy:ROR A:STA ramselCopy:STA ramsel ; set ramselShen=C
+    ; Set X on exit to opposite of original ramselShen.
+    LDA #0:PLP:ROL A:EOR #1:STA oswdbtX ; SFTODO: BEEBWIKI SAYS X IS PRESERVED???
+    PLP
+    JMP ExitAndClaimServiceCall
 }
 			
 ;Test for OSBYTE &72 - Specify video memory to use on next MODE change (http://beebwiki.mdfs.net/OSBYTE_%2672)
