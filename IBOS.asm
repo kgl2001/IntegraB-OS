@@ -3644,8 +3644,9 @@ ENDIF
 }
 
 
-; SQUASH: If we moved this block just before PrintNoShWithConfRefTransientCmdIdxAndNewLine we could "BXX PrintNoShWithConfRefTransientCmdIdxAndNewLine ; always branch" instead
-; of having to JMP.
+; SQUASH: If we moved this block just before PrintNoShWithConfRefTransientCmdIdxAndNewLine we
+; could "BXX PrintNoShWithConfRefTransientCmdIdxAndNewLine ; always branch" instead of having
+; to JMP.
 {
 ; Given a ParseNoSh result n, BitLookup[n] is the bit set in the *CONFIGURE CAPS bits.
 .BitLookup
@@ -3658,7 +3659,9 @@ ENDIF
     JSR GetConfigValue
     LSR A:BCS ShCaps
     LSR A:BCS NoCaps
-    LDA #0:JMP PrintNoShWithConfRefTransientCmdIdxAndNewLine ; CAPS SQUASH: We could omit LDA #0 and JMP into PrintNoShWithConfRefTransientCmdIdxAndNewLine after JSR PrintNoSh
+    ; SQUASH: We could omit LDA #0 and JMP into PrintNoShWithConfRefTransientCmdIdxAndNewLine
+    ; after JSR PrintNoSh.
+    LDA #0:JMP PrintNoShWithConfRefTransientCmdIdxAndNewLine ; CAPS
 .NoCaps
     LDA #1:JMP PrintNoShWithConfRefTransientCmdIdxAndNewLine ; NOCAPS
 .ShCaps
