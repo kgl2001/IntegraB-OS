@@ -3665,7 +3665,7 @@ ENDIF
 .NoCaps
     LDA #1:JMP PrintNoShWithConfRefTransientCmdIdxAndNewLine ; NOCAPS
 .ShCaps
-    LDA #2:JMP PrintNoShWithConfRefTransientCmdIdxAndNewLine
+    LDA #2:JMP PrintNoShWithConfRefTransientCmdIdxAndNewLine ; SHCAPS
 			
 .Conf3Write
     LDX transientConfigPrefixSFTODO
@@ -4033,58 +4033,49 @@ tmp = &A8
             LSR A
             RTS
 
-;Tube system initialisation - Service call &FF
+; Tube system initialisation - service call &FF
+; SFTODO: Not at all clear what's going on here
+.serviceFF
 {
-.^serviceFF
     XASSERT_USE_PRV1
- JSR clearShenPrvEn
-            PHA
-            BIT prvSFTODOTUBEISH
-            BMI L9836
-            LDA lastBreakType
-            BEQ SoftReset
-            BIT L03A4
-            BMI L983D
-            LDX #userRegTubeBaudPrinter
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            AND #&01 ; mask off tube bit (SFTODO: named constant? or more trouble than it's worth?)
-            BNE L982E
-            LDA #&FF
-.L982E      STA prvSFTODOTUBE2ISH
-.SoftReset  BIT prvSFTODOTUBE2ISH
-	  BPL L983D
-.L9836      PLA
-            JSR PRVDISStaRamsel
-            JMP ExitServiceCall								;restore service call parameters and exit
-			
-.L983D      PLA
-            JSR PRVDISStaRamsel
-            PLA
-            TAY
-            PLA
-            PLA
-            LDA #&FF
-            LDX #&00
-            JMP LDC16								;Set up Sideways ROM latch and RAM copy (http://mdfs.net/Docs/Comp/BBC/OS1-20/D940)
+    JSR clearShenPrvEn:PHA
+    BIT prvSFTODOTUBEISH:BMI L9836
+    LDA lastBreakType:BEQ SoftReset
+    BIT L03A4 ; SFTODO!?
+    BMI L983D
+    LDX #userRegTubeBaudPrinter:JSR ReadUserReg:AND #1:BNE WantTube ; branch if *CONFIGURE TUBE
+    LDA #&FF
+.WantTube
+    STA prvSFTODOTUBE2ISH
+.SoftReset
+    BIT prvSFTODOTUBE2ISH:BPL L983D
+.L9836
+    PLA:JSR PRVDISStaRamsel
+    JMP ExitServiceCall
+.L983D
+    PLA:JSR PRVDISStaRamsel
+    PLA:TAY ; restore original Y on entry to service call
+    PLA ; discard stacked original X
+    PLA ; discard stacked original A
+    LDA #&FF
+    LDX #&00
+    JMP LDC16 ; STX romselCopy:STX romsel:RTS, i.e. page in bank 0 (SFTODO!?) and return from service call
 
-; SFTODO: This only has one caller
+; SQUASH: This only has one caller
 .clearShenPrvEn ; SFTODO: not super happy with this name
-            LDA ramselCopy
-            PHA
-            LDA #&00
-            STA ramselCopy
-            STA ramsel
-            PRVEN								;switch in private RAM
-            PLA
-            RTS
+    LDA ramselCopy:PHA
+    LDA #0:STA ramselCopy:STA ramsel
+    PRVEN
+    PLA
+    RTS
 
 .PRVDISStaRamsel
-            PHA
-            PRVDIS								;switch out private RAM
-            PLA
-            STA ramselCopy
-            STA ramsel
-            RTS
+    PHA
+    PRVDIS
+    PLA
+    STA ramselCopy
+    STA ramsel
+    RTS
 }
 
 ; Vectors claimed - Service call &0F
