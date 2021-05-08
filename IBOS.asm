@@ -9103,7 +9103,6 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     RTS
 }
 
-;relocation code
 ; Copy our code stub into the OS printer buffer.
 ; SFTODO: This only has one caller at the moment and could be inlined.
 .installOSPrintBufStub
