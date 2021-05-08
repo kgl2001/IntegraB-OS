@@ -9398,8 +9398,8 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 ; Examine buffer status (http://beebwiki.mdfs.net/OSBYTE_%2698)
 .osbyte98Handler
 {
-.LBA96      JSR jmpParentBYTEV
-            BCS returnFromBYTEV
+    XASSERT_USE_PRV1
+    JSR jmpParentBYTEV:BCS returnFromBYTEV
             LDA ramselCopy
             PHA
             ORA #ramselPrvs1
@@ -9410,7 +9410,7 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
             ORA #romselPrvEn
             STA romselCopy
             STA romsel
-            LDA prvOsMode						;read OSMODE
+            LDA prvOsMode
             CMP #&02
             PLA
             STA romselCopy
@@ -9452,14 +9452,9 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 
 ; Enter language ROM (http://beebwiki.mdfs.net/OSBYTE_%268E)
 .osbyte8EHandler
-{
-.LBAF1      LDA #osbyteIssueServiceRequest
-            LDX #serviceAboutToEnterLanguage
-            LDY #&00
-            JSR OSBYTE
-            JSR restoreOrigVectorRegs
-            JMP returnViaParentBYTEV
-}
+    LDA #osbyteIssueServiceRequest:LDX #serviceAboutToEnterLanguage:LDY #0:JSR OSBYTE
+    JSR restoreOrigVectorRegs
+    JMP returnViaParentBYTEV
 
 ; Identify host/operating system (http://beebwiki.mdfs.net/OSBYTE_%2600)
 .osbyte00Handler
