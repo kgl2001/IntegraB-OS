@@ -1446,7 +1446,7 @@ TabColumn = 12
 ; this is redundant.
 ; ENHANCE: It's probably not a good idea, but we *could* make IBOS use GSINIT/GSREAD where
 ; appropriate - this would (I think) improve handling of quotes around filenames and allow
-; standard control code (e.g. "|M") to be used.
+; standard control codes (e.g. "|M") to be used.
 .^FindNextCharAfterSpace
     LDA (transientCmdPtr),Y
     CMP #' ':BEQ SkipSpace
