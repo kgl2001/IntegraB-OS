@@ -2233,8 +2233,9 @@ ptr = &00 ; 2 bytes
 }
 
 
-; SFTODO: THIS IS APPROXIMATELY OSBYTE &6F Aries/Watford Shadow RAM Access
-; Aries/Watford shadow RAM access (http://beebwiki.mdfs.net/OSBYTE_%266F)
+; Internal implementation of Aries/Watford shadow RAM access
+; (http://beebwiki.mdfs.net/OSBYTE_%266F)
+;
 ; On entry X is a bitmap:
 ;     b7=0 no stack operation
 ;     b7=1 pop state from stack (reading), push state on stack (writing)
