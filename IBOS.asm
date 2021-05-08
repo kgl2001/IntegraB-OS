@@ -272,6 +272,7 @@ osbyteReadWriteKeyboardStatus = &CA
 osbyteEnableDisableStartupMessage = &D7
 osbyteReadWriteVduQueueLength = &DA
 osbyteReadWriteOutputDevice = &EC
+osbyteReadWriteShadowScreenState = &EF
 osbyteReadWriteStartupOptions = &FF
 
 oswordInputLine = &00
@@ -2326,18 +2327,18 @@ IgnoredBits = %00111110
     JMP ExitAndClaimServiceCall
 }
 			
-;Test for OSBYTE &72 - Specify video memory to use on next MODE change (http://beebwiki.mdfs.net/OSBYTE_%2672)
+; Test for OSBYTE &72 - Specify video memory to use on next MODE change
+; (http://beebwiki.mdfs.net/OSBYTE_%2672)
+.osbyte72
 {
-.^osbyte72  CMP #&72								;OSBYTE &72 - Specify video memory to use on next MODE change
-            BNE osbyteA1
-            LDA #&EF								;OSBYTE call - write to &27F
-            LDX oswdbtX
-            BEQ L8B0F								;if '0' then retain '0'
-            LDX #&01								;otherwise set to '1'
-.L8B0F      LDY #&00
-            JSR OSBYTE								;write to &27F
-            STX oswdbtX
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+    CMP #&72:BNE osbyteA1
+    LDA #osbyteReadWriteShadowScreenState
+    LDX oswdbtX:BEQ ShadowScreenStateInX
+    LDX #1
+.ShadowScreenStateInX
+    LDY #0:JSR OSBYTE
+    STX oswdbtX ; return old value of shadow screen state to caller
+    JMP ExitAndClaimServiceCall
 }
 			
 ;Test for OSBYTE &A1 - Read configuration RAM/EEPROM
