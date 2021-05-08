@@ -1444,6 +1444,9 @@ TabColumn = 12
     INY
 ; SQUASH: In some places we do "LDA (transientCmdPtr),Y" after alling FindNextCharAfterSpace;
 ; this is redundant.
+; ENHANCE: It's probably not a good idea, but we *could* make IBOS use GSINIT/GSREAD where
+; appropriate - this would (I think) improve handling of quotes around filenames and allow
+; standard control code (e.g. "|M") to be used.
 .^FindNextCharAfterSpace
     LDA (transientCmdPtr),Y
     CMP #' ':BEQ SkipSpace
