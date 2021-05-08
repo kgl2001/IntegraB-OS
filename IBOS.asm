@@ -9000,29 +9000,28 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ; SFTODO: Don't these next two calls contain most of the logic we'd need to implement OSWORD &F?
 ;XY?0=&65
 ;OSWORD &49 (73) - Integra-B calls
-.LB8D8	  JSR CopyPrvTimeToRtc								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
-            SEC
-            RTS
+.LB8D8
+    JSR CopyPrvTimeToRtc
+    SEC
+    RTS
 			
 ;XY?0=&66
 ;OSWORD &49 (73) - Integra-B calls
-.LB8DD	  JSR CopyPrvDateToRtc								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
-            SEC
-            RTS
+.LB8DD
+    JSR CopyPrvDateToRtc
+    SEC
+    RTS
 			
 ;XY?0=&67
 ;OSWORD &49 (73) - Integra-B calls
 .LB8E2
     XASSERT_USE_PRV1
     JSR CopyPrvAlarmToRtc
-    LDA prvOswordBlockCopy + 1
-    AND #rtcRegBPIE OR rtcRegBAIE
-    STA prvOswordBlockCopy + 1
-    LDX #rtcRegB
-    JSR ReadRtcRam								;Read data from RTC memory location X into A
+    LDA prvOswordBlockCopy + 1:AND #rtcRegBPIE OR rtcRegBAIE:STA prvOswordBlockCopy + 1
+    LDX #rtcRegB:JSR ReadRtcRam
     AND_NOT rtcRegBPIE OR rtcRegBAIE
     ORA prvOswordBlockCopy + 1
-    JSR WriteRtcRam								;Write data from A to RTC memory location X
+    JSR WriteRtcRam
     SEC
     RTS
 
@@ -9044,7 +9043,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 .ExitServiceCallIndirect
     JMP ExitServiceCall
 
-;Error (BRK) occurred - Service call &06
+; Error (BRK) occurred - Service call &06
 ; SFTODO: I really don't know what's going on here. We seem to be checking for an error at
 ; &FFB4, but that's in the OS ROM in the middle of an instruction. We also do some weird
 ; stack-swizzling between checking the low and high bytes. My best guess is that this is trying
@@ -9098,13 +9097,10 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ; it's probably better to make the hardware paging operation the focus.
 .setMemsel
 {
-.LB948      PHA
-            LDA romselCopy
-            ORA #romselMemsel
-            STA romselCopy
-            STA romsel
-            PLA
-            RTS
+    PHA
+    LDA romselCopy:ORA #romselMemsel:STA romselCopy:STA romsel
+    PLA
+    RTS
 }
 
 ;relocation code
@@ -9112,18 +9108,16 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ; SFTODO: This only has one caller at the moment and could be inlined.
 .installOSPrintBufStub
 {
-bytesToCopy = &40
-ASSERT romCodeStubEnd - romCodeStub <= bytesToCopy
-.LB954      LDX #bytesToCopy - 1
-.LB956      LDA romCodeStub,X
-            STA osPrintBuf,X
-            DEX
-            BPL LB956
-            ; Patch the stub so it contains our bank number.
-            LDA romselCopy
-            AND #maxBank
-            STA osPrintBuf + (romCodeStubLoadBankImm + 1 - romCodeStub)
-            RTS
+BytesToCopy = &40
+    ASSERT romCodeStubEnd - romCodeStub <= BytesToCopy
+
+    LDX #BytesToCopy - 1
+.Loop
+    LDA romCodeStub,X:STA osPrintBuf,X
+    DEX:BPL Loop
+    ; Patch the stub so it contains our bank number.
+    LDA romselCopy:AND #maxBank:STA osPrintBuf + (romCodeStubLoadBankImm + 1 - romCodeStub)
+    RTS
 }
 
 ; Code stub which is copied into the OS printer buffer at runtime by installOSPrintBufStub. The
