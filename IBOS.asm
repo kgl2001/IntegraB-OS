@@ -7046,32 +7046,65 @@ daysInMonth = transientDateSFTODO2
     EQUS "sunday"
 .Monday
     EQUS "monday"
+.Tuesday
     EQUS "tuesday"
+.Wednesday
     EQUS "wednesday"
+.Thursday
     EQUS "thursday"
+.Friday
     EQUS "friday"
+.Saturday
     EQUS "saturday"
+.January
     EQUS "january"
+.February
     EQUS "february"
+.March
     EQUS "march"
+.April
     EQUS "april"
+.May
     EQUS "may"
+.June
     EQUS "june"
+.July
     EQUS "july"
+.August
     EQUS "august"
+.September
     EQUS "september"
+.October
     EQUS "october"
+.November
     EQUS "november"
+.December
     EQUS "december"
+.End
 	
 ; String offsets in DayMonthNames
 .^DayMonthNameOffsetTable
     EQUB Today - DayMonthNames
     EQUB Sunday - DayMonthNames
     EQUB Monday - DayMonthNames
-	EQUB &11,&18,&21,&29,&2F
-		EQUB &37,&3E,&46,&4B,&50,&53,&57,&5B
-		EQUB &61,&6A,&71,&79,&81
+    EQUB Tuesday - DayMonthNames
+    EQUB Wednesday - DayMonthNames
+    EQUB Thursday - DayMonthNames
+    EQUB Friday - DayMonthNames
+    EQUB Saturday - DayMonthNames
+    EQUB January - DayMonthNames
+    EQUB February - DayMonthNames
+    EQUB March - DayMonthNames
+    EQUB April - DayMonthNames
+    EQUB May - DayMonthNames
+    EQUB June - DayMonthNames
+    EQUB July - DayMonthNames
+    EQUB August - DayMonthNames
+    EQUB September - DayMonthNames
+    EQUB October - DayMonthNames
+    EQUB November - DayMonthNames
+    EQUB December - DayMonthNames
+    EQUB End - DayMonthNames
 }
 
 
