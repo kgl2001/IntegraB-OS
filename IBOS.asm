@@ -4125,13 +4125,13 @@ RamPresenceFlags = TransientZP
 .L989F      LDX #prvOsMode - prv83							;select OSMODE
             JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
             CMP #&00								;If OSMODE=0 SFTODO: Could save a byte with "TAX"
-            BEQ rts									;Then leave startup message alone
+            BEQ Rts									;Then leave startup message alone
             LDA #osbyteEnableDisableStartupMessage					;Startup message suppression and !BOOT option status
             LDX #&00
             LDY #&FF
             JSR OSBYTE
             TXA
-            BPL rts
+            BPL Rts
             LDA #osbyteEnableDisableStartupMessage					;Startup message suppression and !BOOT option status
             LDX #&00
             LDY #&00
@@ -4143,9 +4143,9 @@ RamPresenceFlags = TransientZP
             INX									;Next Character
             CPX #(computechEnd + 1) - romHeader						;Check for final character
             BNE BannerLoop1								;Loop
-            LDX #(reverseBannerEnd - 1) - reverseBanner					;Lookup table offset
+            LDX #(ReverseBannerEnd - 1) - ReverseBanner					;Lookup table offset
 .BannerLoop2
-	  LDA reverseBanner,X							;Read INTEGRA-B Text from lookup table
+	  LDA ReverseBanner,X							;Read INTEGRA-B Text from lookup table
             JSR OSWRCH								;Write to screen
             DEX									;Next Character
             BPL BannerLoop2								;Loop
@@ -4158,40 +4158,42 @@ RamPresenceFlags = TransientZP
             STA RamPresenceFlags
             LDX #&07								;Check all 8 32k banks for RAM
             LDA #&00								;Start with 0k RAM
-.countLoop  LSR RamPresenceFlags							;Check if RAM bank
-            BCC notPresent								;If 0 then no RAM, so don't increment RAM count
+.CountLoop  LSR RamPresenceFlags							;Check if RAM bank
+            BCC NotPresent								;If 0 then no RAM, so don't increment RAM count
             ADC #32 - 1								;Add 32k (-1 because carry is set)
-.notPresent DEX									;Check next 32k bank
-            BPL countLoop								;Loop until 0
+.NotPresent DEX									;Check next 32k bank
+            BPL CountLoop								;Loop until 0
             CMP #&00								;If RAM total = 0k (will occur with either 0 RAM banks or 8 x 32k RAM banks), then SFTODO: could do "TAX" to save a byte
-            BEQ allBanksPresent							;Write '256K' to screen
+            BEQ AllBanksPresent							;Write '256K' to screen
 	  ; SFTODO: We could save the SEC by just doing JSR PrintADecimalPad
 	  ; SFTODO: Do we really want padding here? If we have (say) 64K, surely it's neater to print "Computech INTEGRA-B 64K" not "Computech INTEGRA-B  64K"?
             SEC
             JSR PrintADecimal								;Convert binary number to numeric characters and write characters to screen
-            JMP printKAndNewline							;Write 'K' to screen
+            JMP PrintKAndNewline							;Write 'K' to screen
 
-.allBanksPresent
+.AllBanksPresent
             LDA #'2'
             JSR OSWRCH								;Write to screen
             LDA #'5'
             JSR OSWRCH								;Write to screen
             LDA #'6'
             JSR OSWRCH								;Write to screen
-.printKAndNewline
+.PrintKAndNewline
             LDA #'K'
             JSR OSWRCH								;Write to screen
 .SoftReset  JSR OSNEWL								;New Line
             BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
-            BMI rts
+            BMI Rts
             JMP OSNEWL								;New Line
 
-	  ; SFTODO: Control can't flow through to here, can we move the rts label to a nearby rts to save a byte?
-.rts        RTS
+    ; SQUASH: Control can't flow through to here, can we move the Rts label to a nearby Rts to
+    ; save a byte?
+.Rts
+    RTS
 
-.reverseBanner
-       	  EQUS " B-ARGETNI"							;INTEGRA-B Reversed
-.reverseBannerEnd
+.ReverseBanner
+    EQUS " B-ARGETNI" ; "INTEGRA-B " reversed
+.ReverseBannerEnd
 }
 
 ; SFTODO: There are a few cases where we JMP to osbyteXXInternal, if we rearranged the code a little (could always use macros to maintain readability, if that's a factor) we could probably save some JMPs
