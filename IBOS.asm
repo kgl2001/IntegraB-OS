@@ -3364,7 +3364,9 @@ OriginalOutputDeviceStatus = TransientZP + 1
     RTS
 }
 
-.L932E
+; Print ""/"NO"/"SH" (using PrintNoSh) followed by the name of the TransientCmdIdx ConfRef
+; entry and a newline. This is used to display things like "SHCAPS" or "NOBOOT".
+.PrintNoShWithConfRefTransientCmdIdxAndNewLine
 {
     JSR PrintNoSh
     JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
@@ -3642,7 +3644,7 @@ ENDIF
 }
 
 
-; SQUASH: If we moved this block just before L932E we could "BXX L932E ; always branch" instead
+; SQUASH: If we moved this block just before PrintNoShWithConfRefTransientCmdIdxAndNewLine we could "BXX PrintNoShWithConfRefTransientCmdIdxAndNewLine ; always branch" instead
 ; of having to JMP.
 {
 ; Given a ParseNoSh result n, BitLookup[n] is the bit set in the *CONFIGURE CAPS bits.
@@ -3656,11 +3658,11 @@ ENDIF
     JSR GetConfigValue
     LSR A:BCS ShCaps
     LSR A:BCS NoCaps
-    LDA #0:JMP L932E ; CAPS SQUASH: We could omit LDA #0 and JMP into L932E after JSR PrintNoSh
+    LDA #0:JMP PrintNoShWithConfRefTransientCmdIdxAndNewLine ; CAPS SQUASH: We could omit LDA #0 and JMP into PrintNoShWithConfRefTransientCmdIdxAndNewLine after JSR PrintNoSh
 .NoCaps
-    LDA #1:JMP L932E ; NOCAPS
+    LDA #1:JMP PrintNoShWithConfRefTransientCmdIdxAndNewLine ; NOCAPS
 .ShCaps
-    LDA #2:JMP L932E
+    LDA #2:JMP PrintNoShWithConfRefTransientCmdIdxAndNewLine
 			
 .Conf3Write
     LDX transientConfigPrefixSFTODO
@@ -3675,7 +3677,7 @@ ENDIF
     LDA ConfParBit + 2,Y
     ASL A:LDA #0:ROL A
     EOR transientConfigPrefixSFTODO
-    JMP L932E
+    JMP PrintNoShWithConfRefTransientCmdIdxAndNewLine
 			
 .Conf6Write
     JSR SetYToTransientCmdIdxTimes3
