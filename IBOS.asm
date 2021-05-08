@@ -8318,6 +8318,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     EQUB addressableLatchShiftLock OR addressableLatchData1
     EQUB addressableLatchShiftLock OR addressableLatchData0
 
+; SFTODO: This has only one caller (but it may be unsuitable for inlining, not looked properly yet)
 .^LB34E
     ; Set bit 6 of userRegAlarm to be a copy of bit 7. SFTODO: PROB RIGHT BUT COME BACK TO THIS - this would make some sense, it would essentially copy the "R" (repeat?) bit into the "enable" bit, so we'd turn the alarm off iff it's not repeating
     LDX #userRegAlarm:JSR ReadUserReg
