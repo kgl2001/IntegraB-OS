@@ -2304,12 +2304,17 @@ IgnoredBits = %00111110
 			
 ; Unrecognised OSBYTE call - Service call &07
 ;
-; If the call is claimed, the return value of X is in oswdbtX and the return value of Y is the
-; value in the Y register, which will be pulled from the stack by ExitAndClaimServiceCall.
-; (Documentation on this seems confusing, but as BeebWiki points out, the TAX at &F17E in OS
-; 1.20 immediately tramples on the X register on return from this service call and the value in
-; X on returning from OSBYTE is taken from oswdbtX at &E7D1. Y is *not* loaded from oswdbtY in
-; the OS OSBYTE code, so the contents of the actual Y register are returned to the caller.)
+; Note that (depending on OSMODE) we may also claim BYTEV and our code at bytevHandler will
+; override the OS implementation of some OSBYTE calls; only *unrecognised* OSBYTE calls will be
+; pass through via service07.
+;
+; If this service call is claimed, the return value of X is in oswdbtX and the return value of
+; Y is the value in the Y register, which will be pulled from the stack by
+; ExitAndClaimServiceCall. (Documentation on this seems confusing, but as BeebWiki points out,
+; the TAX at &F17E in OS 1.20 immediately tramples on the X register on return from this
+; service call and the value in X on returning from OSBYTE is taken from oswdbtX at &E7D1. Y is
+; *not* loaded from oswdbtY in the OS OSBYTE code, so the contents of the actual Y register are
+; returned to the caller.)
 .service07
     ; Skip OSBYTE &6C and &72 handling if we're in OSMODE 0.
     ; SQUASH: CMP #0 is redundant.
@@ -9372,6 +9377,8 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 .LBA65      JMP (parentBYTEV)
 }
 
+; BYTEV handler. This is used to override the OS implementation of OSBYTE calls; only
+; *unrecognised* OSBYTE calls will be passed through via service07.
 .bytevHandler
 {
 .LBA68	  JSR restoreOrigVectorRegs
