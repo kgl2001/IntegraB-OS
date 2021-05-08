@@ -9455,42 +9455,43 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 ; Identify host/operating system (http://beebwiki.mdfs.net/OSBYTE_%2600)
 .osbyte00Handler
 {
-.LBB00      TXA
-            PHA
-            LDX #prvOsMode - prv83								;select OSMODE
-            JSR ReadPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            BEQ LBB18								;Branch if OSMODE=0
-            CMP #&04								;OSMODE 4?
-            BNE LBB0F								;Branch if OSMODE<>4 (OSMODE 1-3)
-            LDA #&02
-.LBB0F      TAX										;OSMODE 1 = 1, OSMODE 2,4 = 2, OSMODE 3 = 3
-            PLA
-            BEQ LBB22								;Output OSMODE to screen.
-            LDA #&00
-            JMP returnFromBYTEV
+    TXA
+    PHA
+    LDX #prvOsMode - prv83								;select OSMODE
+    JSR ReadPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
+    BEQ LBB18								;Branch if OSMODE=0
+    CMP #&04								;OSMODE 4?
+    BNE LBB0F								;Branch if OSMODE<>4 (OSMODE 1-3)
+    LDA #&02
+.LBB0F
+    TAX										;OSMODE 1 = 1, OSMODE 2,4 = 2, OSMODE 3 = 3
+    PLA
+    BEQ LBB22								;Output OSMODE to screen.
+    LDA #&00
+    JMP returnFromBYTEV
 
-.LBB18      PLA
-            TAX
-            LDA #&00
+.LBB18
+    PLA
+    TAX
+    LDA #&00
 .^returnViaParentBYTEV
-.LBB1C      JSR jmpParentBYTEV
-            JMP returnFromBYTEV
+.LBB1C
+    JSR jmpParentBYTEV
+    JMP returnFromBYTEV
 
 	  ; SFTODO: I think we could do this loop backwards to save two bytes on CPX #
-.LBB22      LDX #&00								;start at offset 0
-.LBB24      LDA osError,X								;relocate error code from &BB3C
-            STA L0100,X								;to &100
-            INX
-            CPX #osErrorEnd - osError							;until &15
-            BNE LBB24								;loop
-            LDX #prvOsMode - prv83							;select OSMODE
-            JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
-            ORA #'0'								;convert OSMODE to character printable OSMODE (OSMODE = OSMODE + &30)
-            STA L0113								;write OSMODE character to error text
-            JMP L0100								;Generate BRK and error
-
-.osError	  EQUB &00,&F7
-	  EQUS "OS 1.20 / OSMODE 0", &00
+.LBB22
+    LDX #0
+.Loop
+    LDA osError,X:STA L0100,X
+    INX:CPX #osErrorEnd - osError:BNE Loop
+    LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X:ORA #'0':STA L0100 + (osErrorOsMode - osError)
+    JMP L0100
+.osError
+    EQUB &00,&F7
+    EQUS "OS 1.20 / OSMODE "
+.osErrorOsMode
+    EQUS "0", &00
 .osErrorEnd
 }
 
