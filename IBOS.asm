@@ -9446,6 +9446,8 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 
 ; Enter language ROM (http://beebwiki.mdfs.net/OSBYTE_%268E)
 .osbyte8EHandler
+    ; We emulate the Master's behaviour by issuing this service call to notify sideways ROMs
+    ; before entering the language.
     LDA #osbyteIssueServiceRequest:LDX #serviceAboutToEnterLanguage:LDY #0:JSR OSBYTE
     JSR restoreOrigVectorRegs
     JMP returnViaParentBYTEV
