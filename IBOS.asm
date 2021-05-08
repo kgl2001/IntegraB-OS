@@ -8526,41 +8526,35 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 }
 
 ;*DATE Command
+.date
 {
-.^date	  PRVEN								;switch in private RAM
-            LDA (transientCmdPtr),Y							;read first character of command parameter
-            CMP #'='								;check for '='
-            BEQ setDate								;if '=' then set date, else read date
-            JSR InitDateSFTODOS								;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
-            LDA prvDateSFTODO2 ; SFTODO: It would be shorter just to do LDA #xx:STA prvDateSFTODO2
-            AND #&F0
-            STA prvDateSFTODO2							;store #&40 to address &8222, updating value set by InitDateSFTODOS
-            JSR DateCalculation
-            BCC calculationOk
-            BVS PrvDisGenerateBadDateIndirect
-            JMP PrvDisGenerateMismatch								;Error with Mismatch
-
+    PRVEN
+    LDA (transientCmdPtr),Y:CMP #'=':BEQ SetDate
+    JSR InitDateSFTODOS
+    LDA prvDateSFTODO2:AND #&F0:STA prvDateSFTODO2 ; SQUASH: It would be shorter just to do LDA #xx:STA prvDateSFTODO2
+    JSR DateCalculation
+    BCC CalculationOk
+    BVS PrvDisGenerateBadDateIndirect
+    JMP PrvDisGenerateMismatch
 .PrvDisGenerateBadDateIndirect
-            JMP PrvDisGenerateBadDate								;Error with Bad Date
-
-.calculationOk
-            LDA #lo(prvDateBuffer)
-            STA prvDateSFTODO4							;store #&00 to address &8224
-            LDA #hi(prvDateBuffer)
-            STA prvDateSFTODO4 + 1							;store #&80 to address &8225
-            JSR InitDateBufferAndEmitTimeAndDate								;format text for output to screen?
-            JSR printDateBuffer								;output DATE data from address &8000 to screen
+    JMP PrvDisGenerateBadDate
+.CalculationOk
+    LDA #lo(prvDateBuffer):STA prvDateSFTODO4:LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
+    JSR InitDateBufferAndEmitTimeAndDate
+    JSR printDateBuffer
 .PrvDisexitSc
-            PRVDIS								;switch out private RAM
-            JMP ExitAndClaimServiceCall								;Exit Service Call								;
-			
-.setDate    INY
-            JSR ParseAndValidateDate
-            BCC LB55B
-            JMP PrvDisGenerateBadDate								;Error with Bad date
-			
-.LB55B      JSR CopyPrvDateToRtc								;Read 'Day of Week', 'Date of Month', 'Month' & 'Year' from Private RAM (&82xx) and write to RTC
-            JMP PrvDisexitSc								;switch out private RAM and exit
+    PRVDIS
+    JMP ExitAndClaimServiceCall
+
+.SetDate
+    INY ; skip '='
+    JSR ParseAndValidateDate
+    BCC LB55B
+    JMP PrvDisGenerateBadDate
+
+.LB55B
+    JSR CopyPrvDateToRtc
+    JMP PrvDisexitSc
 }
 			
 ;Start of CALENDAR * Command
