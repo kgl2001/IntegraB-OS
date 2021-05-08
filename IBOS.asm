@@ -9145,14 +9145,13 @@ BytesToCopy = osPrintBufSize
 .romCodeStub
 ramCodeStub = osPrintBuf ; SFTODO: use ramCodeStub instead of osPrintBuf in some/all places?
 {
-    ASSERT P% - romCodeStub == ibosBYTEVIndex * 3
-    JSR ramCodeStubCallIBOS ; BYTEV
-    JSR ramCodeStubCallIBOS ; WORDV
-    JSR ramCodeStubCallIBOS ; WRCHV
-    JSR ramCodeStubCallIBOS ; RDCHV
-    JSR ramCodeStubCallIBOS ; INSV
-    JSR ramCodeStubCallIBOS ; REMV
-    JSR ramCodeStubCallIBOS ; CNPV
+    ASSERT P% - romCodeStub == ibosBYTEVIndex * 3:JSR ramCodeStubCallIBOS ; BYTEV
+    ASSERT P% - romCodeStub == ibosWORDVIndex * 3:JSR ramCodeStubCallIBOS ; WORDV
+    ASSERT P% - romCodeStub == ibosWRCHVIndex * 3:JSR ramCodeStubCallIBOS ; WRCHV
+    ASSERT P% - romCodeStub == ibosRDCHVIndex * 3:JSR ramCodeStubCallIBOS ; RDCHV
+    ASSERT P% - romCodeStub == ibosINSVIndex  * 3:JSR ramCodeStubCallIBOS ; INSV
+    ASSERT P% - romCodeStub == ibosREMVIndex  * 3:JSR ramCodeStubCallIBOS ; REMV
+    ASSERT P% - romCodeStub == ibosCNPVIndex  * 3:JSR ramCodeStubCallIBOS ; CNPV
 
 .romCodeStubCallIBOS
 ramCodeStubCallIBOS = ramCodeStub + (romCodeStubCallIBOS - romCodeStub)
