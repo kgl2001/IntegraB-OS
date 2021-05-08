@@ -8378,10 +8378,12 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     ; Now continue to do the periodic interrupt processing for the first time.
 
 .HandlingPeriodicInterrupt
-    ; Toggle prvAlarmToggle and only make a sound if it's non-0; I believe this will give an
-    ; intermittent alarm tone (synchronised with the keyboard LED flashing).
-    LDA prvAlarmToggle:EOR #1:STA prvAlarmToggle:BEQ DontMakeSound
-    LDA prvAlarmAudioDuration:BEQ LB40E
+    ; Toggle prvAlarmToggle; if it's 0 we just toggle the LEDs and don't make a sound, test the
+    ; keyboard or decrement the overall alarm duration counter. I believe this will have the
+    ; effect of giving an intermittent alarm tone and meaning AlarmOverallDurationLookup values
+    ; are expressed in time units twice the size of those used for AlarmAudioDurationLookup.
+    LDA prvAlarmToggle:EOR #1:STA prvAlarmToggle:BEQ JustToggleLeds
+    LDA prvAlarmAudioDuration:BEQ AlarmAudioDurationExpired
 
     ; Make a sound using OSWORD 7.
     ; SQUASH: Couldn't we use some private RAM to hold the OSWORD 7 block? The OS is executing
@@ -8404,29 +8406,27 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     INY:CPY #OswordSoundBlockSize:BNE SoundBlockCopyRestoreLoop
 
     DEC prvAlarmAudioDuration
-.LB40E
-    LDA prvAlarmOverallDuration:BNE LB444
+.AlarmAudioDurationExpired
+    LDA prvAlarmOverallDuration:BNE AlarmOverallDurationNotExpired
     JSR TestShiftCtrl:BVC NotShiftAndCtrlPressed:BPL NotShiftAndCtrlPressed
+    ; The alarm event is finishing, either because the user presed Ctrl-Shift to acknowledge it
+    ; or its overall duration has elapsed.
+    ; Force RTC register B PIE off and set AIE iff userRegAlarmEnableBit is set.
     ASSERT userRegAlarmEnableBit >> 1 == rtcRegBAIE
     LDX #userRegAlarm:JSR ReadUserReg:LSR A:AND #rtcRegBAIE:STA prvAlarmTmp
-    ; Force RTC register B PIE off and set AIE iff userRegAlarmEnableBit is set.
     LDX #rtcRegB:JSR ReadRtcRam
     AND_NOT rtcRegBPIE OR rtcRegBAIE:ORA prvAlarmTmp:JSR WriteRtcRam
     ; Force RTC register A ARS3/2/1/0 off.
     LDX #rtcRegA:JSR ReadRtcRam
     AND_NOT rtcRegARS3 OR rtcRegARS2 OR rtcRegARS1 OR rtcRegARS0:JSR WriteRtcRam
-    ; Set the keyboard LEDs up to reflect the real state after we used them as alarm indicators. SFTODO: Probably, but I am guessing at this point.
+    ; Set the keyboard LEDs up to reflect the real state again.
     LDA #osbyteReflectKeyboardStatusInLeds:JSR OSBYTE
     JMP RestoreRamselRomselAndExit
 			
-.LB444
+.AlarmOverallDurationNotExpired
     DEC prvAlarmOverallDuration
 .NotShiftAndCtrlPressed
-.DontMakeSound
-    ; SFTODO: I am *guessing* that by exiting via this code path, we have not acknowledged the
-    ; alarm interrupt and will therefore be re-entered again PDQ. This presumably avoids
-    ; locking the machine up by busy-waiting in here while allowing us to continue to execute.
-
+.JustToggleLeds
     ; prvAlarmToggle is 0 or 1 here; as we toggle between those two values over multiple
     ; calls to this code we alternate which of the Shift and Caps Lock LEDs is lit.
     LDX prvAlarmToggle
