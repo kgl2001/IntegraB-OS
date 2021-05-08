@@ -2553,7 +2553,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .L8C6D      JMP OSWRCH
 }
 
-;*PURGE Command
+; *PURGE Command
 .purge
 {
     JSR ParseOnOff:BCC PurgeOnOrOff
@@ -2572,7 +2572,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JMP ExitAndClaimServiceCall
 }
 			
-;*BUFFER Command
+; *BUFFER Command
 ; This is a big chunk of fairly self-contained code, so we use two levels of scope instead of
 ; the usual one to pin down the labels a bit more.
 ; SFTODO: "*BUFFER OFF" (at least on b-em) seems to generate an empty error message - this isn't a valid command, but this behaviour doesn't seem right
@@ -3050,7 +3050,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 .CommandSSetup
     LDA #4:JSR SetOsModeA
     LDA #0:STA osShadowRamFlag
-    LDX #prvShx - prv83:LDA #prvOn:JSR WritePrivateRam8300X ; set SHX off SFTODO: magic
+    LDX #prvShx - prv83:LDA #prvOn:JSR WritePrivateRam8300X ; set SHX on
     LDA #vduSetMode:JSR OSWRCH:LDA currentMode:JSR OSWRCH
     BIT tubePresenceFlag:BPL NoTube
     JSR DisableTube
@@ -3502,14 +3502,12 @@ ENDIF
 			
 ; SFTODO: This code saves transientCommandIndex (&AA) across call to ConfRefDynamicSyntaxGenerationForTransientCmdIdx, but it superficially looks as though ConfRefDynamicSyntaxGenerationForTransientCmdIdx preserves it itself, so the code to preserve here may be redundant.
 .PrintConfigNameAndGetValue ; SFTODO: name is a bit of a guess as I still haven't been through the "dynamic syntax generation" (which is presumably slightly misnamed at least, as at least some of our callers would just want the option name with no other fluff) code properly
-{
     LDA transientCommandIndex:PHA
     JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
     PLA:STA transientCommandIndex
     JSR GetConfigValue
     LDA transientConfigPrefix
     RTS
-}
 
 {
 ; Service call &29: *STATUS Command
