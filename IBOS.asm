@@ -9373,42 +9373,27 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 }
 
 .jmpParentBYTEV
-{
-.LBA65      JMP (parentBYTEV)
-}
+    JMP (parentBYTEV)
 
 ; BYTEV handler. This is used to override the OS implementation of OSBYTE calls; only
 ; *unrecognised* OSBYTE calls will be passed through via service07.
 .bytevHandler
-{
-.LBA68	  JSR restoreOrigVectorRegs
-            ; SFTODO: Is there any chance of saving a few bytes by converting this to a
-            ; jump table?
-            CMP #&6F
-            BEQ osbyte6FHandler
-            CMP #&98
-            BEQ osbyte98Handler
-            CMP #&87
-            BEQ osbyte87Handler
-            CMP #&84
-            BEQ osbyte84Handler
-            CMP #&85
-            BEQ osbyte85Handler
-            CMP #&8E
-            BEQ osbyte8EHandler
-            CMP #&00
-            BEQ osbyte00Handler
-            CMP #&81
-            BEQ osbyte81Handler
-            LDA #ibosBYTEVIndex:JMP forwardToParentVectorTblEntry
-}
+    JSR restoreOrigVectorRegs
+    ; SQUASH: Is there any chance of saving a few bytes by converting this to a jump table?
+    CMP #&6F:BEQ osbyte6FHandler
+    CMP #&98:BEQ osbyte98Handler
+    CMP #&87:BEQ osbyte87Handler
+    CMP #&84:BEQ osbyte84Handler
+    CMP #&85:BEQ osbyte85Handler
+    CMP #&8E:BEQ osbyte8EHandler
+    CMP #&00:BEQ osbyte00Handler
+    CMP #&81:BEQ osbyte81Handler
+    LDA #ibosBYTEVIndex:JMP forwardToParentVectorTblEntry ; SQUASH: BNE always?
 
 ; Read character at text cursor and screen mode (http://beebwiki.mdfs.net/OSBYTE_%2687)
 .osbyte87Handler
-{
-.LBA90      JSR setMemsel
-            JMP returnViaParentBYTEV
-}
+    JSR setMemsel
+    JMP returnViaParentBYTEV
 
 ; Examine buffer status (http://beebwiki.mdfs.net/OSBYTE_%2698)
 .osbyte98Handler
