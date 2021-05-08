@@ -7113,9 +7113,9 @@ daysInMonth = transientDateSFTODO2
 ; will be all-caps if Y=0 on entry, first character capitalised otherwise.
 .EmitDayOrMonthName
 {
-EndCalOffset = prv82 + &4E
-LocalCapitaliseMask = prv82 + &4F
-MaxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to print"
+EndCalOffset = prvTmp2
+LocalCapitaliseMask = prvTmp3
+MaxOutputLength = prvTmp4 ; SFTODO: rename this, I think it's "max chars to print"
 
     XASSERT_USE_PRV1
     BCC IndexInA
@@ -7151,8 +7151,8 @@ MaxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
 }
 			
 {
-tensChar = prv82 + &4E
-unitsChar = prv82 + &4F
+tensChar = prvTmp2
+unitsChar = prvTmp3
 
 ; Emit A (<=99) into transientDateBuffer, formatted as a decimal number according to X:
 ;   A    0     5     25
