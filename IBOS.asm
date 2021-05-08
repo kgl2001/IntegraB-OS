@@ -393,6 +393,8 @@ tubeEntryRelease = &80 ; plus claim ID
 tubeClaimId = &3F
 tubeReg1Status = SHEILA + &E0
 tubeReg1Data = SHEILA + &E1
+tubeReg2Status = SHEILA + &E2
+tubeReg2Data = SHEILA + &E3
 tubeReg3Status = SHEILA + &E4
 tubeReg3Data = SHEILA + &E5
 
@@ -2967,22 +2969,14 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDX #&FF:LDY #0:JSR doOsbyteIssueServiceRequest
     LDA #&FF:STA tubePresenceFlag
     LDX #serviceTubePostInitialisation:LDY #0:JSR doOsbyteIssueServiceRequest
-    LDA #osargsReadFilingSystemNumber
-    LDX #&A8 ; SFTODO: is this relevant?
-    LDY #&00 ; handle = 0 for this call
-    JSR OSARGS
-    TAY
-    LDX #serviceSelectFilingSystem
-    JSR doOsbyteIssueServiceRequest						;issue paged ROM service request
-    LDA #&00
-    LDX #prvSFTODOTUBEISH - prv83
-    JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
+    LDA #osargsReadFilingSystemNumber:LDX #&A8:LDY #&00:JSR OSARGS:TAY ; SQUASH: Don't LDX?
+    LDX #serviceSelectFilingSystem:JSR doOsbyteIssueServiceRequest
+    LDA #0:LDX #prvSFTODOTUBEISH - prv83:JSR WritePrivateRam8300X
     LDA #&7F
 .L9045
-    BIT SHEILA+&E2
-    BVC L9045
-    STA SHEILA+&E3
-    JMP L0032
+    BIT tubeReg2Status:BVC L9045
+    STA tubeReg2Data
+    JMP L0032 ; SFTODO!?
 
 .doOsbyteIssueServiceRequest
     LDA #osbyteIssueServiceRequest						;issue paged ROM service request
