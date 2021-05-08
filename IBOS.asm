@@ -8542,7 +8542,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     LDA #lo(prvDateBuffer):STA prvDateSFTODO4:LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
     JSR InitDateBufferAndEmitTimeAndDate
     JSR printDateBuffer
-.PrvDisexitSc
+.PrvDisExitAndClaimServiceCall
     PRVDIS
     JMP ExitAndClaimServiceCall
 
@@ -8554,7 +8554,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 
 .LB55B
     JSR CopyPrvDateToRtc
-    JMP PrvDisexitSc
+    JMP PrvDisExitAndClaimServiceCall
 }
 			
 ;Start of CALENDAR * Command
