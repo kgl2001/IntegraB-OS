@@ -8502,32 +8502,27 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     EQUS "Bad time", &00
 
 ;*TIME Command
+.time
 {
-.^time      PRVEN								;switch in private RAM
-            LDA (transientCmdPtr),Y							;read first character of command parameter
-            CMP #'='								;check for '='
-            BEQ setTime								;if '=' then set time, else read time
-            JSR InitDateSFTODOS							;store #&05, #&84, #&44 and #&EB to addresses &8220..&8223
-            LDA #&FF
-            STA prvDateSFTODO7							;store #&FF to address &8227
-            STA prvDateSFTODO6							;store #&FF to address &8226
-            LDA #lo(prvDateBuffer)
-            STA prvDateSFTODO4							;store #&00 to address &8224
-            LDA #hi(prvDateBuffer)
-            STA prvDateSFTODO4 + 1							;store #&80 to address &8225
-            JSR CopyRtcDateTimeToPrv							;read TIME & DATE information from RTC and store in Private RAM (&82xx)
-            JSR InitDateBufferAndEmitTimeAndDate								;format text for output to screen?
-            JSR printDateBuffer								;output TIME & DATE data from address &8000 to screen
+    PRVEN
+    LDA (transientCmdPtr),Y:CMP #'=':BEQ SetTime
+    JSR InitDateSFTODOS
+    LDA #&FF:STA prvDateSFTODO7:STA prvDateSFTODO6
+    LDA #lo(prvDateBuffer):STA prvDateSFTODO4:LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
+    JSR CopyRtcDateTimeToPrv
+    JSR InitDateBufferAndEmitTimeAndDate
+    JSR printDateBuffer
 .PrvDisExitAndClaimServiceCall
-            PRVDIS								;switch out private RAM
-            JMP ExitAndClaimServiceCall								;Exit Service Call								;
-			
-.setTime    INY
-            JSR ParseAndValidateTime
-            BCC parseOk
-            JMP PrvDisGenerateBadTime								;Error with Bad time
-.parseOk    JSR CopyPrvTimeToRtc								;Read 'Seconds', 'Minutes' & 'Hours' from Private RAM (&82xx) and write to RTC
-            JMP PrvDisExitAndClaimServiceCall								;switch out private RAM and exit
+    PRVDIS
+    JMP ExitAndClaimServiceCall
+
+.SetTime
+    INY ; skip '='
+    JSR ParseAndValidateTime:BCC ParsedOk ; SQUASH: BCS PrvDisGenerateBadTime then fall through
+    JMP PrvDisGenerateBadTime
+.ParsedOk
+    JSR CopyPrvTimeToRtc
+    JMP PrvDisExitAndClaimServiceCall
 }
 
 ;*DATE Command
