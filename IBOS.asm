@@ -7038,30 +7038,30 @@ daysInMonth = transientDateSFTODO2
             JMP DayOfMonthLoop
 }
 
-;Calendar text (LAA5F)
-.calText		EQUS "today"
-		EQUS "sunday"
-		EQUS "monday"
-		EQUS "tuesday"
-		EQUS "wednesday"
-		EQUS "thursday"
-		EQUS "friday"
-		EQUS "saturday"
-		EQUS "january"
-		EQUS "february"
-		EQUS "march"
-		EQUS "april"
-		EQUS "may"
-		EQUS "june"
-		EQUS "july"
-		EQUS "august"
-		EQUS "september"
-		EQUS "october"
-		EQUS "november"
-		EQUS "december"
+.DayMonthNames
+    EQUS "today" ; *DATE/*CALENDAR date calculations understand "today"; not used on output
+    EQUS "sunday"
+    EQUS "monday"
+    EQUS "tuesday"
+    EQUS "wednesday"
+    EQUS "thursday"
+    EQUS "friday"
+    EQUS "saturday"
+    EQUS "january"
+    EQUS "february"
+    EQUS "march"
+    EQUS "april"
+    EQUS "may"
+    EQUS "june"
+    EQUS "july"
+    EQUS "august"
+    EQUS "september"
+    EQUS "october"
+    EQUS "november"
+    EQUS "december"
 	
-;Calendar text offset (LAAE0)
-.calOffsetTable	EQUB &00,&05,&0B,&11,&18,&21,&29,&2F
+; String offsets in DayMonthNames
+.DayMonthNameOffsetTable	EQUB &00,&05,&0B,&11,&18,&21,&29,&2F
 		EQUB &37,&3E,&46,&4B,&50,&53,&57,&5B
 		EQUB &61,&6A,&71,&79,&81
 
@@ -7078,7 +7078,7 @@ MaxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
     XASSERT_USE_PRV1
     BCC IndexInA
     ; We're outputting a month, so adjust A to skip past the day of week entries in
-    ; calOffsetTable.
+    ; DayMonthNameOffsetTable.
     ; SQUASH: don't clear C and ADC #daysPerWeek - 1
     CLC:ADC #daysPerWeek
 .IndexInA
@@ -7089,16 +7089,16 @@ MaxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
 .UseLowerCase
     LDY #&FF:STY LocalCapitaliseMask
 .LocalCapitaliseMaskSet
-    ; Set X and EndCalOffset so the string to print is at calText+[X, EndCaloffset).
+    ; Set X and EndCalOffset so the string to print is at DayMonthNames+[X, EndCaloffset).
     TAX
-    INX:LDA calOffsetTable,X:STA EndCalOffset ; SQUASH: Use calOffsetTable+1 to avoid INX/DEX
-    DEX:LDA calOffsetTable,X:TAX
+    INX:LDA DayMonthNameOffsetTable,X:STA EndCalOffset ; SQUASH: Use DayMonthNameOffsetTable+1 to avoid INX/DEX
+    DEX:LDA DayMonthNameOffsetTable,X:TAX
     ; Write the string into transientDateBuffer; we always capitalise the first character and
     ; use LocalCapitaliseMask for the rest.
     LDY transientDateBufferIndex
-    LDA calText,X:AND #CapitaliseMask:JMP CharInA ; SQUASH: BNE always
+    LDA DayMonthNames,X:AND #CapitaliseMask:JMP CharInA ; SQUASH: BNE always
 .Loop
-    LDA calText,X:AND LocalCapitaliseMask
+    LDA DayMonthNames,X:AND LocalCapitaliseMask
 .CharInA
     STA (transientDateBufferPtr),Y
     INY:INX:DEC MaxOutputLength:BEQ Done
@@ -8163,12 +8163,12 @@ EndIndex = transientDateSFTODO2 ; exclusive
     LDX #0
 .DayNameLoop
     STX CurrentDayNumber
-    LDA calOffsetTable+1,X:STA EndIndex
-    LDA calOffsetTable,X:STA StartIndex
+    LDA DayMonthNameOffsetTable+1,X:STA EndIndex
+    LDA DayMonthNameOffsetTable,X:STA StartIndex
     TAX
 .CheckDayNameLoop
     LDA (transientCmdPtr),Y:ORA #LowerCaseMask
-    CMP calText,X:BNE NotExactlyThisDayName
+    CMP DayMonthNames,X:BNE NotExactlyThisDayName
     INY
     INX:CPX EndIndex:BEQ DayNameMatched
     BNE CheckDayNameLoop ; always branch
@@ -8178,7 +8178,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
     ; We didn't match, so loop round to try another day if there is one.
     LDY OriginalY
     LDX CurrentDayNumber
-    INX:CPX #daysPerWeek + 1:BCC DayNameLoop ; +1 as calOffsetTable has "today" as well
+    INX:CPX #daysPerWeek + 1:BCC DayNameLoop ; +1 as DayMonthNameOffsetTable has "today" as well
     ; We didn't match anything. Note that this isn't an error; we return with C clear.
     LDY OriginalY
     LDA #&FF ; day of week is open
@@ -8964,9 +8964,8 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;OSWORD &49 (73) - Integra-B calls
 .LB89C
     XASSERT_USE_PRV1
-    ; SQUASH: We probably do the next two lines a lot and could factor them out.
-    LDA #lo(prvDateBuffer):STA prvDateSFTODO4
-    LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
+    ; SQUASH: We probably do the next operations a lot and could factor them out.
+    LDA #lo(prvDateBuffer):STA prvDateSFTODO4:LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
     JSR InitDateBufferAndEmitTimeAndDate
     JMP CopyPrvDateBuffer ; SQUASH: rearrange and fall through?
 			
@@ -8981,8 +8980,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ;OSWORD &49 (73) - Integra-B calls
 .LB8B1
     XASSERT_USE_PRV1
-    LDA #lo(prvDateBuffer):STA prvDateSFTODO4
-    LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
+    LDA #lo(prvDateBuffer):STA prvDateSFTODO4:LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
     JSR generateInternalCalendar
     LDA #42:STA prvDateSFTODO1 ; SFTODO: magic (=42=max size of resulting buffer - see generateInternalCalendar - ?)
     JMP CopyPrvDateBuffer
