@@ -7075,47 +7075,51 @@ daysInMonth = transientDateSFTODO2
 ; SFTODO: Y has some significance on entry (Y=0 => capitalise first letter, otherwise all lower case)
 .emitDayOrMonthName
 {
-endCalOffset = prv82 + &4E
-capitalisationMask = prv82 + &4F
-maxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to print"
+EndCalOffset = prv82 + &4E
+LocalCapitaliseMask = prv82 + &4F
+MaxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to print"
 
     XASSERT_USE_PRV1
-       	  BCC indexInA
-	  CLC
-            ADC #&07								;adjust month index to skip past the day of week entries in calOffsetTable
-.indexInA   STX maxOutputLength
-            CPY #&00								;First letter? SFTODO: Seems a little odd, given we LDY transientDataBufferIndex *below*
-            BNE initCapitalisationMask							;No? Then branch
-            LDY #&DF								;Load capitalise mask
-            STY capitalisationMask							;Save mask to &824F
-            JMP capitalisationMaskSet ; SFTODO: We could BNE ; always
-.initCapitalisationMask
-            LDY #&FF								;otherwise no capitalise
-            STY capitalisationMask							;save mask to &824F
-.capitalisationMaskSet
-            TAX
-            INX
-            LDA calOffsetTable,X							;get calText offset for next month / day
-            STA endCalOffset								;save calText offset for next month / day to &824E
-            DEX
-            LDA calOffsetTable,X							;get calText offset for current month / day
-            TAX									;move calText offset for current month / day to X
-            LDY transientDateBufferIndex						;get buffer pointer
-            LDA calText,X								;get first letter
-            AND #CapitaliseMask								;capitalise this letter
-            JMP charInA
+    BCC IndexInA
+    CLC
+    ADC #&07								;adjust month index to skip past the day of week entries in calOffsetTable
+.IndexInA
+    STX MaxOutputLength
+    CPY #&00								;First letter? SFTODO: Seems a little odd, given we LDY transientDataBufferIndex *below*
+    BNE InitLocalCapitalisationMask							;No? Then branch
+    LDY #CapitaliseMask
+    STY LocalCapitaliseMask							;Save mask to &824F
+    JMP LocalCapitaliseMaskSet ; SFTODO: We could BNE ; always
+.InitLocalCapitalisationMask
+    LDY #&FF								;otherwise no capitalise
+    STY LocalCapitaliseMask							;save mask to &824F
+.LocalCapitaliseMaskSet
+    TAX
+    INX
+    LDA calOffsetTable,X							;get calText offset for next month / day
+    STA EndCalOffset								;save calText offset for next month / day to &824E
+    DEX
+    LDA calOffsetTable,X							;get calText offset for current month / day
+    TAX									;move calText offset for current month / day to X
+    LDY transientDateBufferIndex						;get buffer pointer
+    LDA calText,X								;get first letter
+    AND #CapitaliseMask								;capitalise this letter
+    JMP CharInA
 			
-.loop       LDA calText,X								;get subsequent letters
-            AND capitalisationMask							;apply capitalisation mask
-.charInA    STA (transientDateBufferPtr),Y						;store at buffer &XY?Y
-            INY									;increase buffer pointer
-            INX									;increment calText offset for current month / day
-            DEC maxOutputLength							;don't output more than (initial) maxOutputLength characters
-            BEQ done
-            CPX endCalOffset								;reached the calText offset for next month / day?
-            BNE loop 								;no? loop.
-.done       STY transientDateBufferIndex						;save buffer pointer
-            RTS
+.Loop
+    LDA calText,X								;get subsequent letters
+    AND LocalCapitaliseMask							;apply capitalisation mask
+.CharInA
+    STA (transientDateBufferPtr),Y						;store at buffer &XY?Y
+    INY									;increase buffer pointer
+    INX									;increment calText offset for current month / day
+    DEC MaxOutputLength							;don't output more than (initial) MaxOutputLength characters
+    BEQ Done
+    CPX EndCalOffset								;reached the calText offset for next month / day?
+    BNE Loop 								;no? loop.
+.Done
+    STY transientDateBufferIndex						;save buffer pointer
+    RTS
 }
 			
 {
