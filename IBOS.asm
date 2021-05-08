@@ -7081,8 +7081,8 @@ MaxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
 
     XASSERT_USE_PRV1
     BCC IndexInA
-    CLC
-    ADC #&07								;adjust month index to skip past the day of week entries in calOffsetTable
+    ; SQUASH: don't clear C and ADC #daysPerWeek - 1
+    CLC:ADC #daysPerWeek ; adjust month index to skip past the day of week entries in calOffsetTable
 .IndexInA
     STX MaxOutputLength
     CPY #&00								;First letter? SFTODO: Seems a little odd, given we LDY transientDataBufferIndex *below*
