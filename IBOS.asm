@@ -8325,8 +8325,10 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     EQUB addressableLatchShiftLock OR addressableLatchData0
 
 .^AlarmInterruptHandler ; entered with C set
-    ; Set bit 6 of userRegAlarm to be a copy of bit 7. SFTODO: PROB RIGHT BUT COME BACK TO THIS - this would make some sense, it would essentially copy the "R" (repeat?) bit into the "enable" bit, so we'd turn the alarm off iff it's not repeating
+    ; Set bit 6 of userRegAlarm to be a copy of bit 7, i.e. copy userRegAlarmRepeatBit into
+    ; userRegAlarmEnableBit, so the alarm remains enabled iff it is in repeating mode.
     ASSERT userRegAlarmRepeatBit == 1<<7
+    ASSERT userRegAlarmEnableBit == 1<<6
     LDX #userRegAlarm:JSR ReadUserReg
     ASL A:PHP
     ASL A:PLP:PHP:ROR A
@@ -8398,11 +8400,9 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 .LB40E
     LDA prvSFTODOALARMISH1:BNE LB444
     JSR TestShiftCtrl:BVC NotShiftAndCtrlPressed:BPL NotShiftAndCtrlPressed
-    LDX #userRegAlarm:JSR ReadUserReg
-    LSR A ; SFTODO : SO b6 of userRegAlarm corresponds to reg B AIE (b5)
-    AND #rtcRegBAIE
-    STA prvSFTODOALARMISH5b
-    ; Force RTC register B PIE and AIE off and set the bits from prvSFTODOALARIMISH5.
+    ASSERT userRegAlarmEnableBit >> 1 == rtcRegBAIE
+    LDX #userRegAlarm:JSR ReadUserReg:LSR A:AND #rtcRegBAIE:STA prvSFTODOALARMISH5b
+    ; Force RTC register B PIE off and set AIE iff userRegAlarmEnableBit is set.
     LDX #rtcRegB:JSR ReadRtcRam
     AND_NOT rtcRegBPIE OR rtcRegBAIE:ORA prvSFTODOALARMISH5b:JSR WriteRtcRam
     ; Force RTC register A ARS3/2/1/0 off.
