@@ -338,6 +338,7 @@ serviceConfigure = &28
 serviceStatus = &29
 serviceAboutToEnterLanguage = &2A
 serviceUpdateEnded = &49 ; New IBOS service call to tell sideways ROMs about RTC update cycles
+serviceTubePostInitialisation = &FE
 
 INSVH       = &022B
 INSVL       = &022A
@@ -2951,11 +2952,8 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA #0:LDX #prvSFTODOTUBEISH - prv83:JMP WritePrivateRam8300X
 
 .TurnTubeOn
-    LDA #&81
-    STA tubeReg1Status
-    LDA tubeReg1Status
-    LSR A
-    BCS EnableTube
+    LDA #&81:STA tubeReg1Status
+    LDA tubeReg1Status:LSR A:BCS EnableTube
     JSR RaiseError
     EQUB &80
     EQUS "No Tube!", &00
@@ -2963,21 +2961,12 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ;Initialise Tube
 ; SFTODO: Some code in common with DisableTube here (OSARGS/filing system reselection), could factor it out
 .EnableTube
-    BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
-    BMI ExitAndClaimServiceCallIndirect							;nothing to do if already on
-    LDA #&FF
-    LDX #prvSFTODOTUBE2ISH - prv83
-    JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-    LDX #prvSFTODOTUBEISH - prv83
-    JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-    LDX #&FF								;service type &FF - tube system main initialisation
-    LDY #&00
-    JSR doOsbyteIssueServiceRequest						;issue paged ROM service request
-    LDA #&FF
-    STA tubePresenceFlag
-    LDX #&FE								;service type &FE - tube system post initialisation
-    LDY #&00
-    JSR doOsbyteIssueServiceRequest						;issue paged ROM service request
+    BIT tubePresenceFlag:BMI ExitAndClaimServiceCallIndirect
+    LDA #&FF:LDX #prvSFTODOTUBE2ISH - prv83:JSR WritePrivateRam8300X
+    LDX #prvSFTODOTUBEISH - prv83:JSR WritePrivateRam8300X
+    LDX #&FF:LDY #0:JSR doOsbyteIssueServiceRequest
+    LDA #&FF:STA tubePresenceFlag
+    LDX #serviceTubePostInitialisation:LDY #0:JSR doOsbyteIssueServiceRequest
     LDA #osargsReadFilingSystemNumber
     LDX #&A8 ; SFTODO: is this relevant?
     LDY #&00 ; handle = 0 for this call
