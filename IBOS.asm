@@ -4024,14 +4024,17 @@ tmp = &A8
     JMP ExitServiceCall
 }
 
-; SQUASH: LsrA4 has only one caller (but there are places where it should be used and isn't)
-.LsrA4      LSR A
+; SQUASH: LsrA4 has only one caller (but there are places where it should be used and isn't).
+.LsrA4
+    LSR A
 ; SQUASH: Use of JSR LsrA3 or JSR LsrA2 is silly - the former is neutral on space and slower,
-; the latter is both larger and slower
-.LsrA3      LSR A
-.LsrA2      LSR A
-            LSR A
-            RTS
+; the latter is both larger and slower.
+.LsrA3
+    LSR A
+.LsrA2
+    LSR A
+    LSR A
+    RTS
 
 ; Tube system initialisation - service call &FF
 ; SFTODO: Not at all clear what's going on here
