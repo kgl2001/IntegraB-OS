@@ -2381,43 +2381,48 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 
     CMP #&49:BEQ osbyte49Internal
     JMP ExitServiceCall
+
 .osbyte49Internal
     ; SQUASH: Could we use X instead of A here? Then we'd already have &49 in A and could avoid
     ; LDA #&49.
     LDA oswdbtX:CMP #&FF:BNE XNeFF
-    ; It's X=&FF; test for presence of Integra-B. Return with X=&49 to indicate present.
-    LDA #&49:STA oswdbtX
-    PLA:LDA romselCopy:AND #maxBank:PHA ; SFTODO: DOCUMENT
+    ; It's X=&FF: test for presence of Integra-B.
+    LDA #&49:STA oswdbtX ; return with X=&49 indicates Integra-B is present
+    PLA:LDA romselCopy:AND #maxBank:PHA ; return IBOS bank number to caller in Y
     JMP ExitAndClaimServiceCall
 .XNeFF
 .L8B63
     CMP #&FE:BNE XNeFE
-    ; It's X=&FE; SFTODO: WHICH MEANS DO WHAT?
+    ; It's X=&FE: SFTODO: WHICH MEANS DO WHAT?
     JSR osbyte49FE
     JMP ExitAndClaimServiceCall
 .XNeFE
+    ; ENHANCE: Any X other than &FE or &FF invokes the following code, which is a bit of a
+    ; shame as it cuts down on scope for adding additional Integra-B OSBYTE calls. If this
+    ; isn't documented or used in any real code we could possibly make this specific to X=&FD
+    ; or something like that.
+
     ; For reference, the "standard" pattern for OSBYTE calls which modify a subset of bits at a
     ; location is to set the location to (<old value> AND Y) EOR X and return the old value in
     ; X. This code *doesn't* follow this pattern.
     ;
     ; This code does prvRtcUpdateEndedOptions = (((X >> 2) AND prvRtcUpdateEndedOptions) EOR X)
-    ; AND %11 and returns the original value of prvRtcUpdateEndedOptions in both X and Y. This
-    ; effectively means that if X=%abcd, %ab masks off the bits of prvRtcUpdateEndedOptions of
-    ; interest and %cd toggles them, so if %ab == 0 we set prvRtcUpdateEndedOptions to %cd.
+    ; AND %11 and returns the original value of prvRtcUpdateEndedOptions in X, preserving Y.
+    ; This effectively means that if X=%abcd, %ab masks off the bits of
+    ; prvRtcUpdateEndedOptions of interest and %cd toggles them, so if %ab == 0 we set
+    ; prvRtcUpdateEndedOptions to %cd.
     ;
     ; We then set rtcRegBUIE iff prvRtcUpdateEndedOptions is non-0; this enables the RTC update
     ; ended interrupt iff RtcInterruptHandler has something to do when it triggers.
-    LDX #prvRtcUpdateEndedOptions - prv83:JSR ReadPrivateRam8300X
-    PHA
-    STA oswdbtY
+    LDX #prvRtcUpdateEndedOptions - prv83:JSR ReadPrivateRam8300X:PHA
+    STA oswdbtY ; this is just temporary workspace and has no effect on Y returned to caller
     LDA oswdbtX:LSR A:LSR A
     AND oswdbtY
     EOR oswdbtX
     AND #prvRtcUpdateEndedOptionsMask
     JSR WritePrivateRam8300X
     LDX #rtcRegB
-    CMP #0
-    BNE EnableUpdateEndedInterrupt
+    CMP #0:BNE EnableUpdateEndedInterrupt
     JSR ReadRtcRam
     AND_NOT rtcRegBUIE
     JMP Common
@@ -2426,8 +2431,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     ORA #rtcRegBUIE
 .Common
     JSR WriteRtcRam
-    PLA
-    STA oswdbtX
+    PLA:STA oswdbtX ; return original prvRtcUpateEndedOptions to caller in X
     JMP ExitAndClaimServiceCall
 }
 
