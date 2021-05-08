@@ -8648,13 +8648,13 @@ Column = prvC
     PHP
     LDX #userRegAlarm:JSR ReadUserReg
     PLP:BNE TurnAlarmOn
-    AND_NOT &40:JSR WriteUserReg ; SFTODO: MAGIC
+    AND_NOT userRegAlarmEnableBit:JSR WriteUserReg
     ; Force PIE (periodic interrupt enable) and AIE (alarm interrupt enable) off.
     LDX #rtcRegB:JSR ReadRtcRam:AND_NOT rtcRegBPIE OR rtcRegBAIE:JSR WriteRtcRam
     JMP Finish
 			
 .TurnAlarmOn
-    ORA #&40:JSR WriteUserReg ; SFTODO: MAGIC
+    ORA #userRegAlarmEnableBit:JSR WriteUserReg
     ; Force PIE (periodic interrupt enable) off and AIE (alarm interrupt enable) on.
     LDX #rtcRegB:JSR ReadRtcRam:AND_NOT rtcRegBPIE OR rtcRegBAIE:ORA #rtcRegBAIE:JSR WriteRtcRam
     JMP Finish
