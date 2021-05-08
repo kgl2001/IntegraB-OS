@@ -8603,30 +8603,22 @@ Column = prvC
     LDY #&FF ; SFTODO: Comments on emitDayOrMonthName suggest this means *don't* capitalise day names, but we *do* capitalise them (just try *CALENDAR and see)
     CLC
     JSR emitDayOrMonthName
-    LDA #0:STA Column
+    LDA #0:STA Column ; SQUASH: Use Y=0 from transientDateBufferIndex above to set Column
 .ColumnLoop
-    LDA #' '
-    JSR EmitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+    LDA #' ':JSR EmitAToDateBuffer
     LDX CellIndex
     LDA prvDateBuffer2,X
     LDX #3 ; SFTODO: named constants for these values? Anyway, this is right-aligned in a two character field with no leading zeroes and 0 shown as blank
-    JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+    JSR emitADecimalFormatted
     INC CellIndex
-    INC Column
-    LDA Column
-    CMP #6 ; SFTODO: prob use one of named constants I plan to introduce in generateInternalCalendar
-    BCC ColumnLoop
-    LDA #vduCr
-    JSR EmitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-    LDX #&00
-.printLoop
-    LDA prvDateBuffer,X
-    JSR OSASCI
-    CMP #vduCr
-    BEQ printDone
-    INX
-    BNE printLoop
-.printDone
+    INC Column:LDA Column:CMP #6:BCC ColumnLoop ; SFTODO: prob use one of named constants I plan to introduce in generateInternalCalendar
+    LDA #vduCr:JSR EmitAToDateBuffer
+    LDX #0
+.PrintLineLoop
+    LDA prvDateBuffer,X:JSR OSASCI
+    CMP #vduCr:BEQ PrintLineDone
+    INX:BNE PrintLineLoop ; always branch
+.PrintLineDone
     INC DayOfWeek
     LDA DayOfWeek
     CMP #daysPerWeek + 1
