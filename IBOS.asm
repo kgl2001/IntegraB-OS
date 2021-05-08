@@ -160,8 +160,8 @@ userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Dat
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX / b4: automatic daylight saving time adjust SFTODO: Should rename this now we've discovered b4
 ; SFTODO: b4 of userRegOsModeShx doesn't seem to be exposed via *CONFIGURE/*STATUS - should it be? Might be interesting to try setting this bit manually and seeing if it works. If it's not going to be exposed we could save some code by deleting the support for it.
 userRegAlarm = &33 ; SFTODO? bits 0-5?? SFTODO: bit 7 seems to be the "R" flag from *ALARM command ("repeat"???)
-    userRegAlarmRBit = &80
-    userRegAlarmSFTODO1 = &40
+    userRegAlarmRepeatBit = &80
+    userRegAlarmEnableBit = &40
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegBankWriteProtectStatus = &38 ; 2 bytes, 1 bit per bank
@@ -2368,7 +2368,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 .L8B63
     CMP #&FE:BNE XNeFE
     ; It's X=&FE; SFTODO: WHICH MEANS DO WHAT?
-    JSR LB35E
+    JSR osbyte49FE
     JMP ExitAndClaimServiceCall
 .XNeFE
     ; For reference, the "standard" pattern for OSBYTE calls which modify a subset of bits at a
@@ -6700,12 +6700,12 @@ osfileBlock = L02EE
 Tmp = TransientZP + 6
 
     BCS LA7C2
-    ; Set SQWE (square-wave enable) and if userRegAlarmSFTODO1 is set, additionally set AIE
+    ; Set SQWE (square-wave enable) and if userRegAlarmEnableBit is set, additionally set AIE
     ; (alarm interrupt enable). Note that we *don't* clear AIE if it's currently set and
-    ; userRegAlarmSFTODO1 isn't set. SFTODO: That's probably fine, but without more context
+    ; userRegAlarmEnableBit isn't set. SFTODO: That's probably fine, but without more context
     ; it's possible this is a bug.
-    LDX #userRegAlarm:JSR ReadUserReg:AND #userRegAlarmSFTODO1
-    ASSERT userRegAlarmSFTODO1 >> 1 == rtcRegBAIE:LSR A:STA Tmp
+    LDX #userRegAlarm:JSR ReadUserReg:AND #userRegAlarmEnableBit
+    ASSERT userRegAlarmEnableBit >> 1 == rtcRegBAIE:LSR A:STA Tmp
     LDX #rtcRegB:JSR ReadRtcRam:ORA #rtcRegBSQWE:ORA L00AE:JSR WriteRtcRam
 .ClcRts
     CLC
@@ -8281,7 +8281,13 @@ EndIndex = transientDateSFTODO2 ; exclusive
     RTS
 }
 
-; SFTODO: Mostly un-decoded
+; Alarm interrupt handler code.
+;
+; At the hardware level, the alarm seems to be handled by setting the rtcRegBAIE (alarm
+; interrupt enable) bit and clearing the rtcRegBPIE (periodic interrupt enable) bit to start
+; with. When the alarm interrupt occurs and RtcInterruptHandler acknowledges the interrupts,
+; AlarmInterruptHandler will set the PIE bit to cause periodic interrupts so we can continue
+; to receive interrupts until the alarm as a user-visible event is over.
 {
 OswordSoundBlockCopy = TransientZP
 
@@ -8318,17 +8324,17 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     EQUB addressableLatchShiftLock OR addressableLatchData1
     EQUB addressableLatchShiftLock OR addressableLatchData0
 
-; SFTODO: This has only one caller (but it may be unsuitable for inlining, not looked properly yet)
-.^LB34E
+.^AlarmInterruptHandler ; entered with C set
     ; Set bit 6 of userRegAlarm to be a copy of bit 7. SFTODO: PROB RIGHT BUT COME BACK TO THIS - this would make some sense, it would essentially copy the "R" (repeat?) bit into the "enable" bit, so we'd turn the alarm off iff it's not repeating
+    ASSERT userRegAlarmRepeatBit == 1<<7
     LDX #userRegAlarm:JSR ReadUserReg
     ASL A:PHP
     ASL A:PLP:PHP:ROR A
     PLP:ROR A
     JSR WriteUserReg
-.^LB35E
+.^osbyte49FE
     SEC
-.^LB35F
+.^PeriodicInterruptHandler ; entered with C clear
     XASSERT_USE_PRV1
     LDA romselCopy:PHA
     LDA ramselCopy:PHA
@@ -8336,7 +8342,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     AND #ramselShen:ORA #ramselPrvs1:STA ramselCopy:STA ramsel
     ; SQUASH: Can we do the next line above to save redoing LDA romselCopy?
     LDA romselCopy:ORA #romselPrvEn:STA romselCopy:STA romsel
-    BCC LB3CA ; SFTODO: C SET OR CLEAR ON ENTRY IS WHAT STOPS US REDOING THE INITIALISATION BELOW EVERY TIME WE'RE ENTERED
+    BCC HandlingPeriodicInterrupt
 
     LDX #userRegAlarm:JSR ReadUserReg
     ; Shift userRegAlarm in A right as we extract the bitfields and use them to initialise
@@ -8347,7 +8353,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     ; b3-4 - LB346,X->ALARMISH4 pitch
     ; b5 - LB344,X->ALARMISH3 amplitude
     ; b6 - used to set reg B AIE, so probably an enable/disable flag
-    ; b7 - userRegAlarmRBit *probably* a repeat flag but not verified via code, just guessing
+    ; b7 - userRegAlarmRepeatBit *probably* a repeat flag but not verified via code, just guessing
     PHA
     AND #1:TAX:LDA SFTODOALARMISH1Lookup,X:STA prvSFTODOALARMISH1
     PLA:LSR A:PHA
@@ -8364,7 +8370,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     ; Force RTC register B PIE (periodic interrupt enable) on.
     LDX #rtcRegB:JSR ReadRtcRam:ORA #rtcRegBPIE:JSR WriteRtcRam
     LDA #1:STA prvSFTODOALARMISH5
-.LB3CA
+.HandlingPeriodicInterrupt
     LDA prvSFTODOALARMISH5:EOR #1:STA prvSFTODOALARMISH5:BEQ LB447
     LDA prvSFTODOALARMISH2:BEQ LB40E
 
@@ -8437,19 +8443,20 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     JSR Nop3:STX rtcAddress
     JSR Nop3:AND rtcData
     ; We now have A = (RTC register B) AND (RTC register C); this means we have bits set in A
-    ; for interrupts which have triggered and are not masked off. We shift A left and test the
+    ; for interrupts which have triggered and are not masked off. I believe this read from
+    ; register C will also acknowledge and clear these interrupts. We shift A left and test the
     ; bits as they fall off into the carry.
     ; SFTODO: As far as I can see, SeiSelectRtcAddressXVariant will disable interrupts and
     ; nothing will re-enable them. Am I missing something? Is this correct behaviour?
     JSR SeiSelectRtcAddressXVariant
     ASL A:ASL A:BCC NoPeriodicInterrupt
     PHA
-    CLC:JSR LB35F
+    CLC:JSR PeriodicInterruptHandler
     PLA
 .NoPeriodicInterrupt
     ASL A:BCC NoAlarmInterrupt
     PHA
-    JSR LB34E
+    JSR AlarmInterruptHandler
     PLA
 .NoAlarmInterrupt
     ASL A:BCC NoUpdateEndedInterrupt
@@ -8672,8 +8679,8 @@ column = prvC
     JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'R'
     PHP:PLA:LSR A:LSR A:PHP:ASSERT flagZ = 1 << 1 ; get Z flag into C and save
     LDX #userRegAlarm:JSR ReadUserReg
-    ; Set b7 (userRegAlarmRBit) of userRegAlarm value to saved Z flag, i.e. 1 iff 'R' seen.
-    ASSERT userRegAlarmRBit = 1<<7:ASL A:PLP:ROR A
+    ; Set b7 (userRegAlarmRepeatBit) of userRegAlarm value to saved Z flag, i.e. 1 iff 'R' seen.
+    ASSERT userRegAlarmRepeatBit = 1<<7:ASL A:PLP:ROR A
     JMP TurnAlarmOn
 			
 ;*ALARM Command
@@ -8709,7 +8716,7 @@ column = prvC
     DEC prvDateSFTODO1b:JSR printDateBuffer ; DEC chops off trailing vduCr
     LDA #'/':JSR OSWRCH:JSR printSpace
     LDX #rtcRegB:JSR ReadRtcRam:AND #rtcRegBAIE:JSR PrintOnOff
-    LDX #userRegAlarm:JSR ReadUserReg:AND #userRegAlarmRBit:BEQ NewlineAndFinish
+    LDX #userRegAlarm:JSR ReadUserReg:AND #userRegAlarmRepeatBit:BEQ NewlineAndFinish
     JSR printSpace:LDA #'R':JSR OSWRCH
 .NewlineAndFinish
     JSR OSNEWL
