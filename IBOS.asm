@@ -7084,27 +7084,27 @@ daysInMonth = transientDateSFTODO2
 	
 ; String offsets in DayMonthNames
 .^DayMonthNameOffsetTable
-    EQUB Today - DayMonthNames
-    EQUB Sunday - DayMonthNames
-    EQUB Monday - DayMonthNames
-    EQUB Tuesday - DayMonthNames
+    EQUB Today     - DayMonthNames
+    EQUB Sunday    - DayMonthNames
+    EQUB Monday    - DayMonthNames
+    EQUB Tuesday   - DayMonthNames
     EQUB Wednesday - DayMonthNames
-    EQUB Thursday - DayMonthNames
-    EQUB Friday - DayMonthNames
-    EQUB Saturday - DayMonthNames
-    EQUB January - DayMonthNames
-    EQUB February - DayMonthNames
-    EQUB March - DayMonthNames
-    EQUB April - DayMonthNames
-    EQUB May - DayMonthNames
-    EQUB June - DayMonthNames
-    EQUB July - DayMonthNames
-    EQUB August - DayMonthNames
+    EQUB Thursday  - DayMonthNames
+    EQUB Friday    - DayMonthNames
+    EQUB Saturday  - DayMonthNames
+    EQUB January   - DayMonthNames
+    EQUB February  - DayMonthNames
+    EQUB March     - DayMonthNames
+    EQUB April     - DayMonthNames
+    EQUB May       - DayMonthNames
+    EQUB June      - DayMonthNames
+    EQUB July      - DayMonthNames
+    EQUB August    - DayMonthNames
     EQUB September - DayMonthNames
-    EQUB October - DayMonthNames
-    EQUB November - DayMonthNames
-    EQUB December - DayMonthNames
-    EQUB End - DayMonthNames
+    EQUB October   - DayMonthNames
+    EQUB November  - DayMonthNames
+    EQUB December  - DayMonthNames
+    EQUB End       - DayMonthNames
 }
 
 
