@@ -2260,19 +2260,16 @@ ptr = &00 ; 2 bytes
 ;     &C1 - Pop and select stacked RAM state
 .osbyte6FInternal
 {
+StackBit = 1 << 7
+ReadBit = 1<< 6
+
     PHP:SEI
     PRVEN
     ; SQUASH: Just do STX in next line and avoid this? *Or* maybe rely on the fact we have this
     ; value in X to avoid needing to load this later
     TXA:STA prvTmp7
-    LDA ramselCopy
-    ASSERT ramselShen == &80
-    ROL A ; get ramselShen in C
-    PHP
-    LDA prvTmp7
-    AND #%11000000 ; mask off b7 (stack yes/no) and b6 (read/write)
-    CMP #&80
-    BNE L8A9F ; branch if we're not saving the current RAM state
+    ASSERT ramselShen == &80:LDA ramselCopy:ROL A:PHP ; stack flags with C=ramselShen
+    LDA prvTmp7:AND #StackBit OR ReadBit:CMP #StackBit:BNE L8A9F ; branch if we're not saving the current RAM state
     PLP
     PHP
     ROR prvOsbyte6FStack ; put ramselShen in b7 of prv83+&3E; I suspect the lower bits form the stack (max depth 8, therefore) used by OSBYTE &6F
