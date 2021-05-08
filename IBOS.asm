@@ -2992,17 +2992,12 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ; SFTODO: I'd like to get rid of the PrvEn label and just use pageInPrvs1 but
 ; won't do it just yet, as I don't fully understand the model the code is using
 ; to manage paging private RAM in/out.
-.^PrvEn      PHA
-            LDA ramselCopy
-            ORA #ramselPrvs1
-            STA ramselCopy
-            STA ramsel
-            LDA romselCopy
-            ORA #romselPrvEn
-            STA romselCopy
-            STA romsel
-            PLA
-            RTS
+.^PrvEn
+    PHA
+    LDA ramselCopy:ORA #ramselPrvs1:STA ramselCopy:STA ramsel
+    LDA romselCopy:ORA #romselPrvEn:STA romselCopy:STA romsel
+    PLA
+    RTS
 			
 ; Page out private RAM.
 ; SFTODO: This clears PRVS1 in RAMSEL, but is that actually necessary? If PRVEN is
@@ -3012,19 +3007,13 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ; private 12K.
 ; SFTODO: I'm tempted to get rid of the PrvDis label but I'll leave it for now
 .pageOutPrv1
-.^PrvDis	  PHA
-            LDA romselCopy
-            AND_NOT romselPrvEn                                                                     ;Clear PrvEn
-            STA romselCopy
-            STA romsel
-            LDA ramselCopy
-            AND_NOT ramselPrvs1							;Clear PRVS1
-            STA ramselCopy
-            STA ramsel
-            PLA
-            RTS
+.^PrvDis
+    PHA
+    LDA romselCopy:AND_NOT romselPrvEn:STA romselCopy:STA romsel
+    LDA ramselCopy:AND_NOT ramselPrvs1:STA ramselCopy:STA ramsel
+    PLA
+    RTS
 }
-			
 
 {
 ; Execute '*S*' command. This is intended for running languages (particularly non-tube
