@@ -8606,10 +8606,8 @@ Column = prvC
     LDA #0:STA Column ; SQUASH: Use Y=0 from transientDateBufferIndex above to set Column
 .ColumnLoop
     LDA #' ':JSR EmitAToDateBuffer
-    LDX CellIndex
-    LDA prvDateBuffer2,X
-    LDX #3 ; SFTODO: named constants for these values? Anyway, this is right-aligned in a two character field with no leading zeroes and 0 shown as blank
-    JSR emitADecimalFormatted
+    LDX CellIndex:LDA prvDateBuffer2,X
+    LDX #3:JSR emitADecimalFormatted ; emit A with 0 formatted as "  " and 5 as " 5"
     INC CellIndex
     INC Column:LDA Column:CMP #6:BCC ColumnLoop ; SFTODO: prob use one of named constants I plan to introduce in generateInternalCalendar
     LDA #vduCr:JSR EmitAToDateBuffer
