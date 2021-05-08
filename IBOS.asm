@@ -2373,12 +2373,12 @@ IgnoredBits = %00111110
     CMP #&45:BNE osbyte49
     JMP osbyte45Internal
 			
-;Test for OSBYTE &49 (73) - Integra-B calls
+; Test for OSBYTE &49 (73) - Integra-B calls
 ; SFTODO: Rename these labels so we have something like "CheckOsbyte49" for the test and "Osbyte49" for the actual "yes, now do it"? (Not just 49, all of them.)
+.osbyte49
 {
 prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvRtcUpdateEndedOptionsGenerateServiceCall
 
-.^osbyte49
     CMP #&49:BEQ osbyte49Internal
     JMP ExitServiceCall
 .osbyte49Internal
@@ -2431,19 +2431,19 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JMP ExitAndClaimServiceCall
 }
 
-; SFTODO: Dead code
+; SQUASH: Dead code
 {
-            LDA vduStatus								;get VDU status   ***missing reference address***
-            AND #&EF								;clear bit 4
-            STA vduStatus								;store VDU status
-            LDA ramselCopy								;get RAMID
-            AND #&80								;mask bit 7 - Shadow RAM enable bit
-            LSR A
-            LSR A
-            LSR A									;move to bit 4
-            ORA vduStatus								;combine with &00D0
-            STA vduStatus								;and store VDU status
-            RTS
+    LDA vduStatus
+    AND #&EF
+    STA vduStatus
+    LDA ramselCopy
+    AND #&80
+    LSR A
+    LSR A
+    LSR A
+    ORA vduStatus
+    STA vduStatus
+    RTS
 }
 
 ;Unrecognised OSWORD call - Service call &08
