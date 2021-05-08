@@ -166,7 +166,7 @@ userRegAlarm = &33 ; SFTODO? bits 0-5?? SFTODO: bit 7 seems to be the "R" flag f
     ; structured, but they are:
     ;     5: amplitude (index into AlarmAmplitudeLookup)
     ;     3-4: pitch (index into AlarmPitchLookup)
-    ;     1-2: SFTODO ALARMISH2
+    ;     1-2: alarm audio duration (index into AlarmAudioDurationLookup)
     ;     0: SFTODO ALARMISH1
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
@@ -668,7 +668,7 @@ prvTmp = prv82 + &52 ; 1 byte, SFTODO: seems to be used as scratch space by some
 ; These prvAlarm* addresses are initialised by alarm interrupts and then read by subsequent
 ; periodic interrupts during the same alarm event.
 prvSFTODOALARMISH1 = prv82 + &72
-prvSFTODOALARMISH2 = prv82 + &73
+prvAlarmAudioDuration = prv82 + &73
 prvAlarmAmplitude = prv82 + &74
 prvAlarmPitch = prv82 + &75
 prvAlarmToggle = prv82 + &76
@@ -8314,7 +8314,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 
 .SFTODOALARMISH1Lookup ; SFTODO: I think this might be control over how long the alarm will persist if not explicitly acknowledged by the user
     EQUB &02,&08
-.SFTODOALARMISH2Lookup ; SFTODO: This also seems to be some kind of alarm length control - not yet sure how ALARMISH1 and ALARMISH2 differ - OK, this is how long the alarm *sound* will last
+.AlarmAudioDurationLookup
     EQUB &0F,&1E,&3C,&78
 .AlarmAmplitudeLookup ; SFTODO: amplitude
     EQUB -10 AND &FF
@@ -8362,7 +8362,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     PHA
     AND #1:TAX:LDA SFTODOALARMISH1Lookup,X:STA prvSFTODOALARMISH1
     PLA:LSR A:PHA
-    AND #%11:TAX:LDA SFTODOALARMISH2Lookup,X:STA prvSFTODOALARMISH2
+    AND #%11:TAX:LDA AlarmAudioDurationLookup,X:STA prvAlarmAudioDuration
     PLA:LSR A:LSR A:PHA
     AND #%11:TAX:LDA AlarmPitchLookup,X:STA prvAlarmPitch
     PLA:LSR A:LSR A
@@ -8381,7 +8381,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     ; Toggle prvAlarmToggle and only make a sound if it's non-0; I believe this will give an
     ; intermittent alarm tone (synchronised with the keyboard LED flashing).
     LDA prvAlarmToggle:EOR #1:STA prvAlarmToggle:BEQ DontMakeSound
-    LDA prvSFTODOALARMISH2:BEQ LB40E
+    LDA prvAlarmAudioDuration:BEQ LB40E
 
     ; Make a sound using OSWORD 7.
     ; SQUASH: Couldn't we use some private RAM to hold the OSWORD 7 block? The OS is executing
@@ -8403,7 +8403,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     PLA:STA OswordSoundBlockCopy,Y
     INY:CPY #OswordSoundBlockSize:BNE SoundBlockCopyRestoreLoop
 
-    DEC prvSFTODOALARMISH2
+    DEC prvAlarmAudioDuration
 .LB40E
     LDA prvSFTODOALARMISH1:BNE LB444
     JSR TestShiftCtrl:BVC NotShiftAndCtrlPressed:BPL NotShiftAndCtrlPressed
