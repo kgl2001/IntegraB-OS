@@ -9144,30 +9144,27 @@ BytesToCopy = &40
 .romCodeStub
 ramCodeStub = osPrintBuf ; SFTODO: use ramCodeStub instead of osPrintBuf in some/all places?
 {
-.LB967      JSR ramCodeStubCallIBOS ; BYTEV
-            JSR ramCodeStubCallIBOS ; WORDV
-            JSR ramCodeStubCallIBOS ; WRCHV
-            JSR ramCodeStubCallIBOS ; RDCHV
-            JSR ramCodeStubCallIBOS ; INSV
-            JSR ramCodeStubCallIBOS ; REMV
-            JSR ramCodeStubCallIBOS ; CNPV
+    JSR ramCodeStubCallIBOS ; BYTEV
+    JSR ramCodeStubCallIBOS ; WORDV
+    JSR ramCodeStubCallIBOS ; WRCHV
+    JSR ramCodeStubCallIBOS ; RDCHV
+    JSR ramCodeStubCallIBOS ; INSV
+    JSR ramCodeStubCallIBOS ; REMV
+    JSR ramCodeStubCallIBOS ; CNPV
+
 .romCodeStubCallIBOS
 ramCodeStubCallIBOS = ramCodeStub + (romCodeStubCallIBOS - romCodeStub)
-.LR0895     PHA					;becomes address &895 when relocated.
-            PHP
-            LDA romselCopy
-            PHA
+    PHA
+    PHP
+    LDA romselCopy:PHA
 .^romCodeStubLoadBankImm
-            LDA #&00				;The value at this address is patched at run time by installOSPrintBufStub
-            STA romselCopy
-            STA romsel
-            JSR vectorEntry
-            PLA
-            STA romselCopy
-            STA romsel
-            PLP
-            PLA
-            RTS
+    LDA #&00 ; patched at run time by installOSPrintBufStub
+    STA romselCopy:STA romsel
+    JSR vectorEntry
+    PLA:STA romselCopy:STA romsel
+    PLP
+    PLA
+    RTS
 }
 .romCodeStubEnd
 ramCodeStubEnd = ramCodeStub + (romCodeStubEnd - romCodeStub)
