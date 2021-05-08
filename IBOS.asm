@@ -9230,11 +9230,6 @@ ASSERT parentVectorTbl2End <= osPrintBuf + osPrintBufSize
 ; SFTODO: Are they really unused? Maybe there's some code hiding somewhere, but nothing
 ; references this label except the code at vectorEntry. It just seems a bit odd these bytes
 ; aren't 0.
-ibosWRCHVIndex = 2
-ibosRDCHVIndex = 3
-ibosINSVIndex = 4
-ibosREMVIndex = 5
-ibosCNPVIndex = 6
 .vectorHandlerTbl
 ibosBYTEVIndex = (P% - vectorHandlerTbl) DIV 3
     EQUW bytevHandler-1
@@ -9242,14 +9237,19 @@ ibosBYTEVIndex = (P% - vectorHandlerTbl) DIV 3
 ibosWORDVIndex = (P% - vectorHandlerTbl) DIV 3
     EQUW wordvHandler-1
     EQUB &0C
+ibosWRCHVIndex = (P% - vectorHandlerTbl) DIV 3
     EQUW WrchvHandler-1
     EQUB &0E
+ibosRDCHVIndex = (P% - vectorHandlerTbl) DIV 3
     EQUW rdchvHandler-1
     EQUB &10
+ibosINSVIndex = (P% - vectorHandlerTbl) DIV 3
     EQUW InsvHandler-1
     EQUB &2A
+ibosREMVIndex = (P% - vectorHandlerTbl) DIV 3
     EQUW RemvHandler-1
     EQUB &2C
+ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     EQUW CnpvHandler-1
     EQUB &2E
 
