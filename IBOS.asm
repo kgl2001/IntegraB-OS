@@ -671,8 +671,8 @@ prvSFTODOALARMISH1 = prv82 + &72
 prvSFTODOALARMISH2 = prv82 + &73
 prvAlarmAmplitude = prv82 + &74
 prvAlarmPitch = prv82 + &75
-prvAlarmLedToggle = prv82 + &76
-prvAlarmTmp = prv82 + &76 ; same address as prvAlarmLedToggle but used differently
+prvAlarmToggle = prv82 + &76
+prvAlarmTmp = prv82 + &76 ; same address as prvAlarmToggle but used differently
 
 ; SFTODO: The following constants are maybe a bit badly named, but I didn't just want to call them "on" and "off". They are used for some booleans which are e.g. handled via ParseOnOff and PrintOnOff
 prvOn = &FF
@@ -8314,7 +8314,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 
 .SFTODOALARMISH1Lookup ; SFTODO: I think this might be control over how long the alarm will persist if not explicitly acknowledged by the user
     EQUB &02,&08
-.SFTODOALARMISH2Lookup ; SFTODO: This also seems to be some kind of alarm length control - not yet sure how ALARMISH1 and ALARMISH2 differ
+.SFTODOALARMISH2Lookup ; SFTODO: This also seems to be some kind of alarm length control - not yet sure how ALARMISH1 and ALARMISH2 differ - OK, this is how long the alarm *sound* will last
     EQUB &0F,&1E,&3C,&78
 .AlarmAmplitudeLookup ; SFTODO: amplitude
     EQUB -10 AND &FF
@@ -8374,9 +8374,13 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     JSR WriteRtcRam
     ; Force RTC register B PIE (periodic interrupt enable) on.
     LDX #rtcRegB:JSR ReadRtcRam:ORA #rtcRegBPIE:JSR WriteRtcRam
-    LDA #1:STA prvAlarmLedToggle
+    LDA #1:STA prvAlarmToggle
+    ; Now continue to do the periodic interrupt processing for the first time.
+
 .HandlingPeriodicInterrupt
-    LDA prvAlarmLedToggle:EOR #1:STA prvAlarmLedToggle:BEQ LB447
+    ; Toggle prvAlarmToggle and only make a sound if it's non-0; I believe this will give an
+    ; intermittent alarm tone (synchronised with the keyboard LED flashing).
+    LDA prvAlarmToggle:EOR #1:STA prvAlarmToggle:BEQ DontMakeSound
     LDA prvSFTODOALARMISH2:BEQ LB40E
 
     ; Make a sound using OSWORD 7.
@@ -8418,14 +8422,14 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 .LB444
     DEC prvSFTODOALARMISH1
 .NotShiftAndCtrlPressed
-.LB447
+.DontMakeSound
     ; SFTODO: I am *guessing* that by exiting via this code path, we have not acknowledged the
     ; alarm interrupt and will therefore be re-entered again PDQ. This presumably avoids
     ; locking the machine up by busy-waiting in here while allowing us to continue to execute.
 
-    ; prvAlarmLedToggle is 0 or 1 here; as we toggle between those two values over multiple
+    ; prvAlarmToggle is 0 or 1 here; as we toggle between those two values over multiple
     ; calls to this code we alternate which of the Shift and Caps Lock LEDs is lit.
-    LDX prvAlarmLedToggle
+    LDX prvAlarmToggle
     LDA SHEILA + systemViaBase + viaRegisterB
     AND_NOT addressableLatchMask:ORA CapsLockLookup,X
     STA SHEILA + systemViaBase + viaRegisterB
