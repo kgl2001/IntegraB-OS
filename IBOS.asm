@@ -9525,6 +9525,7 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     JMP returnFromVectorHandler
 }
 
+{
 .jmpParentWRCHV
     JMP (parentVectorTbl + ibosWRCHVIndex * 2)
 
@@ -9533,7 +9534,6 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 ; ModeChangeState to ModeChangeStateSeenVduSetMode if we
 ; *are* going to change mode.
 .OswrchVduSetMode
-{
     PHA
     LDA negativeVduQueueSize:BNE InLongerVduSequence
     ; SQUASH: We know ModeChangeState is 0 here, so we could just do ASSERT ModeChangeStateNone
@@ -9541,10 +9541,8 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     LDA #ModeChangeStateSeenVduSetMode:STA ModeChangeState
 .InLongerVduSequence
     PLA:JMP ProcessWrchv
-}
 
 ; The following scope is the WRCHV handler; the entry point is at WrchvHandler half way down.
-{
 ; We're processing the second byte of a vduSetMode command, i.e. we will change mode when we
 ; forward this byte to the parent WRCHV.
 .SelectNewMode
