@@ -4089,7 +4089,7 @@ tmp = &A8
 ; SQUASH: I think there is some semi-dead code here related to DFS/NFS priority. The only place
 ; prvLastFilingSystem is used is in service03, which has some slightly odd code and masks off
 ; bit 7 of prvLastFilingSystem value before using it. I think it's therefore pointless to
-; maintain that bit, and this code should probably just to prvLastFilingSystem = XFILEVBank, or
+; maintain that bit, and this code should probably just do prvLastFilingSystem = XFILEVBank, or
 ; possibly prvLastFilingSystem = XFILEVBank AND maxBank, since DNFS *may* be using bit 7 of its
 ; bank number as a DFS/NFS flag and we don't want that breaking things in service03. (service03
 ; currently does AND &7F; we don't need both that *and* AND maxBank here.)
