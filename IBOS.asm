@@ -3279,7 +3279,7 @@ OriginalOutputDeviceStatus = TransientZP + 1
 }
 			
 			
-;Close file with file handle at &A8
+; Close file with handle transientFileHandle.
 .CloseTransientFileHandle
     LDA #osfindClose:LDY transientFileHandle:JMP OSFIND
 
