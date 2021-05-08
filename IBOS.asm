@@ -2234,6 +2234,27 @@ ptr = &00 ; 2 bytes
 
 
 ; SFTODO: THIS IS APPROXIMATELY OSBYTE &6F Aries/Watford Shadow RAM Access
+; Aries/Watford shadow RAM access (http://beebwiki.mdfs.net/OSBYTE_%266F)
+; On entry X is a bitmap:
+;     b7=0 no stack operation
+;     b7=1 pop state from stack (reading), push state on stack (writing)
+;     b6=0 write switch state
+;     b6=1 read switch state
+;     b0=0 select video RAM
+;     b0=1 select program RAM
+; On exit, X contains SFTODO: JUST B0 MODIFIED, REST PRESERVED? the previous switch state:
+;     b0=0 video RAM
+;     b0=1 program RAM
+;
+; This gives the following values for X:
+;     &00 - Select video RAM
+;     &01 - Select program RAM
+;     &40 - Read current RAM state
+;     &41 - Read current RAM state
+;     &80 - Save current RAM state and select video RAM
+;     &81 - Save current RAM state and select program RAM
+;     &C0 - Pop and select stacked RAM state
+;     &C1 - Pop and select stacked RAM state
 .osbyte6FInternal
 {
     PHP
