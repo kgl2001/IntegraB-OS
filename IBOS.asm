@@ -2450,40 +2450,32 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     RTS
 }
 
-;Unrecognised OSWORD call - Service call &08
+; Unrecognised OSWORD call - Service call &08
+;
+; ENHANCE: We could implement OSWORD &0F to set the date/time, although this probably isn't all
+; that big an omission. (Don't get carried away; "function 5" to set from centiseconds since
+; 1900 isn't implemented on the Master.)
+.service08
 {
-.^service08 LDA oswdbtA								;read OSWORD call number
-
-; SFTODO: Does IBOS not implement OSWORD &0F to set the date/time? To be fair, it's probably little used - it would be quite rude for most software to do so - and it's potentially a bit fiddly. (Do note that beebwiki lists a function 5 to set from centiseconds since 1900, but this isn't in the Master Reference Manual and so it would be fair enough not to implement that.)
-	  CMP #&0E								;OSWORD &0E (14) Read real time clock
-	  BNE service08a
-	  JMP osword0e
-			
-.service08a CMP #&42								;OSWORD &42 (66 ) - Sideways RAM transfer
-            BNE service08b
-            JMP osword42
-
-.service08b CMP #&43								;OSWORD &43 (67 ) - Load/Save into/from sideways RAM	
-            BNE service08c
-            JMP osword43
-
-.service08c CMP #&49								;OSWORD &49 (73) - Integra-B calls. If the command passed in XY+0 is not &60-&6F the call is ignored and passed on to other ROMs.
-            BNE service08d
-            TYA
-            PHA
-            LDY #&00
-            LDA (oswdbtX),Y
-            TAX
-            PLA
-            TAY
-            TXA
-            CMP #&60
-            BCC service08d
-            CMP #&70
-            BCS service08d
-            JMP osword49
-			
-.service08d JMP ExitServiceCall								;restore service call parameters and exit
+    LDA oswdbtA
+    CMP #&0E:BNE service08a
+    JMP osword0e
+.service08a
+    CMP #&42:BNE service08b
+    JMP osword42
+.service08b
+    CMP #&43:BNE service08c
+    JMP osword43
+.service08c
+    CMP #&49:BNE service08d
+    ; Only OSWORD &49 calls with &60 <= XY?0 < &70 are claimed by IBOS.
+    ; SQUASH: No point preserving Y? ExitServiceCall restores it anyway.
+    TYA:PHA:LDY #0:LDA (oswdbtX),Y:TAX:PLA:TAY:TXA ; LDA (oswdbtX) preserving Y
+    CMP #&60:BCC service08d
+    CMP #&70:BCS service08d
+    JMP osword49
+.service08d
+    JMP ExitServiceCall
 }
 
 ;*BOOT Command
