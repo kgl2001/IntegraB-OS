@@ -2261,7 +2261,7 @@ ptr = &00 ; 2 bytes
 .osbyte6FInternal
 {
 WorkingX = prvTmp7 ; copy of caller supplied X which we operate on
-ReturnedX = prvTmp
+ReturnedX = prvTmp ; value returned to our caller in X
 StackBit = 1 << 7
 ReadBit = 1 << 6
 ProgramRamBit = 1 << 0
