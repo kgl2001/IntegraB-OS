@@ -9346,15 +9346,16 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X
     BEQ OsMode01
     CMP #1:BEQ OsMode01
-    TAX
-    LDA OsModeLookupTable,X:TAX
+    ; Return with X containing the appropriate value from OsModeLookupTable.
+    TAX:LDA OsModeLookupTable,X:TAX
     LDY #0
     BEQ returnFromBYTEV ; always branch
 .OsMode01
-    LDX #&00
-    LDA #&81
-    JMP returnViaParentBYTEV								;jump to code for OSMODE 0-1
+    ; Restore the registers and let the OS handle this call.
+    LDX #0:LDA #&81:JMP returnViaParentBYTEV
 
+; SQUASH: If we used "LDA OsModeLookupTable - 2,X" we could eliminate the first two entries in
+; this table, and I don't think there's any need to keep the OSMODE 6/7 entries either.
 .OsModeLookupTable
     EQUB &01 ; OSMODE 0 - not used
     EQUB &01 ; OSMODE 1 - not Used
