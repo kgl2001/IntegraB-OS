@@ -2245,11 +2245,11 @@ ptr = &00 ; 2 bytes
 ;     b6=1 read switch state
 ;     b0=0 select video RAM
 ;     b0=1 select program RAM
-; On exit, X contains SFTODO: JUST B0 MODIFIED, REST PRESERVED? the previous switch state:
+; On exit, X contains the previous switch state:
 ;     b0=0 video RAM
 ;     b0=1 program RAM
 ;
-; This gives the following values for X:
+; This gives the following entry values for X:
 ;     &00 - Select video RAM
 ;     &01 - Select program RAM
 ;     &40 - Read current RAM state
@@ -2260,6 +2260,7 @@ ptr = &00 ; 2 bytes
 ;     &C1 - Pop and select stacked RAM state
 .osbyte6FInternal
 {
+WorkingX = prvTmp7 ; copy of caller supplied X which we operate on
 StackBit = 1 << 7
 ReadBit = 1 << 6
 ProgramRamBit = 1 << 0
@@ -2269,33 +2270,34 @@ IgnoredBits = %00111110
     PRVEN
     ; SQUASH: Just do STX in next line and avoid this? *Or* maybe rely on the fact we have this
     ; value in X to avoid needing to load this later
-    TXA:STA prvTmp7
+    TXA:STA WorkingX
     ASSERT ramselShen == &80:LDA ramselCopy:ROL A:PHP ; stack flags with C=ramselShen
-    LDA prvTmp7:AND #StackBit OR ReadBit:CMP #StackBit:BNE NotStackWrite
+    LDA WorkingX:AND #StackBit OR ReadBit:CMP #StackBit:BNE NotStackWrite
     PLP:PHP:ROR prvOsbyte6FStack ; push ramselShen onto the stack
-    LDA prvTmp7:AND_NOT StackBit OR IgnoredBits:STA prvTmp7
+    LDA WorkingX:AND_NOT StackBit OR IgnoredBits:STA WorkingX ; clear StackBit
 .NotStackWrite
-    PLP
-    LDA #&00
-    ROL A ; get ramselShen in low bit of A
-    STA prvTmp
-    BIT prvTmp7
-    BVC L8AB3 ; branch if writing state
-    BPL L8AC1 ; branch if no stack operation
-    ; So this is a stack pull operation
+    ; Set prvTmp (the value returned in X) to have ramselShen in its low bit and be all 0s
+    ; otherwise. SFTODO: BeebWiki seems to imply the return value should have all the other
+    ; bits of X preserved ("This gives the following entry *and return* values"), but it
+    ; doesn't look as though we do, which *may* be a small incompatibility with true Watford/
+    ; Aries implementations.
+    PLP:LDA #0:ROL A:STA prvTmp ; get ramselShen in low bit of prvTmp
+    BIT WorkingX
+    BVC L8AB3 ; branch if ReadBit is 0, i.e. we're writing
+    BPL L8AC1 ; branch if StackBit is 0, i.e. we're not using the stack
+    ; We're doing a stack read operation.
     ASL prvOsbyte6FStack ; pop stack bit and...
-    ROL prvTmp7 ; move it into low bit of our "X"
+    ROL WorkingX ; move it into low bit of our "X"
 .L8AB3
     ; Effectively copy the low bit of "our X" into ramselShen
     LDA ramselCopy
     ROL A
-    ROR prvTmp7
+    ROR WorkingX
     ROR A
     STA ramselCopy
     STA ramsel
 .L8AC1
-    LDA prvTmp
-    TAX
+    LDA prvTmp:TAX ; SQUASH: Just use LDX? Or take more advatnage of X being mostly untouched.
     PRVDIS
     PLP
     RTS
