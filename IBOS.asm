@@ -671,8 +671,8 @@ prvSFTODOALARMISH1 = prv82 + &72
 prvSFTODOALARMISH2 = prv82 + &73
 prvAlarmAmplitude = prv82 + &74
 prvAlarmPitch = prv82 + &75
-prvSFTODOALARMISH5 = prv82 + &76
-prvSFTODOALARMISH5b = prv82 + &76 ; SFTODO: SAME ADDRESS BUT USED DIFFERENTLY
+prvAlarmLedToggle = prv82 + &76
+prvAlarmTmp = prv82 + &76 ; same address as prvAlarmLedToggle but used differently
 
 ; SFTODO: The following constants are maybe a bit badly named, but I didn't just want to call them "on" and "off". They are used for some booleans which are e.g. handled via ParseOnOff and PrintOnOff
 prvOn = &FF
@@ -8374,9 +8374,9 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     JSR WriteRtcRam
     ; Force RTC register B PIE (periodic interrupt enable) on.
     LDX #rtcRegB:JSR ReadRtcRam:ORA #rtcRegBPIE:JSR WriteRtcRam
-    LDA #1:STA prvSFTODOALARMISH5
+    LDA #1:STA prvAlarmLedToggle
 .HandlingPeriodicInterrupt
-    LDA prvSFTODOALARMISH5:EOR #1:STA prvSFTODOALARMISH5:BEQ LB447
+    LDA prvAlarmLedToggle:EOR #1:STA prvAlarmLedToggle:BEQ LB447
     LDA prvSFTODOALARMISH2:BEQ LB40E
 
     ; Make a sound using OSWORD 7.
@@ -8404,10 +8404,10 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     LDA prvSFTODOALARMISH1:BNE LB444
     JSR TestShiftCtrl:BVC NotShiftAndCtrlPressed:BPL NotShiftAndCtrlPressed
     ASSERT userRegAlarmEnableBit >> 1 == rtcRegBAIE
-    LDX #userRegAlarm:JSR ReadUserReg:LSR A:AND #rtcRegBAIE:STA prvSFTODOALARMISH5b
+    LDX #userRegAlarm:JSR ReadUserReg:LSR A:AND #rtcRegBAIE:STA prvAlarmTmp
     ; Force RTC register B PIE off and set AIE iff userRegAlarmEnableBit is set.
     LDX #rtcRegB:JSR ReadRtcRam
-    AND_NOT rtcRegBPIE OR rtcRegBAIE:ORA prvSFTODOALARMISH5b:JSR WriteRtcRam
+    AND_NOT rtcRegBPIE OR rtcRegBAIE:ORA prvAlarmTmp:JSR WriteRtcRam
     ; Force RTC register A ARS3/2/1/0 off.
     LDX #rtcRegA:JSR ReadRtcRam
     AND_NOT rtcRegARS3 OR rtcRegARS2 OR rtcRegARS1 OR rtcRegARS0:JSR WriteRtcRam
@@ -8423,9 +8423,9 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     ; alarm interrupt and will therefore be re-entered again PDQ. This presumably avoids
     ; locking the machine up by busy-waiting in here while allowing us to continue to execute.
 
-    ; prvSFTODOALARMISH5 is 0 or 1 here; as we toggle between those two values over multiple
+    ; prvAlarmLedToggle is 0 or 1 here; as we toggle between those two values over multiple
     ; calls to this code we alternate which of the Shift and Caps Lock LEDs is lit.
-    LDX prvSFTODOALARMISH5
+    LDX prvAlarmLedToggle
     LDA SHEILA + systemViaBase + viaRegisterB
     AND_NOT addressableLatchMask:ORA CapsLockLookup,X
     STA SHEILA + systemViaBase + viaRegisterB
