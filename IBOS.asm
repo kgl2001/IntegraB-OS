@@ -2301,13 +2301,11 @@ IgnoredBits = %00111110
 }
 			
 ;Unrecognised OSBYTE call - Service call &07
-;A, X & Y stored in &EF, &F0 & F1 respecively
-.service07  LDX #prvOsMode - prv83								;select OSMODE
-            JSR ReadPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            CMP #&00								;OSMODE 0?
-            BNE osbyte6C								;Branch if OSMODE 1-5
-            LDA oswdbtA								;get OSBYTE command
-            JMP osbyteA1								;Branch if OSMODE 0 - skip OSBYTE &6C / &72
+.service07
+    ; Skip OSBYTE &6C and &72 handling if we're in OSMODE 0.
+    ; SQUASH: CMP #0 is redundant.
+    LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X:CMP #0:BNE osbyte6C
+    LDA oswdbtA:JMP osbyteA1
 
 {
 ;Test for OSBYTE &6C - Select Shadow/Screen memory for direct access
