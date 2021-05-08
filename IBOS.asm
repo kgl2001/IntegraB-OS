@@ -1914,9 +1914,9 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
 .^ReadUserReg
     CPX #&80:BCS Rts ; no-op for X>=&80
     CPX #&32:BCS ReadPrivateRam
-    PHA
+    PHA ; SQUASH: redundant? JSR ReadRtcRam will load a value into A...
     CLC:TXA:ADC #rtcUserBase:TAX
-    PLA
+    PLA ; SQUASH: redundant?
     JSR ReadRtcRam
     JMP CommonEnd
 .^WriteUserReg
@@ -2302,6 +2302,13 @@ IgnoredBits = %00111110
 }
 			
 ; Unrecognised OSBYTE call - Service call &07
+;
+; If the call is claimed, the return value of X is in oswdbtX and the return value of Y is the
+; value in the Y register, which will be pulled from the stack by ExitAndClaimServiceCall.
+; (Documentation on this seems confusing, but as BeebWiki points out, the TAX at &F17E in OS
+; 1.20 immediately tramples on the X register on return from this service call and the value in
+; X on returning from OSBYTE is taken from oswdbtX at &E7D1. Y is *not* loaded from oswdbtY in
+; the OS OSBYTE code, so the contents of the actual Y register are returned to the caller.)
 .service07
     ; Skip OSBYTE &6C and &72 handling if we're in OSMODE 0.
     ; SQUASH: CMP #0 is redundant.
@@ -2341,26 +2348,20 @@ IgnoredBits = %00111110
     JMP ExitAndClaimServiceCall
 }
 			
-;Test for OSBYTE &A1 - Read configuration RAM/EEPROM
-.osbyteA1	  CMP #&A1								;OSBYTE &A1 - Read configuration RAM/EEPROM
-            BNE osbyteA2
-            PLA
-            LDX oswdbtX
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            STA oswdbtY
-            PHA
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+; Test for OSBYTE &A1 - Read configuration RAM/EEPROM
+.osbyteA1
+    CMP #&A1:BNE osbyteA2
+    PLA ; discard stacked Y
+    LDX oswdbtX:JSR ReadUserReg:STA oswdbtY
+    PHA ; return value we just read to caller in Y
+    JMP ExitAndClaimServiceCall
 			
-;Test for OSBYTE &A2 - Write configuration RAM/EEPROM
-.osbyteA2	  CMP #&A2								;OSBYTE &A2 - configuration RAM/EEPROM
-            BNE osbyte44
-            LDX oswdbtX
-            LDA oswdbtY
-            JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
-            PLA
-            LDA oswdbtY
-            PHA
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+; Test for OSBYTE &A2 - Write configuration RAM/EEPROM
+.osbyteA2
+    CMP #&A2:BNE osbyte44
+    LDX oswdbtX:LDA oswdbtY:JSR WriteUserReg							
+    PLA:LDA oswdbtY:PHA ; return to caller with Y unaltered
+    JMP ExitAndClaimServiceCall							
 			
 ;Test for OSBYTE &44 - Test sideways RAM presence
 .osbyte44	  CMP #&44								;OSBYTE &44 (68) - Test sideways RAM presence
