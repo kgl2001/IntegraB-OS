@@ -7066,14 +7066,10 @@ daysInMonth = transientDateSFTODO2
 		EQUB &61,&6A,&71,&79,&81
 
 
-;&824E=calText pointer for next month / day
-;&824F=Capitalisation mask (&DF or &FF)			
-;&8250=calOffset pointer
-;On Month Entry:		Carry Set,   A=01-12 (Jan-Dec)
-;On Day of Week Entry:	Carry Clear, A=01-07 (Sun-Sat)
-; SFTODO: X on entry is maximum number of characters to print? (0 means 256, i.e. effectively unlimited)
-; SFTODO: Y has some significance on entry (Y=0 => capitalise first letter, otherwise all lower case)
-.emitDayOrMonthName
+; Emit name of day (C clear on entry) or month (C set on entry) in A as a string to
+; transientDateBuffer. The name will be truncated to X characters (X=0 => no truncation) and
+; will be all-caps if Y=0 on entry, first character capitalised otherwise.
+.EmitDayOrMonthName
 {
 EndCalOffset = prv82 + &4E
 LocalCapitaliseMask = prv82 + &4F
@@ -7081,44 +7077,34 @@ MaxOutputLength = prv82 + &50 ; SFTODO: rename this, I think it's "max chars to 
 
     XASSERT_USE_PRV1
     BCC IndexInA
+    ; We're outputting a month, so adjust A to skip past the day of week entries in
+    ; calOffsetTable.
     ; SQUASH: don't clear C and ADC #daysPerWeek - 1
-    CLC:ADC #daysPerWeek ; adjust month index to skip past the day of week entries in calOffsetTable
+    CLC:ADC #daysPerWeek
 .IndexInA
     STX MaxOutputLength
-    CPY #&00								;First letter? SFTODO: Seems a little odd, given we LDY transientDataBufferIndex *below*
-    BNE InitLocalCapitalisationMask							;No? Then branch
-    LDY #CapitaliseMask
-    STY LocalCapitaliseMask							;Save mask to &824F
-    JMP LocalCapitaliseMaskSet ; SFTODO: We could BNE ; always
-.InitLocalCapitalisationMask
-    LDY #&FF								;otherwise no capitalise
-    STY LocalCapitaliseMask							;save mask to &824F
+    CPY #0:BNE UseLowerCase
+    LDY #CapitaliseMask:STY LocalCapitaliseMask
+    JMP LocalCapitaliseMaskSet ; SQUASH: BNE always
+.UseLowerCase
+    LDY #&FF:STY LocalCapitaliseMask
 .LocalCapitaliseMaskSet
+    ; Set X and EndCalOffset so the string to print is at calText+[X, EndCaloffset).
     TAX
-    INX
-    LDA calOffsetTable,X							;get calText offset for next month / day
-    STA EndCalOffset								;save calText offset for next month / day to &824E
-    DEX
-    LDA calOffsetTable,X							;get calText offset for current month / day
-    TAX									;move calText offset for current month / day to X
-    LDY transientDateBufferIndex						;get buffer pointer
-    LDA calText,X								;get first letter
-    AND #CapitaliseMask								;capitalise this letter
-    JMP CharInA
-			
+    INX:LDA calOffsetTable,X:STA EndCalOffset ; SQUASH: Use calOffsetTable+1 to avoid INX/DEX
+    DEX:LDA calOffsetTable,X:TAX
+    ; Write the string into transientDateBuffer; we always capitalise the first character and
+    ; use LocalCapitaliseMask for the rest.
+    LDY transientDateBufferIndex
+    LDA calText,X:AND #CapitaliseMask:JMP CharInA ; SQUASH: BNE always
 .Loop
-    LDA calText,X								;get subsequent letters
-    AND LocalCapitaliseMask							;apply capitalisation mask
+    LDA calText,X:AND LocalCapitaliseMask
 .CharInA
-    STA (transientDateBufferPtr),Y						;store at buffer &XY?Y
-    INY									;increase buffer pointer
-    INX									;increment calText offset for current month / day
-    DEC MaxOutputLength							;don't output more than (initial) MaxOutputLength characters
-    BEQ Done
-    CPX EndCalOffset								;reached the calText offset for next month / day?
-    BNE Loop 								;no? loop.
+    STA (transientDateBufferPtr),Y
+    INY:INX:DEC MaxOutputLength:BEQ Done
+    CPX EndCalOffset:BNE Loop
 .Done
-    STY transientDateBufferIndex						;save buffer pointer
+    STY transientDateBufferIndex
     RTS
 }
 			
@@ -7412,7 +7398,7 @@ Options = transientDateSFTODO1
 .maxCharsInX
 	  LDA prvDateDayOfWeek							;get day of week
             CLC									;Carry Set=Month, Clear=Day of Week
-            JSR emitDayOrMonthName							;X is maximum number of characters to emit, Y controls capitalisation
+            JSR EmitDayOrMonthName							;X is maximum number of characters to emit, Y controls capitalisation
             LDA prvDateSFTODO3
             BNE LACA0
             JMP LAD5Arts
@@ -7490,7 +7476,7 @@ Options = transientDateSFTODO1
             TAY
             LDA prvDateMonth								;Get Month
             SEC									;Carry Set=Month, Clear=Day of Week
-            JSR emitDayOrMonthName							;X is max characters to emit, Y controls capitalisation
+            JSR EmitDayOrMonthName							;X is max characters to emit, Y controls capitalisation
 .LAD2A      LDA prvDateSFTODO3
             AND #&C0
             BEQ LAD5Arts
@@ -8602,11 +8588,8 @@ Column = prvC
 .RowLoop
     LDY #0:STY transientDateBufferIndex
     LDA #lo(prvDateBuffer):STA transientDateBufferPtr:LDA #hi(prvDateBuffer):STA transientDateBufferPtr + 1
-    LDA DayOfWeek
-    LDX #3 ; truncate day names to 3 characters
-    LDY #&FF ; SFTODO: Comments on emitDayOrMonthName suggest this means *don't* capitalise day names, but we *do* capitalise them (just try *CALENDAR and see)
-    CLC
-    JSR emitDayOrMonthName
+    ; SQUASH: DayOfWeek is 1-7 here, so do TAY instead of LDY #&FF as we just need a non-0 value.
+    LDA DayOfWeek:LDX #3:LDY #&FF:CLC:JSR EmitDayOrMonthName ; emit day name using style "Mon", "Tue", etc
     LDA #0:STA Column ; SQUASH: Use Y=0 from transientDateBufferIndex above to set Column
 .ColumnLoop
     LDA #' ':JSR EmitAToDateBuffer
