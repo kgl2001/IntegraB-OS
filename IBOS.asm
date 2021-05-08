@@ -506,7 +506,8 @@ L0880       = &0880
 ; The OS printer buffer is stolen for use by our code stub; we take over printer
 ; buffering responsibilities using our private RAM so the OS won't touch this
 ; memory.
-osPrintBuf  = &0880 ; &0880-&08BF inclusive = &40 bytes bytes
+osPrintBuf  = &0880 ; &0880
+osPrintBufSize = &40
 L0895       = &0895
 L089B       = &089B
 L08AD       = &08AD
@@ -9107,7 +9108,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ; SFTODO: This only has one caller at the moment and could be inlined.
 .installOSPrintBufStub
 {
-BytesToCopy = &40
+BytesToCopy = osPrintBufSize
     ASSERT romCodeStubEnd - romCodeStub <= BytesToCopy
 
     LDX #BytesToCopy - 1
@@ -9168,6 +9169,7 @@ ramCodeStubCallIBOS = ramCodeStub + (romCodeStubCallIBOS - romCodeStub)
 }
 .romCodeStubEnd
 ramCodeStubEnd = ramCodeStub + (romCodeStubEnd - romCodeStub)
+
 ; The next part of osPrintBuf is used to hold a table of 7 original OS (parent)
 ; vectors. This is really a single table, but because the 7 vectors of interest
 ; aren't contiguous in the OS vector table it's sometimes helpful to consider it
@@ -9182,7 +9184,7 @@ parentVectorTbl2 = parentVectorTbl1 + 4 * 2 ; 4 vectors, 2 bytes each
 ; The original OS (parent) values of INSV, REMV and CNPV are copied to
 ; parentVectorTbl2 in that order before installing our own handlers.
 parentVectorTbl2End = parentVectorTbl2 + 3 * 2 ; 3 vectors, 2 bytes each
-ASSERT parentVectorTbl2End <= osPrintBuf + &40
+ASSERT parentVectorTbl2End <= osPrintBuf + osPrintBufSize
 
 ; Restore A, X, Y and the flags from the stacked copies pushed during the vector entry process.
 ; The stack must have the same layout as described in the big comment in vectorEntry; note that
