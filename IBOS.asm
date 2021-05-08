@@ -667,8 +667,8 @@ prvTmp = prv82 + &52 ; 1 byte, SFTODO: seems to be used as scratch space by some
 
 ; These prvAlarm* addresses are initialised by alarm interrupts and then read by subsequent
 ; periodic interrupts during the same alarm event.
-prvAlarmOverallDuration = prv82 + &72
-prvAlarmAudioDuration = prv82 + &73
+prvAlarmOverallDuration = prv82 + &72 ; alarm will auto-cancel after this time
+prvAlarmAudioDuration = prv82 + &73 ; alarm audio alert will stop after this time
 prvAlarmAmplitude = prv82 + &74
 prvAlarmPitch = prv82 + &75
 prvAlarmToggle = prv82 + &76
@@ -8312,18 +8312,18 @@ OswordSoundPitchOffset = P% - OswordSoundBlock
     EQUW   5 ; duration
 OswordSoundBlockSize = P% - OswordSoundBlock
 
+; Each "duration unit" corresponds to two interrupts from the RTC (two not one because on every
+; other interrupt we only execute the code at JustToggleLeds). The values programmed into RV*
+; and RS* of RTC register A presumably determine the frequency and mark/space cycle of these
+; interrupts.
 .AlarmOverallDurationLookup
-    EQUB &02,&08
+    EQUB 2, 8
 .AlarmAudioDurationLookup
-    EQUB &0F,&1E,&3C,&78
-.AlarmAmplitudeLookup ; SFTODO: amplitude
-    EQUB -10 AND &FF
-    EQUB -15 AND &FF
-.AlarmPitchLookup ; SFTODO: pitch
-    EQUB 90
-    EQUB 130
-    EQUB 176
-    EQUB 210
+    EQUB 15, 30, 60, 120
+.AlarmAmplitudeLookup
+    EQUB -10 AND &FF:EQUB -15 AND &FF
+.AlarmPitchLookup
+    EQUB 90, 130, 176, 210
 
 .CapsLockLookup
     EQUB addressableLatchCapsLock OR addressableLatchData0
@@ -8379,9 +8379,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 
 .HandlingPeriodicInterrupt
     ; Toggle prvAlarmToggle; if it's 0 we just toggle the LEDs and don't make a sound, test the
-    ; keyboard or decrement the overall alarm duration counter. I believe this will have the
-    ; effect of giving an intermittent alarm tone and meaning AlarmOverallDurationLookup values
-    ; are expressed in time units twice the size of those used for AlarmAudioDurationLookup.
+    ; keyboard or decrement the duration counters.
     LDA prvAlarmToggle:EOR #1:STA prvAlarmToggle:BEQ JustToggleLeds
     LDA prvAlarmAudioDuration:BEQ AlarmAudioDurationExpired
 
