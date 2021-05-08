@@ -2556,24 +2556,20 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
 ;*PURGE Command
 .purge
 {
-            JSR ParseOnOff
-            BCC purgeOnOrOff
-            LDA (transientCmdPtr),Y
-            CMP #'?'
-            BNE purgeNow
-            JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
-            LDX #prvPrintBufferPurgeOption - prv83
-            JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
-            JMP PrintOnOffOSNEWLExitSC
+    JSR ParseOnOff:BCC PurgeOnOrOff
+    LDA (transientCmdPtr),Y:CMP #'?':BNE PurgeNow
+    JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
+    LDX #prvPrintBufferPurgeOption - prv83:JSR ReadPrivateRam8300X
+    JMP PrintOnOffOSNEWLExitSC
 
-.purgeNow   PRVEN 								;switch in private RAM
-            JSR PurgePrintBuffer
-            JMP PrvDisExitAndClaimServiceCall
+.PurgeNow
+    PRVEN
+    JSR PurgePrintBuffer
+    JMP PrvDisExitAndClaimServiceCall
 
-.purgeOnOrOff
-	  LDX #prvPrintBufferPurgeOption - prv83
-            JSR WritePrivateRam8300X							;write data to Private RAM &83xx (Addr = X, Data = A)
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+.PurgeOnOrOff
+    LDX #prvPrintBufferPurgeOption - prv83:JSR WritePrivateRam8300X
+    JMP ExitAndClaimServiceCall
 }
 			
 ;*BUFFER Command
