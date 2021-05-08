@@ -9341,33 +9341,29 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 ; Read key with time limit/read machine type (http://beebwiki.mdfs.net/OSBYTE_%2681)
 .osbyte81Handler
 {
-.LBA3A      CPX #&00
-            BNE osbyte87Handler
-            CPY #&FF
-            BNE osbyte87Handler
-            LDX #prvOsMode - prv83								;select OSMODE
-            JSR ReadPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-            BEQ LBA56								;Branch if OSMODE=0
-            CMP #&01								;Check if OSMODE=1
-            BEQ LBA56								;Branch if OSMODE=1
-            TAX
-            LDA LBA5D,X								;Get value from lookup table
-            TAX									;and transfer to X
-            LDY #&00
-            BEQ returnFromBYTEV								;jump to code for OSMODE 2-5
-.LBA56      LDX #&00
-            LDA #&81
-            JMP returnViaParentBYTEV								;jump to code for OSMODE 0-1
+    CPX #0:BNE osbyte87Handler
+    CPY #&FF:BNE osbyte87Handler
+    LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X
+    BEQ OsMode01
+    CMP #1:BEQ OsMode01
+    TAX
+    LDA OsModeLookupTable,X:TAX
+    LDY #0
+    BEQ returnFromBYTEV ; always branch
+.OsMode01
+    LDX #&00
+    LDA #&81
+    JMP returnViaParentBYTEV								;jump to code for OSMODE 0-1
 
-;OSMODE lookup table
-.LBA5D	  EQUB &01								;OSMODE 0 - Not Used
-	  EQUB &01								;OSMODE 1 - Not Used
-	  EQUB &FB								;OSMODE 2
-	  EQUB &FD								;OSMODE 3
-	  EQUB &FB								;OSMODE 4
-	  EQUB &F5								;OSMODE 5
-	  EQUB &01								;OSMODE 6 - No such mode
-	  EQUB &01								;OSMODE 7 - No such mode
+.OsModeLookupTable
+    EQUB &01 ; OSMODE 0 - not used
+    EQUB &01 ; OSMODE 1 - not Used
+    EQUB &FB ; OSMODE 2
+    EQUB &FD ; OSMODE 3
+    EQUB &FB ; OSMODE 4
+    EQUB &F5 ; OSMODE 5
+    EQUB &01 ; OSMODE 6 - no such mode
+    EQUB &01 ; OSMODE 7 - no such mode
 }
 
 .jmpParentBYTEV
