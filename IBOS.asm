@@ -160,8 +160,14 @@ userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Dat
 userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX / b4: automatic daylight saving time adjust SFTODO: Should rename this now we've discovered b4
 ; SFTODO: b4 of userRegOsModeShx doesn't seem to be exposed via *CONFIGURE/*STATUS - should it be? Might be interesting to try setting this bit manually and seeing if it works. If it's not going to be exposed we could save some code by deleting the support for it.
 userRegAlarm = &33 ; SFTODO? bits 0-5?? SFTODO: bit 7 seems to be the "R" flag from *ALARM command ("repeat"???)
-    userRegAlarmRepeatBit = &80
-    userRegAlarmEnableBit = &40
+    userRegAlarmRepeatBit = 1 << 7
+    userRegAlarmEnableBit = 1 << 6
+    ; We don't have named constants for the other bits as a result of the way the code is
+    ; structured, but they are:
+    ;     5: amplitude (index into AlarmAmplitudeLookup)
+    ;     3-4: pitch (index into AlarmPitchLookup)
+    ;     1-2: SFTODO ALARMISH2
+    ;     0: SFTODO ALARMISH1
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegBankWriteProtectStatus = &38 ; 2 bytes, 1 bit per bank
@@ -659,10 +665,12 @@ prvTmp5 = prv82 + &51
 
 prvTmp = prv82 + &52 ; 1 byte, SFTODO: seems to be used as scratch space by some code without relying on value being preserved
 
+; These prvAlarm* addresses are initialised by alarm interrupts and then read by subsequent
+; periodic interrupts during the same alarm event.
 prvSFTODOALARMISH1 = prv82 + &72
 prvSFTODOALARMISH2 = prv82 + &73
-prvSFTODOALARMISH3 = prv82 + &74
-prvSFTODOALARMISH4 = prv82 + &75
+prvAlarmAmplitude = prv82 + &74
+prvAlarmPitch = prv82 + &75
 prvSFTODOALARMISH5 = prv82 + &76
 prvSFTODOALARMISH5b = prv82 + &76 ; SFTODO: SAME ADDRESS BUT USED DIFFERENTLY
 
@@ -8308,10 +8316,10 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     EQUB &02,&08
 .SFTODOALARMISH2Lookup ; SFTODO: This also seems to be some kind of alarm length control - not yet sure how ALARMISH1 and ALARMISH2 differ
     EQUB &0F,&1E,&3C,&78
-.SFTODOALARMISH3Lookup ; SFTODO: amplitude
+.AlarmAmplitudeLookup ; SFTODO: amplitude
     EQUB -10 AND &FF
     EQUB -15 AND &FF
-.SFTODOALARMISH4Lookup ; SFTODO: pitch
+.AlarmPitchLookup ; SFTODO: pitch
     EQUB 90
     EQUB 130
     EQUB 176
@@ -8345,25 +8353,20 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     ; SQUASH: Can we do the next line above to save redoing LDA romselCopy?
     LDA romselCopy:ORA #romselPrvEn:STA romselCopy:STA romsel
     BCC HandlingPeriodicInterrupt
-
+    ; This isn't a periodic interrupt, so perform some initialisation which will apply to this
+    ; alarm interrupt and subsequent periodic interrupts until the alarm (as a user event) is
+    ; finished.
     LDX #userRegAlarm:JSR ReadUserReg
-    ; Shift userRegAlarm in A right as we extract the bitfields and use them to initialise
-    ; prvSFTODOALARMISH*.
-    ; SFTODO: userRegAlarm structure is:
-    ; b0 - LB33E,X->ALARMISH1
-    ; b1-2 - LB340,X->ALARMISH2
-    ; b3-4 - LB346,X->ALARMISH4 pitch
-    ; b5 - LB344,X->ALARMISH3 amplitude
-    ; b6 - used to set reg B AIE, so probably an enable/disable flag
-    ; b7 - userRegAlarmRepeatBit *probably* a repeat flag but not verified via code, just guessing
+    ; Shift userRegAlarm in A right as we extract the bitfields and use them to control
+    ; initialisation.
     PHA
     AND #1:TAX:LDA SFTODOALARMISH1Lookup,X:STA prvSFTODOALARMISH1
     PLA:LSR A:PHA
     AND #%11:TAX:LDA SFTODOALARMISH2Lookup,X:STA prvSFTODOALARMISH2
     PLA:LSR A:LSR A:PHA
-    AND #%11:TAX:LDA SFTODOALARMISH4Lookup,X:STA prvSFTODOALARMISH4
+    AND #%11:TAX:LDA AlarmPitchLookup,X:STA prvAlarmPitch
     PLA:LSR A:LSR A
-    AND #1:TAX:LDA SFTODOALARMISH3Lookup,X:STA prvSFTODOALARMISH3
+    AND #1:TAX:LDA AlarmAmplitudeLookup,X:STA prvAlarmAmplitude
     ; Force RTC register A ARS3/2/1 on and ARS0 off.
     LDX #rtcRegA:JSR ReadRtcRam
     AND_NOT rtcRegARS3 OR rtcRegARS2 OR rtcRegARS1 OR rtcRegARS0
@@ -8388,8 +8391,8 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 .SoundBlockCopyLoop
     LDA OswordSoundBlock,Y:STA OswordSoundBlockCopy,Y
     DEY:BPL SoundBlockCopyLoop
-    LDA prvSFTODOALARMISH3:STA OswordSoundBlockCopy + OswordSoundAmplitudeOffset
-    LDA prvSFTODOALARMISH4:STA OswordSoundBlockCopy + OswordSoundPitchOffset
+    LDA prvAlarmAmplitude:STA OswordSoundBlockCopy + OswordSoundAmplitudeOffset
+    LDA prvAlarmPitch:STA OswordSoundBlockCopy + OswordSoundPitchOffset
     LDA #oswordSound:LDX #lo(OswordSoundBlockCopy):LDY #hi(OswordSoundBlockCopy):JSR OSWORD
     LDY #0
 .SoundBlockCopyRestoreLoop
