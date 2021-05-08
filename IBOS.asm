@@ -2942,7 +2942,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA romselCopy:AND #maxBank
 .L8FBF
     PHA:JSR DisableTube:PLA
-    TAX:JMP doOsbyteEnterLanguage
+    TAX:JMP DoOsbyteEnterLanguage
 
 .^DisableTube
     LDA #0:LDX #prvSFTODOTUBE2ISH - prv83:JSR WritePrivateRam8300X
@@ -2950,7 +2950,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA #0:STA tubePresenceFlag
     ; Re-select the current filing system.
     LDA #osargsReadFilingSystemNumber:LDX #TransientZP:LDY #0:JSR OSARGS ; SQUASH: don't set X?
-    TAY:LDX #serviceSelectFilingSystem:JSR doOsbyteIssueServiceRequest
+    TAY:LDX #serviceSelectFilingSystem:JSR DoOsbyteIssueServiceRequest
     LDA #0:LDX #prvSFTODOTUBEISH - prv83:JMP WritePrivateRam8300X
 
 .TurnTubeOn
@@ -2966,11 +2966,11 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     BIT tubePresenceFlag:BMI ExitAndClaimServiceCallIndirect
     LDA #&FF:LDX #prvSFTODOTUBE2ISH - prv83:JSR WritePrivateRam8300X
     LDX #prvSFTODOTUBEISH - prv83:JSR WritePrivateRam8300X
-    LDX #&FF:LDY #0:JSR doOsbyteIssueServiceRequest
+    LDX #&FF:LDY #0:JSR DoOsbyteIssueServiceRequest
     LDA #&FF:STA tubePresenceFlag
-    LDX #serviceTubePostInitialisation:LDY #0:JSR doOsbyteIssueServiceRequest
+    LDX #serviceTubePostInitialisation:LDY #0:JSR DoOsbyteIssueServiceRequest
     LDA #osargsReadFilingSystemNumber:LDX #&A8:LDY #&00:JSR OSARGS:TAY ; SQUASH: Don't LDX?
-    LDX #serviceSelectFilingSystem:JSR doOsbyteIssueServiceRequest
+    LDX #serviceSelectFilingSystem:JSR DoOsbyteIssueServiceRequest
     LDA #0:LDX #prvSFTODOTUBEISH - prv83:JSR WritePrivateRam8300X
     LDA #&7F
 .TubeReg2Full
@@ -2978,9 +2978,8 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     STA tubeReg2Data
     JMP L0032 ; SFTODO!?
 
-.doOsbyteIssueServiceRequest
-    LDA #osbyteIssueServiceRequest						;issue paged ROM service request
-    JMP OSBYTE								;execute paged ROM service request
+.DoOsbyteIssueServiceRequest
+    LDA #osbyteIssueServiceRequest:JMP OSBYTE
 }
 
 {
@@ -3085,7 +3084,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 {
     ; Enter IBOS as a language ROM.
     LDX romselCopy
-.^doOsbyteEnterLanguage
+.^DoOsbyteEnterLanguage
     LDA #osbyteEnterLanguage:JMP OSBYTE
 }
 			
