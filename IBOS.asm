@@ -686,6 +686,7 @@ prvOff = 0
 
 prvOsMode = prv83 + &3C ; working copy of OSMODE, initialised from relevant bits of userRegOsModeShx in service01
 prvShx = prv83 + &3D ; working copy of SHX, initialised from relevant bit of userRegOsModeShx in service01 (uses prvOn/prvOff convention)
+prvOsbyte6FStack = prv83 + &3E ; used as 8 bit deep stack by osbyte6FInternal
 prvSFTODOTUBE2ISH = prv83 + &40
 prvSFTODOTUBEISH = prv83 + &41
 prvTubeReleasePending = prv83 + &42 ; used during OSWORD 42; &FF means we have claimed the tube and need to release it at end of transfer, 0 means we don't
@@ -2274,7 +2275,7 @@ ptr = &00 ; 2 bytes
     BNE L8A9F ; branch if we're not saving the current RAM state
     PLP
     PHP
-    ROR prv83+&3E ; put ramselShen in b7 of prv83+&3E; I suspect the lower bits form the stack (max depth 8, therefore) used by OSBYTE &6F
+    ROR prvOsbyte6FStack ; put ramselShen in b7 of prv83+&3E; I suspect the lower bits form the stack (max depth 8, therefore) used by OSBYTE &6F
     LDA prvTmp7
     AND #&41 ; clear b7 (stack=yes) of saved original X now we've deal with pushing to the stack
     STA prvTmp7
@@ -2287,7 +2288,7 @@ ptr = &00 ; 2 bytes
     BVC L8AB3 ; branch if writing state
     BPL L8AC1 ; branch if no stack operation
     ; So this is a stack pull operation
-    ASL prv83+&3E ; pop stack bit and...
+    ASL prvOsbyte6FStack ; pop stack bit and...
     ROL prvTmp7 ; move it into low bit of our "X"
 .L8AB3
     ; Effectively copy the low bit of "our X" into ramselShen
