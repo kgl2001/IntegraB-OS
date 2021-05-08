@@ -9455,32 +9455,28 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 ; Identify host/operating system (http://beebwiki.mdfs.net/OSBYTE_%2600)
 .osbyte00Handler
 {
-    TXA
-    PHA
-    LDX #prvOsMode - prv83								;select OSMODE
-    JSR ReadPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-    BEQ LBB18								;Branch if OSMODE=0
-    CMP #&04								;OSMODE 4?
-    BNE LBB0F								;Branch if OSMODE<>4 (OSMODE 1-3)
-    LDA #&02
-.LBB0F
-    TAX										;OSMODE 1 = 1, OSMODE 2,4 = 2, OSMODE 3 = 3
-    PLA
-    BEQ LBB22								;Output OSMODE to screen.
-    LDA #&00
-    JMP returnFromBYTEV
-
-.LBB18
-    PLA
+    TXA:PHA
+    LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X
+    BEQ OsMode0
+    CMP #4:BNE NotOsMode4
+    LDA #2 ; return with X=2 in OSMODE 4, otherwise return with X=OSMODE
+.NotOsMode4
     TAX
+    PLA:BEQ OriginalX0
+    ; This is OSBYTE &00 with X<>0, so return with our new X.
+    LDA #&00:JMP returnFromBYTEV ; SQUASH: BEQ always?
+
+.OsMode0
+    ; In OSMODE 0 we always let our parent handle this call.
+    PLA:TAX
     LDA #&00
 .^returnViaParentBYTEV
-.LBB1C
     JSR jmpParentBYTEV
     JMP returnFromBYTEV
 
-	  ; SFTODO: I think we could do this loop backwards to save two bytes on CPX #
-.LBB22
+    ; SQUASH: I think we could do this loop backwards to save two bytes on CPX #
+.OriginalX0
+    ; This is OSBYTE &00 with X=0, meaning we should generate an error showing the OS version.
     LDX #0
 .Loop
     LDA osError,X:STA L0100,X
