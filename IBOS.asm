@@ -2265,6 +2265,7 @@ StackBit = 1 << 7
 ReadBit = 1 << 6
 ProgramRamBit = 1 << 0
 IgnoredBits = %00111110
+    ASSERT ramselShen == 1 << 7
 
     PHP:SEI
     PRVEN
@@ -2285,17 +2286,12 @@ IgnoredBits = %00111110
     BIT WorkingX
     BVC L8AB3 ; branch if ReadBit is 0, i.e. we're writing
     BPL L8AC1 ; branch if StackBit is 0, i.e. we're not using the stack
-    ; We're doing a stack read operation.
-    ASL prvOsbyte6FStack ; pop stack bit and...
-    ROL WorkingX ; move it into low bit of our "X"
+    ; We're doing a stack read operation; pop ramselShen from the stack and move it into
+    ; ProgramRamBit of WorkingX.
+    ASL prvOsbyte6FStack:ROL WorkingX
 .L8AB3
-    ; Effectively copy the low bit of "our X" into ramselShen
-    LDA ramselCopy
-    ROL A
-    ROR WorkingX
-    ROR A
-    STA ramselCopy
-    STA ramsel
+    ; Set ramselShen to be a copy of ProgramRamBit from WorkingX.
+    LDA ramselCopy:ROL A:ROR WorkingX:ROR A:STA ramselCopy:STA ramsel
 .L8AC1
     LDA prvTmp:TAX ; SQUASH: Just use LDX? Or take more advatnage of X being mostly untouched.
     PRVDIS
