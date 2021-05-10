@@ -4296,25 +4296,24 @@ RamPresenceFlags = TransientZP
     EQUS "RAM","ROM"
 }
 
-; SFTODO: This has only one caller
+; SQUASH: This has only one caller
 ; A=0 on entry means the header should say "RAM", otherwise it will say "ROM". A is also copied into the (unused) second byte of the bank's service entry; SFTODO: I don't know why specifically, but maybe this is just done because that's what the Acorn DFS SRAM utilities do (speculation; I haven't checked).
-.writeRomHeaderAndPatchUsingVariableMainRamSubroutine
+.WriteRomHeaderAndPatchUsingVariableMainRamSubroutine
 {
     XASSERT_USE_PRV1
-      	  PHA
-	  LDX #lo(writeRomHeaderTemplate)
-	  LDY #hi(writeRomHeaderTemplate)
-	  JSR copyYxToVariableMainRamSubroutine						;relocate &32 bytes of code from &9E59 to &03A7
-            PLA
-            BEQ ram
-            ; ROM - so patch variableMainRamSubroutine's ROM header to say "ROM" instead of "RAM"
-            LDA #'O'
-            STA variableMainRamSubroutine + (writeRomHeaderTemplateDataAO - writeRomHeaderTemplate)
-.ram        LDA prvOswordBlockCopy + 1 ; SFTODO: THIS IS THE SAME LOCATINO AS IN SRROM/SRDATA SO WE NEED A GLOBAL NAME FOR IT RATHER THAN JUST THE LOCAL ONE WE CURRENTLY HAVE (bankTmp)
-            JSR checkRamBankAndMakeAbsolute
-            STA prvOswordBlockCopy + 1
-            STA variableMainRamSubroutine + (writeRomHeaderTemplateSFTODO - writeRomHeaderTemplate)
-            JMP variableMainRamSubroutine						;Call relocated code
+    PHA
+    LDX #lo(WriteRomHeaderTemplate):LDY #hi(WriteRomHeaderTemplate)
+    JSR copyYxToVariableMainRamSubroutine
+    PLA:BEQ Ram
+    ; ROM - so patch variableMainRamSubroutine's ROM header to say "ROM" instead of "RAM"
+    LDA #'O'
+    STA variableMainRamSubroutine + (WriteRomHeaderTemplateDataAO - WriteRomHeaderTemplate)
+.Ram
+    LDA prvOswordBlockCopy + 1 ; SFTODO: THIS IS THE SAME LOCATINO AS IN SRROM/SRDATA SO WE NEED A GLOBAL NAME FOR IT RATHER THAN JUST THE LOCAL ONE WE CURRENTLY HAVE (bankTmp)
+    JSR checkRamBankAndMakeAbsolute
+    STA prvOswordBlockCopy + 1
+    STA variableMainRamSubroutine + (WriteRomHeaderTemplateSFTODO - WriteRomHeaderTemplate)
+    JMP variableMainRamSubroutine
 }
 
 {
@@ -4503,7 +4502,7 @@ romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" l
             JSR addBankAToSFTODOFOURBANKS
             BCS failSFTODOB ; SFTODO: branch if we already had four banks and so couldn't add this one
 .isSrrom    LDA romRamFlagTmp
-            JSR writeRomHeaderAndPatchUsingVariableMainRamSubroutine
+            JSR WriteRomHeaderAndPatchUsingVariableMainRamSubroutine
             LDX bankTmp
             LDA #romTypeSrData
             STA prvRomTypeTableCopy,X
@@ -5135,13 +5134,13 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 
 ;write ROM header to RAM at bank A
 ;this code is relocated to and executed at &03A7
-.writeRomHeaderTemplate
+.WriteRomHeaderTemplate
 {
       	  LDX romselCopy
             STA romselCopy
             STA romsel
             LDY #&0F
-.L9E62      LDA variableMainRamSubroutine + srDataHeader - writeRomHeaderTemplate,Y
+.L9E62      LDA variableMainRamSubroutine + srDataHeader - WriteRomHeaderTemplate,Y
             STA &8000,Y    
             DEY
             BPL L9E62
@@ -5153,17 +5152,17 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ;ROM Header
 .srDataHeader
 	  EQUB &60
-.^writeRomHeaderTemplateSFTODO ; SFTODO: Why do we modify this byte of the header?
+.^WriteRomHeaderTemplateSFTODO ; SFTODO: Why do we modify this byte of the header?
             EQUB     &00,&00
 	  EQUB &60,&00,&00
 	  EQUB romTypeSrData ; SFTODO: This constant is arguably misnamed since we use it for *SRROM banks too (I think)
 	  EQUB &0C
 	  EQUB &FF
 	  EQUS "R"
-.^writeRomHeaderTemplateDataAO
+.^WriteRomHeaderTemplateDataAO
             EQUS "AM", &00
 	  EQUS "(C)"
-            ASSERT P% - writeRomHeaderTemplate <= variableMainRamSubroutineMaxSize
+            ASSERT P% - WriteRomHeaderTemplate <= variableMainRamSubroutineMaxSize
 }
 
 ;save ROM / RAM at bank X to file system
