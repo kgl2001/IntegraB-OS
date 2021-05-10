@@ -4244,12 +4244,12 @@ RamPresenceFlags = TransientZP
             SEI
             LDA #&00
             STA oswdbtX
-	  ; SFTODO: Is all the saving and restoring of Y needed? findAInPrvSFTODOFOURBANKS doesn't seem to corrupt Y.
+	  ; SFTODO: Is all the saving and restoring of Y needed? FindAInPrvSFTODOFOURBANKS doesn't seem to corrupt Y.
             LDY #&03
 .bankLoop   STY prvTmp
             LDA prvPseudoBankNumbers,Y
             BMI bankAbs   								;&FF indicates no absolute bank assigned to this pseudo-bank SFTODO: I guess we say that's an absolute addressing bank as it is less likely our caller will decide to try to use it, but it is a bit arbitrary
-            JSR findAInPrvSFTODOFOURBANKS ; SFTODO: I am inferring SFTODOFOURBANKS is therefore a list of up to 4 banks being used for pseudo-addressing - the fact we need to do the previous BMI suggests the list is padded to the full 4 entries with &FF
+            JSR FindAInPrvSFTODOFOURBANKS ; SFTODO: I am inferring SFTODOFOURBANKS is therefore a list of up to 4 banks being used for pseudo-addressing - the fact we need to do the previous BMI suggests the list is padded to the full 4 entries with &FF
             BPL bankPseudo								;branch if we found a match
 .bankAbs    CLC
             BCC bankStateInC
@@ -4360,15 +4360,15 @@ RamPresenceFlags = TransientZP
 
 ; Return with X such that prvSFTODOFOURBANKS[X] == A (N flag clear), or with X=-1 if there is no such X (N flag set).
 ; SFTODO: This only has one caller
-.findAInPrvSFTODOFOURBANKS
+.FindAInPrvSFTODOFOURBANKS
 {
     XASSERT_USE_PRV1
-            LDX #&03
-.loop       CMP prvSFTODOFOURBANKS,X
-            BEQ rts
-            DEX
-            BPL loop
-.rts        RTS
+    LDX #3 ; SFTODO: mildly magic
+.Loop
+    CMP prvSFTODOFOURBANKS,X:BEQ Rts
+    DEX:BPL Loop
+.Rts
+    RTS
 }
 
 ;*SRSET Command
