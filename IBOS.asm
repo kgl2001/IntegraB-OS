@@ -4221,7 +4221,7 @@ RamPresenceFlags = TransientZP
     STY prvTmp
     ; SQUASH: Use LDX abs,Y and save TAX?
     LDA prvPseudoBankNumbers,Y:BMI NotRam ; this pseudo-bank is not defined
-    TAX:JSR testRamUsingVariableMainRamSubroutine:BNE NotRam
+    TAX:JSR TestRamUsingVariableMainRamSubroutine:BNE NotRam
     ; We only count a bank as RAM if it's not in use to hold a sideways ROM.
     LDA prvRomTypeTableCopy,X
     BEQ Ram
@@ -4280,7 +4280,7 @@ RamPresenceFlags = TransientZP
 
 ; SQUASH: This has only one caller, the code immediately above - could it just be inlined?
 .WipeBankAIfRam
-    JSR testRamUsingVariableMainRamSubroutine:BNE Rts
+    JSR TestRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
     LDX #lo(wipeRamTemplate):LDY #hi(wipeRamTemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
@@ -4386,7 +4386,7 @@ RamPresenceFlags = TransientZP
             BCC SkipBank
             TYA
             PHA
-            JSR testRamUsingVariableMainRamSubroutine
+            JSR TestRamUsingVariableMainRamSubroutine
             BNE plyAndSkipBank ; branch if not RAM
             LDA prvRomTypeTableCopy,X
             BEQ emptyBank
@@ -4481,7 +4481,7 @@ romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" l
             LDA #&00
             ROR A
             STA romRamFlagTmp
-            JSR testRamUsingVariableMainRamSubroutine
+            JSR TestRamUsingVariableMainRamSubroutine
             BNE failSFTODOA								;branch if not RAM
             LDA prvRomTypeTableCopy,X
             BEQ emptyBank
@@ -5079,7 +5079,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ;On entry A=ROM bank to test
 ;On exit A=X=ROM bank that has been tested. Z contains test result.
 ;this code is relocated to and executed at &03A7
-.testRamTemplate
+.TestRamTemplate
 {
       	  LDX romselCopy										;Read current ROM number from &F4 and store in X
             STA romselCopy										;Write new ROM number from A to &F4
@@ -5087,10 +5087,10 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             LDA romBinaryVersion									;Read contents of &8008
             EOR #&FF									;and XOR with &FF 
             STA romBinaryVersion									;Write XORd data back to &8008
-            JSR variableMainRamSubroutine+L9E37-testRamTemplate								;Delay 1 before read back
-            JSR variableMainRamSubroutine+L9E37-testRamTemplate								;Delay 2 before read back
-            JSR variableMainRamSubroutine+L9E37-testRamTemplate								;Delay 3 before read back
-            JSR variableMainRamSubroutine+L9E37-testRamTemplate								;Delay 4 before read back
+            JSR variableMainRamSubroutine+L9E37-TestRamTemplate								;Delay 1 before read back
+            JSR variableMainRamSubroutine+L9E37-TestRamTemplate								;Delay 2 before read back
+            JSR variableMainRamSubroutine+L9E37-TestRamTemplate								;Delay 3 before read back
+            JSR variableMainRamSubroutine+L9E37-TestRamTemplate								;Delay 4 before read back
             CMP romBinaryVersion									;Does contents of &8008 match what has been written?
             PHP										;Save test
             EOR #&FF									;XOR again with &FF to restore original data
@@ -5101,7 +5101,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             TAX										;copy original ROM number from A to X
             PLP										;recover test
 .L9E37	  RTS
-            ASSERT P% - testRamTemplate <= variableMainRamSubroutineMaxSize
+            ASSERT P% - TestRamTemplate <= variableMainRamSubroutineMaxSize
 }
 
 ;Wipe RAM at bank A
@@ -5384,12 +5384,12 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
 
 ;Relocation code then check for RAM banks.
 ; SFTODO: "Using..." part of name is perhaps OTT, but it might be important to "remind" us that this tramples over variableMainRamSubroutine - perhaps change later once more code is labelled up
-.testRamUsingVariableMainRamSubroutine
+.TestRamUsingVariableMainRamSubroutine
 {
             TXA
             PHA
-            LDX #lo(testRamTemplate)
-            LDY #hi(testRamTemplate)
+            LDX #lo(TestRamTemplate)
+            LDY #hi(TestRamTemplate)
             JSR CopyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9E0A to &03A7
             PLA
             JMP variableMainRamSubroutine								;Call relocated code
@@ -5979,94 +5979,104 @@ osfileBlock = L02EE
 	  EQUB &80								;Check for RAM at Banks E & F
 
 ;*ROMS Command
-.^roms	  LDA #maxBank								;Start at ROM &0F
-            STA L00AA								;Save ROM number at &AA
-.LA356      JSR LA360								;Get and print details of ROM
-            DEC L00AA								;Next ROM
-            BPL LA356								;Until ROM &00
-            JMP LA537
+.^roms
+    LDA #maxBank								;Start at ROM &0F
+    STA L00AA								;Save ROM number at &AA
+.LA356
+    JSR LA360								;Get and print details of ROM
+    DEC L00AA								;Next ROM
+    BPL LA356								;Until ROM &00
+    JMP LA537
 			
 ;Get and print details of ROM at location &AA
-.LA360      LDA L00AA								;Get ROM Number
-            CLC
-            JSR PrintADecimal								;Convert binary number to numeric characters and write characters to screen
-            JSR printSpace								;write ' ' to screen
-            LDA #'('								;'('
-            JSR OSWRCH								;write to screen
-            LDA L00AA								;Get ROM Number
-	  LSR A
-            TAY
-            LDX #userRegRamPresenceFlags						;read RAM installed in bank flag from private &83FF
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            AND LA34A,Y								;Get data from lookup table
-            BNE LA380								;Branch if RAM
-            LDA #&20								;' '
-            BNE LA38D								;jump to write to screen
-.LA380      LDX L00AA								;get ROM number
-            JSR testRamUsingVariableMainRamSubroutine					;check if ROM is WP. Will return with Z set if writeable
-            PHP
-            LDA #'E'								;'E' (Enabled)
-            PLP
-            BEQ LA38D								;jump to write to screen
-            LDA #'P'								;'P' (Protected)
-.LA38D      JSR OSWRCH								;write to screen
-            PRVEN								;switch in private RAM
-            LDX L00AA								;Get ROM Number
-            LDA romTypeTable,X								;get ROM Type
-            LDY #' '								;' '
-            AND #&FE								;bit 0 of ROM Type is undefined, so mask out
-            BNE LA3BC								;if any other bits set, then ROM exists so skip code for Unplugged ROM check, and get and write ROM details
-            LDY #&55								;'U' (Unplugged)
-            PRVEN								;switch in private RAM
-            LDA prvRomTypeTableCopy,X;								;get backup copy of ROM Type
-            PRVDIS								;switch out private RAM
-            BNE LA3BC								;if any bits set, then unplugged ROM exists so get and write ROM details
-            JSR printSpace								;write ' ' to screen in place of 'U'
-            JSR printSpace								;write ' ' to screen in place of 'S'
-            JSR printSpace								;write ' ' to screen in place of 'L'
-            LDA #')'								;')'
-            JSR OSWRCH								;write to screen
-            JMP OSNEWL								;new line and return
+.LA360
+    LDA L00AA								;Get ROM Number
+    CLC
+    JSR PrintADecimal								;Convert binary number to numeric characters and write characters to screen
+    JSR printSpace								;write ' ' to screen
+    LDA #'('								;'('
+    JSR OSWRCH								;write to screen
+    LDA L00AA								;Get ROM Number
+LSR A
+    TAY
+    LDX #userRegRamPresenceFlags						;read RAM installed in bank flag from private &83FF
+    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
+    AND LA34A,Y								;Get data from lookup table
+    BNE LA380								;Branch if RAM
+    LDA #&20								;' '
+    BNE LA38D								;jump to write to screen
+.LA380
+    LDX L00AA								;get ROM number
+    JSR TestRamUsingVariableMainRamSubroutine					;check if ROM is WP. Will return with Z set if writeable
+    PHP
+    LDA #'E'								;'E' (Enabled)
+    PLP
+    BEQ LA38D								;jump to write to screen
+    LDA #'P'								;'P' (Protected)
+.LA38D
+    JSR OSWRCH								;write to screen
+    PRVEN								;switch in private RAM
+    LDX L00AA								;Get ROM Number
+    LDA romTypeTable,X								;get ROM Type
+    LDY #' '								;' '
+    AND #&FE								;bit 0 of ROM Type is undefined, so mask out
+    BNE LA3BC								;if any other bits set, then ROM exists so skip code for Unplugged ROM check, and get and write ROM details
+    LDY #&55								;'U' (Unplugged)
+    PRVEN								;switch in private RAM
+    LDA prvRomTypeTableCopy,X;								;get backup copy of ROM Type
+    PRVDIS								;switch out private RAM
+    BNE LA3BC								;if any bits set, then unplugged ROM exists so get and write ROM details
+    JSR printSpace								;write ' ' to screen in place of 'U'
+    JSR printSpace								;write ' ' to screen in place of 'S'
+    JSR printSpace								;write ' ' to screen in place of 'L'
+    LDA #')'								;')'
+    JSR OSWRCH								;write to screen
+    JMP OSNEWL								;new line and return
 			
-.LA3BC      PHA									;save ROM Type
-            TYA									;either ' ' for inserted, or 'U' for unplugged, depending on where called from
-            JSR OSWRCH								;write to screen
-            LDX #'S'								;'S' (Service)
-            PLA									;recover ROM Type
-            PHA									;save ROM Type for further investigation
-            BMI LA3C9								;check bit 7 (Service Entry exists) and write 'S' if set
-            LDX #' '								;otherwise write ' '
-.LA3C9      TXA
-            JSR OSWRCH								;write either 'S' or ' ' to screen
-            LDX #'L'								;'L' (Language)
-            PLA									;recover ROM Type
-            AND #&40								;check bit 6 (Language Entry exists)
-            BNE LA3D6								;write 'L'
-            LDX #' '								;otherwise write ' '
-.LA3D6      TXA
-            JSR OSWRCH								;write either 'L' or ' ' to screen
-            LDA #')'
-            JSR OSWRCH								;write to screen
-            JSR printSpace								;write ' ' to screen
-            LDA #&07
-            STA L00F6
-            LDA #&80
-            STA L00F7								;Save address &8007 to &F6 / &F7 (copyright offset pointer)
-            LDY L00AA								;Get ROM Number
-            JSR OSRDRM								;read byte in paged ROM y from address located at &F6
-            STA L00AB								;save copyright offset pointer
-            LDA #&09
-            STA L00F6								;Save address &8009 to &F6 / &F7 (title string)
-.LA3F5      LDY L00AA								;Get ROM Number
-            JSR OSRDRM								;read byte in paged ROM y
-            BNE LA3FE								;0 indicates end of title string,
-            LDA #' '								;so write ' ' instead
-.LA3FE      JSR OSWRCH								;write to screen
-            INC L00F6								;next character
-            LDA L00F6
-            CMP L00AB								;at copyright offset pointer (end of title string + version string)?
-            BCC LA3F5								;loop if not.
-            JMP OSNEWL								;otherwise finished for this rom so write new line and return
+.LA3BC
+    PHA									;save ROM Type
+    TYA									;either ' ' for inserted, or 'U' for unplugged, depending on where called from
+    JSR OSWRCH								;write to screen
+    LDX #'S'								;'S' (Service)
+    PLA									;recover ROM Type
+    PHA									;save ROM Type for further investigation
+    BMI LA3C9								;check bit 7 (Service Entry exists) and write 'S' if set
+    LDX #' '								;otherwise write ' '
+.LA3C9
+    TXA
+    JSR OSWRCH								;write either 'S' or ' ' to screen
+    LDX #'L'								;'L' (Language)
+    PLA									;recover ROM Type
+    AND #&40								;check bit 6 (Language Entry exists)
+    BNE LA3D6								;write 'L'
+    LDX #' '								;otherwise write ' '
+.LA3D6
+    TXA
+    JSR OSWRCH								;write either 'L' or ' ' to screen
+    LDA #')'
+    JSR OSWRCH								;write to screen
+    JSR printSpace								;write ' ' to screen
+    LDA #&07
+    STA L00F6
+    LDA #&80
+    STA L00F7								;Save address &8007 to &F6 / &F7 (copyright offset pointer)
+    LDY L00AA								;Get ROM Number
+    JSR OSRDRM								;read byte in paged ROM y from address located at &F6
+    STA L00AB								;save copyright offset pointer
+    LDA #&09
+    STA L00F6								;Save address &8009 to &F6 / &F7 (title string)
+.LA3F5
+    LDY L00AA								;Get ROM Number
+    JSR OSRDRM								;read byte in paged ROM y
+    BNE LA3FE								;0 indicates end of title string,
+    LDA #' '								;so write ' ' instead
+.LA3FE
+    JSR OSWRCH								;write to screen
+    INC L00F6								;next character
+    LDA L00F6
+    CMP L00AB								;at copyright offset pointer (end of title string + version string)?
+    BCC LA3F5								;loop if not.
+    JMP OSNEWL								;otherwise finished for this rom so write new line and return
 }
 
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be used to indicate "everything but the listed banks". Return with C set iff at least one bit of transientRomBankMask is set.
