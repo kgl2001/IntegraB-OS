@@ -3593,7 +3593,7 @@ ENDIF
 
 ;Read *CONF. FILE parameters from RTC register and write to screen
     JSR PrintConfigNameAndGetValue
-    JSR PrintADecimalPad
+    JSR PrintADecimalNoPad
     ; Show the D(FS)/N(FS) setting specific to *CONFIGURE FILE.
     JSR printSpace
     LDX #userRegDiscNetBootData:JSR ReadUserReg
@@ -3629,7 +3629,7 @@ ENDIF
 {
     BCS Conf1Write
     JSR PrintConfigNameAndGetValue
-    JMP PrintADecimalPadNewline
+    JMP PrintADecimalNoPadNewline
 			
 .Conf1Write
     JSR ConvertIntegerDefaultDecimalChecked
@@ -3637,12 +3637,11 @@ ENDIF
 }
 			
 ; SQUASH: If we moved this to just before PrintADecimal we could fall through into it
-; SFTODO: Misnamed? C set means no padding?
-.PrintADecimalPad
+.PrintADecimalNoPad
     SEC:JMP PrintADecimal
 
-.PrintADecimalPadNewline
-    JSR PrintADecimalPad
+.PrintADecimalNoPadNewline
+    JSR PrintADecimalNoPad
     JMP OSNEWL
 
 .ConvertIntegerDefaultDecimalChecked
@@ -3709,7 +3708,7 @@ ENDIF
     JSR GetConfigValue
     PHA:JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx:PLA
     CLC:ADC #1
-    JMP PrintADecimalPadNewline
+    JMP PrintADecimalNoPadNewline
 
 .Conf2Write
     JSR ConvertIntegerDefaultDecimalChecked
@@ -3726,7 +3725,7 @@ ENDIF
     CMP #maxMode + 1:BCC ScreenModeInA
     ADC #(shadowModeOffset - (maxMode + 1)) - 1 ; -1 because C is set
 .ScreenModeInA
-    JMP PrintADecimalPadNewline
+    JMP PrintADecimalNoPadNewline
 
 .Conf5Write
     JSR ConvertIntegerDefaultDecimalChecked
@@ -3751,9 +3750,9 @@ Tmp = TransientZP + 6
     CMP #4:BCC Positive
     ORA #%11111000
 .Positive
-    JSR PrintADecimalPad
+    JSR PrintADecimalNoPad
     LDA #',':JSR OSWRCH
-    PLA:AND #1:JMP PrintADecimalPadNewline
+    PLA:AND #1:JMP PrintADecimalNoPadNewline
 
 .ConfTVWrite
     ; SQUASH: Can't we STA Tmp instead of PHA, then omit the Lda Tmp:PLA?
@@ -3774,7 +3773,7 @@ Tmp = TransientZP + 6
 
 .Dead1
     JSR L95BF
-    JSR PrintADecimalPad
+    JSR PrintADecimalNoPad
     LDA #','
     JMP OSWRCH
 
@@ -4184,7 +4183,7 @@ RamPresenceFlags = TransientZP
     ; If we have 256K of RAM A will have wrapped to 0; we can't have 0K of sideways RAM so
     ; there's no ambiguity.
     CMP #0:BEQ AllBanksPresent ; SQUASH: use TAX instead of CMP #0
-    SEC:JSR PrintADecimal ; SQUASH: JSR PrintADecimalPad
+    SEC:JSR PrintADecimal ; SQUASH: JSR PrintADecimalNoPad
     JMP PrintKAndNewline
 .AllBanksPresent
     LDA #'2':JSR OSWRCH
