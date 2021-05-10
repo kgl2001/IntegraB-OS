@@ -6288,30 +6288,24 @@ SFTODOTMP2 = L00AB
             JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
+.LA53D
 {
-.^LA53D
-     XASSERT_USE_PRV1
-      LDX #userRegBankWriteProtectStatus
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            STA prvTmp
-            INX
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            PHP
-            SEI
-            LSR A
-            ROR prvTmp
-            LSR A
-            ROR prvTmp
-            ORA #&80
-            STA rtcAddress
-            LDA prvTmp
-            LSR A
-            LSR A
-            ORA #&40
-            STA rtcAddress
-            JSR SeiSelectRtcAddressXVariant
-            PLP
-            RTS
+    XASSERT_USE_PRV1
+    LDX #userRegBankWriteProtectStatus:JSR ReadUserReg:STA prvTmp
+    INX:JSR ReadUserReg
+    PHP:SEI
+    LSR A:ROR prvTmp
+    LSR A:ROR prvTmp
+    ORA #&80
+    STA rtcAddress
+    LDA prvTmp
+    LSR A
+    LSR A
+    ORA #&40
+    STA rtcAddress
+    JSR SeiSelectRtcAddressXVariant
+    PLP
+    RTS
 }
 
 ;SPOOL/EXEC file closure warning - Service call 10 SFTODO: I *suspect* we are using this as a "part way through reset" service call rather than for its nominal purpose - have a look at OS 1.2 disassembly and see when this is actually generated. Do filing systems or anything issue it during "normal" operation? (e.g. if you do "*EXEC" with no argument.)
