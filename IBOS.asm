@@ -4320,49 +4320,42 @@ RamPresenceFlags = TransientZP
 ; Search prvSFTODOFOURBANKS for A; if found, remove it, shuffling the elements down so all the non-&FF entries are at the start and are followed by enough &FF entries to fill the list.
 .^removeBankAFromSFTODOFOURBANKS
     XASSERT_USE_PRV1
-            LDX #&03
-.findLoop   CMP prvSFTODOFOURBANKS,X
-            BEQ found
-            DEX
-            BPL findLoop
-            SEC ; SFTODO: Not sure any callers care about this, and I think we'll *always* exit with carry set even if we do find a match
-            RTS
+    LDX #3 ; SFTODO: MILDLY MAGIC
+.FindLoop
+    CMP prvSFTODOFOURBANKS,X:BEQ Found
+    DEX:BPL FindLoop
+    SEC ; SFTODO: Not sure any callers care about this, and I think we'll *always* exit with carry set even if we do find a match
+    RTS
 
-.found      LDA #&FF
-            STA prvSFTODOFOURBANKS,X
-.shuffle    LDX #&00
-            LDY #&00
-.shuffleLoop
-	  LDA prvSFTODOFOURBANKS,X
-            BMI unassigned
-            STA prvSFTODOFOURBANKS,Y
-            INY
-.unassigned INX
-            CPX #&04
-            BNE shuffleLoop
-            TYA
-            TAX
-            JMP padLoopStart
+.Found
+    LDA #&FF:STA prvSFTODOFOURBANKS,X
+.Shuffle
+    LDX #0:LDY #0
+.ShuffleLoop
+    LDA prvSFTODOFOURBANKS,X:BMI Unassigned
+    STA prvSFTODOFOURBANKS,Y:INY
+.Unassigned
+    INX:CPX #&04:BNE ShuffleLoop ; SFTODO: mildly magic
+    TYA:TAX
+    JMP PadLoopStart ; SQUASH: BPL always?
 			
-.padLoop    LDA #&FF
-            STA prvSFTODOFOURBANKS,Y
-            INY
-.padLoopStart
-	  CPY #&04
-            BNE padLoop
-            RTS
+.PadLoop
+    LDA #&FF:STA prvSFTODOFOURBANKS,Y
+    INY
+.PadLoopStart
+    CPY #4:BNE PadLoop  ; SFTODO: mildly magic
+    RTS
 
-; If there's an unused entry, add A to SFTODOFOURBANKS and return with C clear, otherwise return with C set to indicate no room.
-; SFTODO: This has only one caller
-.^addBankAToSFTODOFOURBANKS
+; If there's an unused entry, add A to SFTODOFOURBANKS and return with C clear, otherwise
+; return with C set to indicate no room.
+; SQUASH: This has only one caller
+.^AddBankAToSFTODOFOURBANKS
     XASSERT_USE_PRV1
-            PHA
-            JSR shuffle
-            PLA
-            CPX #&04
-            BCS rts
-            STA prvSFTODOFOURBANKS,X
-.rts        RTS
+    PHA:JSR Shuffle:PLA
+    CPX #4:BCS Rts ; SFTODO: mildly magic
+    STA prvSFTODOFOURBANKS,X
+.Rts
+    RTS
 }
 
 ; Return with X such that prvSFTODOFOURBANKS[X] == A (N flag clear), or with X=-1 if there is no such X (N flag set).
@@ -4416,10 +4409,10 @@ RamPresenceFlags = TransientZP
             BNE bankLoop
 	  ; There aren't four entries in prvPseudoBankNumbers (if there were we'd have taken the "BCS done" branch above), so pad the list with &FF entries.
             LDA #&FF
-.padLoop    STA prvPseudoBankNumbers,Y
+.PadLoop    STA prvPseudoBankNumbers,Y
             INY
             CPY #&04
-            BCC padLoop
+            BCC PadLoop
 .done       JMP PrvDisexitSc
 
 .showStatus
@@ -4499,7 +4492,7 @@ romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" l
             PLP
             BCS isSrrom
             LDA bankTmp
-            JSR addBankAToSFTODOFOURBANKS
+            JSR AddBankAToSFTODOFOURBANKS
             BCS failSFTODOB ; SFTODO: branch if we already had four banks and so couldn't add this one
 .isSrrom    LDA romRamFlagTmp
             JSR WriteRomHeaderAndPatchUsingVariableMainRamSubroutine
