@@ -2664,7 +2664,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     INY
     LDX #0:STX TmpBankCount
 .ParseUserBankListLoop
-    JSR parseBankNumber:STY TmpTransientCmdPtrOffset
+    JSR ParseBankNumber:STY TmpTransientCmdPtrOffset
     BCS prvPrintBufferBankListInitialised2 ; stop parsing if bank number is invalid
     TAY:JSR TestForEmptySwrInBankY:TYA:BCS NotEmptySwrBank
     ; SQUASH: INC TmpBankCount:LDX TmpBankCount:STA prvPrintBufferBankList-1,X:...:CPX
@@ -4683,10 +4683,10 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 }
 
 ; SFTODO: Returns with C clear in "simple" case, C set in the "mystery" case
-.parseBankNumberIfPresent ; SFTODO: probably imperfect name, will do until the mystery code in middle is cleared up
+.ParseBankNumberIfPresent ; SFTODO: probably imperfect name, will do until the mystery code in middle is cleared up
 {
     XASSERT_USE_PRV1
-            JSR parseBankNumber
+            JSR ParseBankNumber
             BCC parsedOk
             LDA #&FF ; SFTODO: What happens if we have the ROM number set to &FF later on?
 .parsedOk   STA prvOswordBlockCopy + 1						;absolute ROM number
@@ -4867,7 +4867,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             JSR L9C52
             JSR parseOsword4243Length
             JSR L9C42
-            JSR parseBankNumberIfPresent
+            JSR ParseBankNumberIfPresent
             JMP LA0A6
 }
 
@@ -5448,7 +5448,7 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
             STA prvOswordBlockCopy + 10							;low byte of data length
             LDA prvOswordBlockCopy + 7							;high byte of buffer length
             STA prvOswordBlockCopy + 11							;high byte of data length
-.notSave    JSR parseBankNumberIfPresent
+.notSave    JSR ParseBankNumberIfPresent
             JSR parseSrsaveLoadFlags
             LDA prvOswordBlockCopy + 2							;byte 0 of "buffer address" we parsed earlier
             STA prvOswordBlockCopy + 8							;low byte of sideways start address
@@ -5956,7 +5956,7 @@ osfileBlock = L02EE
 
 ;*UNPLUG Command
 .^unplug	  JSR ParseRomBankListChecked								;Error check input data
-            JSR invertTransientRomBankMask								;Invert all bits in &AE and &AF
+            JSR InvertTransientRomBankMask								;Invert all bits in &AE and &AF
             LDX #&06								;INSERT status for ROMS &0F to &08
             JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             AND L00AE
@@ -6063,31 +6063,27 @@ SFTODOTMP2 = L00AB
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be used to indicate "everything but the listed banks". Return with C set iff at least one bit of transientRomBankMask is set.
 .ParseRomBankList
 {
-            LDA #&00
-            STA transientRomBankMask
-            STA transientRomBankMask + 1
-.LA412      JSR parseBankNumber
-            BCS noBankNumber
-            JSR addToRomBankMask
-            JMP LA412
-			
-.noBankNumber
-            LDA (transientCmdPtr),Y
-            CMP #'*'
-            BNE LA429
-            BVS SecRts ; branch if not at end of line SFTODO: isn't this redundant? We just successfully checked and found a '*' not a CR? So we'll never branch, right? Should we have checked this earlier (e.g. at .noBankNumber)? Have I just got confused?
-            INY
-            JSR invertTransientRomBankMask
-.LA429      LDA transientRomBankMask
-            ORA transientRomBankMask + 1
-            BEQ SecRts
-            CLC
-            RTS
+    LDA #0:STA transientRomBankMask:STA transientRomBankMask + 1
+.ParseLoop
+    JSR ParseBankNumber:BCS NoBankNumber
+    JSR addToRomBankMask
+    JMP ParseLoop
+.NoBankNumber
+    LDA (transientCmdPtr),Y
+    CMP #'*':BNE NotStar
+    BVS SecRts ; branch if not at end of line SFTODO: isn't this redundant? We just successfully checked and found a '*' not a CR? So we'll never branch, right? Should we have checked this earlier (e.g. at .NoBankNumber)? Have I just got confused? I am wondering if V doesn't mean "end of line", it's not entirely clear to me where V is set - maybe by the caller? ParseBankNumber doesn't seem to set V. Maybe the caller sets it to allow/disallow use of '*'???
+    INY
+    JSR InvertTransientRomBankMask
+.NotStar
+    LDA transientRomBankMask:ORA transientRomBankMask + 1:BEQ SecRts
+    CLC
+    RTS
 
-; SFTODO: There's probably another copy of these two instructions we could re-use, though it might require shuffling code round and be more trouble than it's worth
+; SQUASH: There's probably another copy of these two instructions we could re-use, though it
+; might require shuffling code round and be more trouble than it's worth
 .SecRts
-            SEC
-            RTS
+    SEC
+    RTS
 }
 
 ; Set 16-bit word at transientRomBankMask to 1<<A, i.e. set it to 0 except bit A. Y is preserved.
@@ -6128,7 +6124,7 @@ SFTODOTMP2 = L00AB
 ; Parse a bank number from the command line, converting W-Z into the corresponding real bank numbers.
 ; Return with C clear if and only if we parsed a bank number, which will be in A.
 ; If C is set, V will be clear iff there was nothing left on the command line.
-.parseBankNumber
+.ParseBankNumber
 {
 ; SFTODO: Would it be more compact to check for W-Z *first*, then use ConvertIntegerDefaultHex? This might only work if we do a "proper" upper case conversion, not sure.
             JSR FindNextCharAfterSpace								;find next character. offset stored in Y
@@ -6220,7 +6216,7 @@ SFTODOTMP2 = L00AB
 }
 			
 ;Invert all bits in &AE and &AF
-.invertTransientRomBankMask
+.InvertTransientRomBankMask
     LDA transientRomBankMask:EOR #&FF:STA transientRomBankMask
     LDA transientRomBankMask + 1:EOR #&FF:STA transientRomBankMask + 1
     RTS
