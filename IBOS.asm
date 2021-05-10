@@ -10075,10 +10075,9 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
     RTS
 
 ; If prvPrvPrintBufferStart isn't in the range &90-&AC, set it to &AC. We return with prvPrvPrintBufferStart in A.
-; SFTODO: Mildly magic constants
 .SanitisePrvPrintBufferStart
 {
-MaxPrintBufferStart = prv8End - 1024
+MaxPrintBufferStart = prv8End - 1024 ; print buffer must be at least 1K
 
     ; SQUASH: We could change "BCC Rts" below to use the RTS above and make the JSR:RTS a JMP.
     LDX #prvPrvPrintBufferStart - prv83:JSR ReadPrivateRam8300X
