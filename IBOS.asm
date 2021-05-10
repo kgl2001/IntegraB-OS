@@ -6777,127 +6777,136 @@ Tmp = TransientZP + 6
     RTS
 }
 
-; SFTODO: The following block is dead code
+; SQUASH: Dead code
 {
-            LDA prvOswordBlockCopy + 13
-            BPL LA904
-            CMP #&8C
-            BNE LA8FC
-            LDA #&00
-            BEQ LA901
-.LA8FC      AND #&7F
-            CLC
-            ADC #&0C
-.LA901      STA prvOswordBlockCopy + 13
-.LA904      RTS
+    LDA prvOswordBlockCopy + 13
+    BPL LA904
+    CMP #&8C
+    BNE LA8FC
+    LDA #&00
+    BEQ LA901
+.LA8FC
+    AND #&7F
+    CLC
+    ADC #&0C
+.LA901
+    STA prvOswordBlockCopy + 13
+.LA904
+    RTS
 }
 
 ; SFTODO: the "in" in the next two exported labels is maybe confusing, "storeTo" might be better but even more longwinded - anyway, just a note for when I finally clean up all the label names
 {
-; As calculateDayOfWeekInA, except we also update prvDateDayOfWeek with the calculated day of the week, and set SFTODO:PROBABLY b3 of prvDateSFTODOQ if this changes prvDateDayOfWeek from its previous value.
-.^calculateDayOfWeekInPrvDateDayOfWeek
-            CLC
-            BCC LA909
+; As CalculateDayOfWeekInA, except we also update prvDateDayOfWeek with the calculated day of the week, and set SFTODO:PROBABLY b3 of prvDateSFTODOQ if this changes prvDateDayOfWeek from its previous value.
+.^CalculateDayOfWeekInPrvDateDayOfWeek
+    CLC:BCC Common ; always branch
 ; SFTODO: Use a magic formula to calculate the day of the week for prvDate{Century,Year,Month,DayOfMonth}; I don't know how this works, but presumably it does.
 ; We return with the calculated day of the week in A.
-.^calculateDayOfWeekInA
+.^CalculateDayOfWeekInA
             SEC
-.LA909
+.Common
     XASSERT_USE_PRV1
-      PHP
-            LDA prvDateYear
-            STA prvTmp3
-            LDA prvDateCentury
-            STA prvTmp2
-	  ; SFTODO: We seem to be decrementing the date by one month here, there is a general "if this goes negative, borrow from the next highest unit" quality. I'm not entirely clear why we start off with SBC #2, maybe we are decrementing by two months, or maybe we are switching to some kind of start-in-March system, complete guesswork in that respect.
-            SEC
-            LDA prvDateMonth
-            SBC #2
-            STA prvTmp4
-            BMI january ; SFTODO? I think this is right
-            CMP #1
-            BCS decrementDone ; branch if March or later month?
-.january    CLC
-            ADC #12 ; SFTODO: so we now have original month plus 10??
-            STA prvTmp4
-            DEC prvTmp3
-            BPL decrementDone ; branch if wasn't year 0
-            CLC
-            LDA prvTmp3 ; SFTODO: don't we know this is 255 in practice and thus the ADC #100 will always give us A=99?
-            ADC #100
-            STA prvTmp3
-            DEC prvTmp2
-            BPL decrementDone
-            CLC
-            LDA prvTmp2
-            ADC #100
-            STA prvTmp2
-.decrementDone ; SFTODO: rename to "noBorrow"?
-            LDA prvTmp4
-            STA prvA
-            LDA #130
-            STA prvB
-            JSR mul8 ; DC=A*B
-            ASL prvDC
-            ROL prvDC + 1
-            SEC
-            LDA prvDC:SBC #19:STA prvA
-            LDA prvDC + 1:SBC #0:STA prvB
-	  ; SFTODO: So BA=prvTmp4*130-19??
-            LDA #100:STA prvDC
-            JSR SFTODOPSEUDODIV ; SFTODO: Don't really know what's going on here yet, but I think this *could* invoke the weird prvB>=prvC condition in SFTODOPSEUDODIV.
-            CLC
-            LDA prvDC + 1
-            ADC prvDateDayOfMonth
-            ADC prvTmp3
-.LA97E      STA prv82+&4A
-            LDA prvTmp3
-            LSR A
-            LSR A
-            CLC
-            ADC prvA
-            STA prvA
-            LDA prvTmp2
-            LSR A
-            LSR A
-            CLC
-            ADC prvA
-            ASL prvTmp2
-            SEC
-            SBC prvTmp2
-            PHP
-            BCS LA9A5
-            SEC
-            SBC #&01
-            EOR #&FF
-.LA9A5      STA prvA
-            LDA #0:STA prvB
-            LDA #7:STA prvC
-            JSR SFTODOPSEUDODIV ; SFTODO: HERE WE WILL DIVIDE WITHOUT ANY WEIRDNESS
-            PLP
-            BCS LA9C0
-            SEC
-            SBC #&01
-            EOR #&FF
-            CLC
-            ADC #&07
-.LA9C0      CMP #&07
-            BCC LA9C6
-            SBC #&07
-.LA9C6      STA prvA
-            INC prvA
-            LDA prvA
-            PLP ; get stacked flags from entry
-            BCS rts
-            CMP prvDateDayOfWeek
-            BEQ LA9DF
-	  ; SFTODO: I think it's right to be using the SFTODOQ labels here but not sure yet
-            LDA #prvDateSFTODOQDayOfWeek
-            ORA prvDateSFTODOQ
-            STA prvDateSFTODOQ
-.LA9DF      LDA prvA
-            STA prvDateDayOfWeek
-.rts        RTS
+    PHP
+    LDA prvDateYear
+    STA prvTmp3
+    LDA prvDateCentury
+    STA prvTmp2
+    ; SFTODO: We seem to be decrementing the date by one month here, there is a general "if this goes negative, borrow from the next highest unit" quality. I'm not entirely clear why we start off with SBC #2, maybe we are decrementing by two months, or maybe we are switching to some kind of start-in-March system, complete guesswork in that respect.
+    SEC
+    LDA prvDateMonth
+    SBC #2
+    STA prvTmp4
+    BMI January ; SFTODO? I think this is right
+    CMP #1
+    BCS DecrementDone ; branch if March or later month?
+.January
+    CLC
+    ADC #12 ; SFTODO: so we now have original month plus 10??
+    STA prvTmp4
+    DEC prvTmp3
+    BPL DecrementDone ; branch if wasn't year 0
+    CLC
+    LDA prvTmp3 ; SFTODO: don't we know this is 255 in practice and thus the ADC #100 will always give us A=99?
+    ADC #100
+    STA prvTmp3
+    DEC prvTmp2
+    BPL DecrementDone
+    CLC
+    LDA prvTmp2
+    ADC #100
+    STA prvTmp2
+.DecrementDone ; SFTODO: rename to "noBorrow"?
+    LDA prvTmp4
+    STA prvA
+    LDA #130
+    STA prvB
+    JSR mul8 ; DC=A*B
+    ASL prvDC
+    ROL prvDC + 1
+    SEC
+    LDA prvDC:SBC #19:STA prvA
+    LDA prvDC + 1:SBC #0:STA prvB
+; SFTODO: So BA=prvTmp4*130-19??
+    LDA #100:STA prvDC
+    JSR SFTODOPSEUDODIV ; SFTODO: Don't really know what's going on here yet, but I think this *could* invoke the weird prvB>=prvC condition in SFTODOPSEUDODIV.
+    CLC
+    LDA prvDC + 1
+    ADC prvDateDayOfMonth
+    ADC prvTmp3
+.LA97E
+    STA prv82+&4A
+    LDA prvTmp3
+    LSR A
+    LSR A
+    CLC
+    ADC prvA
+    STA prvA
+    LDA prvTmp2
+    LSR A
+    LSR A
+    CLC
+    ADC prvA
+    ASL prvTmp2
+    SEC
+    SBC prvTmp2
+    PHP
+    BCS LA9A5
+    SEC
+    SBC #&01
+    EOR #&FF
+.LA9A5
+    STA prvA
+    LDA #0:STA prvB
+    LDA #7:STA prvC
+    JSR SFTODOPSEUDODIV ; SFTODO: HERE WE WILL DIVIDE WITHOUT ANY WEIRDNESS
+    PLP
+    BCS LA9C0
+    SEC
+    SBC #&01
+    EOR #&FF
+    CLC
+    ADC #&07
+.LA9C0
+    CMP #&07
+    BCC LA9C6
+    SBC #&07
+.LA9C6
+    STA prvA
+    INC prvA
+    LDA prvA
+    PLP ; get stacked flags from entry
+    BCS Rts
+    CMP prvDateDayOfWeek
+    BEQ LA9DF
+    ; SFTODO: I think it's right to be using the SFTODOQ labels here but not sure yet
+    LDA #prvDateSFTODOQDayOfWeek
+    ORA prvDateSFTODOQ
+    STA prvDateSFTODOQ
+.LA9DF
+    LDA prvA
+    STA prvDateDayOfWeek
+.Rts
+    RTS
 }
 
 ; SFTODOWIP
@@ -6911,7 +6920,7 @@ daysInMonth = transientDateSFTODO2
     XASSERT_USE_PRV1
             LDA #1
             STA prvDateDayOfMonth
-            JSR calculateDayOfWeekInPrvDateDayOfWeek
+            JSR CalculateDayOfWeekInPrvDateDayOfWeek
             LDY prvDateMonth
             JSR GetDaysInMonthY
             STA daysInMonth
@@ -7655,7 +7664,7 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     ; prvDateSFTODO4 is now the 0-based day within the month; add 1 to convert to the normal
     ; convention and finish by calculating the day of week.
     LDX prvDateSFTODO4:INX:STX prvDateDayOfMonth
-    JMP calculateDayOfWeekInPrvDateDayOfWeek
+    JMP CalculateDayOfWeekInPrvDateDayOfWeek
 }
 
 {
@@ -7802,7 +7811,7 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .prvDateMatchesFixed
     LDA prvTmp6:STA prv2Flags ; SFTODO: RESTORE STASHED prv2Flags FROM ABOVE?
 .FoundMatchingDate
-    JSR calculateDayOfWeekInA:STA prvDateDayOfWeek
+    JSR CalculateDayOfWeekInA:STA prvDateDayOfWeek
     ; SFTODO: Speculation but I think correct: At this point prvDate is a concrete date which
     ; is the earliest possible candidate matching the user's partial date specification. We
     ; will later compare it against the user's question and move it forwards in time to see if
@@ -7869,7 +7878,7 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     ; IncrementPrvDateOpenElements has just incremented the year; this is only OK if it's open.
     LDA #prv2FlagYear:BIT prv2Flags:BEQ YearNotOpen ; SFTODO: RENAME BEQ LABEL AS SOME SORT OF "FAIL"???
 .YearNotIncremented
-    JSR calculateDayOfWeekInA:STA prvDateDayOfWeek
+    JSR CalculateDayOfWeekInA:STA prvDateDayOfWeek
     JMP SFTODOLOOP ; SFTODO: Looks like we're looping round, and IncrementPrvDateOpenElements at least sometimes increments day of month, so I wonder if this is implementing one of the "search for date where day of week is X" operations - maybe
 .LB071
     JSR ValidateDateTimeRespectingLeapYears
@@ -7907,7 +7916,7 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     TXA
     PHA
 .LB0B1
-    JSR calculateDayOfWeekInA:CMP prvDateDayOfWeek:BEQ LB0C1
+    JSR CalculateDayOfWeekInA:CMP prvDateDayOfWeek:BEQ LB0C1
     JSR IncrementPrvDateOpenElements:BCC LB0B1
     PLA:BCS BadDate2
 .LB0C1
@@ -7923,18 +7932,18 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 
 .LB0CD
     JSR IncrementPrvDateOpenElements
-    JSR calculateDayOfWeekInA
+    JSR CalculateDayOfWeekInA
     CMP prvDateDayOfWeek
     BNE LB0CD
     BEQ LB07B ; always branch
 .LB0DA
     JSR DecrementPrvDateBy1
-    JSR calculateDayOfWeekInA
+    JSR CalculateDayOfWeekInA
     CMP prvDateDayOfWeek
     BNE LB0DA
     BEQ LB07B ; always branch
 .LB0E7
-    JSR calculateDayOfWeekInA
+    JSR CalculateDayOfWeekInA
     CMP prvDateDayOfWeek
     BEQ LB07B
     BCS LB0DA
@@ -7954,7 +7963,7 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .LB10A
     DEX
     BNE LB102
-    JSR calculateDayOfWeekInA
+    JSR CalculateDayOfWeekInA
     STA prvDateDayOfWeek
     JMP LB07B
 			
@@ -7968,7 +7977,7 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 			
 .LB122
     DEX:BNE LB11A
-    JSR calculateDayOfWeekInA
+    JSR CalculateDayOfWeekInA
     STA prvDateDayOfWeek
     JMP LB07B
 
@@ -8238,7 +8247,7 @@ EndIndex = transientDateSFTODO2 ; exclusive
     JSR ConvertIntegerDefaultDecimal:BCS ParseError:JSR InterpretParsedYear
     JSR ValidateDateTimeAssumingLeapYear
     LDA prvDateSFTODOQ:AND #prvDateSFTODOQCenturyYearMonthDayOfMonth:BNE ParseError
-    JSR calculateDayOfWeekInPrvDateDayOfWeek
+    JSR CalculateDayOfWeekInPrvDateDayOfWeek
     CLC
     RTS
 			
