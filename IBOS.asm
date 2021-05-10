@@ -2212,14 +2212,14 @@ ptr = &00 ; 2 bytes
             LDA #&00								;Start at address &8000 or &3000
             STA ptr	  
             TAY
-.zeroLoop   LDA #&00								;Store &00
+.ZeroLoop   LDA #&00								;Store &00
             STA (ptr),Y
             INY
-            BNE zeroLoop
+            BNE ZeroLoop
             INC L0000+&01
             LDA L0000+&01
             CMP #&C0
-            BNE zeroLoop								;Until address is &C000
+            BNE ZeroLoop								;Until address is &C000
             RTS
 
 ;lookup table for IntegraB defaults - Address (X) / Data (A)
@@ -6388,13 +6388,13 @@ osfileBlock = L02EE
 	  ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
 ;Set all bytes in ROM Type Table and Private RAM to 0
             LDX #maxBank
-.zeroLoop   CPX romselCopy ; SFTODO: are we confident romselCopy doesn't have b7/b6 set??
+.ZeroLoop   CPX romselCopy ; SFTODO: are we confident romselCopy doesn't have b7/b6 set??
             BEQ SkipBank
             LDA #&00
             STA romTypeTable,X
             STA romPrivateWorkspaceTable,X
 .SkipBank   DEX
-            BPL zeroLoop
+            BPL ZeroLoop
 
             JMP finish
 
@@ -6419,7 +6419,7 @@ osfileBlock = L02EE
 }
 			
 ;Write contents from Private memory address &8000 to screen
-.printDateBuffer
+.PrintDateBuffer
 {
     XASSERT_USE_PRV1
     LDX #0
@@ -8504,7 +8504,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     LDA #lo(prvDateBuffer):STA prvDateSFTODO4:LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
     JSR CopyRtcDateTimeToPrv
     JSR InitDateBufferAndEmitTimeAndDate
-    JSR printDateBuffer
+    JSR PrintDateBuffer
 .PrvDisExitAndClaimServiceCall
     PRVDIS
     JMP ExitAndClaimServiceCall
@@ -8534,7 +8534,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
 .CalculationOk
     LDA #lo(prvDateBuffer):STA prvDateSFTODO4:LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
     JSR InitDateBufferAndEmitTimeAndDate
-    JSR printDateBuffer
+    JSR PrintDateBuffer
 .PrvDisExitAndClaimServiceCall
     PRVDIS
     JMP ExitAndClaimServiceCall
@@ -8670,7 +8670,7 @@ Column = prvC
     LDA #lo(prvDateBuffer):STA prvDateSFTODO4:LDA #hi(prvDateBuffer):STA prvDateSFTODO4 + 1
     JSR CopyRtcAlarmToPrv
     JSR InitDateBufferAndEmitTimeAndDate
-    DEC prvDateSFTODO1b:JSR printDateBuffer ; DEC chops off trailing vduCr
+    DEC prvDateSFTODO1b:JSR PrintDateBuffer ; DEC chops off trailing vduCr
     LDA #'/':JSR OSWRCH:JSR printSpace
     LDX #rtcRegB:JSR ReadRtcRam:AND #rtcRegBAIE:JSR PrintOnOff
     LDX #userRegAlarm:JSR ReadUserReg:AND #userRegAlarmRepeatBit:BEQ NewlineAndFinish
