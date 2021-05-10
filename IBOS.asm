@@ -548,8 +548,11 @@ prv8End     = &B000 ; exclusive
 ; showing all the addresses in order later on, there's no need for these labels
 ; to be in physical address order. SFTODO: Might actually be in physical order, I'll see how it works out.
 
-prvBootSFTODO = prv81 ; SFTODO: Rename this once I've been over the code and I know *exactly* what lives at this address
-prvBootCommand = prv81 + 1 ; SFTODO: probably 255 bytes?
+prvBootCommandLength = prv81 ; 0 means no *BOOT comand
+prvBootCommandMaxLength = &F0 ; SFTODO MIGHT BE OFF BY ONE HERE - NOT BEEN OVER CODE THAT CAREFULLY YET
+prvBootCommand = prv81 + 1
+; SFTODO: I suspect there's probably the last few bytes of &81xx past the max length are free,
+; but not confirmed this yet or calculated precise start address.
 
 ; The printer buffer is implemented using two "extended pointers" - one for
 ; reading, one for writing. Each consists of a two byte address and a one byte
@@ -2515,13 +2518,13 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
             LDX #&01
 .L8BFE      JSR GSREAD
             BCS L8C0E
-            STA prv81,X
+            STA prvBootCommand - 1,X
             INX									;get next character
-            CPX #&F0								;check if parameter is too long
+            CPX #prvBootCommandMaxLength								;check if parameter is too long
             BNE L8BFE								;loop if not too long
             CLC									;otherwise set error flag
 .L8C0C      LDX #&00								;wipe parameter
-.L8C0E      STX prv81
+.L8C0E      STX prvBootCommandLength
             PRVDIS								;switch out private RAM
             BCC L8C19								;check for error
             JMP ExitAndClaimServiceCall								;Exit Service Call
@@ -3818,7 +3821,7 @@ Tmp = TransientZP + 6
     ; Handle *BOOT.
     PRVEN
     LDX lastBreakType:CPX #1:BNE NotPowerOnStarBoot
-    CLC:LDA prvBootSFTODO:BEQ NotPowerOnStarBoot ; branch if we don't have a *BOOT command
+    CLC:LDA prvBootCommandLength:BEQ NotPowerOnStarBoot ; branch if we don't have a *BOOT command
     ; We're going to poke the *BOOT command into the OS function key buffer as *KEY10. See
     ; https://tobylobster.github.io/mos/mos/S-s14.html#SP12 for details on the format of this
     ; buffer.
@@ -3839,7 +3842,7 @@ Tmp = TransientZP + 6
     LDX #1
 .CopyBootStringLoop
     LDA prvBootCommand - 1,X:STA osFunctionKeyStringBase + osFunctionKeyFirstValidOffset - 1,X
-    INX:CPX prv81:BNE CopyBootStringLoop
+    INX:CPX prvBootCommandLength:BNE CopyBootStringLoop
 .NotPowerOnStarBoot
     PRVDIS
 
