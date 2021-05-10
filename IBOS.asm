@@ -4206,25 +4206,31 @@ RamPresenceFlags = TransientZP
 }
 
 ; SFTODO: There are a few cases where we JMP to osbyteXXInternal, if we rearranged the code a little (could always use macros to maintain readability, if that's a factor) we could probably save some JMPs
+; OSBYTE &44 (68) - Test RAM presence
+; The Master Reference Manual (part 1) defines this in terms of banks 4-7, but we implement it
+; in terms of pseudo banks W-Z.
 .osbyte44Internal
 {
     PRVEN
     PHP:SEI
     LDA #0:STA oswdbtX
     LDY #3
-.L9933
+.BankLoop
     STY prvTmp
-    LDA prvPseudoBankNumbers,Y:BMI L994A
-    TAX:JSR testRamUsingVariableMainRamSubroutine:BNE L994A
-    LDA prvRomTypeTableCopy,X:BEQ L994D
-    CMP #2:BEQ L994D
-.L994A
-    CLC:BCC L994E ; always branch
-.L994D
+    ; SQUASH: Use LDX abs,Y and save TAX?
+    LDA prvPseudoBankNumbers,Y:BMI NotRam ; this pseudo-bank is not defined
+    TAX:JSR testRamUsingVariableMainRamSubroutine:BNE NotRam
+    ; We only count a bank as RAM if it's not in use to hold a sideways ROM.
+    LDA prvRomTypeTableCopy,X
+    BEQ Ram
+    CMP #2:BEQ Ram ; SFTODO: mildly magic, this is the *SRDATA value I think
+.NotRam
+    CLC:BCC NextBank; always branch
+.Ram
     SEC
-.L994E
+.NextBank
     ROL oswdbtX
-    LDY prvTmp:DEY:STY prvTmp:BPL L9933
+    LDY prvTmp:DEY:STY prvTmp:BPL BankLoop
     JMP plpPrvDisexitSc ; SQUASH: BMI always branch?
 }
 
