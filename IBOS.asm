@@ -6060,7 +6060,9 @@ SFTODOTMP2 = L00AB
     JMP OSNEWL
 }
 
-; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be used to indicate "everything but the listed banks". Return with C set iff at least one bit of transientRomBankMask is set.
+; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be
+; used to indicate "everything but the listed banks" SFTODO DEPENDING ON V ON ENTRY?. Return with C set iff at least one bit of
+; transientRomBankMask is set.
 .ParseRomBankList
 {
     LDA #0:STA transientRomBankMask:STA transientRomBankMask + 1
