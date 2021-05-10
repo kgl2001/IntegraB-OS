@@ -4138,7 +4138,7 @@ tmp = &A8
 ; ENHANCE: Perhaps a bit of a novelty, but could we make the startup banner *CONFIGURE-able? If
 ; we parsed it using GSINIT/GSINIT it would potentially open up the prospect of things like the
 ; "mode 7 owl" as well as/instead of simple text.
-; ENHANCE: It's a bit "marketing", but we could add 32K to the displayed value to account for
+; ENHANCE: It's a bit "marketing", but we could add 32K to the displayed RAM size to account for
 ; the shadow/private RAM. This would be gratuitously incompatible with IBOS 1.20 though.
 .DisplayBannerIfRequired
 {
