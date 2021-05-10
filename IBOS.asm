@@ -4131,9 +4131,14 @@ tmp = &A8
     JMP ExitServiceCall
 }
 
-; SFTODO: This has only one caller
-; SFTODO: At least in b-em, I note that with a second processor, we get the INTEGRA-B banner *as well as* the tube banner. This doesn't happen with the standard OS banner. Arguably this is desirable, but we *could* potentially not show our own banner if we have a second processor attached to be more "standard".
-; ENHANCE: Perhaps a bit of a novelty, but could we make the startup banner *CONFIGURE-able?
+; SQUASH: This has only one caller
+; ENHANCE: At least in b-em, I note that with a second processor, we get the INTEGRA-B banner
+; *as well as* the tube banner. This doesn't happen with the standard OS banner. Arguably this
+; is desirable, but we *could* potentially not show our own banner if we have a second
+; processor attached to be more "standard".
+; ENHANCE: Perhaps a bit of a novelty, but could we make the startup banner *CONFIGURE-able? If
+; we parsed it using GSINIT/GSINIT it would potentially open up the prospect of things like the
+; "mode 7 owl" as well as/instead of simple text.
 .DisplayBannerIfRequired
 {
 RamPresenceFlags = TransientZP
@@ -4141,9 +4146,9 @@ RamPresenceFlags = TransientZP
     ; We just use the default banner if we're in OSMODE 0. SQUASH: CMP #0 is redundant
     LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X:CMP #0:BEQ Rts
 
-    ; If we're in the "ignore OS startup message" state (b7 clear), do nothing. I suspect this occurs if an
-    ; earlier ROM has managed to get in before us and probably can't occur in practice if we're
-    ; in bank 15.
+    ; If we're in the "ignore OS startup message" state (b7 clear), do nothing. I suspect this
+    ; occurs if an earlier ROM has managed to get in before us and probably can't occur in
+    ; practice if we're in bank 15.
     LDA #osbyteReadWriteEnableDisableStartupMessage:LDX #0:LDY #&FF:JSR OSBYTE:TXA:BPL Rts
 
     ; Set the "ignore OS startup message" state ourselves. We will also clear bit 0
