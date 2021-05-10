@@ -4282,7 +4282,7 @@ RamPresenceFlags = TransientZP
 .WipeBankAIfRam
     JSR testRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
-    LDX #lo(wipeRamTemplate):LDY #hi(wipeRamTemplate):JSR copyYxToVariableMainRamSubroutine
+    LDX #lo(wipeRamTemplate):LDY #hi(wipeRamTemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
     JSR variableMainRamSubroutine
     PHA:JSR removeBankAFromSFTODOFOURBANKS:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
@@ -4303,7 +4303,7 @@ RamPresenceFlags = TransientZP
     XASSERT_USE_PRV1
     PHA
     LDX #lo(WriteRomHeaderTemplate):LDY #hi(WriteRomHeaderTemplate)
-    JSR copyYxToVariableMainRamSubroutine
+    JSR CopyYxToVariableMainRamSubroutine
     PLA:BEQ Ram
     ; ROM - so patch variableMainRamSubroutine's ROM header to say "ROM" instead of "RAM"
     LDA #'O'
@@ -5300,35 +5300,22 @@ loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
             ASSERT P% - tubeTransferTemplateWriteSwr == tubeTransferTemplateReadSwrEnd - tubeTransferTemplateReadSwr
 }
 
-;relocate &32 bytes of code from address X (LSB) & Y (MSB) to &03A7
-;This code is called by several routines and relocates the following code:
-;L9E0A - Test if RAM at bank specified by A is writable
-;wipeRamTemplate - Wipe RAM at SWRAM bank specified by A
-;L9E59 - Write ROM Header info to SWRAM bank specified by A
-;L9E83 - Save RAM at SWRAM bank specified by A to file system
-;L9EAE - Load RAM to SWRAM bank specified by A from file system
-;L9ED9 - 
-;L9EF9 -
+; Copy a short piece of code from YX to variableMainRamSubroutine. This is used to allow code
+; which needs to be modified at runtime and/or which needs to page in a different sideways ROM
+; bank to be executed.
 ; SFTODO: Do we have to preserve AC/AD here? It obviously depends on how we're called, but this is transient command space and we're allowed to corrupt it if we're implementing a * command.
-.copyYxToVariableMainRamSubroutine
+.CopyYxToVariableMainRamSubroutine
 {
-ptr = &AC ; 2 bytes
-            LDA ptr + 1
-            PHA
-            LDA ptr
-            PHA
-            STX ptr
-            STY ptr + 1
-            LDY #variableMainRamSubroutineMaxSize - 1
-.L9F3F      LDA (ptr),Y
-            STA variableMainRamSubroutine,Y
-            DEY
-            BPL L9F3F
-            PLA
-            STA ptr
-            PLA
-            STA ptr + 1
-            RTS
+Ptr = &AC ; 2 bytes
+
+    LDA Ptr + 1:PHA:LDA Ptr:PHA
+    STX Ptr:STY Ptr + 1
+    LDY #variableMainRamSubroutineMaxSize - 1
+.CopyLoop
+    LDA (Ptr),Y:STA variableMainRamSubroutine,Y
+    DEY:BPL CopyLoop
+    PLA:STA Ptr:PLA:STA Ptr + 1
+    RTS
 }
 
 ; Prepare for a data transfer between main and sideways RAM, handling case where
@@ -5377,7 +5364,7 @@ ptr = &AC ; 2 bytes
 
             LDX #lo(tubeTransferTemplate)
             LDY #hi(tubeTransferTemplate)
-            JSR copyYxToVariableMainRamSubroutine					;relocate &32 bytes of code from &9EF9 to &03A7
+            JSR CopyYxToVariableMainRamSubroutine					;relocate &32 bytes of code from &9EF9 to &03A7
             BIT prvOswordBlockCopy                                                                  ;test function
             BPL rts                                                                                 ;if this is read (from sideways RAM) we're done
 
@@ -5394,7 +5381,7 @@ ptr = &AC ; 2 bytes
             STA prvTubeReleasePending
             LDX #lo(mainRamTransferTemplate)
             LDY #hi(mainRamTransferTemplate)
-            JSR copyYxToVariableMainRamSubroutine					;relocate &32 bytes of code from &9ED9 to &03A7
+            JSR CopyYxToVariableMainRamSubroutine					;relocate &32 bytes of code from &9ED9 to &03A7
             BIT prvOswordBlockCopy                                                                  ;test function
             BPL Rts2                                                                                ;if this is read (from sideways RAM) we're done
             ; Patch the code at variableMainRamSubroutine to swap the operands
@@ -5416,7 +5403,7 @@ ptr = &AC ; 2 bytes
             PHA
             LDX #lo(testRamTemplate)
             LDY #hi(testRamTemplate)
-            JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9E0A to &03A7
+            JSR CopyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9E0A to &03A7
             PLA
             JMP variableMainRamSubroutine								;Call relocated code
 }
@@ -5794,7 +5781,7 @@ osfileBlock = L02EE
             LDX #lo(saveSwrTemplate)
             LDY #hi(saveSwrTemplate)
 .LA1AA      PHA
-            JSR copyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from either &9E83 or &9EAE to &03A7
+            JSR CopyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from either &9E83 or &9EAE to &03A7
             ; SFTODO: Is this code correct even ignoring the possible bug at
             ; adjustPrvOsword43Block? We seem to be trying to treat the data
             ; length as the buffer length - what if the data is longer than the
