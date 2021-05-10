@@ -6026,7 +6026,7 @@ SFTODOTMP2 = L00AB
     BNE ShowRomHeader
     JSR printSpace ; ' ' in place of 'U'
     JSR printSpace ; ' ' in place of 'S'
-    JSR printSpace; ' ' in place of 'L'
+    JSR printSpace ; ' ' in place of 'L'
     LDA #')':JSR OSWRCH
     JMP OSNEWL
 
