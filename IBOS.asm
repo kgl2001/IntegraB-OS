@@ -5325,74 +5325,78 @@ Ptr = &AC ; 2 bytes
 ; SFTODO: I am assuming prvOswordBlockCopy has always been through adjustPrvOsword42Block when this code is called
 {
     XASSERT_USE_PRV1
-            BIT prvOswordBlockCopy + 5                                                              ;test high bit of 32-bit main memory address
-            BMI notTube
-            BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
-            BPL notTube
-            LDA #&FF
-            STA prvTubeReleasePending
-.L9F5D      LDA #tubeEntryClaim + tubeClaimId
-            JSR tubeEntry
-            BCC L9F5D
-            LDA prvOswordBlockCopy + 2                                                              ;get byte 0 of 32-bit main memory address
-            STA L0100
-            LDA prvOswordBlockCopy + 3                                                              ;get byte 1 of 32-bit main memory address
-            STA L0101
-            LDA prvOswordBlockCopy + 4                                                              ;get byte 2 of 32-bit main memory address
-            STA L0102
-            LDA prvOswordBlockCopy + 5                                                              ;get byte 3 of 32-bit main memory address
-            STA L0103
-            LDA prvOswordBlockCopy                                                                  ;get function
-            EOR #&80
-            ROL A
-            LDA #&00
-            ROL A
-            ; At this point b0 of A has !b7 of function, all other bits of A
-            ; clear. SFTODO: We have ignored b6 of function - is that safe? do
-            ; we just not support pseudo-addresses? I don't think this is the
-            ; same as the pseudo to absolute bank conversion done inside
-            ; checkRamBankAndMakeAbsolute - that converts W=10->4 (for example),
-            ; I *think* pseudo-addresses make the 64K of SWR look like a flat
-            ; memory space. I could be wrong, I can't find any documentation on
-            ; this right now.
-            ; A=0 means multi-byte transfer, parasite to host
-            ; A=1 means multi-byte transfer, host to parasite
-            ; So this has converted the function into the correct transfer type.
-            LDX #lo(L0100)
-            LDY #hi(L0101)
-            JSR tubeEntry
+    BIT prvOswordBlockCopy + 5                                                              ;test high bit of 32-bit main memory address
+    BMI notTube
+    BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
+    BPL notTube
+    LDA #&FF
+    STA prvTubeReleasePending
+.L9F5D
+    LDA #tubeEntryClaim + tubeClaimId
+    JSR tubeEntry
+    BCC L9F5D
+    LDA prvOswordBlockCopy + 2                                                              ;get byte 0 of 32-bit main memory address
+    STA L0100
+    LDA prvOswordBlockCopy + 3                                                              ;get byte 1 of 32-bit main memory address
+    STA L0101
+    LDA prvOswordBlockCopy + 4                                                              ;get byte 2 of 32-bit main memory address
+    STA L0102
+    LDA prvOswordBlockCopy + 5                                                              ;get byte 3 of 32-bit main memory address
+    STA L0103
+    LDA prvOswordBlockCopy                                                                  ;get function
+    EOR #&80
+    ROL A
+    LDA #&00
+    ROL A
+    ; At this point b0 of A has !b7 of function, all other bits of A
+    ; clear. SFTODO: We have ignored b6 of function - is that safe? do
+    ; we just not support pseudo-addresses? I don't think this is the
+    ; same as the pseudo to absolute bank conversion done inside
+    ; checkRamBankAndMakeAbsolute - that converts W=10->4 (for example),
+    ; I *think* pseudo-addresses make the 64K of SWR look like a flat
+    ; memory space. I could be wrong, I can't find any documentation on
+    ; this right now.
+    ; A=0 means multi-byte transfer, parasite to host
+    ; A=1 means multi-byte transfer, host to parasite
+    ; So this has converted the function into the correct transfer type.
+    LDX #lo(L0100)
+    LDY #hi(L0101)
+    JSR tubeEntry
+    LDX #lo(tubeTransferTemplate)
+    LDY #hi(tubeTransferTemplate)
+    JSR CopyYxToVariableMainRamSubroutine					;relocate &32 bytes of code from &9EF9 to &03A7
+    BIT prvOswordBlockCopy                                                                  ;test function
+    BPL rts                                                                                 ;if this is read (from sideways RAM) we're done
 
-            LDX #lo(tubeTransferTemplate)
-            LDY #hi(tubeTransferTemplate)
-            JSR CopyYxToVariableMainRamSubroutine					;relocate &32 bytes of code from &9EF9 to &03A7
-            BIT prvOswordBlockCopy                                                                  ;test function
-            BPL rts                                                                                 ;if this is read (from sideways RAM) we're done
-
-            ; Patch the tubeTransfer code at variableMainRamSubroutine for writing (to sideways RAM) instead of reading.
-            LDY #tubeTransferTemplateReadSwrEnd - tubeTransferTemplateReadSwr - 1
-.L9F9A      LDA tubeTransferTemplateWriteSwr,Y
-            STA variableMainRamSubroutine + (tubeTransferTemplateReadSwr - tubeTransferTemplate),Y
-            DEY
-            BPL L9F9A
-.rts        RTS
+    ; Patch the tubeTransfer code at variableMainRamSubroutine for writing (to sideways RAM) instead of reading.
+    LDY #tubeTransferTemplateReadSwrEnd - tubeTransferTemplateReadSwr - 1
+.L9F9A
+    LDA tubeTransferTemplateWriteSwr,Y
+    STA variableMainRamSubroutine + (tubeTransferTemplateReadSwr - tubeTransferTemplate),Y
+    DEY
+    BPL L9F9A
+.rts
+    RTS
 
 .notTube
-.L9FA4      LDA #&00
-            STA prvTubeReleasePending
-            LDX #lo(mainRamTransferTemplate)
-            LDY #hi(mainRamTransferTemplate)
-            JSR CopyYxToVariableMainRamSubroutine					;relocate &32 bytes of code from &9ED9 to &03A7
-            BIT prvOswordBlockCopy                                                                  ;test function
-            BPL Rts2                                                                                ;if this is read (from sideways RAM) we're done
-            ; Patch the code at variableMainRamSubroutine to swap the operands
-            ; of LDA and STA, thereby swapping the transfer direction.
-            LDA #transientOs4243MainAddr
-            STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair1 + 1 - mainRamTransferTemplate)
-            STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair2 + 1 - mainRamTransferTemplate)
-            LDA #transientOs4243SwrAddr
-            STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair1 + 3 - mainRamTransferTemplate)
-            STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair2 + 3 - mainRamTransferTemplate)
-.Rts2       RTS
+.L9FA4
+    LDA #&00
+    STA prvTubeReleasePending
+    LDX #lo(mainRamTransferTemplate)
+    LDY #hi(mainRamTransferTemplate)
+    JSR CopyYxToVariableMainRamSubroutine					;relocate &32 bytes of code from &9ED9 to &03A7
+    BIT prvOswordBlockCopy                                                                  ;test function
+    BPL Rts2                                                                                ;if this is read (from sideways RAM) we're done
+    ; Patch the code at variableMainRamSubroutine to swap the operands
+    ; of LDA and STA, thereby swapping the transfer direction.
+    LDA #transientOs4243MainAddr
+    STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair1 + 1 - mainRamTransferTemplate)
+    STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair2 + 1 - mainRamTransferTemplate)
+    LDA #transientOs4243SwrAddr
+    STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair1 + 3 - mainRamTransferTemplate)
+    STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair2 + 3 - mainRamTransferTemplate)
+.Rts2
+    RTS
 }
 
 ;Relocation code then check for RAM banks.
