@@ -6318,69 +6318,75 @@ SFTODOTMP2 = L00AB
 .service10
 {
     SEC
-            JSR SFTODOALARMSOMETHING
-            BCS LA570
-            JMP SoftReset ; SFTODO: Rename this label given its use here?
+    JSR SFTODOALARMSOMETHING
+    BCS LA570
+    JMP SoftReset ; SFTODO: Rename this label given its use here?
 			
-.LA570      LDA ramselCopy
-            AND #ramselShen
-            STA ramselCopy
+.LA570
+    LDA ramselCopy
+    AND #ramselShen
+    STA ramselCopy
 
-            PRVEN								;switch in private RAM
+    PRVEN
 
-            JSR LA53D
+    JSR LA53D
 
 ;copy ROM type table to Private RAM
-            LDX #maxBank
-.CopyLoop   LDA RomTypeTable,X
-            STA prvRomTypeTableCopy,X
-            DEX
-            BPL CopyLoop
+    LDX #maxBank
+.CopyLoop
+    LDA RomTypeTable,X
+    STA prvRomTypeTableCopy,X
+    DEX
+    BPL CopyLoop
 
-            PRVDIS								;switch out private RAM
+    PRVDIS
 
-            LDX lastBreakType
-            BEQ SoftReset
-            LDA #osbyteKeyboardScanFrom10
-            JSR OSBYTE
-            CPX #keycodeAt
-            BNE SoftReset ; SFTODO: Rename label given use here?
-            LDA #&00
-            STA L0287
-            LDA #&FF
-            STA L03A4
+    LDX lastBreakType
+    BEQ SoftReset
+    LDA #osbyteKeyboardScanFrom10
+    JSR OSBYTE
+    CPX #keycodeAt
+    BNE SoftReset ; SFTODO: Rename label given use here?
+    LDA #&00
+    STA L0287
+    LDA #&FF
+    STA L03A4
 
-	  ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
-;Set all bytes in ROM Type Table and Private RAM to 0
-            LDX #maxBank
-.ZeroLoop   CPX romselCopy ; SFTODO: are we confident romselCopy doesn't have b7/b6 set??
-            BEQ SkipBank
-            LDA #&00
-            STA RomTypeTable,X
-            STA romPrivateWorkspaceTable,X
-.SkipBank   DEX
-            BPL ZeroLoop
+    ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
+    ;Set all bytes in ROM Type Table and Private RAM to 0
+    LDX #maxBank
+.ZeroLoop
+    CPX romselCopy ; SFTODO: are we confident romselCopy doesn't have b7/b6 set??
+    BEQ SkipBank
+    LDA #&00
+    STA RomTypeTable,X
+    STA romPrivateWorkspaceTable,X
+.SkipBank
+    DEX
+    BPL ZeroLoop
 
-            JMP finish
+    JMP Finish ; SQUASH: BMI always
 
-	  ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
-.SoftReset  LDA #&00
-            STA L03A4
-            LDX #userRegBankInsertStatus
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            STA transientRomBankMask
-            LDX #userRegBankInsertStatus + 1
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            STA transientRomBankMask + 1
-            JSR unplugBanksUsingTransientRomBankMask
-	  ; SFTODO: Next bit of code is either claiming or not claiming the service call based on prvSFTODOTUBEISH; it will return with A=&10 (this call) or 0.
-.finish     LDX #prvSFTODOTUBEISH - prv83
-            JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
-            EOR #&FF
-            AND #&10
-            TSX
-            STA L0103,X								;modify stacked A, i.e. A we will return from service call with
-            JMP ExitServiceCall								;restore service call parameters and exit
+    ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
+.SoftReset
+    LDA #&00
+    STA L03A4
+    LDX #userRegBankInsertStatus
+    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
+    STA transientRomBankMask
+    LDX #userRegBankInsertStatus + 1
+    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
+    STA transientRomBankMask + 1
+    JSR unplugBanksUsingTransientRomBankMask
+; SFTODO: Next bit of code is either claiming or not claiming the service call based on prvSFTODOTUBEISH; it will return with A=&10 (this call) or 0.
+.Finish
+    LDX #prvSFTODOTUBEISH - prv83
+    JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
+    EOR #&FF
+    AND #&10
+    TSX
+    STA L0103,X								;modify stacked A, i.e. A we will return from service call with
+    JMP ExitServiceCall								;restore service call parameters and exit
 }
 			
 ;Write contents from Private memory address &8000 to screen
