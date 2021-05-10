@@ -4214,7 +4214,7 @@ RamPresenceFlags = TransientZP
     PRVEN
     PHP:SEI
     LDA #0:STA oswdbtX
-    LDY #3
+    LDY #3 ; SFTODO: mildly magic, (max) number of pseudo banks - 1
 .BankLoop
     STY prvTmp
     ; SQUASH: Use LDX abs,Y and save TAX?
