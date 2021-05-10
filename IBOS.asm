@@ -269,7 +269,7 @@ osbyteReadWriteAciaRegister = &9C
 osbyteReadWriteSpoolFileHandle = &C7
 osbyteReadWriteBreakEscapeEffect = &C8
 osbyteReadWriteKeyboardStatus = &CA
-osbyteEnableDisableStartupMessage = &D7
+osbyteReadWriteEnableDisableStartupMessage = &D7
 osbyteReadWriteVduQueueLength = &DA
 osbyteReadWriteOutputDevice = &EC
 osbyteReadWriteShadowScreenState = &EF
@@ -4137,36 +4137,27 @@ tmp = &A8
 {
 RamPresenceFlags = TransientZP
 
-.L989F
-    LDX #prvOsMode - prv83							;select OSMODE
-    JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
-    CMP #&00								;If OSMODE=0 SFTODO: Could save a byte with "TAX"
-    BEQ Rts									;Then leave startup message alone
-    LDA #osbyteEnableDisableStartupMessage					;Startup message suppression and !BOOT option status
-    LDX #&00
-    LDY #&FF
-    JSR OSBYTE
-    TXA
-    BPL Rts
-    LDA #osbyteEnableDisableStartupMessage					;Startup message suppression and !BOOT option status
-    LDX #&00
-    LDY #&00
-    JSR OSBYTE
-    LDX #computechStart - romHeader						;Start at ROM header offset &17
+    ; We just use the default banner if we're in OSMODE 0. SQUASH: CMP #0 is redundant
+    LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X:CMP #0:BEQ Rts
+    ; If we're in the "ignore OS startup message" state (b7 clear), do nothing. I suspect this occurs if an
+    ; earlier ROM has managed to get in before us and probably can't occur in practice if we're
+    ; in bank 15.
+    LDA #osbyteReadWriteEnableDisableStartupMessage:LDX #0:LDY #&FF:JSR OSBYTE:TXA:BPL Rts
+    ; Set the "ignore OS startup message" state ourselves. We will also clear bit 0
+    ; unconditionally rather than preserving it, but in practice this probably doesn't matter
+    ; (it controls locking up the machine on certain types of !BOOT error).
+    LDA #osbyteReadWriteEnableDisableStartupMessage:LDX #0:LDY #0:JSR OSBYTE
+    ; Print "Computech".
+    LDX #computechStart - romHeader
 .BannerLoop1
-    LDA romHeader,X								;Read 'Computech ' from ROM header
-    JSR OSWRCH								;Write to screen
-    INX									;Next Character
-    CPX #(computechEnd + 1) - romHeader						;Check for final character
-    BNE BannerLoop1								;Loop
-    LDX #(ReverseBannerEnd - 1) - ReverseBanner					;Lookup table offset
+    LDA romHeader,X:JSR OSWRCH
+    INX:CPX #(computechEnd + 1) - romHeader:BNE BannerLoop1
+    ; Print " INTEGRA-B".
+    LDX #(ReverseBannerEnd - 1) - ReverseBanner
 .BannerLoop2
-    LDA ReverseBanner,X							;Read INTEGRA-B Text from lookup table
-    JSR OSWRCH								;Write to screen
-    DEX									;Next Character
-    BPL BannerLoop2								;Loop
-    LDA lastBreakType								;Check Break status. 0=soft, 1=power up, 2=hard
-    BEQ SoftReset								;No Beep and don't write amount of Memory to screen
+    LDA ReverseBanner,X:JSR OSWRCH
+    DEX:BPL BannerLoop2
+    LDA lastBreakType:BEQ SoftReset
     LDA #vduBell								;Beep
     JSR OSWRCH								;Write to screen
     LDX #userRegRamPresenceFlags						;Read 'RAM installed in banks' register
