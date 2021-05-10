@@ -4272,7 +4272,7 @@ RamPresenceFlags = TransientZP
 ;*SRWIPE Command
 .srwipe
 {
-    JSR parseRomBankListChecked2
+    JSR ParseRomBankListChecked2
     PRVEN
     LDX #0
 .BankLoop
@@ -4381,7 +4381,7 @@ RamPresenceFlags = TransientZP
             CMP #'?'
             BEQ showStatus
 	  ; Select the first four suitable banks from the list provided and store them at prvPseudoBankNumbers.
-            JSR parseRomBankList
+            JSR ParseRomBankList
             PRVEN
             LDX #&00
             LDY #&00
@@ -4458,7 +4458,7 @@ RamPresenceFlags = TransientZP
 .^srdata
             CLC
 .common     PHP
-            JSR parseRomBankListChecked2
+            JSR ParseRomBankListChecked2
             PRVEN								;switch in private RAM
             LDX #&00
 .bankLoop   ROR transientRomBankMask + 1
@@ -4533,10 +4533,10 @@ romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" l
 }
 
 
-; SFTODO: Do we really need this *and* parseRomBankListChecked? Isn't parseRomBankListChecked better than this one?
-.parseRomBankListChecked2
+; SFTODO: Do we really need this *and* ParseRomBankListChecked? Isn't ParseRomBankListChecked better than this one?
+.ParseRomBankListChecked2
 {
-.L9B25      JSR parseRomBankList
+.L9B25      JSR ParseRomBankList
             BCS badIdIndirect
             RTS
 }
@@ -5911,9 +5911,9 @@ osfileBlock = L02EE
             JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
-.parseRomBankListChecked
+.ParseRomBankListChecked
 {
-            JSR parseRomBankList
+            JSR ParseRomBankList
             BCC rts
             BVC GenerateSyntaxErrorIndirect
 .^badId
@@ -5931,7 +5931,7 @@ osfileBlock = L02EE
 
 ;*INSERT Command
 {
-.^insert    JSR parseRomBankListChecked								;Error check input data
+.^insert    JSR ParseRomBankListChecked								;Error check input data
             LDX #userRegBankInsertStatus						;get *INSERT status
             JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
             ORA transientRomBankMask								;update *INSERT status
@@ -5955,7 +5955,7 @@ osfileBlock = L02EE
             RTS
 
 ;*UNPLUG Command
-.^unplug	  JSR parseRomBankListChecked								;Error check input data
+.^unplug	  JSR ParseRomBankListChecked								;Error check input data
             JSR invertTransientRomBankMask								;Invert all bits in &AE and &AF
             LDX #&06								;INSERT status for ROMS &0F to &08
             JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
@@ -6061,7 +6061,7 @@ SFTODOTMP2 = L00AB
 }
 
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be used to indicate "everything but the listed banks". Return with C set iff at least one bit of transientRomBankMask is set.
-.parseRomBankList
+.ParseRomBankList
 {
             LDA #&00
             STA transientRomBankMask
@@ -6238,9 +6238,9 @@ SFTODOTMP2 = L00AB
             LDX #&03								;a total of 4 pseudo banks
             LDY #&07								;for osmodes other than 2, absolute banks are 4..7
             CMP #&02								;check for osmode 2
-            BNE notOsMode2
+            BNE NotOsMode2
             LDY #maxBank								;if osmode is 2, absolute banks are 12..15
-.notOsMode2
+.NotOsMode2
 .loop	  TYA									;
             STA prvPseudoBankNumbers,X							;assign pseudo bank to the appropriate absolute bank
             DEY									;reduce absolute bank number by 1
@@ -6263,7 +6263,7 @@ SFTODOTMP2 = L00AB
 ;*SRWP Command
 .^srwp      SEC
 .LA50A      PHP
-            JSR parseRomBankList
+            JSR ParseRomBankList
             BCC LA513
             JMP badId
 			
