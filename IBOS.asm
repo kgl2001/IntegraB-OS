@@ -6008,13 +6008,15 @@ SFTODOTMP = L00AA
     PRVEN
     LDX SFTODOTMP:LDA romTypeTable,X
     LDY #' '
-    AND #&FE								;bit 0 of ROM Type is undefined, so mask out
-    BNE LA3BC								;if any other bits set, then ROM exists so skip code for Unplugged ROM check, and get and write ROM details
-    LDY #&55								;'U' (Unplugged)
-    PRVEN								;switch in private RAM
-    LDA prvRomTypeTableCopy,X;								;get backup copy of ROM Type
-    PRVDIS								;switch out private RAM
-    BNE LA3BC								;if any bits set, then unplugged ROM exists so get and write ROM details
+    AND #&FE ; bit 0 of ROM type is undefined, so mask out
+    ; SFTODO: If we take this branch, will we ever do PRVDIS?
+    BNE ShowRomTypeByte
+    LDY #'U' ; Unplugged
+    PRVEN ; SFTODO: We already did this, why do we need to do it again?
+    LDA prvRomTypeTableCopy,X
+    ; SFTODO: We don't AND #&FE here, is that wrong/inconsistent?
+    PRVDIS
+    BNE ShowRomTypeByte
     JSR printSpace								;write ' ' to screen in place of 'U'
     JSR printSpace								;write ' ' to screen in place of 'S'
     JSR printSpace								;write ' ' to screen in place of 'L'
@@ -6022,7 +6024,7 @@ SFTODOTMP = L00AA
     JSR OSWRCH								;write to screen
     JMP OSNEWL								;new line and return
 			
-.LA3BC
+.ShowRomTypeByte
     PHA									;save ROM Type
     TYA									;either ' ' for inserted, or 'U' for unplugged, depending on where called from
     JSR OSWRCH								;write to screen
