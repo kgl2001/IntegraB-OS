@@ -3819,9 +3819,9 @@ Tmp = TransientZP + 6
     PRVEN
     LDX lastBreakType:CPX #1:BNE NotPowerOnStarBoot
     CLC:LDA prvBootSFTODO:BEQ NotPowerOnStarBoot ; branch if we don't have a *BOOT command
-    ; We're going to poke the *BOOT command into the OS function key buffer at &B00 as *KEY10.
-    ; See https://tobylobster.github.io/mos/mos/S-s14.html#SP12 for details on the format of
-    ; this buffer.
+    ; We're going to poke the *BOOT command into the OS function key buffer as *KEY10. See
+    ; https://tobylobster.github.io/mos/mos/S-s14.html#SP12 for details on the format of this
+    ; buffer.
     ;
     ; Our *BOOT command is A bytes long, so the first free offset from osFunctionKeyStringBase
     ; after our *KEY10 definition will be A+&0F. Set all keys to have this offset as their
@@ -3831,7 +3831,8 @@ Tmp = TransientZP + 6
     ASSERT osFunctionKeyStartOffsets + 16 == osFunctionKeyFirstFreeOffset
     LDX #0
 .CopyFirstFreeOffsetLoop
-    STA osFunctionKeyStartOffsets,X:INX:CPX #17:BNE CopyFirstFreeOffsetLoop
+    STA osFunctionKeyStartOffsets,X
+    INX:CPX #17:BNE CopyFirstFreeOffsetLoop
     ; Our *KEY10 definition will start at &B01+&10.
     LDA #osFunctionKeyFirstValidOffset:STA osFunctionKeyStartOffsets + 10
     ; Copy the *BOOT command to &B01+&10 onwards.
