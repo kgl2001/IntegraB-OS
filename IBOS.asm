@@ -522,7 +522,7 @@ L08B6       = &08B6
 osFunctionKeyStartOffsets = &0B00 ; 16 bytes for *KEY0-15
 osFunctionKeyStringBase = &0B01 ; offsets are from this address
 osFunctionKeyFirstFreeOffset = &0B10
-osFunctionKeyFirstValidOffset = &0B10
+osFunctionKeyFirstValidOffset = &10 ; first usable byte of *KEY data is at this offset
 L0B00       = &0B00
 L0B0A       = &0B0A
 L0B10       = &0B10
@@ -3823,20 +3823,22 @@ Tmp = TransientZP + 6
     ; See https://tobylobster.github.io/mos/mos/S-s14.html#SP12 for details on the format of
     ; this buffer.
     ;
-    ; Our *BOOT command is A bytes long, so the first free byte in page &B after our *KEY10
-    ; definition will be at &B01+A+&0F. Set all keys to have this offset from &B01 as their
-    ; start offset to indicate they are undefined.
+    ; Our *BOOT command is A bytes long, so the first free offset from osFunctionKeyStringBase
+    ; after our *KEY10 definition will be A+&0F. Set all keys to have this offset as their
+    ; start offset to indicate they are undefined; we also write to
+    ; osFunctionKeyFirstFreeOffset here to record this space as used.
     ADC #&0F
+    ASSERT osFunctionKeyStartOffsets + 16 == osFunctionKeyFirstFreeOffset
     LDX #0
-.L9625
-    STA osFunctionKeyStartOffsets,X:INX:CPX #&11:BNE L9625
+.CopyFirstFreeOffsetLoop
+    STA osFunctionKeyStartOffsets,X:INX:CPX #17:BNE CopyFirstFreeOffsetLoop
     ; Our *KEY10 definition will start at &B01+&10.
-    LDA #&10:STA osFunctionKeyStartOffsets + 10
+    LDA #osFunctionKeyFirstValidOffset:STA osFunctionKeyStartOffsets + 10
     ; Copy the *BOOT command to &B01+&10 onwards.
     LDX #1
-.L9634
-    LDA prvBootCommand - 1,X:STA &B10,X
-    INX:CPX prv81:BNE L9634
+.CopyBootStringLoop
+    LDA prvBootCommand - 1,X:STA osFunctionKeyStringBase + osFunctionKeyFirstValidOffset - 1,X
+    INX:CPX prv81:BNE CopyBootStringLoop
 .NotPowerOnStarBoot
     PRVDIS
 
