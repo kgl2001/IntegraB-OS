@@ -856,10 +856,9 @@ ENDMACRO
 
 start = &8000
 end = &C000
-ORG	start
-GUARD	end
+ORG start
+GUARD end
 
-;ROM Header Information
 .RomHeader
     JMP language
     JMP service
