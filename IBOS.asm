@@ -5983,45 +5983,31 @@ SFTODOTMP = L00AA
 
 ;*ROMS Command
 .^roms
-    LDA #maxBank								;Start at ROM &0F
-    STA SFTODOTMP								;Save ROM number at &AA
-.LA356
-    JSR LA360								;Get and print details of ROM
-    DEC SFTODOTMP								;Next ROM
-    BPL LA356								;Until ROM &00
-    JMP LA537
+    LDA #maxBank:STA SFTODOTMP
+.BankLoop
+    JSR ShowRom
+    DEC SFTODOTMP:BPL BankLoop
+    JMP LA537 ; SQUASH: BMI always, maybe to equivalent code nearer by?
 			
-;Get and print details of ROM at location &AA
-.LA360
-    LDA SFTODOTMP								;Get ROM Number
-    CLC
-    JSR PrintADecimal								;Convert binary number to numeric characters and write characters to screen
-    JSR printSpace								;write ' ' to screen
-    LDA #'('								;'('
-    JSR OSWRCH								;write to screen
-    LDA SFTODOTMP								;Get ROM Number
-LSR A
-    TAY
-    LDX #userRegRamPresenceFlags						;read RAM installed in bank flag from private &83FF
-    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-    AND LA34A,Y								;Get data from lookup table
-    BNE LA380								;Branch if RAM
-    LDA #&20								;' '
-    BNE LA38D								;jump to write to screen
+; SQUASH: This has only one caller
+.ShowRom
+    LDA SFTODOTMP:CLC:JSR PrintADecimal ; show bank number right-aligned
+    JSR printSpace
+    LDA #'(':JSR OSWRCH
+    LDA SFTODOTMP:LSR A:TAY
+    LDX #userRegRamPresenceFlags:JSR ReadUserReg
+    AND LA34A,Y:BNE LA380 ; branch if this is a sideways RAM bank
+    LDA #' ':BNE LA38D ; always branch
 .LA380
-    LDX SFTODOTMP								;get ROM number
-    JSR TestRamUsingVariableMainRamSubroutine					;check if ROM is WP. Will return with Z set if writeable
-    PHP
-    LDA #'E'								;'E' (Enabled)
-    PLP
-    BEQ LA38D								;jump to write to screen
-    LDA #'P'								;'P' (Protected)
+    LDX SFTODOTMP:JSR TestRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
+    LDA #'E' ; write-Enabled
+    PLP:BEQ LA38D
+    LDA #'P' ; Protected
 .LA38D
-    JSR OSWRCH								;write to screen
-    PRVEN								;switch in private RAM
-    LDX SFTODOTMP								;Get ROM Number
-    LDA romTypeTable,X								;get ROM Type
-    LDY #' '								;' '
+    JSR OSWRCH
+    PRVEN
+    LDX SFTODOTMP:LDA romTypeTable,X
+    LDY #' '
     AND #&FE								;bit 0 of ROM Type is undefined, so mask out
     BNE LA3BC								;if any other bits set, then ROM exists so skip code for Unplugged ROM check, and get and write ROM details
     LDY #&55								;'U' (Unplugged)
