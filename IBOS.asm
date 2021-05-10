@@ -3637,6 +3637,7 @@ ENDIF
 }
 			
 ; SQUASH: If we moved this to just before PrintADecimal we could fall through into it
+; SFTODO: Misnamed? C set means no padding?
 .PrintADecimalPad
     SEC:JMP PrintADecimal
 
@@ -4139,63 +4140,57 @@ RamPresenceFlags = TransientZP
 
     ; We just use the default banner if we're in OSMODE 0. SQUASH: CMP #0 is redundant
     LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X:CMP #0:BEQ Rts
+
     ; If we're in the "ignore OS startup message" state (b7 clear), do nothing. I suspect this occurs if an
     ; earlier ROM has managed to get in before us and probably can't occur in practice if we're
     ; in bank 15.
     LDA #osbyteReadWriteEnableDisableStartupMessage:LDX #0:LDY #&FF:JSR OSBYTE:TXA:BPL Rts
+
     ; Set the "ignore OS startup message" state ourselves. We will also clear bit 0
     ; unconditionally rather than preserving it, but in practice this probably doesn't matter
     ; (it controls locking up the machine on certain types of !BOOT error).
     LDA #osbyteReadWriteEnableDisableStartupMessage:LDX #0:LDY #0:JSR OSBYTE
+
     ; Print "Computech".
     LDX #computechStart - romHeader
 .BannerLoop1
     LDA romHeader,X:JSR OSWRCH
     INX:CPX #(computechEnd + 1) - romHeader:BNE BannerLoop1
+
     ; Print " INTEGRA-B".
     LDX #(ReverseBannerEnd - 1) - ReverseBanner
 .BannerLoop2
     LDA ReverseBanner,X:JSR OSWRCH
     DEX:BPL BannerLoop2
-    LDA lastBreakType:BEQ SoftReset
-    LDA #vduBell								;Beep
-    JSR OSWRCH								;Write to screen
-    LDX #userRegRamPresenceFlags						;Read 'RAM installed in banks' register
-    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-    STA RamPresenceFlags
-    LDX #&07								;Check all 8 32k banks for RAM
-    LDA #&00								;Start with 0k RAM
+
+    LDA lastBreakType:BEQ SoftReset ; soft reset message is simpler and quieter
+
+    LDA #vduBell:JSR OSWRCH
+
+    ; Count sideways RAM banks in kilobytes and print the result.
+    LDX #userRegRamPresenceFlags:JSR ReadUserReg:STA RamPresenceFlags
+    LDX #7
+    LDA #0
 .CountLoop
-    LSR RamPresenceFlags							;Check if RAM bank
-    BCC NotPresent								;If 0 then no RAM, so don't increment RAM count
-    ADC #32 - 1								;Add 32k (-1 because carry is set)
+    LSR RamPresenceFlags:BCC NotPresent ; branch if no RAM in this bank
+    ADC #32 - 1 ; add 32K, -1 because carry is set
 .NotPresent
-    DEX									;Check next 32k bank
-    BPL CountLoop								;Loop until 0
-    CMP #&00								;If RAM total = 0k (will occur with either 0 RAM banks or 8 x 32k RAM banks), then SFTODO: could do "TAX" to save a byte
-    BEQ AllBanksPresent							;Write '256K' to screen
-; SFTODO: We could save the SEC by just doing JSR PrintADecimalPad
-; SFTODO: Do we really want padding here? If we have (say) 64K, surely it's neater to print "Computech INTEGRA-B 64K" not "Computech INTEGRA-B  64K"?
-    SEC
-    JSR PrintADecimal								;Convert binary number to numeric characters and write characters to screen
-    JMP PrintKAndNewline							;Write 'K' to screen
-
+    DEX:BPL CountLoop
+    ; If we have 256K of RAM A will have wrapped to 0; we can't have 0K of sideways RAM so
+    ; there's no ambiguity.
+    CMP #0:BEQ AllBanksPresent ; SQUASH: use TAX instead of CMP #0
+    SEC:JSR PrintADecimal ; SQUASH: JSR PrintADecimalPad
+    JMP PrintKAndNewline
 .AllBanksPresent
-    LDA #'2'
-    JSR OSWRCH								;Write to screen
-    LDA #'5'
-    JSR OSWRCH								;Write to screen
-    LDA #'6'
-    JSR OSWRCH								;Write to screen
+    LDA #'2':JSR OSWRCH
+    LDA #'5':JSR OSWRCH
+    LDA #'6':JSR OSWRCH
 .PrintKAndNewline
-    LDA #'K'
-    JSR OSWRCH								;Write to screen
+    LDA #'K':JSR OSWRCH
 .SoftReset
-    JSR OSNEWL								;New Line
-    BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
-    BMI Rts
-    JMP OSNEWL								;New Line
-
+    JSR OSNEWL
+    BIT tubePresenceFlag:BMI Rts ; branch if tube present
+    JMP OSNEWL
     ; SQUASH: Control can't flow through to here, can we move the Rts label to a nearby Rts to
     ; save a byte?
 .Rts
