@@ -4268,36 +4268,27 @@ RamPresenceFlags = TransientZP
 ;*SRWIPE Command
 .srwipe
 {
-	  JSR parseRomBankListChecked2
-            PRVEN								;switch in private RAM
-            LDX #&00
-.bankLoop   ROR transientRomBankMask + 1
-            ROR transientRomBankMask
-            BCC skipBank
-            JSR wipeBankAIfRam
-.skipBank   INX
-            CPX #maxBank + 1
-            BNE bankLoop
-            JMP PrvDisexitSc
+    JSR parseRomBankListChecked2
+    PRVEN
+    LDX #0
+.BankLoop
+    ROR transientRomBankMask + 1:ROR transientRomBankMask:BCC SkipBank
+    JSR WipeBankAIfRam
+.SkipBank
+    INX:CPX #maxBank + 1:BNE BankLoop
+    JMP PrvDisexitSc
 
-; SFTODO: This has only one caller, the code immediately above - could it just be inlined?
-.wipeBankAIfRam
-            JSR testRamUsingVariableMainRamSubroutine
-            BNE rts
-            PHA
-            LDX #lo(wipeRamTemplate)							;LSB of relocatable Wipe RAM code
-            LDY #hi(wipeRamTemplate)							;MSB of relocatable Wipe RAM code
-            JSR copyYxToVariableMainRamSubroutine						;relocate &32 bytes of Wipe RAM code from &9E38 to &03A7
-            PLA
-            JSR variableMainRamSubroutine						;Call relocated Wipe RAM code
-            PHA
-            JSR removeBankAFromSFTODOFOURBANKS						;SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
-            PLA
-            TAX
-            LDA #&00
-            STA romTypeTable,X							;clear ROM Type byte
-            STA prvRomTypeTableCopy,X							;clear Private RAM copy of ROM Type byte
-.rts        RTS
+; SQUASH: This has only one caller, the code immediately above - could it just be inlined?
+.WipeBankAIfRam
+    JSR testRamUsingVariableMainRamSubroutine:BNE Rts
+    PHA
+    LDX #lo(wipeRamTemplate):LDY #hi(wipeRamTemplate):JSR copyYxToVariableMainRamSubroutine
+    PLA
+    JSR variableMainRamSubroutine
+    PHA:JSR removeBankAFromSFTODOFOURBANKS:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
+    TAX:LDA #0:STA romTypeTable,X:STA prvRomTypeTableCopy,X
+.Rts
+    RTS
 }
 
 ; SQUASH: Dead data
