@@ -214,10 +214,10 @@ currentLanguageRom = &028C ; SFTODO: not sure yet if we're using this for what t
 osfileBlock = &02EE ; OS OSFILE block for *LOAD, *SAVE, etc
 currentMode = &0355
 
-romTypeTable = &02A1
+RomTypeTable = &02A1
 romPrivateWorkspaceTable = &0DF0
 
-romTypeSrData = 2 ; ROM type byte used for banks allocated to pseudo-addressing via *SRDATA
+RomTypeSrData = 2 ; ROM type byte used for banks allocated to pseudo-addressing via *SRDATA
 
 CapitaliseMask = &DF
 LowerCaseMask = &20
@@ -774,9 +774,9 @@ flagZ = &02
 ; SFTODO: DELETE flagI = &04
 flagV = &40
 
-romTypeService = 1 << 7
-romTypeLanguage = 1 << 6
-romType6502 = 2
+RomTypeService = 1 << 7
+RomTypeLanguage = 1 << 6
+RomType6502 = 2
 
 ; Convenience macro to avoid the annoyance of writing this out every time.
 MACRO AND_NOT n
@@ -826,7 +826,7 @@ MACRO XASSERT_USE_PRV1
     ASSERT P% >= prv1End
 ENDMACRO
 
-; SFTODO: Document? Use? Dlete?
+; SFTODO: Document? Use? Delete?
 MACRO XASSERT_USE_PRV8
     ASSERT P% < prv8Start OR P% >= prv8End
 ENDMACRO
@@ -860,22 +860,23 @@ ORG	start
 GUARD	end
 
 ;ROM Header Information
-.romHeader	JMP language							;00: Language entry point
-		JMP service							;03: Service entry point
-.romType
-		EQUB romTypeService OR romTypeLanguage OR romType6502
-.copyrightOffset
-		EQUB copyright - romHeader						;07: Copyright offset pointer
-		EQUB &FF								;08: Binary version number
-.title
-		EQUS "IBOS", 0							;09: Title string
-		EQUS "1.20"							;xx: Version string
-.copyright	EQUS 0, "(C)"							;xx: Copyright symbol
-		EQUS " "
-.computechStart
-		EQUS "Computech"
-.computechEnd
-		EQUS " 1989", 0						;xx: Copyright message
+.RomHeader
+    JMP language
+    JMP service
+.RomType
+    EQUB RomTypeService OR RomTypeLanguage OR RomType6502
+.CopyrightOffset
+    EQUB Copyright - RomHeader
+    EQUB &FF ; binary version number
+.Title
+    EQUS "IBOS", 0
+    EQUS "1.20" ; version string
+.Copyright
+    EQUS 0, "(C) "
+.ComputechStart
+    EQUS "Computech"
+.ComputechEnd
+    EQUS " 1989", 0
 
 ;Store *Command reference table pointer address in X & Y
 .CmdRef
@@ -1548,13 +1549,13 @@ TmpCommandIndex = &AC
     TXA:PHA ; save X, the ibosRefSubTblA entry to show
     ; Show our ROM title and version.
     JSR OSNEWL
-    LDX #title - romHeader
+    LDX #Title - RomHeader
 .TitleVersionLoop
-    LDA romHeader,X:BNE PrintChar
+    LDA RomHeader,X:BNE PrintChar
     LDA #' ' ; convert 0 bytes in ROM header to spaces
 .PrintChar
     JSR OSWRCH
-    INX:CPX copyrightOffset:BNE TitleVersionLoop
+    INX:CPX CopyrightOffset:BNE TitleVersionLoop
     JSR OSNEWL
     ; Now show the selected ibosRefSubTblA entry.
     PLA
@@ -2767,7 +2768,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 .TestForEmptySwrInBankY
 {
     TXA:PHA
-    LDA romTypeTable,Y:BNE NotEmpty
+    LDA RomTypeTable,Y:BNE NotEmpty
     LDA prvRomTypeTableCopy,Y:BNE NotEmpty
     PHP:SEI
     ; Flip the bits of TestAddress in bank Y and see if the change persists, i.e. if there's
@@ -3895,7 +3896,7 @@ Tmp = TransientZP + 6
     LDA romselCopy ; enter IBOS as the current language
 .EnterLangA
     TAX
-    LDA romTypeTable,X:ROL A:BPL NoLanguageEntry
+    LDA RomTypeTable,X:ROL A:BPL NoLanguageEntry
     JMP LDBE6 ;OSBYTE 142 - ENTER LANGUAGE ROM AT &8000 (http://mdfs.net/Docs/Comp/BBC/OS1-20/D940) - we enter one byte early so carry is clear, which might indicate "initialisation" (this based on that mdfs.net page; I can't find anything about this in a quick look at other documentation)
 
 .NoLanguageEntry
@@ -4162,10 +4163,10 @@ RamPresenceFlags = TransientZP
     LDA #osbyteReadWriteEnableDisableStartupMessage:LDX #0:LDY #0:JSR OSBYTE
 
     ; Print "Computech".
-    LDX #computechStart - romHeader
+    LDX #ComputechStart - RomHeader
 .BannerLoop1
-    LDA romHeader,X:JSR OSWRCH
-    INX:CPX #(computechEnd + 1) - romHeader:BNE BannerLoop1
+    LDA RomHeader,X:JSR OSWRCH
+    INX:CPX #(ComputechEnd + 1) - RomHeader:BNE BannerLoop1
 
     ; Print " INTEGRA-B".
     LDX #(ReverseBannerEnd - 1) - ReverseBanner
@@ -4290,7 +4291,7 @@ RamPresenceFlags = TransientZP
     PLA
     JSR variableMainRamSubroutine
     PHA:JSR removeBankAFromSFTODOFOURBANKS:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
-    TAX:LDA #0:STA romTypeTable,X:STA prvRomTypeTableCopy,X
+    TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
 .Rts
     RTS
 }
@@ -4394,7 +4395,7 @@ RamPresenceFlags = TransientZP
             BNE plyAndSkipBank ; branch if not RAM
             LDA prvRomTypeTableCopy,X
             BEQ emptyBank
-            CMP #romTypeSrData
+            CMP #RomTypeSrData
             BNE plyAndSkipBank
 .emptyBank  CLC
             BCC skipIffC
@@ -4489,7 +4490,7 @@ romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" l
             BNE failSFTODOA								;branch if not RAM
             LDA prvRomTypeTableCopy,X
             BEQ emptyBank
-            CMP #romTypeSrData
+            CMP #RomTypeSrData
             BNE failSFTODOA
 .emptyBank  LDA bankTmp
             JSR removeBankAFromSFTODOFOURBANKS
@@ -4501,9 +4502,9 @@ romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" l
 .isSrrom    LDA romRamFlagTmp
             JSR WriteRomHeaderAndPatchUsingVariableMainRamSubroutine
             LDX bankTmp
-            LDA #romTypeSrData
+            LDA #RomTypeSrData
             STA prvRomTypeTableCopy,X
-            STA romTypeTable,X
+            STA RomTypeTable,X
 .restoreXRts
 	  LDX bankTmp
 .rts        RTS
@@ -5152,7 +5153,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 .^WriteRomHeaderTemplateSFTODO ; SFTODO: Why do we modify this byte of the header?
             EQUB     &00,&00
 	  EQUB &60,&00,&00
-	  EQUB romTypeSrData ; SFTODO: This constant is arguably misnamed since we use it for *SRROM banks too (I think)
+	  EQUB RomTypeSrData ; SFTODO: This constant is arguably misnamed since we use it for *SRROM banks too (I think)
 	  EQUB &0C
 	  EQUB &FF
 	  EQUS "R"
@@ -6011,12 +6012,12 @@ SFTODOTMP2 = L00AB
 .LA38D
     JSR OSWRCH
     PRVEN
-    LDX SFTODOTMP:LDA romTypeTable,X
+    LDX SFTODOTMP:LDA RomTypeTable,X
     LDY #' ' ; not unplugged
     AND #&FE ; bit 0 of ROM type is undefined, so mask out
     ; SFTODO: If we take this branch, will we ever do PRVDIS?
     BNE ShowRomHeader
-    ; The romTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
+    ; The RomTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
     ; if our private copy of the ROM type byte is non-0 show those flags.
     LDY #'U' ; Unplugged
     PRVEN ; SFTODO: We already did this, why do we need to do it again?
@@ -6035,21 +6036,21 @@ SFTODOTMP2 = L00AB
     PHA
     TYA:JSR OSWRCH
     LDX #'S' ; Service
-    PLA:PHA:ASSERT romTypeService == 1 << 7:BMI HasServiceEntry
+    PLA:PHA:ASSERT RomTypeService == 1 << 7:BMI HasServiceEntry
     LDX #' '
 .HasServiceEntry
     TXA:JSR OSWRCH
     LDX #'L' ; Language
-    PLA:AND #romTypeLanguage:BNE HasLanguageEntry
+    PLA:AND #RomTypeLanguage:BNE HasLanguageEntry
     LDX #' '
 .HasLanguageEntry
     TXA:JSR OSWRCH
     LDA #')':JSR OSWRCH
     JSR printSpace
     ; Print the ROM title and version.
-    LDA #lo(copyrightOffset):STA osRdRmPtr:LDA #hi(copyrightOffset):STA osRdRmPtr + 1
+    LDA #lo(CopyrightOffset):STA osRdRmPtr:LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
     LDY SFTODOTMP:JSR OSRDRM:STA SFTODOTMP2
-    LDA #lo(title):STA osRdRmPtr:ASSERT hi(title) == hi(copyrightOffset)
+    LDA #lo(Title):STA osRdRmPtr:ASSERT hi(Title) == hi(CopyrightOffset)
 .TitleAndVersionLoop
     LDY SFTODOTMP:JSR OSRDRM:BNE NotNul ; read byte and convert NUL at end of title to space
     LDA #' '
@@ -6185,9 +6186,9 @@ SFTODOTMP2 = L00AB
 .bankLoop   ASL transientRomBankMask
             ROL transientRomBankMask + 1
             BCC SkipBank
-            LDA #lo(romType)
+            LDA #lo(RomType)
             STA osRdRmPtr								;address pointer into paged ROM
-            LDA #hi(romType)
+            LDA #hi(RomType)
             STA osRdRmPtr + 1								;address pointer into paged ROM
             TYA
             PHA
@@ -6196,7 +6197,7 @@ SFTODOTMP2 = L00AB
             PLA
             TAY
             TXA
-            STA romTypeTable,Y								;Save ROM Type to ROM Type table
+            STA RomTypeTable,Y								;Save ROM Type to ROM Type table
             STA prvRomTypeTableCopy,Y								;Save ROM Type to Private RAM copy of ROM Type table
 .SkipBank   DEY
             BPL bankLoop
@@ -6213,7 +6214,7 @@ SFTODOTMP2 = L00AB
             ROL transientRomBankMask + 1
             BCS SkipBank
             LDA #&00
-            STA romTypeTable,Y
+            STA RomTypeTable,Y
 .SkipBank   DEY
             BPL unplugLoop
             RTS
@@ -6332,7 +6333,7 @@ SFTODOTMP2 = L00AB
 
 ;copy ROM type table to Private RAM
             LDX #maxBank
-.CopyLoop   LDA romTypeTable,X
+.CopyLoop   LDA RomTypeTable,X
             STA prvRomTypeTableCopy,X
             DEX
             BPL CopyLoop
@@ -6356,7 +6357,7 @@ SFTODOTMP2 = L00AB
 .ZeroLoop   CPX romselCopy ; SFTODO: are we confident romselCopy doesn't have b7/b6 set??
             BEQ SkipBank
             LDA #&00
-            STA romTypeTable,X
+            STA RomTypeTable,X
             STA romPrivateWorkspaceTable,X
 .SkipBank   DEX
             BPL ZeroLoop
