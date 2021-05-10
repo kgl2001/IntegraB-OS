@@ -4359,7 +4359,7 @@ RamPresenceFlags = TransientZP
 }
 
 ; Return with X such that prvSFTODOFOURBANKS[X] == A (N flag clear), or with X=-1 if there is no such X (N flag set).
-; SFTODO: This only has one caller
+; SQUASH: This only has one caller
 .FindAInPrvSFTODOFOURBANKS
 {
     XASSERT_USE_PRV1
@@ -4378,16 +4378,16 @@ RamPresenceFlags = TransientZP
             BEQ showStatus
 	  ; Select the first four suitable banks from the list provided and store them at prvPseudoBankNumbers.
             JSR parseRomBankList
-            PRVEN								;switch in private RAM
+            PRVEN
             LDX #&00
             LDY #&00
 .bankLoop   ROR transientRomBankMask + 1
             ROR transientRomBankMask
-            BCC skipBank
+            BCC SkipBank
             TYA
             PHA
             JSR testRamUsingVariableMainRamSubroutine
-            BNE plyAndSkipBank 							;branch if not RAM
+            BNE plyAndSkipBank ; branch if not RAM
             LDA prvRomTypeTableCopy,X
             BEQ emptyBank
             CMP #romTypeSrData
@@ -4398,13 +4398,13 @@ RamPresenceFlags = TransientZP
 	  SEC
 .skipIffC   PLA
             TAY
-            BCS skipBank
+            BCS SkipBank
             TXA
             STA prvPseudoBankNumbers,Y
             INY
             CPY #&04
             BCS done
-.skipBank   INX
+.SkipBank   INX
             CPX #maxBank + 1
             BNE bankLoop
 	  ; There aren't four entries in prvPseudoBankNumbers (if there were we'd have taken the "BCS done" branch above), so pad the list with &FF entries.
@@ -4419,7 +4419,7 @@ RamPresenceFlags = TransientZP
             CLC
             PRVEN								;switch in private RAM
             LDY #&00
-.showLoop   CLC
+.ShowLoop   CLC
             TYA
             ADC #'W'								;Start at 'W'
             JSR OSWRCH
@@ -4439,7 +4439,7 @@ RamPresenceFlags = TransientZP
             JSR OSWRCH								;Write to screen
             JSR printSpace								;write ' ' to screen
             INY									;Next
-            BNE showLoop								;Loop for 'X', 'Y' & 'Z'
+            BNE ShowLoop								;Loop for 'X', 'Y' & 'Z'
 .osnewlPrvDisexitSc
             JSR OSNEWL								;New Line
             JMP PrvDisexitSc
@@ -4459,11 +4459,11 @@ RamPresenceFlags = TransientZP
             LDX #&00
 .bankLoop   ROR transientRomBankMask + 1
             ROR transientRomBankMask
-            BCC skipBank
+            BCC SkipBank
             PLP
             PHP
             JSR doBankX
-.skipBank   INX
+.SkipBank   INX
             CPX #maxBank + 1
             BNE bankLoop
             JMP plpPrvDisexitSc
@@ -6219,7 +6219,7 @@ osfileBlock = L02EE
             LDY #maxBank
 .bankLoop   ASL transientRomBankMask
             ROL transientRomBankMask + 1
-            BCC skipBank
+            BCC SkipBank
             LDA #lo(romType)
             STA osRdRmPtr								;address pointer into paged ROM
             LDA #hi(romType)
@@ -6233,7 +6233,7 @@ osfileBlock = L02EE
             TXA
             STA romTypeTable,Y								;Save ROM Type to ROM Type table
             STA prvRomTypeTableCopy,Y								;Save ROM Type to Private RAM copy of ROM Type table
-.skipBank   DEY
+.SkipBank   DEY
             BPL bankLoop
             PRVDIS								;switch out private RAM
             RTS
@@ -6246,10 +6246,10 @@ osfileBlock = L02EE
             LDY #maxBank
 .unplugLoop ASL transientRomBankMask
             ROL transientRomBankMask + 1
-            BCS skipBank
+            BCS SkipBank
             LDA #&00
             STA romTypeTable,Y
-.skipBank   DEY
+.SkipBank   DEY
             BPL unplugLoop
             RTS
 }
@@ -6350,8 +6350,8 @@ osfileBlock = L02EE
 }
 
 ;SPOOL/EXEC file closure warning - Service call 10 SFTODO: I *suspect* we are using this as a "part way through reset" service call rather than for its nominal purpose - have a look at OS 1.2 disassembly and see when this is actually generated. Do filing systems or anything issue it during "normal" operation? (e.g. if you do "*EXEC" with no argument.)
+.service10
 {
-.^service10
     SEC
             JSR SFTODOALARMSOMETHING
             BCS LA570
@@ -6389,11 +6389,11 @@ osfileBlock = L02EE
 ;Set all bytes in ROM Type Table and Private RAM to 0
             LDX #maxBank
 .zeroLoop   CPX romselCopy ; SFTODO: are we confident romselCopy doesn't have b7/b6 set??
-            BEQ skipBank
+            BEQ SkipBank
             LDA #&00
             STA romTypeTable,X
             STA romPrivateWorkspaceTable,X
-.skipBank   DEX
+.SkipBank   DEX
             BPL zeroLoop
 
             JMP finish
