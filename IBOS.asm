@@ -5970,6 +5970,7 @@ osfileBlock = L02EE
 
 {
 SFTODOTMP = L00AA
+SFTODOTMP2 = L00AB
 
 .LA34A
     EQUB &00								;ROM at Banks 0 & 1
@@ -6041,14 +6042,11 @@ SFTODOTMP = L00AA
     TXA:JSR OSWRCH
     LDA #')':JSR OSWRCH
     JSR printSpace
-    LDA #lo(copyrightOffset)
-    STA osRdRmPtr
-    LDA #hi(copyrightOffset)
-    STA osRdRmPtr + 1
-    LDY SFTODOTMP								;Get ROM Number
-    JSR OSRDRM								;read byte in paged ROM y from address located at &F6
-    STA L00AB								;save copyright offset pointer
-    LDA #&09
+    LDA #lo(copyrightOffset):STA osRdRmPtr:LDA #hi(copyrightOffset):STA osRdRmPtr + 1
+    LDY SFTODOTMP:JSR OSRDRM								;read byte in paged ROM y from address located at &F6
+    STA SFTODOTMP2
+    ASSERT hi(title) == hi(copyrightOffset)
+    LDA #lo(title)
     STA osRdRmPtr ;Save address &8009 to &F6 / &F7 (title string)
 .LA3F5
     LDY SFTODOTMP								;Get ROM Number
@@ -6059,7 +6057,7 @@ SFTODOTMP = L00AA
     JSR OSWRCH								;write to screen
     INC osRdRmPtr ;next character
     LDA osRdRmPtr
-    CMP L00AB								;at copyright offset pointer (end of title string + version string)?
+    CMP SFTODOTMP2 ;at copyright offset pointer (end of title string + version string)?
     BCC LA3F5								;loop if not.
     JMP OSNEWL								;otherwise finished for this rom so write new line and return
 }
