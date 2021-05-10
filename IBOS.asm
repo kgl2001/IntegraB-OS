@@ -5355,7 +5355,7 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
     LDX #lo(tubeTransferTemplate):LDY #hi(tubeTransferTemplate)
     JSR CopyYxToVariableMainRamSubroutine
     BIT Function:BPL Rts ; branch if this is a read from sideways RAM
-    ; Patch the tubeTransfer code at variableMainRamSubroutine for writing (to sideways RAM)
+    ; Patch the tubeTransfer code at variableMainRamSubroutine for writing to sideways RAM
     ; instead of reading.
     LDY #tubeTransferTemplateReadSwrEnd - tubeTransferTemplateReadSwr - 1
 .PatchLoop
