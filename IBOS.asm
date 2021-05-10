@@ -8753,9 +8753,9 @@ Ptr = &AE
     DEY:BPL Loop
     RTS
 }
-			
+
+.ClearPrvOswordBlockCopy
 {
-.^ClearPrvOswordBlockCopy
     XASSERT_USE_PRV1
     LDY #prvOswordBlockCopySize - 1
     LDA #0
@@ -8766,8 +8766,8 @@ Ptr = &AE
 }
 			
 ;OSWORD &0E (14) Read real time clock XY?0 parameter lookup code
+.oswd0e_1
 {
-.^oswd0e_1
     XASSERT_USE_PRV1
     ; Transfer control to the handler at oswd0elu[prvOswordBlockCopy] using RTS.
     LDA prvOswordBlockCopy:ASL A:TAY
@@ -8784,8 +8784,8 @@ Ptr = &AE
 
 ;OSWORD &49 (73) - Integra-B calls XY?0 parameter lookup code
 ; SQUASH: This has only one caller
+.oswd49_1 ; SFTODO: rename
 {
-.^oswd49_1 ; SFTODO: rename
     XASSERT_USE_PRV1
     ; prvOswordBlockCopy is a code in the range &60-&6F; we use that to index into oswd49lu and
     ; transfer control to the relevant handler via RTS.
@@ -9191,7 +9191,7 @@ ASSERT parentVectorTbl2End <= osPrintBuf + osPrintBufSize
 ; The stack must have the same layout as described in the big comment in vectorEntry; note that
 ; the addresses in this subroutine are two bytes higher because we were called via JSR so we
 ; need to allow for our own return address on the stack.
-.restoreOrigVectorRegs
+.RestoreOrigVectorRegs
 {
     TSX
     LDA L0108,X:PHA ; get original flags
@@ -9205,7 +9205,7 @@ ASSERT parentVectorTbl2End <= osPrintBuf + osPrintBufSize
     RTS
 }
 
-; This subroutine is the inverse of restoreOrigVectorRegs; it takes the current values of A, X,
+; This subroutine is the inverse of RestoreOrigVectorRegs; it takes the current values of A, X,
 ; Y and the flags and overwrites the stacked copies with them so they will be restored on
 ; returning from the vector handler.
 .updateOrigVectorRegs
@@ -9286,7 +9286,7 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 ; Clean up and return from a vector handler; we have dealt with the call and we're not going to
 ; call the parent handler. At this point the stack should be exactly as described in the big
 ; comment in vectorEntry; note that this code is reached via JMP so there's no extra return
-; address on the stack as there is in restoreOrigVectorRegs.
+; address on the stack as there is in RestoreOrigVectorRegs.
 .returnFromVectorHandler
 {
     ; SQUASH: This is really just shuffling the stack down to remove the return address from
@@ -9321,7 +9321,7 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 ; Restore the registers and pass the call onto the parent vector handler for vector A (using
 ; the ibos*Index numbering). At this point the stack should be exactly as described in the big
 ; comment in vectorEntry; note that this code is reached via JMP so there's no extra return
-; address on the stack as there is in restoreOrigVectorRegs.
+; address on the stack as there is in RestoreOrigVectorRegs.
 .forwardToParentVectorTblEntry
     TSX
     ASL A:TAY
@@ -9375,7 +9375,7 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 ; BYTEV handler. This is used to override the OS implementation of OSBYTE calls; only
 ; *unrecognised* OSBYTE calls will be passed through via service07.
 .bytevHandler
-    JSR restoreOrigVectorRegs
+    JSR RestoreOrigVectorRegs
     ; SQUASH: Is there any chance of saving a few bytes by converting this to a jump table?
     CMP #&6F:BEQ osbyte6FHandler
     CMP #&98:BEQ osbyte98Handler
@@ -9444,7 +9444,7 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     ; We emulate the Master's behaviour by issuing this service call to notify sideways ROMs
     ; before entering the language.
     LDA #osbyteIssueServiceRequest:LDX #serviceAboutToEnterLanguage:LDY #0:JSR OSBYTE
-    JSR restoreOrigVectorRegs
+    JSR RestoreOrigVectorRegs
     JMP returnViaParentBYTEV
 
 ; Identify host/operating system (http://beebwiki.mdfs.net/OSBYTE_%2600)
@@ -9491,7 +9491,7 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     JMP (parentWORDV)
 
 .^wordvHandler
-    JSR restoreOrigVectorRegs
+    JSR RestoreOrigVectorRegs
     CMP #oswordReadPixel:BNE NotReadPixel
     ; We need to make sure the video RAM is paged in for the pixel read to work.
     ; SFTODO: Prob true, but not followed code through precisely yet.
@@ -9514,7 +9514,7 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 ; JSR.
 .^rdchvHandler
     JSR setMemsel
-    JSR restoreOrigVectorRegs
+    JSR RestoreOrigVectorRegs
     JSR jmpParentRDCHV
     JSR updateOrigVectorRegs
     JMP returnFromVectorHandler
@@ -9544,8 +9544,8 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     CMP #shadowModeOffset:BCS EnteringShadowMode
     LDA osShadowRamFlag:BEQ EnteringShadowMode
     ; We're entering a non-shadow mode.
-    PLA:PHA ; peek original OSWRCH A=new mode SQUASH: redundant, maybeSwapShadow2 does LDA
-    JSR maybeSwapShadow2
+    PLA:PHA ; peek original OSWRCH A=new mode SQUASH: redundant, MaybeSwapShadow2 does LDA
+    JSR MaybeSwapShadow2
     LDA ramselCopy:AND_NOT ramselShen:STA ramselCopy:STA ramsel
     PLA:PHA ; peek original OSWRCH A=new mode
     AND_NOT shadowModeOffset ; SQUASH: redundant as we didn't take "BCS EnteringShadowMode" branch above
@@ -9555,7 +9555,7 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 
 .EnteringShadowMode
     LDA ramselCopy:ORA #ramselShen:STA ramselCopy:STA ramsel
-    JSR maybeSwapShadow1
+    JSR MaybeSwapShadow1
     PLA:PHA ; peek original OSWRCH A=new mode
     ORA #shadowModeOffset:LDX #prvLastScreenMode - prv83:JSR WritePrivateRam8300X
     ; SQUASH: Share STA ModeChangeState:PLA:JMP ProcessWrchv with code above?
@@ -9568,7 +9568,7 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     BEQ AdjustCrtcHorz
 
 .^WrchvHandler
-    JSR restoreOrigVectorRegs
+    JSR RestoreOrigVectorRegs
     PHA
     LDA ModeChangeState:BNE SelectNewMode
     PLA
@@ -9610,12 +9610,12 @@ ScreenStart = &3000
 ; have given them poor names for now and should revisit this once exatly when
 ; they're called becomes clearer.
 ; SFTODO: This has only one caller
-.^maybeSwapShadow1
+.^MaybeSwapShadow1
     LDA vduStatus:AND #vduStatusShadow:BEQ SwapShadowIfShxEnabled
     RTS
 
 ; SFTODO: This has only one caller
-.^maybeSwapShadow2
+.^MaybeSwapShadow2
     LDA vduStatus:AND #vduStatusShadow
     ; SQUASH: Rewriting the next two lines as "BEQ some-rts-somewhere:FALLTHROUGH_TO
     ; SwapShadowIfShxEnabled" would save a byte.
@@ -9731,7 +9731,7 @@ ScreenStart = &3000
     PRVEN
     LDA prvLastScreenMode:AND_NOT shadowModeOffset:STA prvLastScreenMode
     PRVDIS
-    JSR maybeSwapShadow2
+    JSR MaybeSwapShadow2
     JMP DisableShadow
 }
 
