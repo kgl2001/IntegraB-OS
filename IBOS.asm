@@ -5321,9 +5321,11 @@ Ptr = &AC ; 2 bytes
 ; Prepare for a data transfer between main and sideways RAM, handling case where
 ; "main" RAM is in parasite, and leave a suitable transfer subroutine at
 ; variableMainRamSubroutine.
-.prepareMainSidewaysRamTransfer
+.PrepareMainSidewaysRamTransfer
 ; SFTODO: I am assuming prvOswordBlockCopy has always been through adjustPrvOsword42Block when this code is called
 {
+Function = prvOswordBlockCopy ; SFTODO: global constant for this?
+
     XASSERT_USE_PRV1
     ; Test high bit of 32-bit main memory address to determine if we need to use a tube
     ; transfer. SFTODO: Isn't this technically incorrect? We should be checking for high word
@@ -5331,63 +5333,45 @@ Ptr = &AC ; 2 bytes
     BIT prvOswordBlockCopy + 5:BMI NotTubeTransfer
     BIT tubePresenceFlag:BPL NotTubeTransfer ; branch if no tube present
     LDA #&FF:STA prvTubeReleasePending
-.L9F5D
-    LDA #tubeEntryClaim + tubeClaimId
-    JSR tubeEntry
-    BCC L9F5D
-    LDA prvOswordBlockCopy + 2                                                              ;get byte 0 of 32-bit main memory address
-    STA L0100
-    LDA prvOswordBlockCopy + 3                                                              ;get byte 1 of 32-bit main memory address
-    STA L0101
-    LDA prvOswordBlockCopy + 4                                                              ;get byte 2 of 32-bit main memory address
-    STA L0102
-    LDA prvOswordBlockCopy + 5                                                              ;get byte 3 of 32-bit main memory address
-    STA L0103
-    LDA prvOswordBlockCopy                                                                  ;get function
-    EOR #&80
-    ROL A
-    LDA #&00
-    ROL A
-    ; At this point b0 of A has !b7 of function, all other bits of A
-    ; clear. SFTODO: We have ignored b6 of function - is that safe? do
-    ; we just not support pseudo-addresses? I don't think this is the
-    ; same as the pseudo to absolute bank conversion done inside
-    ; checkRamBankAndMakeAbsolute - that converts W=10->4 (for example),
-    ; I *think* pseudo-addresses make the 64K of SWR look like a flat
-    ; memory space. I could be wrong, I can't find any documentation on
-    ; this right now.
+.TubeClaimLoop
+    LDA #tubeEntryClaim + tubeClaimId:JSR tubeEntry:BCC TubeClaimLoop
+    ; Get the 32-bit address from prvOswordBlockCopy and set it up as tube transfer address.
+    ; SQUASH: Could we rewrite this using a loop?
+    LDA prvOswordBlockCopy + 2:STA L0100
+    LDA prvOswordBlockCopy + 3:STA L0101
+    LDA prvOswordBlockCopy + 4:STA L0102
+    LDA prvOswordBlockCopy + 5:STA L0103
+    ; Set b0 of A to be !b7 of Function, with all other bits of A clear.
     ; A=0 means multi-byte transfer, parasite to host
     ; A=1 means multi-byte transfer, host to parasite
-    ; So this has converted the function into the correct transfer type.
-    LDX #lo(L0100)
-    LDY #hi(L0101)
-    JSR tubeEntry
-    LDX #lo(tubeTransferTemplate)
-    LDY #hi(tubeTransferTemplate)
-    JSR CopyYxToVariableMainRamSubroutine					;relocate &32 bytes of code from &9EF9 to &03A7
-    BIT prvOswordBlockCopy                                                                  ;test function
-    BPL rts                                                                                 ;if this is read (from sideways RAM) we're done
-
-    ; Patch the tubeTransfer code at variableMainRamSubroutine for writing (to sideways RAM) instead of reading.
+    ; So this converts the function into the correct transfer type.
+    ; SFTODO: We're ignoring b6 of Function - is that safe? Do we just not support
+    ; pseudo-addresses? I don't think this is the same as the pseudo to absolute bank
+    ; conversion done inside checkRamBankAndMakeAbsolute - that converts W=10->4 (for example),
+    ; I *think* pseudo-addresses make the 64K of SWR look like a flat memory space. I could be
+    ; wrong, I can't find any documentation on this right now.
+    LDA Function:EOR #&80:ROL A:LDA #0:ROL A
+    LDX #lo(L0100):LDY #hi(L0101):JSR tubeEntry
+    LDX #lo(tubeTransferTemplate):LDY #hi(tubeTransferTemplate)
+    JSR CopyYxToVariableMainRamSubroutine
+    BIT Function:BPL Rts ; branch if this is a read from sideways RAM
+    ; Patch the tubeTransfer code at variableMainRamSubroutine for writing (to sideways RAM)
+    ; instead of reading.
     LDY #tubeTransferTemplateReadSwrEnd - tubeTransferTemplateReadSwr - 1
-.L9F9A
+.PatchLoop
     LDA tubeTransferTemplateWriteSwr,Y
     STA variableMainRamSubroutine + (tubeTransferTemplateReadSwr - tubeTransferTemplate),Y
-    DEY
-    BPL L9F9A
-.rts
+    DEY:BPL PatchLoop
+.Rts
     RTS
 
 .NotTubeTransfer
-    LDA #&00
-    STA prvTubeReleasePending
-    LDX #lo(mainRamTransferTemplate)
-    LDY #hi(mainRamTransferTemplate)
-    JSR CopyYxToVariableMainRamSubroutine					;relocate &32 bytes of code from &9ED9 to &03A7
-    BIT prvOswordBlockCopy                                                                  ;test function
-    BPL Rts2                                                                                ;if this is read (from sideways RAM) we're done
-    ; Patch the code at variableMainRamSubroutine to swap the operands
-    ; of LDA and STA, thereby swapping the transfer direction.
+    LDA #0:STA prvTubeReleasePending
+    LDX #lo(mainRamTransferTemplate):LDY #hi(mainRamTransferTemplate)
+    JSR CopyYxToVariableMainRamSubroutine
+    BIT Function:BPL Rts2 ; branch if this is a read from sideways RAM
+    ; Patch the code at variableMainRamSubroutine to swap the operands of LDA and STA, thereby
+    ; swapping the transfer direction.
     LDA #transientOs4243MainAddr
     STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair1 + 1 - mainRamTransferTemplate)
     STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair2 + 1 - mainRamTransferTemplate)
@@ -5482,7 +5466,7 @@ Ptr = &AC ; 2 bytes
 .adjustOsword43LengthAndBuffer
 {
 osfileBlock = L02EE
-            ; Although OSWORD &43 doesn't use 32-bit addresses, we want to be able to use prepareMainSidewaysRamTransfer to implement OSWORD &43 and that does respect the full 32-bit address, so we need to patch the OSWORD block to indicate the I/O processor for the sideways address.
+            ; Although OSWORD &43 doesn't use 32-bit addresses, we want to be able to use PrepareMainSidewaysRamTransfer to implement OSWORD &43 and that does respect the full 32-bit address, so we need to patch the OSWORD block to indicate the I/O processor for the sideways address.
 .^LA02D
     XASSERT_USE_PRV1
       LDA #&FF
@@ -5581,7 +5565,7 @@ osfileBlock = L02EE
     XASSERT_USE_PRV1
        JSR getAddressesAndLengthFromPrvOswordBlockCopy
             BCS LA0B1 ; SFTODO: I don't believe this branch can ever be taken
-            JSR prepareMainSidewaysRamTransfer
+            JSR PrepareMainSidewaysRamTransfer
             JSR doTransfer
 .LA0B1      PHP
             BIT prvTubeReleasePending
@@ -5803,7 +5787,7 @@ osfileBlock = L02EE
 
 .bufferLengthNotZero
 ; SFTODO: Does this assume the entire file fits into the buffer? Is that OK? Maybe 1770 DFS does the same?
-.LA1C7      JSR prepareMainSidewaysRamTransfer
+.LA1C7      JSR PrepareMainSidewaysRamTransfer
             JSR getAddressesAndLengthFromPrvOswordBlockCopy
             BIT prvOswordBlockCopy                                                                  ;function
 	  ; SFTODO: Can we just use BPL bufferLengthNotZeroReadFromSwr? Probably too far...
