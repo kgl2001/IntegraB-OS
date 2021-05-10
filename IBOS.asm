@@ -519,6 +519,10 @@ L08B1       = &08B1
 L08B3       = &08B3
 L08B5       = &08B5
 L08B6       = &08B6
+osFunctionKeyStartOffsets = &0B00 ; 16 bytes for *KEY0-15
+osFunctionKeyStringBase = &0B01 ; offsets are from this address
+osFunctionKeyFirstFreeOffset = &0B10
+osFunctionKeyFirstValidOffset = &0B10
 L0B00       = &0B00
 L0B0A       = &0B0A
 L0B10       = &0B10
@@ -545,6 +549,7 @@ prv8End     = &B000 ; exclusive
 ; to be in physical address order. SFTODO: Might actually be in physical order, I'll see how it works out.
 
 prvBootSFTODO = prv81 ; SFTODO: Rename this once I've been over the code and I know *exactly* what lives at this address
+prvBootCommand = prv81 + 1 ; SFTODO: probably 255 bytes?
 
 ; The printer buffer is implemented using two "extended pointers" - one for
 ; reading, one for writing. Each consists of a two byte address and a one byte
@@ -3814,23 +3819,24 @@ Tmp = TransientZP + 6
     PRVEN
     LDX lastBreakType:CPX #1:BNE NotPowerOnStarBoot
     CLC:LDA prvBootSFTODO:BEQ NotPowerOnStarBoot ; branch if we don't have a *BOOT command
-    ; SFTODO!
+    ; We're going to poke the *BOOT command into the OS function key buffer at &B00 as *KEY10.
+    ; See https://tobylobster.github.io/mos/mos/S-s14.html#SP12 for details on the format of
+    ; this buffer.
+    ;
+    ; Our *BOOT command is A bytes long, so the first free byte in page &B after our *KEY10
+    ; definition will be at &B01+A+&0F. Set all keys to have this offset from &B01 as their
+    ; start offset to indicate they are undefined.
     ADC #&0F
-    LDX #&00
+    LDX #0
 .L9625
-    STA L0B00,X
-    INX
-    CPX #&11
-    BNE L9625
-    LDA #&10
-    STA L0B0A
-    LDX #&01								;Code relocation
+    STA osFunctionKeyStartOffsets,X:INX:CPX #&11:BNE L9625
+    ; Our *KEY10 definition will start at &B01+&10.
+    LDA #&10:STA osFunctionKeyStartOffsets + 10
+    ; Copy the *BOOT command to &B01+&10 onwards.
+    LDX #1
 .L9634
-    LDA prv81,X
-    STA L0B10,X
-    INX
-    CPX prv81
-    BNE L9634
+    LDA prvBootCommand - 1,X:STA &B10,X
+    INX:CPX prv81:BNE L9634
 .NotPowerOnStarBoot
     PRVDIS
 
