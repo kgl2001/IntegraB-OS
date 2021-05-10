@@ -6042,24 +6042,18 @@ SFTODOTMP2 = L00AB
     TXA:JSR OSWRCH
     LDA #')':JSR OSWRCH
     JSR printSpace
+    ; Print the ROM title and version.
     LDA #lo(copyrightOffset):STA osRdRmPtr:LDA #hi(copyrightOffset):STA osRdRmPtr + 1
-    LDY SFTODOTMP:JSR OSRDRM								;read byte in paged ROM y from address located at &F6
-    STA SFTODOTMP2
-    ASSERT hi(title) == hi(copyrightOffset)
-    LDA #lo(title)
-    STA osRdRmPtr ;Save address &8009 to &F6 / &F7 (title string)
-.LA3F5
-    LDY SFTODOTMP								;Get ROM Number
-    JSR OSRDRM								;read byte in paged ROM y
-    BNE LA3FE								;0 indicates end of title string,
-    LDA #' '								;so write ' ' instead
-.LA3FE
-    JSR OSWRCH								;write to screen
-    INC osRdRmPtr ;next character
-    LDA osRdRmPtr
-    CMP SFTODOTMP2 ;at copyright offset pointer (end of title string + version string)?
-    BCC LA3F5								;loop if not.
-    JMP OSNEWL								;otherwise finished for this rom so write new line and return
+    LDY SFTODOTMP:JSR OSRDRM:STA SFTODOTMP2
+    LDA #lo(title):STA osRdRmPtr:ASSERT hi(title) == hi(copyrightOffset)
+.TitleAndVersionLoop
+    LDY SFTODOTMP:JSR OSRDRM:BNE NotNul ; read byte and convert NUL at end of title to space
+    LDA #' '
+.NotNul
+    JSR OSWRCH
+    INC osRdRmPtr ; advance osRdRmPtr; we know the high byte isn't going to change
+    LDA osRdRmPtr:CMP SFTODOTMP2:BCC TitleAndVersionLoop
+    JMP OSNEWL
 }
 
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be used to indicate "everything but the listed banks". Return with C set iff at least one bit of transientRomBankMask is set.
