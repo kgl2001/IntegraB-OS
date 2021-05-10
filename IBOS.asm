@@ -6007,22 +6007,23 @@ SFTODOTMP = L00AA
     JSR OSWRCH
     PRVEN
     LDX SFTODOTMP:LDA romTypeTable,X
-    LDY #' '
+    LDY #' ' ; not unplugged
     AND #&FE ; bit 0 of ROM type is undefined, so mask out
     ; SFTODO: If we take this branch, will we ever do PRVDIS?
     BNE ShowRomTypeByte
+    ; The romTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
+    ; if our private copy of the ROM type byte is non-0 show those flags.
     LDY #'U' ; Unplugged
     PRVEN ; SFTODO: We already did this, why do we need to do it again?
     LDA prvRomTypeTableCopy,X
     ; SFTODO: We don't AND #&FE here, is that wrong/inconsistent?
     PRVDIS
     BNE ShowRomTypeByte
-    JSR printSpace								;write ' ' to screen in place of 'U'
-    JSR printSpace								;write ' ' to screen in place of 'S'
-    JSR printSpace								;write ' ' to screen in place of 'L'
-    LDA #')'								;')'
-    JSR OSWRCH								;write to screen
-    JMP OSNEWL								;new line and return
+    JSR printSpace ; ' ' in place of 'U'
+    JSR printSpace ; ' ' in place of 'S'
+    JSR printSpace; ' ' in place of 'L'
+    LDA #')':JSR OSWRCH
+    JMP OSNEWL
 			
 .ShowRomTypeByte
     PHA									;save ROM Type
