@@ -774,6 +774,10 @@ flagZ = &02
 ; SFTODO: DELETE flagI = &04
 flagV = &40
 
+romTypeService = 1 << 7
+romTypeLanguage = 1 << 6
+romType6502 = 2
+
 ; Convenience macro to avoid the annoyance of writing this out every time.
 MACRO AND_NOT n
     AND #NOT(n) AND &FF
@@ -859,7 +863,7 @@ GUARD	end
 .romHeader	JMP language							;00: Language entry point
 		JMP service							;03: Service entry point
 .romType
-		EQUB &C2								;06: ROM type - Bits 1, 6 & 7 set - Language & Service
+		EQUB romTypeService OR romTypeLanguage OR romType6502
 .copyrightOffset
 		EQUB copyright - romHeader						;07: Copyright offset pointer
 		EQUB &FF								;08: Binary version number
@@ -6011,7 +6015,7 @@ SFTODOTMP2 = L00AB
     LDY #' ' ; not unplugged
     AND #&FE ; bit 0 of ROM type is undefined, so mask out
     ; SFTODO: If we take this branch, will we ever do PRVDIS?
-    BNE ShowRomTypeByte
+    BNE ShowRomHeader
     ; The romTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
     ; if our private copy of the ROM type byte is non-0 show those flags.
     LDY #'U' ; Unplugged
@@ -6019,7 +6023,7 @@ SFTODOTMP2 = L00AB
     LDA prvRomTypeTableCopy,X
     ; SFTODO: We don't AND #&FE here, is that wrong/inconsistent?
     PRVDIS
-    BNE ShowRomTypeByte
+    BNE ShowRomHeader
     JSR printSpace ; ' ' in place of 'U'
     JSR printSpace ; ' ' in place of 'S'
     JSR printSpace; ' ' in place of 'L'
@@ -6027,7 +6031,7 @@ SFTODOTMP2 = L00AB
     JMP OSNEWL
 
 ; Entered with Y=' ' or 'U' and rom type byte in A.
-.ShowRomTypeByte
+.ShowRomHeader
     PHA
     TYA:JSR OSWRCH
     LDX #'S' ; Service
