@@ -6035,12 +6035,12 @@ SFTODOTMP2 = L00AB
     PHA
     TYA:JSR OSWRCH
     LDX #'S' ; Service
-    PLA:PHA:BMI HasServiceEntry
+    PLA:PHA:ASSERT romTypeService == 1 << 7:BMI HasServiceEntry
     LDX #' '
 .HasServiceEntry
     TXA:JSR OSWRCH
     LDX #'L' ; Language
-    PLA:AND #&40:BNE HasLanguageEntry ; SFTODO: magic - language entry - perhaps define a constant and use it in our own ROM type byte
+    PLA:AND #romTypeLanguage:BNE HasLanguageEntry
     LDX #' '
 .HasLanguageEntry
     TXA:JSR OSWRCH
