@@ -5969,34 +5969,37 @@ osfileBlock = L02EE
 }
 
 {
-.LA34A	  EQUB &00								;ROM at Banks 0 & 1
-	  EQUB &00								;ROM at Banks 2 & 3
-	  EQUB &04								;Check for RAM at Banks 4 & 5
-	  EQUB &08								;Check for RAM at Banks 6 & 7
-	  EQUB &10								;Check for RAM at Banks 8 & 9
-	  EQUB &20								;Check for RAM at Banks A & B
-	  EQUB &40								;Check for RAM at Banks C & D
-	  EQUB &80								;Check for RAM at Banks E & F
+SFTODOTMP = L00AA
+
+.LA34A
+    EQUB &00								;ROM at Banks 0 & 1
+    EQUB &00								;ROM at Banks 2 & 3
+    EQUB &04								;Check for RAM at Banks 4 & 5
+    EQUB &08								;Check for RAM at Banks 6 & 7
+    EQUB &10								;Check for RAM at Banks 8 & 9
+    EQUB &20								;Check for RAM at Banks A & B
+    EQUB &40								;Check for RAM at Banks C & D
+    EQUB &80								;Check for RAM at Banks E & F
 
 ;*ROMS Command
 .^roms
     LDA #maxBank								;Start at ROM &0F
-    STA L00AA								;Save ROM number at &AA
+    STA SFTODOTMP								;Save ROM number at &AA
 .LA356
     JSR LA360								;Get and print details of ROM
-    DEC L00AA								;Next ROM
+    DEC SFTODOTMP								;Next ROM
     BPL LA356								;Until ROM &00
     JMP LA537
 			
 ;Get and print details of ROM at location &AA
 .LA360
-    LDA L00AA								;Get ROM Number
+    LDA SFTODOTMP								;Get ROM Number
     CLC
     JSR PrintADecimal								;Convert binary number to numeric characters and write characters to screen
     JSR printSpace								;write ' ' to screen
     LDA #'('								;'('
     JSR OSWRCH								;write to screen
-    LDA L00AA								;Get ROM Number
+    LDA SFTODOTMP								;Get ROM Number
 LSR A
     TAY
     LDX #userRegRamPresenceFlags						;read RAM installed in bank flag from private &83FF
@@ -6006,7 +6009,7 @@ LSR A
     LDA #&20								;' '
     BNE LA38D								;jump to write to screen
 .LA380
-    LDX L00AA								;get ROM number
+    LDX SFTODOTMP								;get ROM number
     JSR TestRamUsingVariableMainRamSubroutine					;check if ROM is WP. Will return with Z set if writeable
     PHP
     LDA #'E'								;'E' (Enabled)
@@ -6016,7 +6019,7 @@ LSR A
 .LA38D
     JSR OSWRCH								;write to screen
     PRVEN								;switch in private RAM
-    LDX L00AA								;Get ROM Number
+    LDX SFTODOTMP								;Get ROM Number
     LDA romTypeTable,X								;get ROM Type
     LDY #' '								;' '
     AND #&FE								;bit 0 of ROM Type is undefined, so mask out
@@ -6060,13 +6063,13 @@ LSR A
     STA L00F6
     LDA #&80
     STA L00F7								;Save address &8007 to &F6 / &F7 (copyright offset pointer)
-    LDY L00AA								;Get ROM Number
+    LDY SFTODOTMP								;Get ROM Number
     JSR OSRDRM								;read byte in paged ROM y from address located at &F6
     STA L00AB								;save copyright offset pointer
     LDA #&09
     STA L00F6								;Save address &8009 to &F6 / &F7 (title string)
 .LA3F5
-    LDY L00AA								;Get ROM Number
+    LDY SFTODOTMP								;Get ROM Number
     JSR OSRDRM								;read byte in paged ROM y
     BNE LA3FE								;0 indicates end of title string,
     LDA #' '								;so write ' ' instead
