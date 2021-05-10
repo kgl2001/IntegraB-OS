@@ -6024,39 +6024,32 @@ SFTODOTMP = L00AA
     JSR printSpace; ' ' in place of 'L'
     LDA #')':JSR OSWRCH
     JMP OSNEWL
-			
+
+; Entered with Y=' ' or 'U' and rom type byte in A.
 .ShowRomTypeByte
-    PHA									;save ROM Type
-    TYA									;either ' ' for inserted, or 'U' for unplugged, depending on where called from
-    JSR OSWRCH								;write to screen
-    LDX #'S'								;'S' (Service)
-    PLA									;recover ROM Type
-    PHA									;save ROM Type for further investigation
-    BMI LA3C9								;check bit 7 (Service Entry exists) and write 'S' if set
-    LDX #' '								;otherwise write ' '
-.LA3C9
-    TXA
-    JSR OSWRCH								;write either 'S' or ' ' to screen
-    LDX #'L'								;'L' (Language)
-    PLA									;recover ROM Type
-    AND #&40								;check bit 6 (Language Entry exists)
-    BNE LA3D6								;write 'L'
-    LDX #' '								;otherwise write ' '
-.LA3D6
-    TXA
-    JSR OSWRCH								;write either 'L' or ' ' to screen
-    LDA #')'
-    JSR OSWRCH								;write to screen
-    JSR printSpace								;write ' ' to screen
-    LDA #&07
-    STA L00F6
-    LDA #&80
-    STA L00F7								;Save address &8007 to &F6 / &F7 (copyright offset pointer)
+    PHA
+    TYA:JSR OSWRCH
+    LDX #'S' ; Service
+    PLA:PHA:BMI HasServiceEntry
+    LDX #' '
+.HasServiceEntry
+    TXA:JSR OSWRCH
+    LDX #'L' ; Language
+    PLA:AND #&40:BNE HasLanguageEntry ; SFTODO: magic - language entry - perhaps define a constant and use it in our own ROM type byte
+    LDX #' '
+.HasLanguageEntry
+    TXA:JSR OSWRCH
+    LDA #')':JSR OSWRCH
+    JSR printSpace
+    LDA #lo(copyrightOffset)
+    STA osRdRmPtr
+    LDA #hi(copyrightOffset)
+    STA osRdRmPtr + 1
     LDY SFTODOTMP								;Get ROM Number
     JSR OSRDRM								;read byte in paged ROM y from address located at &F6
     STA L00AB								;save copyright offset pointer
     LDA #&09
-    STA L00F6								;Save address &8009 to &F6 / &F7 (title string)
+    STA osRdRmPtr ;Save address &8009 to &F6 / &F7 (title string)
 .LA3F5
     LDY SFTODOTMP								;Get ROM Number
     JSR OSRDRM								;read byte in paged ROM y
@@ -6064,8 +6057,8 @@ SFTODOTMP = L00AA
     LDA #' '								;so write ' ' instead
 .LA3FE
     JSR OSWRCH								;write to screen
-    INC L00F6								;next character
-    LDA L00F6
+    INC osRdRmPtr ;next character
+    LDA osRdRmPtr
     CMP L00AB								;at copyright offset pointer (end of title string + version string)?
     BCC LA3F5								;loop if not.
     JMP OSNEWL								;otherwise finished for this rom so write new line and return
