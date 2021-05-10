@@ -5351,7 +5351,7 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
     ; I *think* pseudo-addresses make the 64K of SWR look like a flat memory space. I could be
     ; wrong, I can't find any documentation on this right now.
     LDA Function:EOR #&80:ROL A:LDA #0:ROL A
-    LDX #lo(L0100):LDY #hi(L0101):JSR tubeEntry
+    LDX #lo(L0100):LDY #hi(L0100):JSR tubeEntry
     LDX #lo(tubeTransferTemplate):LDY #hi(tubeTransferTemplate)
     JSR CopyYxToVariableMainRamSubroutine
     BIT Function:BPL Rts ; branch if this is a read from sideways RAM
