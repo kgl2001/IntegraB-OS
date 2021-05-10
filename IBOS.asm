@@ -5325,12 +5325,12 @@ Ptr = &AC ; 2 bytes
 ; SFTODO: I am assuming prvOswordBlockCopy has always been through adjustPrvOsword42Block when this code is called
 {
     XASSERT_USE_PRV1
-    BIT prvOswordBlockCopy + 5                                                              ;test high bit of 32-bit main memory address
-    BMI notTube
-    BIT tubePresenceFlag								;check for Tube - &00: not present, &ff: present
-    BPL notTube
-    LDA #&FF
-    STA prvTubeReleasePending
+    ; Test high bit of 32-bit main memory address to determine if we need to use a tube
+    ; transfer. SFTODO: Isn't this technically incorrect? We should be checking for high word
+    ; &FFFF, shouldn't we?
+    BIT prvOswordBlockCopy + 5:BMI NotTubeTransfer
+    BIT tubePresenceFlag:BPL NotTubeTransfer ; branch if no tube present
+    LDA #&FF:STA prvTubeReleasePending
 .L9F5D
     LDA #tubeEntryClaim + tubeClaimId
     JSR tubeEntry
@@ -5378,8 +5378,7 @@ Ptr = &AC ; 2 bytes
 .rts
     RTS
 
-.notTube
-.L9FA4
+.NotTubeTransfer
     LDA #&00
     STA prvTubeReleasePending
     LDX #lo(mainRamTransferTemplate)
