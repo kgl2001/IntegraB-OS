@@ -6257,35 +6257,40 @@ SFTODOTMP2 = L00AB
 			
 {
 ;*SRWE Command
-.^srwe      CLC
-            BCC LA50A
+.^srwe
+    CLC:BCC Common ; always branch
 
 ;*SRWP Command
-.^srwp      SEC
-.LA50A      PHP
-            JSR ParseRomBankList
-            BCC LA513
-            JMP badId
+.^srwp
+    SEC
+.Common
+    PHP
+    JSR ParseRomBankList
+    BCC LA513
+    JMP badId
 			
-.^LA513     LDX #userRegBankWriteProtectStatus
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            ORA L00AE
-            PLP
-            PHP
-            BCC LA520
-            EOR L00AE
-.LA520      JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
-            INX
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            ORA L00AF
-            PLP
-            BCC LA52E
-            EOR L00AF
-.LA52E      JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
-            PRVEN								;switch in private RAM
-            JSR LA53D
-.^LA537     PRVDIS								;switch out private RAM
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+.^LA513
+    LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
+    ORA L00AE
+    PLP
+    PHP
+    BCC LA520
+    EOR L00AE
+.LA520
+    JSR WriteUserReg
+    INX
+    JSR ReadUserReg
+    ORA L00AF
+    PLP
+    BCC LA52E
+    EOR L00AF
+.LA52E
+    JSR WriteUserReg
+    PRVEN
+    JSR LA53D
+.^LA537
+    PRVDIS
+    JMP ExitAndClaimServiceCall
 }
 
 .LA53D
