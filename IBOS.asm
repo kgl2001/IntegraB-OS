@@ -4209,31 +4209,35 @@ RamPresenceFlags = TransientZP
 ; SFTODO: There are a few cases where we JMP to osbyteXXInternal, if we rearranged the code a little (could always use macros to maintain readability, if that's a factor) we could probably save some JMPs
 .osbyte44Internal
 {
-       	  PRVEN								;switch in private RAM
-            PHP
-            SEI
-            LDA #&00
-            STA oswdbtX
-            LDY #&03
-.L9933      STY prvTmp
-            LDA prvPseudoBankNumbers,Y
-            BMI L994A
-            TAX
-            JSR testRamUsingVariableMainRamSubroutine
-            BNE L994A
-            LDA prvRomTypeTableCopy,X
-            BEQ L994D
-            CMP #&02
-            BEQ L994D
-.L994A      CLC
-            BCC L994E
-.L994D      SEC
-.L994E      ROL oswdbtX
-            LDY prvTmp
-            DEY
-            STY prvTmp
-            BPL L9933
-            JMP plpPrvDisexitSc
+  PRVEN
+    PHP
+    SEI
+    LDA #&00
+    STA oswdbtX
+    LDY #&03
+.L9933
+    STY prvTmp
+    LDA prvPseudoBankNumbers,Y
+    BMI L994A
+    TAX
+    JSR testRamUsingVariableMainRamSubroutine
+    BNE L994A
+    LDA prvRomTypeTableCopy,X
+    BEQ L994D
+    CMP #&02
+    BEQ L994D
+.L994A
+    CLC
+    BCC L994E
+.L994D
+    SEC
+.L994E
+    ROL oswdbtX
+    LDY prvTmp
+    DEY
+    STY prvTmp
+    BPL L9933
+    JMP plpPrvDisexitSc
 }
 
 ;OSBYTE &45 (69) - Test PSEUDO/Absolute usage (http://beebwiki.mdfs.net/OSBYTE_%2645)
