@@ -5992,7 +5992,7 @@ SFTODOTMP2 = L00AB
 .BankLoop
     JSR ShowRom
     DEC SFTODOTMP:BPL BankLoop
-    JMP LA537 ; SQUASH: BMI always, maybe to equivalent code nearer by?
+    JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
 			
 ; SQUASH: This has only one caller
 .ShowRom
@@ -6249,13 +6249,14 @@ SFTODOTMP2 = L00AB
             JMP PrvDis								;switch out private RAM
 }
 
-; SFTODO: This little fragment of code is only called once via JMP, can't it just be moved to avoid the JMP (and improve readability)?
-.LA4FE      JSR createRomBankMask
-            SEC
-            PHP
-            JMP LA513
-			
 {
+; SFTODO: This little fragment of code is only called once via JMP, can't it just be moved to avoid the JMP (and improve readability)?
+.^LA4FE
+    JSR createRomBankMask
+    SEC
+    PHP
+    JMP LA513 ; SQUASH: BCS always? Or move this code and just fall through?
+			
 ;*SRWE Command
 .^srwe
     CLC:BCC Common ; always branch
@@ -6269,7 +6270,7 @@ SFTODOTMP2 = L00AB
     BCC LA513
     JMP badId
 			
-.^LA513
+.LA513
     LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
     ORA L00AE
     PLP
@@ -6288,7 +6289,7 @@ SFTODOTMP2 = L00AB
     JSR WriteUserReg
     PRVEN
     JSR LA53D
-.^LA537
+.^PrvDisExitAndClaimServiceCall2
     PRVDIS
     JMP ExitAndClaimServiceCall
 }
