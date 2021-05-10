@@ -4134,69 +4134,73 @@ tmp = &A8
 {
 RamPresenceFlags = TransientZP
 
-.L989F      LDX #prvOsMode - prv83							;select OSMODE
-            JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
-            CMP #&00								;If OSMODE=0 SFTODO: Could save a byte with "TAX"
-            BEQ Rts									;Then leave startup message alone
-            LDA #osbyteEnableDisableStartupMessage					;Startup message suppression and !BOOT option status
-            LDX #&00
-            LDY #&FF
-            JSR OSBYTE
-            TXA
-            BPL Rts
-            LDA #osbyteEnableDisableStartupMessage					;Startup message suppression and !BOOT option status
-            LDX #&00
-            LDY #&00
-            JSR OSBYTE
-            LDX #computechStart - romHeader						;Start at ROM header offset &17
+.L989F
+    LDX #prvOsMode - prv83							;select OSMODE
+    JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
+    CMP #&00								;If OSMODE=0 SFTODO: Could save a byte with "TAX"
+    BEQ Rts									;Then leave startup message alone
+    LDA #osbyteEnableDisableStartupMessage					;Startup message suppression and !BOOT option status
+    LDX #&00
+    LDY #&FF
+    JSR OSBYTE
+    TXA
+    BPL Rts
+    LDA #osbyteEnableDisableStartupMessage					;Startup message suppression and !BOOT option status
+    LDX #&00
+    LDY #&00
+    JSR OSBYTE
+    LDX #computechStart - romHeader						;Start at ROM header offset &17
 .BannerLoop1
-	  LDA romHeader,X								;Read 'Computech ' from ROM header
-            JSR OSWRCH								;Write to screen
-            INX									;Next Character
-            CPX #(computechEnd + 1) - romHeader						;Check for final character
-            BNE BannerLoop1								;Loop
-            LDX #(ReverseBannerEnd - 1) - ReverseBanner					;Lookup table offset
+    LDA romHeader,X								;Read 'Computech ' from ROM header
+    JSR OSWRCH								;Write to screen
+    INX									;Next Character
+    CPX #(computechEnd + 1) - romHeader						;Check for final character
+    BNE BannerLoop1								;Loop
+    LDX #(ReverseBannerEnd - 1) - ReverseBanner					;Lookup table offset
 .BannerLoop2
-	  LDA ReverseBanner,X							;Read INTEGRA-B Text from lookup table
-            JSR OSWRCH								;Write to screen
-            DEX									;Next Character
-            BPL BannerLoop2								;Loop
-            LDA lastBreakType								;Check Break status. 0=soft, 1=power up, 2=hard
-            BEQ SoftReset								;No Beep and don't write amount of Memory to screen
-            LDA #vduBell								;Beep
-            JSR OSWRCH								;Write to screen
-            LDX #userRegRamPresenceFlags						;Read 'RAM installed in banks' register
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            STA RamPresenceFlags
-            LDX #&07								;Check all 8 32k banks for RAM
-            LDA #&00								;Start with 0k RAM
-.CountLoop  LSR RamPresenceFlags							;Check if RAM bank
-            BCC NotPresent								;If 0 then no RAM, so don't increment RAM count
-            ADC #32 - 1								;Add 32k (-1 because carry is set)
-.NotPresent DEX									;Check next 32k bank
-            BPL CountLoop								;Loop until 0
-            CMP #&00								;If RAM total = 0k (will occur with either 0 RAM banks or 8 x 32k RAM banks), then SFTODO: could do "TAX" to save a byte
-            BEQ AllBanksPresent							;Write '256K' to screen
-	  ; SFTODO: We could save the SEC by just doing JSR PrintADecimalPad
-	  ; SFTODO: Do we really want padding here? If we have (say) 64K, surely it's neater to print "Computech INTEGRA-B 64K" not "Computech INTEGRA-B  64K"?
-            SEC
-            JSR PrintADecimal								;Convert binary number to numeric characters and write characters to screen
-            JMP PrintKAndNewline							;Write 'K' to screen
+    LDA ReverseBanner,X							;Read INTEGRA-B Text from lookup table
+    JSR OSWRCH								;Write to screen
+    DEX									;Next Character
+    BPL BannerLoop2								;Loop
+    LDA lastBreakType								;Check Break status. 0=soft, 1=power up, 2=hard
+    BEQ SoftReset								;No Beep and don't write amount of Memory to screen
+    LDA #vduBell								;Beep
+    JSR OSWRCH								;Write to screen
+    LDX #userRegRamPresenceFlags						;Read 'RAM installed in banks' register
+    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
+    STA RamPresenceFlags
+    LDX #&07								;Check all 8 32k banks for RAM
+    LDA #&00								;Start with 0k RAM
+.CountLoop
+    LSR RamPresenceFlags							;Check if RAM bank
+    BCC NotPresent								;If 0 then no RAM, so don't increment RAM count
+    ADC #32 - 1								;Add 32k (-1 because carry is set)
+.NotPresent
+    DEX									;Check next 32k bank
+    BPL CountLoop								;Loop until 0
+    CMP #&00								;If RAM total = 0k (will occur with either 0 RAM banks or 8 x 32k RAM banks), then SFTODO: could do "TAX" to save a byte
+    BEQ AllBanksPresent							;Write '256K' to screen
+; SFTODO: We could save the SEC by just doing JSR PrintADecimalPad
+; SFTODO: Do we really want padding here? If we have (say) 64K, surely it's neater to print "Computech INTEGRA-B 64K" not "Computech INTEGRA-B  64K"?
+    SEC
+    JSR PrintADecimal								;Convert binary number to numeric characters and write characters to screen
+    JMP PrintKAndNewline							;Write 'K' to screen
 
 .AllBanksPresent
-            LDA #'2'
-            JSR OSWRCH								;Write to screen
-            LDA #'5'
-            JSR OSWRCH								;Write to screen
-            LDA #'6'
-            JSR OSWRCH								;Write to screen
+    LDA #'2'
+    JSR OSWRCH								;Write to screen
+    LDA #'5'
+    JSR OSWRCH								;Write to screen
+    LDA #'6'
+    JSR OSWRCH								;Write to screen
 .PrintKAndNewline
-            LDA #'K'
-            JSR OSWRCH								;Write to screen
-.SoftReset  JSR OSNEWL								;New Line
-            BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
-            BMI Rts
-            JMP OSNEWL								;New Line
+    LDA #'K'
+    JSR OSWRCH								;Write to screen
+.SoftReset
+    JSR OSNEWL								;New Line
+    BIT tubePresenceFlag							;check for Tube - &00: not present, &ff: present
+    BMI Rts
+    JMP OSNEWL								;New Line
 
     ; SQUASH: Control can't flow through to here, can we move the Rts label to a nearby Rts to
     ; save a byte?
