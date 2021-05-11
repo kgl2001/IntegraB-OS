@@ -226,6 +226,7 @@ osBrkStackPointer = &F0
 osCmdPtr = &F2
 osErrorPtr = &FD
 osRdRmPtr = &F6
+osIrqA = &FC
 
 osfindClose = &00
 osfindOpenInput = &40
@@ -9043,14 +9044,10 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ; instruction at &FFB2. We implement OSWRSC when we receive this service call to notify us of a
 ; BRK at that address. Nifty!
 .^service06
-    ; The OS BRKV handler puts the address of the byte following the BRK at osErrorPtr.
+    ; The OS BRK handler puts the address of the byte following the BRK at osErrorPtr.
     LDA osErrorPtr + 1:CMP #hi(OSWRSC + 1):BNE ExitServiceCallIndirect
-    ; SFTODO: Still need to figure out exactly what's going on here, though. Why do we do all
-    ; the following before we check the low byte of osErrorPtr? It makes sense we are restoring
-    ; the stack pointer if we're implementing OSWRSC, but why is it correct to do this
-    ; otherwise? Maybe it's virtually impossible for a BRK to occur in page &FF for any other
-    ; reason? Even so, given we *are* bothering to check the low byte of osErrorPtr, there's
-    ; presumably some reason to do it after this other stuff.
+    ; SFTODO: I'm still not sure why we don't test the low byte of osErrorPtr here, instead of
+    ; going through all the following first.
     LDX osBrkStackPointer:TXS
     ; At this point the stack looks like this:
     ;   &101,S  X stacked by OS BRK handler
@@ -9062,7 +9059,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     ; the above stack picture in X.
     LDA #lo(osReturnFromRom - 1):PHA
     LDA L0102,X:PHA ; push original flags stacked by BRK
-    LDA L00FC:PHA ; push original A saved by OS interrupt handler
+    LDA osIrqA:PHA ; push original A saved by OS interrupt handler
     LDA L0101,X:PHA ; push original X saved by OS BRK handler
     LDA #hi(osReturnFromRom - 1):STA L0101,X
     LDA romActiveLastBrk:STA L0102,X
@@ -9083,9 +9080,9 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     ; stack (romActiveLastBrk here) and discard the stacked BRK address, executing RTS with the
     ; "top byte of stack in code executing BRK" at the top of the stack, which will return from
     ; the *assumed* JSR which caused the BRK. Note that we execute this code even if the check
-    ; of osErrorPtr above *doesn't* match OSWRSC, so SFTODO: I am a little unsure why this is
-    ; always a reasonable thing to do. In practice we probably never get a BRK occurring from
-    ; page &FFxx unless it's this one caused by trying to call OSWRSC.
+    ; of the low byte of osErrorPtr above *doesn't* match OSWRSC, so SFTODO: I am a little
+    ; unsure why this is always a reasonable thing to do. In practice we probably never get a
+    ; BRK occurring from page &FFxx unless it's this one caused by trying to call OSWRSC.
     RTS
 			
 .LB936
