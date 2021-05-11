@@ -204,7 +204,6 @@ ConvertIntegerResult = FilingSystemWorkspace ; 4 bytes
 
 vduStatus = &D0
 vduStatusShadow = &10
-vduGraphicsCharacterCell = &D6 ; 2 bytes
 osEscapeFlag = &FF
 romActiveLastBrk = &024A
 negativeVduQueueSize = &026A
@@ -222,6 +221,7 @@ RomTypeSrData = 2 ; ROM type byte used for banks allocated to pseudo-addressing 
 CapitaliseMask = &DF
 LowerCaseMask = &20
 
+osWrscPtr = &D6
 osBrkStackPointer = &F0
 osCmdPtr = &F2
 osErrorPtr = &FD
@@ -9039,35 +9039,23 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     ; reason? Even so, given we *are* bothering to check the low byte of osErrorPtr, there's
     ; presumably some reason to do it after this other stuff.
     LDX osBrkStackPointer:TXS
-    LDA #&88
-    PHA
-    LDA L0102,X
-    PHA
-    LDA L00FC
-    PHA
-    LDA L0101,X
-    PHA
-    LDA #&FF
-    STA L0101,X
-    LDA romActiveLastBrk
-    STA L0102,X
-    LDA osErrorPtr
-    CMP #lo(OSWRSC + 1):BEQ LB936
+    LDA #&88:PHA
+    LDA L0102,X:PHA
+    LDA L00FC:PHA
+    LDA L0101,X:PHA
+    LDA #&FF:STA L0101,X
+    LDA romActiveLastBrk:STA L0102,X
+    LDA osErrorPtr:CMP #lo(OSWRSC + 1):BEQ LB936
 .LB931
-    PLA
-    TAX
+    PLA:TAX
     PLA
     PLP
     RTS
 			
 .LB936
-    LDA romselCopy
-    ORA #romselMemsel
-    STA romselCopy
-    STA romsel
-    TSX
-    LDA L0102,X
-    STA (vduGraphicsCharacterCell),Y ; SFTODO!?
+    LDA romselCopy:ORA #romselMemsel:STA romselCopy:STA romsel
+    TSX:LDA L0102,X
+    STA (osWrscPtr),Y
     JMP LB931
 }
 
