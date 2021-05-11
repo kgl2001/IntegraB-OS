@@ -1,3 +1,12 @@
+REM Test OSWRSC
+REM
+REM This copies the video data for a string from screen memory, then writes it
+REM (in reverse video, to show it's not the same video data somehow being
+REM preserved in screen memory) in both shadow and non-shadow modes using
+REM OSWRSC.
+REM
+REM This works fine on IBOS 1.20.
+
 *SHADOW 1
 MODE 0
 PROCassert(HIMEM=&3000)
