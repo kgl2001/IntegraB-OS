@@ -9031,6 +9031,10 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ; to do with shadow RAM given the "workaround" seems to set romselMemsel. Perhaps the
 ; bug/incompatibility we're trying to workaround is in some application, not a ROM. Might be
 ; worth asking on stardot about this.
+; SFTODO: Ahahahaha! I think this is implementing OSWRSC at &FFB3 in MOS 2.00 onwards; in OS
+; 1.20 &FFB3 is a BRK (as noted above, it's actually mid-way through an instruction) and I
+; suspect the BRK will end up pushing &FFB4 (but haven't verified this independently). Need to
+; check this later, but very clever!
 .^service06
     LDA osErrorPtr + 1
     CMP #&FF ; SFTODO: magic number?
