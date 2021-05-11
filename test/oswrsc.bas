@@ -3,7 +3,8 @@ REM
 REM This copies the video data for a string from screen memory, then writes it
 REM (in reverse video, to show it's not the same video data somehow being
 REM preserved in screen memory) in both shadow and non-shadow modes using
-REM OSWRSC.
+REM OSWRSC. We deliberately adjust both the address at &D6 and the Y register
+REM to check both are respected.
 REM
 REM This works fine on IBOS 1.20.
 
