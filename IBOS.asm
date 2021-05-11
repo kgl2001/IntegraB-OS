@@ -357,6 +357,7 @@ XKEYVBank   = XKEYV + 2
 XFILEV      = &0DBA
 XFILEVBank  = XFILEV + 2
 
+OSWRSC = &FFB3
 RESET       = &FFFC
 OSCLI       = &FFF7
 OSBYTE      = &FFF4
@@ -9023,22 +9024,14 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     JMP ExitServiceCall
 
 ; Error (BRK) occurred - Service call &06
-; SFTODO: I really don't know what's going on here. We seem to be checking for an error at
-; &FFB4, but that's in the OS ROM in the middle of an instruction. We also do some weird
-; stack-swizzling between checking the low and high bytes. My best guess is that this is trying
-; to work around a bug (or at least incompatibility) in some other ROM, perhaps one which
-; unintentionally triggers a BRK at &FFB4 (it's worth noting &FFB3 is 0=BRK). Maybe something
-; to do with shadow RAM given the "workaround" seems to set romselMemsel. Perhaps the
-; bug/incompatibility we're trying to workaround is in some application, not a ROM. Might be
-; worth asking on stardot about this.
-; SFTODO: Ahahahaha! I think this is implementing OSWRSC at &FFB3 in MOS 2.00 onwards; in OS
-; 1.20 &FFB3 is a BRK (as noted above, it's actually mid-way through an instruction) and I
-; suspect the BRK will end up pushing &FFB4 (but haven't verified this independently). Need to
-; check this later, but very clever!
+;
+; We use this to implement OSWRSC. OSWRSC at &FFB3 is only supported by OS 2.00 upwards; on OS
+; 1.20 &FFB3 is fortuitously a 0 byte - a BRK opcode - in the middle of an "LDY &FE00,X"
+; instruction at &FFB2. We implement OSWRSC when we receive this service call to notify us of a
+; BRK at that address. The OS BRKV handler puts the address of the byte following the BRK at
+; osErrorPtr. Nifty!
 .^service06
-    LDA osErrorPtr + 1
-    CMP #&FF ; SFTODO: magic number?
-    BNE ExitServiceCallIndirect
+    LDA osErrorPtr + 1:CMP #hi(OSWRSC + 1):BNE ExitServiceCallIndirect
     LDX osBrkStackPointer
     TXS
     LDA #&88
@@ -9054,8 +9047,7 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     LDA romActiveLastBrk
     STA L0102,X
     LDA osErrorPtr
-    CMP #&B4 ; SFTODO: MAGIC NUMBER!?
-    BEQ LB936
+    CMP #lo(OSWRSC + 1):BEQ LB936
 .LB931
     PLA
     TAX
