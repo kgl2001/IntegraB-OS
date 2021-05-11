@@ -9064,12 +9064,10 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ; SFTODO: Maybe change this to something like pageInMainVideoMemory? But for now
 ; it's probably better to make the hardware paging operation the focus.
 .setMemsel
-{
     PHA
     LDA romselCopy:ORA #romselMemsel:STA romselCopy:STA romsel
     PLA
     RTS
-}
 
 ; Copy our code stub into the OS printer buffer.
 ; SFTODO: This only has one caller at the moment and could be inlined.
