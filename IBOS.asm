@@ -9028,9 +9028,9 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ; We use this to implement OSWRSC. OSWRSC at &FFB3 is only supported by OS 2.00 upwards; on OS
 ; 1.20 &FFB3 is fortuitously a 0 byte - a BRK opcode - in the middle of an "LDY &FE00,X"
 ; instruction at &FFB2. We implement OSWRSC when we receive this service call to notify us of a
-; BRK at that address. The OS BRKV handler puts the address of the byte following the BRK at
-; osErrorPtr. Nifty!
+; BRK at that address. Nifty!
 .^service06
+    ; The OS BRKV handler puts the address of the byte following the BRK at osErrorPtr.
     LDA osErrorPtr + 1:CMP #hi(OSWRSC + 1):BNE ExitServiceCallIndirect
     ; SFTODO: Still need to figure out exactly what's going on here, though. Why do we do all
     ; the following before we check the low byte of osErrorPtr? It makes sense we are restoring
