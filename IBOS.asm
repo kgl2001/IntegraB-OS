@@ -4188,7 +4188,9 @@ RamPresenceFlags = TransientZP
 .NotPresent
     DEX:BPL CountLoop
     ; If we have 256K of RAM A will have wrapped to 0; we can't have 0K of sideways RAM so
-    ; there's no ambiguity.
+    ; there's no ambiguity. SQUASH: Isn't this pointless? As long as we're *not* counting
+    ; shadow/private RAM, 256K would require all 16 banks be sideways RAM, but we know at least
+    ; one bank is occupied by the IBOS ROM.
     CMP #0:BEQ AllBanksPresent ; SQUASH: use TAX instead of CMP #0
     SEC:JSR PrintADecimal ; SQUASH: JSR PrintADecimalNoPad
     JMP PrintKAndNewline
