@@ -9032,8 +9032,13 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
 ; osErrorPtr. Nifty!
 .^service06
     LDA osErrorPtr + 1:CMP #hi(OSWRSC + 1):BNE ExitServiceCallIndirect
-    LDX osBrkStackPointer
-    TXS
+    ; SFTODO: Still need to figure out exactly what's going on here, though. Why do we do all
+    ; the following before we check the low byte of osErrorPtr? It makes sense we are restoring
+    ; the stack pointer if we're implementing OSWRSC, but why is it correct to do this
+    ; otherwise? Maybe it's virtually impossible for a BRK to occur in page &FF for any other
+    ; reason? Even so, given we *are* bothering to check the low byte of osErrorPtr, there's
+    ; presumably some reason to do it after this other stuff.
+    LDX osBrkStackPointer:TXS
     LDA #&88
     PHA
     LDA L0102,X
