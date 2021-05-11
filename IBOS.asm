@@ -727,6 +727,7 @@ LDBE6       = &DBE6
 LDC16       = &DC16
 LF168       = &F168
 osEntryOsbyteIssueServiceRequest = &F168 ; start of OSBYTE 143 in OS 1.20
+osReturnFromRom = &FF89
 LF16E       = &F16E
 
 bufNumKeyboard = 0
@@ -9051,22 +9052,48 @@ AddressOffset = prvDateSFTODO4 - prvOswordBlockCopy
     ; reason? Even so, given we *are* bothering to check the low byte of osErrorPtr, there's
     ; presumably some reason to do it after this other stuff.
     LDX osBrkStackPointer:TXS
-    LDA #&88:PHA
-    LDA L0102,X:PHA
-    LDA L00FC:PHA
-    LDA L0101,X:PHA
-    LDA #&FF:STA L0101,X
+    ; At this point the stack looks like this:
+    ;   &101,S  X stacked by OS BRK handler
+    ;   &102,S  flags stacked by BRK
+    ;   &103,S  return address stacked by BRK (low)
+    ;   &104,S  return address stacked by BRK (high)
+    ;   &105,S  top byte of stack in code executing BRK
+    ; Note that none of the following PHA operations alter X (of course), so we have the S for
+    ; the above stack picture in X.
+    LDA #lo(osReturnFromRom - 1):PHA
+    LDA L0102,X:PHA ; push original flags stacked by BRK
+    LDA L00FC:PHA ; push original A saved by OS interrupt handler
+    LDA L0101,X:PHA ; push original X saved by OS BRK handler
+    LDA #hi(osReturnFromRom - 1):STA L0101,X
     LDA romActiveLastBrk:STA L0102,X
     LDA osErrorPtr:CMP #lo(OSWRSC + 1):BEQ LB936
 .LB931
-    PLA:TAX
-    PLA
-    PLP
+    PLA:TAX ; restore original X from the value we pushed above
+    PLA ; restore original A from the value we pushed above
+    PLP ; restore original flags from the value we pushed above
+    ; At this point the stack looks like this:
+    ;   &101,S  &88 == lo(osReturnFromRom - 1)
+    ;   &102,S  &FF == hi(osReturnFromRom - 1)
+    ;   &103,S  romActiveLastBrk
+    ;   &104,S  return address stacked by BRK (low)
+    ;   &105,S  return address stacked by BRK (high)
+    ;   &106,S  top byte of stack in code executing BRK
+    ; The following RTS will therefore transfer control to &FF89 in the OS, called
+    ; returnFromROM in TobyLobster's disassembly. This will re-select the ROM number on the
+    ; stack (romActiveLastBrk here) and discard the stacked BRK address, executing RTS with the
+    ; "top byte of stack in code executing BRK" at the top of the stack, which will return from
+    ; the *assumed* JSR which caused the BRK. Note that we execute this code even if the check
+    ; of osErrorPtr above *doesn't* match OSWRSC, so SFTODO: I am a little unsure why this is
+    ; always a reasonable thing to do. In practice we probably never get a BRK occurring from
+    ; page &FFxx unless it's this one caused by trying to call OSWRSC.
     RTS
 			
 .LB936
+    ; Set MEMSEL; this will force main/video memory to appear at &3000-8000 regardless of SHEN.
+    ; We will revert to the previous setting when ROMSEL is restored to the contents of the
+    ; stacked copy of romActiveLastBrk inside osReturnFromRom.
     LDA romselCopy:ORA #romselMemsel:STA romselCopy:STA romsel
-    TSX:LDA L0102,X
+    TSX:LDA L0102,X ; get original A
     STA (osWrscPtr),Y
     JMP LB931
 }
