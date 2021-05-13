@@ -6357,30 +6357,21 @@ SFTODOTMP2 = L00AB
     LDA #&FF:STA L03A4
 
     ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
-    ;Set all bytes in ROM Type Table and Private RAM to 0
+    ; Set the OS ROM type table and our private RAM copy to all bytes zero. SFTODO: why???
     LDX #maxBank
 .ZeroLoop
-    CPX romselCopy ; SFTODO: are we confident romselCopy doesn't have b7/b6 set??
-    BEQ SkipBank
-    LDA #&00
-    STA RomTypeTable,X
-    STA romPrivateWorkspaceTable,X
+    CPX romselCopy:BEQ SkipBank
+     ; SFTODO: are we confident romselCopy doesn't have b7/b6 set??
+    LDA #0:STA RomTypeTable,X:STA romPrivateWorkspaceTable,X
 .SkipBank
-    DEX
-    BPL ZeroLoop
-
+    DEX:BPL ZeroLoop
     JMP Finish ; SQUASH: BMI always
 
     ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
 .SoftReset
-    LDA #&00
-    STA L03A4
-    LDX #userRegBankInsertStatus
-    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-    STA transientRomBankMask
-    LDX #userRegBankInsertStatus + 1
-    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-    STA transientRomBankMask + 1
+    LDA #0:STA L03A4
+    LDX #userRegBankInsertStatus:JSR ReadUserReg:STA transientRomBankMask
+    LDX #userRegBankInsertStatus + 1:JSR ReadUserReg:STA transientRomBankMask + 1
     JSR unplugBanksUsingTransientRomBankMask
 ; SFTODO: Next bit of code is either claiming or not claiming the service call based on prvSFTODOTUBEISH; it will return with A=&10 (this call) or 0.
 .Finish
