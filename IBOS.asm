@@ -6331,11 +6331,9 @@ SFTODOTMP2 = L00AB
 ;SPOOL/EXEC file closure warning - Service call 10 SFTODO: I *suspect* we are using this as a "part way through reset" service call rather than for its nominal purpose - have a look at OS 1.2 disassembly and see when this is actually generated. Do filing systems or anything issue it during "normal" operation? (e.g. if you do "*EXEC" with no argument.)
 .service10
 {
-    SEC:JSR AlarmAndSQWEControl ; get SQWE bit in C
-    BCS LA570
+    SEC:JSR AlarmAndSQWEControl:BCS SQWESet
     JMP SoftReset ; SQUASH: BCC always? SFTODO: Rename this label given its use here?
-			
-.LA570
+.SQWESet
     LDA ramselCopy:AND #ramselShen:STA ramselCopy
 
     PRVEN
