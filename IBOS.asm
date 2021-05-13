@@ -3821,7 +3821,7 @@ Tmp = TransientZP + 6
     LDA XKEYVBank:ORA #romselMemsel:STA XKEYVBank
 .NoGenie
 
-    CLC:JSR SFTODOALARMSOMETHING
+    CLC:JSR AlarmAndSQWEControl ; set SQWE and AIE
     BIT L03A4:BPL L9611 ; SFTODO!? This seems to be saying that if b7 of L03A4 is set, we skip *BOOT handling and we don't check to see if no key is pressed wrt selection of desired filing system
     JMP L964C
 .L9611
@@ -6331,8 +6331,7 @@ SFTODOTMP2 = L00AB
 ;SPOOL/EXEC file closure warning - Service call 10 SFTODO: I *suspect* we are using this as a "part way through reset" service call rather than for its nominal purpose - have a look at OS 1.2 disassembly and see when this is actually generated. Do filing systems or anything issue it during "normal" operation? (e.g. if you do "*EXEC" with no argument.)
 .service10
 {
-    ; SFTODO: THE JSR WILL RETURN WITH SQWE STATE IN C
-    SEC:JSR SFTODOALARMSOMETHING ; SQUASH: We could just JSR directly to the carry set case and avoid the SEC
+    SEC:JSR AlarmAndSQWEControl ; get SQWE bit in C
     BCS LA570
     JMP SoftReset ; SQUASH: BCC always? SFTODO: Rename this label given its use here?
 			
@@ -6353,10 +6352,9 @@ SFTODOTMP2 = L00AB
 
     LDX lastBreakType:BEQ SoftReset
     LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeAt:BNE SoftReset ; SFTODO: Rename label given use here?
-    ; The last reset wasn't a soft reset and the "@" key is held down.
+    ; The last break wasn't a soft reset and the "@" key is held down.
     LDA #0:STA breakInterceptJmp ; cancel any break intercept which might have been set up
     LDA #&FF:STA L03A4
-
     ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
     ; Set the OS ROM type table and our private RAM copy to all bytes zero. SFTODO: why???
     LDX #maxBank
@@ -6629,11 +6627,14 @@ SFTODOTMP2 = L00AB
     RTS
 }
 
-.SFTODOALARMSOMETHING
+; SQUASH: This has two callers, one of which does CLC and the other SEC before calling it. So
+; just split it into two separate subroutines and get rid of the use of C on entry to choose
+; behaviour.
+.AlarmAndSQWEControl
 {
 Tmp = TransientZP + 6
 
-    BCS LA7C2
+    BCS GetSQWE
     ; Set SQWE (square-wave enable) and if userRegAlarmEnableBit is set, additionally set AIE
     ; (alarm interrupt enable). Note that we *don't* clear AIE if it's currently set and
     ; userRegAlarmEnableBit isn't set. SFTODO: That's probably fine, but without more context
@@ -6646,7 +6647,7 @@ Tmp = TransientZP + 6
     RTS
 
     ; Return with the current SQWE (square-wave enable) state in C.
-.LA7C2
+.GetSQWE
     LDX #rtcRegB:JSR ReadRtcRam:AND #rtcRegBSQWE:BNE ClcRts
     SEC
     RTS
