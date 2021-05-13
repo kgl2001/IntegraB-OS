@@ -6375,13 +6375,11 @@ SFTODOTMP2 = L00AB
     JSR unplugBanksUsingTransientRomBankMask
 ; SFTODO: Next bit of code is either claiming or not claiming the service call based on prvSFTODOTUBEISH; it will return with A=&10 (this call) or 0.
 .Finish
-    LDX #prvSFTODOTUBEISH - prv83
-    JSR ReadPrivateRam8300X							;read data from Private RAM &83xx (Addr = X, Data = A)
+    LDX #prvSFTODOTUBEISH - prv83:JSR ReadPrivateRam8300X
     EOR #&FF
     AND #&10
-    TSX
-    STA L0103,X								;modify stacked A, i.e. A we will return from service call with
-    JMP ExitServiceCall								;restore service call parameters and exit
+    TSX:STA L0103,X								;modify stacked A, i.e. A we will return from service call with
+    JMP ExitServiceCall
 }
 			
 ;Write contents from Private memory address &8000 to screen
