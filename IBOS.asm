@@ -6357,7 +6357,7 @@ SFTODOTMP2 = L00AB
     LDA #0:STA breakInterceptJmp ; cancel any break intercept which might have been set up
     LDA #&FF:STA L03A4
     ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
-    ; Set the OS ROM type table and our private RAM copy to all bytes zero. SFTODO: why???
+    ; Set the OS ROM type table and our private RAM copy to zero for all ROMs except us. SFTODO: why?
     LDX #maxBank
 .ZeroLoop
     CPX romselCopy:BEQ SkipBank
@@ -6373,8 +6373,8 @@ SFTODOTMP2 = L00AB
     LDX #userRegBankInsertStatus:JSR ReadUserReg:STA transientRomBankMask
     LDX #userRegBankInsertStatus + 1:JSR ReadUserReg:STA transientRomBankMask + 1
     JSR unplugBanksUsingTransientRomBankMask
-; SFTODO: Next bit of code is either claiming or not claiming the service call based on prvSFTODOTUBEISH; it will return with A=&10 (this call) or 0.
 .Finish
+; SFTODO: Next bit of code is either claiming or not claiming the service call based on prvSFTODOTUBEISH; it will return with A=&10 (this call) or 0.
     LDX #prvSFTODOTUBEISH - prv83:JSR ReadPrivateRam8300X
     EOR #&FF
     AND #&10
