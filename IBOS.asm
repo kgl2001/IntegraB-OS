@@ -3827,7 +3827,7 @@ Tmp = TransientZP + 6
     ; will force SQWE *off* on reset which thus allows it to be abused here as a "has service
     ; call 3 been issued yet?" flag???? See service10 for a check of SQWE...
     CLC:JSR AlarmAndSQWEControl ; set SQWE and AIE
-    BIT SFTODORESETISH:BPL L9611 ; SFTODO!? This seems to be saying that if b7 of SFTODORESETISH is set, we skip *BOOT handling and we don't check to see if no key is pressed wrt selection of desired filing system
+    BIT SFTODORESETISH:BPL L9611 ; SFTODO!? This seems to be saying that if b7 of SFTODORESETISH is set, we skip *BOOT handling and we don't check to see if no key is pressed wrt selection of desired filing system - that case occurs when we're doing @-ish stuff in service 03, I suspect the logic here is to avoid a (possibly corrupt) *BOOT string being typed automatically when we're trying to @-reset the machine.
     JMP L964C
 .L9611
 
@@ -3938,7 +3938,7 @@ tmp = &A8
     JSR WritePrivateRam8300X
     DEX:BNE WriteLoop
     LDA romselCopy:AND #maxBank:ASSERT prvIbosBankNumber == prv83 + 0:JSR WritePrivateRam8300X
-    BIT SFTODORESETISH:BPL L96EE ; SFTODO!? If b7 of SFTODORESETISH is set, we don't do any of our processing beyond the tiny bit above
+    BIT SFTODORESETISH:BPL L96EE ; SFTODO!? If b7 of SFTODORESETISH is set, we don't do any of our processing beyond the tiny bit above - presumably because b7 being set is @-resetish and our private RAM/RTC registers are probably gibberish
     JMP ExitServiceCallIndirect
 			
 .L96EE
@@ -4072,7 +4072,7 @@ tmp = &A8
     JSR clearShenPrvEn:PHA
     BIT prvSFTODOTUBEISH:BMI L9836
     LDA lastBreakType:BEQ SoftReset
-    BIT SFTODORESETISH ; SFTODO!?
+    BIT SFTODORESETISH ; SFTODO!? I think this is saying "don't look at gibberish in private RAM/RTC during an @-reset"
     BMI L983D
     LDX #userRegTubeBaudPrinter:JSR ReadUserReg:AND #1:BNE WantTube ; branch if *CONFIGURE TUBE
     LDA #&FF
