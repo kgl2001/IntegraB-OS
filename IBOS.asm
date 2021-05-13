@@ -3821,7 +3821,7 @@ Tmp = TransientZP + 6
 .NoGenie
 
     CLC:JSR SFTODOALARMSOMETHING
-    BIT L03A4:BPL L9611 ; SFTODO!?
+    BIT L03A4:BPL L9611 ; SFTODO!? This seems to be saying that if b7 of L03A4 is set, we skip *BOOT handling and we don't check to see if no key is pressed wrt selection of desired filing system
     JMP L964C
 .L9611
 
@@ -3932,7 +3932,7 @@ tmp = &A8
     JSR WritePrivateRam8300X
     DEX:BNE WriteLoop
     LDA romselCopy:AND #maxBank:ASSERT prvIbosBankNumber == prv83 + 0:JSR WritePrivateRam8300X
-    BIT L03A4:BPL L96EE ; SFTODO!?
+    BIT L03A4:BPL L96EE ; SFTODO!? If b7 of L03A4 is set, we don't do any of our processing beyond the tiny bit above
     JMP ExitServiceCallIndirect
 			
 .L96EE
@@ -6342,26 +6342,19 @@ SFTODOTMP2 = L00AB
 
     JSR LA53D
 
-;copy ROM type table to Private RAM
+    ; Copy the OS ROM type table into private RAM so we know the original contents before we modified it.
     LDX #maxBank
 .CopyLoop
-    LDA RomTypeTable,X
-    STA prvRomTypeTableCopy,X
-    DEX
-    BPL CopyLoop
+    LDA RomTypeTable,X:STA prvRomTypeTableCopy,X
+    DEX:BPL CopyLoop
 
     PRVDIS
 
-    LDX lastBreakType
-    BEQ SoftReset
-    LDA #osbyteKeyboardScanFrom10
-    JSR OSBYTE
-    CPX #keycodeAt
-    BNE SoftReset ; SFTODO: Rename label given use here?
-    LDA #&00
-    STA L0287
-    LDA #&FF
-    STA L03A4
+    LDX lastBreakType:BEQ SoftReset
+    LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeAt:BNE SoftReset ; SFTODO: Rename label given use here?
+    ; The last reset wasn't a soft reset and the "@" key is held down.
+    LDA #&00:STA L0287
+    LDA #&FF:STA L03A4
 
     ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
     ;Set all bytes in ROM Type Table and Private RAM to 0
