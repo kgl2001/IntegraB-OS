@@ -6361,7 +6361,7 @@ SFTODOTMP2 = L00AB
     LDX #maxBank
 .ZeroLoop
     CPX romselCopy:BEQ SkipBank
-     ; SFTODO: are we confident romselCopy doesn't have b7/b6 set??
+     ; SFTODO: are we confident romselCopy doesn't have b7/b6 set?? To be fair, this is probably *very* early in boot and the OS has paged us in, so almost certainly this is fine.
     LDA #0:STA RomTypeTable,X:STA romPrivateWorkspaceTable,X
 .SkipBank
     DEX:BPL ZeroLoop
