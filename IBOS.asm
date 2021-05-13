@@ -209,6 +209,7 @@ romActiveLastBrk = &024A
 negativeVduQueueSize = &026A
 tubePresenceFlag = &027A ; SFTODO: allmem says 0=inactive, is there actually a specific bit or value for active? what does this code rely on?
 osShadowRamFlag = &027F ; *SHADOW option, 1=force shadow mode, 0=don't force shadow mode
+breakInterceptJmp = &0287 ; memory location corresponding to *FX247
 currentLanguageRom = &028C ; SFTODO: not sure yet if we're using this for what the OS does or repurposing it
 osfileBlock = &02EE ; OS OSFILE block for *LOAD, *SAVE, etc
 currentMode = &0355
@@ -6353,7 +6354,7 @@ SFTODOTMP2 = L00AB
     LDX lastBreakType:BEQ SoftReset
     LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeAt:BNE SoftReset ; SFTODO: Rename label given use here?
     ; The last reset wasn't a soft reset and the "@" key is held down.
-    LDA #&00:STA L0287
+    LDA #0:STA breakInterceptJmp ; cancel any break intercept which might have been set up
     LDA #&FF:STA L03A4
 
     ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
@@ -6378,7 +6379,7 @@ SFTODOTMP2 = L00AB
     LDX #prvSFTODOTUBEISH - prv83:JSR ReadPrivateRam8300X
     EOR #&FF
     AND #&10
-    TSX:STA L0103,X								;modify stacked A, i.e. A we will return from service call with
+    TSX:STA L0103,X	; modify stacked A, i.e. A we will return from the service call with
     JMP ExitServiceCall
 }
 			
