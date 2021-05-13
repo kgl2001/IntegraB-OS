@@ -3821,6 +3821,9 @@ Tmp = TransientZP + 6
     LDA XKEYVBank:ORA #romselMemsel:STA XKEYVBank
 .NoGenie
 
+    ; SFTODO: Why set SQWE here? Is this meaningful? Is there some hardware mechanism which
+    ; will force SQWE *off* on reset which thus allows it to be abused here as a "has service
+    ; call 3 been issued yet?" flag???? See service10 for a check of SQWE...
     CLC:JSR AlarmAndSQWEControl ; set SQWE and AIE
     BIT L03A4:BPL L9611 ; SFTODO!? This seems to be saying that if b7 of L03A4 is set, we skip *BOOT handling and we don't check to see if no key is pressed wrt selection of desired filing system
     JMP L964C
@@ -6496,6 +6499,8 @@ SFTODOTMP2 = L00AB
     LDX #rtcRegA:JSR ReadRtcRam:ORA #rtcRegADV2 OR rtcRegADV1 OR rtcRegADV0:JSR WriteRtcRam
     ; Force SET (set mode), DM (binary mode) and 2412 (24 hour mode) on in register B and
     ; force SQWE (square wave enable) and DSE (auto daylight savings adjust) off.
+    ; SFTODO: This seems to leave SQWE off; during boot AlarmAndSQWEControl seems to be used to
+    ; turn it on. There doesn't seem to be any obvious logic to this.
     LDX #rtcRegB:JSR ReadRtcRam ; SQUASH: ASSERT rtcRegA + 1 == rtcRegB:INX
     AND_NOT rtcRegBSET OR rtcRegBSQWE OR rtcRegBDM OR rtcRegB2412 OR rtcRegBDSE
     ORA #rtcRegBSET OR rtcRegBDM OR rtcRegB2412
