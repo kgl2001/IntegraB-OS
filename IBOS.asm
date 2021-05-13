@@ -6305,7 +6305,7 @@ SFTODOTMP2 = L00AB
 .LA52E
     JSR WriteUserReg
     PRVEN
-    JSR LA53D
+    JSR SFTODOWRITEPROTECTISH
 .^PrvDisExitAndClaimServiceCall2
     PRVDIS
     JMP ExitAndClaimServiceCall
@@ -6315,7 +6315,7 @@ SFTODOTMP2 = L00AB
 ; %x1xxxxxx, which I'm not even sure exist. The use of userRegBankWriteProtectStatus is
 ; obviously a clue, but the code doesn't seem to be doing anything obviously sensible with
 ; those values.
-.LA53D
+.SFTODOWRITEPROTECTISH
 {
     XASSERT_USE_PRV1
     LDX #userRegBankWriteProtectStatus:JSR ReadUserReg:STA prvTmp
@@ -6338,6 +6338,7 @@ SFTODOTMP2 = L00AB
 ;SPOOL/EXEC file closure warning - Service call 10 SFTODO: I *suspect* we are using this as a "part way through reset" service call rather than for its nominal purpose - have a look at OS 1.2 disassembly and see when this is actually generated. Do filing systems or anything issue it during "normal" operation? (e.g. if you do "*EXEC" with no argument.)
 .service10
 {
+    ; SFTODO: I'm guessing, but note that during a typical boot service call &10 is issued early, then there will be a service call &03, then a subsequent service call &10 once the filing system has been selected. service03 sets SQWE. So maybe this is saying "on the early service call &10, start at SoftReset, but on the second service call &10, execute this additional code at SQWESet". But that only works if something (hardware tied to the reset line???) clears SQWE first. Maybe this is something related to detecting power-on reset, though why we suddenly don't trust lastBreakType I don't know - maybe this is too early for that to have been set, though that seems unlikely.
     SEC:JSR AlarmAndSQWEControl:BCS SQWESet
     JMP SoftReset ; SQUASH: BCC always? SFTODO: Rename this label given its use here?
 .SQWESet
@@ -6345,7 +6346,7 @@ SFTODOTMP2 = L00AB
 
     PRVEN
 
-    JSR LA53D
+    JSR SFTODOWRITEPROTECTISH
 
     ; Copy the OS ROM type table into private RAM so we know the original contents before we modified it.
     LDX #maxBank
