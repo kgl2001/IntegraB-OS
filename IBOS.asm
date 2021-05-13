@@ -213,6 +213,8 @@ breakInterceptJmp = &0287 ; memory location corresponding to *FX247
 currentLanguageRom = &028C ; SFTODO: not sure yet if we're using this for what the OS does or repurposing it
 osfileBlock = &02EE ; OS OSFILE block for *LOAD, *SAVE, etc
 currentMode = &0355
+; &03A4 is the "GXR flag byte" according to allmem.txt; IBOS seems to repurposed it to track how the last service call &10 was handled. SFTODO: This isn't really clear yet, but it looks as though this is 0 for "normal" or &FF where we've done the special "@" stuff in service03. I suspect &FF gets reset to 0 later in the boot, but I'm not all that sure.
+SFTODORESETISH = &03A4 ; this is the "GXR flag byte" according to allmem.txt; we seem to borrow it
 
 RomTypeTable = &02A1
 romPrivateWorkspaceTable = &0DF0
@@ -3825,7 +3827,7 @@ Tmp = TransientZP + 6
     ; will force SQWE *off* on reset which thus allows it to be abused here as a "has service
     ; call 3 been issued yet?" flag???? See service10 for a check of SQWE...
     CLC:JSR AlarmAndSQWEControl ; set SQWE and AIE
-    BIT L03A4:BPL L9611 ; SFTODO!? This seems to be saying that if b7 of L03A4 is set, we skip *BOOT handling and we don't check to see if no key is pressed wrt selection of desired filing system
+    BIT SFTODORESETISH:BPL L9611 ; SFTODO!? This seems to be saying that if b7 of SFTODORESETISH is set, we skip *BOOT handling and we don't check to see if no key is pressed wrt selection of desired filing system
     JMP L964C
 .L9611
 
@@ -3936,7 +3938,7 @@ tmp = &A8
     JSR WritePrivateRam8300X
     DEX:BNE WriteLoop
     LDA romselCopy:AND #maxBank:ASSERT prvIbosBankNumber == prv83 + 0:JSR WritePrivateRam8300X
-    BIT L03A4:BPL L96EE ; SFTODO!? If b7 of L03A4 is set, we don't do any of our processing beyond the tiny bit above
+    BIT SFTODORESETISH:BPL L96EE ; SFTODO!? If b7 of SFTODORESETISH is set, we don't do any of our processing beyond the tiny bit above
     JMP ExitServiceCallIndirect
 			
 .L96EE
@@ -4070,7 +4072,7 @@ tmp = &A8
     JSR clearShenPrvEn:PHA
     BIT prvSFTODOTUBEISH:BMI L9836
     LDA lastBreakType:BEQ SoftReset
-    BIT L03A4 ; SFTODO!?
+    BIT SFTODORESETISH ; SFTODO!?
     BMI L983D
     LDX #userRegTubeBaudPrinter:JSR ReadUserReg:AND #1:BNE WantTube ; branch if *CONFIGURE TUBE
     LDA #&FF
@@ -6360,7 +6362,7 @@ SFTODOTMP2 = L00AB
     LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeAt:BNE SoftReset ; SFTODO: Rename label given use here?
     ; The last break wasn't a soft reset and the "@" key is held down.
     LDA #0:STA breakInterceptJmp ; cancel any break intercept which might have been set up
-    LDA #&FF:STA L03A4
+    LDA #&FF:STA SFTODORESETISH
     ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
     ; Set the OS ROM type table and our private RAM copy to zero for all ROMs except us. SFTODO: why?
     LDX #maxBank
@@ -6374,7 +6376,7 @@ SFTODOTMP2 = L00AB
 
     ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
 .SoftReset
-    LDA #0:STA L03A4
+    LDA #0:STA SFTODORESETISH
     LDX #userRegBankInsertStatus:JSR ReadUserReg:STA transientRomBankMask
     LDX #userRegBankInsertStatus + 1:JSR ReadUserReg:STA transientRomBankMask + 1
     JSR unplugBanksUsingTransientRomBankMask
