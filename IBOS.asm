@@ -6311,6 +6311,10 @@ SFTODOTMP2 = L00AB
     JMP ExitAndClaimServiceCall
 }
 
+; SFTODO: What's going on here? This seems to be writing to RTC register %1xxxxxxx and
+; %x1xxxxxx, which I'm not even sure exist. The use of userRegBankWriteProtectStatus is
+; obviously a clue, but the code doesn't seem to be doing anything obviously sensible with
+; those values.
 .LA53D
 {
     XASSERT_USE_PRV1
