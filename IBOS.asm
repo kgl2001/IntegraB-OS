@@ -731,7 +731,7 @@ prvLastScreenMode = prv83 + &3F
 
 LDBE6       = &DBE6
 LDC16       = &DC16
-LF168       = &F168
+osStxRomselAndCopyAndRts = &DC16 ; STX romselCopy:STX romsel:RTS in OS 1.20
 osEntryOsbyteIssueServiceRequest = &F168 ; start of OSBYTE 143 in OS 1.20
 osReturnFromRom = &FF89
 LF16E       = &F16E
@@ -4097,7 +4097,7 @@ tmp = &A8
     PLA ; discard stacked original A
     LDA #&FF
     LDX #&00
-    JMP LDC16 ; STX romselCopy:STX romsel:RTS, i.e. page in bank 0 (SFTODO!?) and return from service call
+    JMP osStxRomselAndCopyAndRts
 
 ; SQUASH: This only has one caller
 .clearShenPrvEn ; SFTODO: not super happy with this name
@@ -5141,6 +5141,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             BIT variableMainRamSubroutine+L9E41-wipeRamTemplate+2								;test MSB bit 6 (have we reached &4000?)
             BVC L9E41									;No? Then loop
             LDA romselCopy
+	  ; SQUASH: We could replace next three instructions with JMP osStxRomselAndCopyAndRts.
             STX romselCopy
             STX romsel
             RTS
@@ -5160,6 +5161,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             DEY
             BPL L9E62
             LDA romselCopy
+	  ; SQUASH: We could replace next three instructions with JMP osStxRomselAndCopyAndRts.
             STX romselCopy
             STX romsel
             RTS
@@ -10041,6 +10043,7 @@ ramRomAccessSubroutine = &0380 ; SFTODO: Move this line?
 ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubroutineVariableInsn - romRomAccessSubroutine)
 	  EQUB &00			;relocates to &0387. Note this byte gets dynamically changed by the code to &AD (LDA &), &8D (STA &) and &CD (CMP &)
 	  EQUB $00,$80			;relocates to &0388. So this becomes either LDA &8000, STA &8000 or CMP &8000
+	  ; SQUASH: We could replace next three instructions with JMP osStxRomselAndCopyAndRts.
             STX romselCopy				;relocates to &038A
             STX romsel			;relocates to &038C
             RTS				;relocates to &038F
