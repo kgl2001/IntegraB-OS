@@ -172,7 +172,11 @@ userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegBankWriteProtectStatus = &38 ; 2 bytes, 1 bit per bank
 userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
-userRegRamPresenceFlags = &7F ; b0 set=RAM in banks 0-1, b1 set=RAM in banks 2-3, ...
+; userRegRamPresenceFlags has a bit set for every 32K of RAM. Bit 0 "sort of" represents banks
+; 0-1, bit 1 represents banks 2-3, etc. Bit 0 is a bit odd, because it will typically be *set*
+; in order for the startup message to count the standard 32K of RAM; this doesn't mean banks
+; 0-1 have sideways RAM in, and elsewhere we assume they don't.
+userRegRamPresenceFlags = &7F
 
 ; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
 TransientZP = &A8
@@ -4196,7 +4200,7 @@ RamPresenceFlags = TransientZP
 
     LDA #vduBell:JSR OSWRCH
 
-    ; Count sideways RAM banks in kilobytes and print the result.
+    ; Count 32K chunks of RAM in kilobytes and print the result.
     LDX #userRegRamPresenceFlags:JSR ReadUserReg:STA RamPresenceFlags
     LDX #7
     LDA #0
@@ -4205,10 +4209,8 @@ RamPresenceFlags = TransientZP
     ADC #32 - 1 ; add 32K, -1 because carry is set
 .NotPresent
     DEX:BPL CountLoop
-    ; If we have 256K of RAM A will have wrapped to 0; we can't have 0K of sideways RAM so
-    ; there's no ambiguity. SQUASH: Isn't this pointless? As long as we're *not* counting
-    ; shadow/private RAM, 256K would require all 16 banks be sideways RAM, but we know at least
-    ; one bank is occupied by the IBOS ROM.
+    ; If we have 256K of RAM A will have wrapped to 0; we can't have 0K of RAM so there's no
+    ; ambiguity.
     CMP #0:BEQ AllBanksPresent ; SQUASH: use TAX instead of CMP #0
     SEC:JSR PrintADecimal ; SQUASH: JSR PrintADecimalNoPad
     JMP PrintKAndNewline
@@ -6000,17 +6002,8 @@ SFTODOTMP = L00AA
 SFTODOTMP2 = L00AB
 
 .LA34A
-    ; ENHANCE: Isn't this assumption that banks 0 & 1 are ROM incorrect? Note that
-    ; userRegRamPresenceFlags defaults to indicating RAM in the all the lower 8 banks. Wouldn't
-    ; it be harmless at worst for *ROMS to go and test banks 0 & 1 for RAM, instead of just
-    ; assuming they're ROM? For that matter, wouldn't it make more sense for this code to just
-    ; go and test all 16 banks instead of trusting userRegRamPresenceFlags? Couldn't a user
-    ; have plugged a sideways RAM module into one of the higher-numbered banks, for example?
-    ; Should we perhaps do a full RAM test on power-on reset and populate
-    ; userRegRamPresenceFlags at that point? Then again, since it only has "double bank"
-    ; resolution, we should probably be reducing dependence on it rather than increasing it.
-    ; Maybe we should just do a full RAM test on power on and count the actual banks and not
-    ; use userRegRamPresenceFlags at all.
+    ; ENHANCE: We could go and test all the individual banks to see if they're RAM, rather than
+    ; using this table and userRegRamPresenceFlags.
     EQUB &00								;ROM at Banks 0 & 1
     EQUB &00								;ROM at Banks 2 & 3
     EQUB &04								;Check for RAM at Banks 4 & 5
@@ -6034,6 +6027,9 @@ SFTODOTMP2 = L00AB
     JSR printSpace
     LDA #'(':JSR OSWRCH
     LDA SFTODOTMP:LSR A:TAY
+    ; Note that at least in IBOS 1.20, the low bit of userRegRamPresenceFlags doesn't reflect
+    ; sideways RAM, but the main 32K of RAM. This doesn't matter here because we mask it off
+    ; using the table at LA34A.
     LDX #userRegRamPresenceFlags:JSR ReadUserReg
     AND LA34A,Y:BNE LA380 ; branch if this is a sideways RAM bank
     LDA #' ':BNE LA38D ; always branch
