@@ -172,10 +172,11 @@ userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegBankWriteProtectStatus = &38 ; 2 bytes, 1 bit per bank
 userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
-; userRegRamPresenceFlags has a bit set for every 32K of RAM. Bit 0 "sort of" represents banks
-; 0-1, bit 1 represents banks 2-3, etc. Bit 0 is a bit odd, because it will typically be *set*
-; in order for the startup message to count the standard 32K of RAM; this doesn't mean banks
-; 0-1 have sideways RAM in, and elsewhere we assume they don't.
+; userRegRamPresenceFlags has a bit set for every 32K of RAM. Bit n represents sideways ROM
+; banks 2n and 2n+1; however, bits 0 and 1 are effectively repurposed to represent the 64K of
+; non-sideways RAM (the 32K on the model B, plus the 32K of shadow/private RAM on the
+; Integra-B). Banks 0-3 are the sockets on the motherboard and are assumed to never contain
+; RAM, so there's no conflict here; see the code for *ROMS, which treats banks 0-3 differently.
 userRegRamPresenceFlags = &7F
 
 ; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
@@ -4165,8 +4166,6 @@ tmp = &A8
 ; ENHANCE: Perhaps a bit of a novelty, but could we make the startup banner *CONFIGURE-able? If
 ; we parsed it using GSINIT/GSINIT it would potentially open up the prospect of things like the
 ; "mode 7 owl" as well as/instead of simple text.
-; ENHANCE: It's a bit "marketing", but we could add 32K to the displayed RAM size to account for
-; the shadow/private RAM. This would be gratuitously incompatible with IBOS 1.20 though.
 .DisplayBannerIfRequired
 {
 RamPresenceFlags = TransientZP
