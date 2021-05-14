@@ -6001,15 +6001,16 @@ SFTODOTMP2 = L00AB
 
 .LA34A
     ; ENHANCE: Isn't this assumption that banks 0 & 1 are ROM incorrect? Note that
-    ; userRamPresenceFlags defaults to indicating RAM in the all the lower 8 banks. Wouldn't it
-    ; be harmless at worst for *ROMS to go and test banks 0 & 1 for RAM, instead of just
+    ; userRegRamPresenceFlags defaults to indicating RAM in the all the lower 8 banks. Wouldn't
+    ; it be harmless at worst for *ROMS to go and test banks 0 & 1 for RAM, instead of just
     ; assuming they're ROM? For that matter, wouldn't it make more sense for this code to just
-    ; go and test all 16 banks instead of trusting userRamPresenceFlags? Couldn't a user have
-    ; plugged a sideways RAM module into one of the higher-numbered banks, for example?
-    ; Should we perhaps do a full RAM test on power-on reset and populate userRamPresenceFlags
-    ; at that point? Then again, since it only has "double bank" resolution, we should probably
-    ; be reducing dependence on it rather than increasing it. Maybe we should just do a full
-    ; RAM test on power on and count the actual banks and not use userRamPresenceFlags at all.
+    ; go and test all 16 banks instead of trusting userRegRamPresenceFlags? Couldn't a user
+    ; have plugged a sideways RAM module into one of the higher-numbered banks, for example?
+    ; Should we perhaps do a full RAM test on power-on reset and populate
+    ; userRegRamPresenceFlags at that point? Then again, since it only has "double bank"
+    ; resolution, we should probably be reducing dependence on it rather than increasing it.
+    ; Maybe we should just do a full RAM test on power on and count the actual banks and not
+    ; use userRegRamPresenceFlags at all.
     EQUB &00								;ROM at Banks 0 & 1
     EQUB &00								;ROM at Banks 2 & 3
     EQUB &04								;Check for RAM at Banks 4 & 5
