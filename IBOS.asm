@@ -729,6 +729,8 @@ prvRomTypeTableCopy = prv83 + &2C ; 16 bytes
 ; am 95% sure this is right, but be good to check all code using it later.
 prvLastScreenMode = prv83 + &3F
 
+; We take advantage of some unofficial OS 1.20 entry points; since IBOS only needs to run on
+; the Model B this is fine. SQUASH: Any prospect of taking this further? Tastefully of course!
 LDBE6       = &DBE6
 LDC16       = &DC16
 osStxRomselAndCopyAndRts = &DC16 ; STX romselCopy:STX romsel:RTS in OS 1.20
