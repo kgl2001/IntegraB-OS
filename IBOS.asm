@@ -3829,8 +3829,8 @@ Tmp = TransientZP + 6
     ; will force SQWE *off* on reset which thus allows it to be abused here as a "has service
     ; call 3 been issued yet?" flag???? See service10 for a check of SQWE...
     CLC:JSR AlarmAndSQWEControl ; set SQWE and AIE
-    ; If we're in the middle of a full reset, the contents of private RAM might be gibberish so
-    ; don't carry out any of the logic depending on it.
+    ; If we're in the middle of a full reset, the contents of RTC registers/private RAM might
+    ; be gibberish so don't carry out any logic depending on them.
     BIT FullResetFlag:BPL NotFullReset ; SQUASH: BMI and get rid of following JMP
     JMP IgnorePrivateRam
 .NotFullReset
@@ -3942,10 +3942,11 @@ tmp = &A8
     JSR WritePrivateRam8300X
     DEX:BNE WriteLoop
     LDA romselCopy:AND #maxBank:ASSERT prvIbosBankNumber == prv83 + 0:JSR WritePrivateRam8300X
-    BIT FullResetFlag:BPL L96EE ; SFTODO!? If b7 of FullResetFlag is set, we don't do any of our processing beyond the tiny bit above - presumably because b7 being set is @-resetish and our private RAM/RTC registers are probably gibberish
+    ; If we're in the middle of a full reset, the contents of RTC registers/private RAM might
+    ; be gibberish so don't carry out any logic depending on them.
+    BIT FullResetFlag:BPL NotFullReset ; SQUASH: BMI and get rid of following JMP?
     JMP ExitServiceCallIndirect
-			
-.L96EE
+.NotFullReset
     LDX #userRegPrvPrintBufferStart:JSR ReadUserReg
     LDX #prvPrvPrintBufferStart-prv83:JSR WritePrivateRam8300X
     LDX lastBreakType:BEQ SoftReset
@@ -4076,8 +4077,9 @@ tmp = &A8
     JSR clearShenPrvEn:PHA
     BIT prvSFTODOTUBEISH:BMI L9836
     LDA lastBreakType:BEQ SoftReset
-    BIT FullResetFlag ; SFTODO!? I think this is saying "don't look at gibberish in private RAM/RTC during an @-reset"
-    BMI L983D
+    ; If we're in the middle of a full reset, the contents of RTC registers/private RAM might
+    ; be gibberish so don't carry out any logic depending on them.
+    BIT FullResetFlag:BMI FullReset
     LDX #userRegTubeBaudPrinter:JSR ReadUserReg:AND #1:BNE WantTube ; branch if *CONFIGURE TUBE
     LDA #&FF
 .WantTube
@@ -4088,6 +4090,7 @@ tmp = &A8
     PLA:JSR PRVDISStaRamsel
     JMP ExitServiceCall
 .L983D
+.FullReset
     PLA:JSR PRVDISStaRamsel
     PLA:TAY ; restore original Y on entry to service call
     PLA ; discard stacked original X
@@ -6344,7 +6347,14 @@ SFTODOTMP2 = L00AB
 ;SPOOL/EXEC file closure warning - Service call 10 SFTODO: I *suspect* we are using this as a "part way through reset" service call rather than for its nominal purpose - have a look at OS 1.2 disassembly and see when this is actually generated. Do filing systems or anything issue it during "normal" operation? (e.g. if you do "*EXEC" with no argument.)
 .service10
 {
-    ; SFTODO: I'm guessing, but note that during a typical boot service call &10 is issued early, then there will be a service call &03, then a subsequent service call &10 once the filing system has been selected. service03 sets SQWE. So maybe this is saying "on the early service call &10, start at SoftReset, but on the second service call &10, execute this additional code at SQWESet". But that only works if something (hardware tied to the reset line???) clears SQWE first. Maybe this is something related to detecting power-on reset, though why we suddenly don't trust lastBreakType I don't know - maybe this is too early for that to have been set, though that seems unlikely.
+    ; SFTODO: I'm guessing, but note that during a typical boot service call &10 is issued
+    ; early, then there will be a service call &03, then a subsequent service call &10 once the
+    ; filing system has been selected. service03 sets SQWE. So maybe this is saying "on the
+    ; early service call &10, start at SoftReset, but on the second service call &10, execute
+    ; this additional code at SQWESet". But that only works if something (hardware tied to the
+    ; reset line???) clears SQWE first. Maybe this is something related to detecting power-on
+    ; reset, though why we suddenly don't trust lastBreakType I don't know - maybe this is too
+    ; early for that to have been set, though that seems unlikely.
     SEC:JSR AlarmAndSQWEControl:BCS SQWESet
     JMP SoftReset ; SQUASH: BCC always? SFTODO: Rename this label given its use here?
 .SQWESet
@@ -6364,9 +6374,10 @@ SFTODOTMP2 = L00AB
 
     LDX lastBreakType:BEQ SoftReset
     LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeAt:BNE SoftReset ; SFTODO: Rename label given use here?
-    ; The last break wasn't a soft reset and the "@" key is held down.
+    ; The last break wasn't a soft reset and the "@" key is held down, which will trigger a
+    ; full reset.
     LDA #0:STA breakInterceptJmp ; cancel any break intercept which might have been set up
-    LDA #&FF:STA FullResetFlag
+    LDA #&FF:STA FullResetFlag ; record that a full reset is in progress
     ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
     ; Set the OS ROM type table and our private RAM copy to zero for all ROMs except us. SFTODO: why?
     LDX #maxBank
@@ -6380,7 +6391,7 @@ SFTODOTMP2 = L00AB
 
     ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
 .SoftReset
-    LDA #0:STA FullResetFlag
+    LDA #0:STA FullResetFlag ; record that a full reset isn't in progress
     LDX #userRegBankInsertStatus:JSR ReadUserReg:STA transientRomBankMask
     LDX #userRegBankInsertStatus + 1:JSR ReadUserReg:STA transientRomBankMask + 1
     JSR unplugBanksUsingTransientRomBankMask
