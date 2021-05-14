@@ -1663,7 +1663,8 @@ TmpCommandIndex = &AC
     ASSERT (CallTableEnd - CallTable) * 2 == (HandlerTableEnd - HandlerTable)
 }
 
-; Generate an error using the error number and error string immediately following the "JSR RaiseError" call.
+; Generate an error using the error number and error string immediately following the "JSR
+; RaiseError" call.
 .RaiseError
 {
     PRVDIS
