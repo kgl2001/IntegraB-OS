@@ -2154,9 +2154,8 @@ InputBufSize = 256
 .FullReset
 {
     ; Zero user registers &00-&32 inclusive, except userRegLangFile which is treated as a special case.
-.L89C2
     LDX #&32
-.UserRegLoop
+.ZeroUserRegLoop
     LDA #0:CPX #userRegLangFile:BNE NotLangFile
     ; We default LANG and FILE to IBOS (i.e. the current bank); this isn't all that useful, but
     ; it will at least give consistent results and offer a * prompt where the user can change
@@ -2164,7 +2163,7 @@ InputBufSize = 256
     LDA romselCopy:ASL A:ASL A:ASL A:ASL A:ORA romselCopy
 .NotLangFile
     JSR WriteUserReg
-    DEX:BPL UserRegLoop
+    DEX:BPL ZeroUserRegLoop
 
 FullResetPrv = &2800
     JSR InitialiseRtcTime
@@ -2200,7 +2199,7 @@ ptr = &00 ; 2 bytes
     ; fit in the 256 bytes copied to main RAM.) I would have expected to write -2 on the next
     ; line not -0. Does user reg &08 get used at all? If it never gets overwritten, we could
     ; test this by seeing if it holds &78 after a reset. If I'm right, this will overwrite the
-    ; 0 we wrote in UserRegLoop above.
+    ; 0 we wrote in ZeroUserRegLoop above.
     LDY #(UserRegDefaultTableEnd - UserRegDefaultTable) - 0
 .SetDefaultLoop
     LDX UserRegDefaultTable-FullResetPrvTemplate+FullResetPrv+&00,Y
@@ -2246,7 +2245,10 @@ ptr = &00 ; 2 bytes
     EQUB userRegPrvPrintBufferStart,&90
     EQUB userRegRamPresenceFlags,&0F						;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks).
 .UserRegDefaultTableEnd
-    ASSERT (P% + 2) - FullResetPrvTemplate <= 256 ; SFTODO: +2 because as per above SFTODO I think we actually use an extra entry off the end of this table
+
+    ; SFTODO: +2 because as per above SFTODO I think we actually use an extra entry off the end
+    ; of this table.
+    ASSERT (P% + 2) - FullResetPrvTemplate <= 256
 }
 
 
