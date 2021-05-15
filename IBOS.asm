@@ -2196,15 +2196,15 @@ ptr = &00 ; 2 bytes
     PLA:STA romselCopy:STA romsel
     ; Set the user registers to their default values.
     ; SFTODO: I may be misreading this code, but won't it access one double-byte entry *past*
-    ; IntDefaultEnd? Effectively treating PHP:SEI as a pair of bytes &08,&78? (Assuming they
+    ; UserRegDefaultTableEnd? Effectively treating PHP:SEI as a pair of bytes &08,&78? (Assuming they
     ; fit in the 256 bytes copied to main RAM.) I would have expected to write -2 on the next
     ; line not -0. Does user reg &08 get used at all? If it never gets overwritten, we could
     ; test this by seeing if it holds &78 after a reset. If I'm right, this will overwrite the
     ; 0 we wrote in UserRegLoop above.
-    LDY #(IntDefaultEnd - IntDefault) - 0
+    LDY #(UserRegDefaultTableEnd - UserRegDefaultTable) - 0
 .SetDefaultLoop
-    LDX IntDefault-FullResetPrvTemplate+FullResetPrv+&00,Y
-    LDA IntDefault-FullResetPrvTemplate+FullResetPrv+&01,Y
+    LDX UserRegDefaultTable-FullResetPrvTemplate+FullResetPrv+&00,Y
+    LDA UserRegDefaultTable-FullResetPrvTemplate+FullResetPrv+&01,Y
     JSR WriteUserReg
     DEY:DEY:BPL SetDefaultLoop
     ; SQUASH: We could just do LDA #&7F:STA systemViaBase + viaRegisterInterruptEnable - we
@@ -2224,11 +2224,8 @@ ptr = &00 ; 2 bytes
     LDA ptr + 1:CMP #&C0:BNE ZeroLoop
     RTS
 
-;lookup table for IntegraB defaults - Address (X) / Data (A)
-;Read by code at &8834
-;For data at addresses &00-&31, data is stored in RTC RAM at location Addr + &0E (RTC RAM &0E-&3F)
-;For data at addresses &32 and above, data is stored in private RAM at location &8300 + Addr OR &80.
-.IntDefault
+; Default values for user registers
+.UserRegDefaultTable
     EQUB userRegBankInsertStatus,&FF						;*INSERT status for ROMS &0F to &08. Default: &FF (All 8 ROMS enabled)
     EQUB userRegBankInsertStatus + 1,&FF						;*INSERT status for ROMS &07 to &00. Default: &FF (All 8 ROMS enabled)
     ;		EQUB userRegModeShadowTV,&E7							;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift. Default was &17. Changed to &E7 in IBOS 1.21
@@ -2248,7 +2245,7 @@ ptr = &00 ; 2 bytes
     EQUB userRegBankWriteProtectStatus + 1,&FF
     EQUB userRegPrvPrintBufferStart,&90
     EQUB userRegRamPresenceFlags,&0F						;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks).
-.IntDefaultEnd
+.UserRegDefaultTableEnd
     ASSERT (P% + 2) - FullResetPrvTemplate <= 256 ; SFTODO: +2 because as per above SFTODO I think we actually use an extra entry off the end of this table
 }
 
