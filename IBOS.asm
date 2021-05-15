@@ -2227,7 +2227,7 @@ ptr = &00 ; 2 bytes
     LDA ptr + 1:CMP #&C0:BNE ZeroLoop
     RTS
 
-; Default values for user registers
+; Default values for user registers overriding the initial zero values assigned.
 .UserRegDefaultTable
     EQUB userRegBankInsertStatus + 0, &FF     	; default to no banks unplugged
     EQUB userRegBankInsertStatus + 1, &FF 	; default to no banks unplugged
