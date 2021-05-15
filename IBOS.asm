@@ -2153,121 +2153,127 @@ InputBufSize = 256
 ; SFTODO: This has only one caller
 .FullReset
 {
-	  ; Zero user registers &00-&32 inclusive, except userRegLangFile which is treated as a special case.
-.L89C2      LDX #&32								;Start with register &32
+    ; Zero user registers &00-&32 inclusive, except userRegLangFile which is treated as a special case.
+.L89C2
+    LDX #&32								;Start with register &32
 .userRegLoop
-	  LDA #&00								;Set to 0
-            CPX #userRegLangFile							;Check if register &5 (LANG/FILE parameters)
-            BNE notLangFile								;No? Then branch
-            LDA romselCopy								;Read current ROM number
-            ASL A
-            ASL A
-            ASL A
-            ASL A									;move to upper 4 bits (LANG parameter)
-            ORA romselCopy								;Read current ROM number & save to lower 4 bits (FILE parameter)
+    LDA #&00								;Set to 0
+    CPX #userRegLangFile							;Check if register &5 (LANG/FILE parameters)
+    BNE notLangFile								;No? Then branch
+    LDA romselCopy								;Read current ROM number
+    ASL A
+    ASL A
+    ASL A
+    ASL A									;move to upper 4 bits (LANG parameter)
+    ORA romselCopy								;Read current ROM number & save to lower 4 bits (FILE parameter)
 ;	  LDA #&EC								;Force LANG: 14, FILE: 12 in IBOS 1.21 (in place of ORA &F4 in line above)
 .notLangFile
-	  JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
-            DEX
-            BPL userRegLoop
+    JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
+    DEX
+    BPL userRegLoop
 
 FullResetPrv = &2800
-            JSR InitialiseRtcTime								;Stop Clock and Initialise RTC registers &00 to &0B
-            LDX #&00								;Relocate 256 bytes of code to main memory
-.CopyLoop   LDA FullResetPrvTemplate,X
-            STA FullResetPrv,X
-            INX
-            BNE CopyLoop
-            JMP FullResetPrv
+    JSR InitialiseRtcTime								;Stop Clock and Initialise RTC registers &00 to &0B
+    LDX #&00								;Relocate 256 bytes of code to main memory
+.CopyLoop
+    LDA FullResetPrvTemplate,X
+    STA FullResetPrv,X
+    INX
+    BNE CopyLoop
+    JMP FullResetPrv
 
-;This code is relocated from IBOS ROM to RAM starting at &2800
+; This code is relocated from IBOS ROM to RAM starting at FullResetPrv
 .FullResetPrvTemplate
 ptr = &00 ; 2 bytes
-.L89E9      LDA romselCopy								;Get current SWR bank number.
-            PHA									;Save it
-            LDX #maxBank								;Start at SWR bank 15
+.L89E9
+    LDA romselCopy								;Get current SWR bank number.
+    PHA									;Save it
+    LDX #maxBank								;Start at SWR bank 15
 .zeroSWRLoop
-	  STX romselCopy								;Select memory bank
-            STX romsel
-            LDA #&80								;Start at address &8000
-	  JSR zeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv				;Fill bank with &00 (will try both RAM & ROM)
-            DEX
-            BPL zeroSWRLoop								;Until all RAM banks are wiped.
-            LDA #ramselShen OR ramselPrvs841						;Set Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
-            STA ramselCopy
-            STA ramsel
-            LDA #romselPrvEn								;Set Private RAM Enable (PRVEN) & Unset Shadow / Main toggle (MEMSEL)
-            STA romselCopy
-            STA romsel
-            LDA #&30								;Start at shadow address &3000
-	  JSR zeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv				;Fill shadow and private memory with &00
-            LDA #&FF								;Write &FF to PRVS1 &830C..&830F
-            STA prvSFTODOFOURBANKS
-            STA prvSFTODOFOURBANKS + 1
-            STA prvSFTODOFOURBANKS + 2
-            STA prvSFTODOFOURBANKS + 3
-            LDA #&00								;Unset Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
-            STA ramselCopy
-            STA ramsel
-            PLA									;Restore SWR bank
-            STA romselCopy
-            STA romsel
-	  ; SFTODO: I may be misreading this code, but won't it access one double-byte entry *past* intDefaultEnd? Effectively treating PHP:SEI as a pair of bytes &08,&78? (Assuming they fit in the 256 bytes copied to main RAM.) I would have expected to write -2 on the next line not -0. Does user reg &08 get used at all? If it never gets overwritten, we could test this by seeing if it holds &78 after a reset. If I'm right, this will overwrite the 0 we wrote in userRegLoop above.
-            LDY #(intDefaultEnd - intDefault) - 0						;Number of entries in lookup table for IntegraB defaults
-.L8A2D	  LDX intDefault-FullResetPrvTemplate+FullResetPrv+&00,Y				;address of relocated intDefault table:		(address for data)
-	  LDA intDefault-FullResetPrvTemplate+FullResetPrv+&01,Y				;address of relocated intDefault table+1:	(data)
-            JSR WriteUserReg								;Write IntegraB default value to RTC User RAM
-            DEY
-            DEY
-            BPL L8A2D								;Repeat for all 16 values
-	  ; SFTODO: We could just do LDA #&7F:STA systemViaBase + viaRegisterInterruptEnable - we know we're running on the host...
-	  ; Simulate a power-on reset
-            LDA #osbyteWriteSheila							;Write to SHEILA (&FExx)
-            LDX #systemViaBase + viaRegisterInterruptEnable					;Write to SHEILA+&4E (&FE4E)
-            LDY #&7F								;Data to be written
-            JSR OSBYTE								;Write &7F to SHEILA+&4E (System VIA)
-            JMP (RESET)								;Carry out Reset
+    STX romselCopy								;Select memory bank
+    STX romsel
+    LDA #&80								;Start at address &8000
+    JSR zeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv				;Fill bank with &00 (will try both RAM & ROM)
+    DEX
+    BPL zeroSWRLoop								;Until all RAM banks are wiped.
+    LDA #ramselShen OR ramselPrvs841						;Set Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
+    STA ramselCopy
+    STA ramsel
+    LDA #romselPrvEn								;Set Private RAM Enable (PRVEN) & Unset Shadow / Main toggle (MEMSEL)
+    STA romselCopy
+    STA romsel
+    LDA #&30								;Start at shadow address &3000
+    JSR zeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv				;Fill shadow and private memory with &00
+    LDA #&FF								;Write &FF to PRVS1 &830C..&830F
+    STA prvSFTODOFOURBANKS
+    STA prvSFTODOFOURBANKS + 1
+    STA prvSFTODOFOURBANKS + 2
+    STA prvSFTODOFOURBANKS + 3
+    LDA #&00								;Unset Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
+    STA ramselCopy
+    STA ramsel
+    PLA									;Restore SWR bank
+    STA romselCopy
+    STA romsel
+  ; SFTODO: I may be misreading this code, but won't it access one double-byte entry *past* intDefaultEnd? Effectively treating PHP:SEI as a pair of bytes &08,&78? (Assuming they fit in the 256 bytes copied to main RAM.) I would have expected to write -2 on the next line not -0. Does user reg &08 get used at all? If it never gets overwritten, we could test this by seeing if it holds &78 after a reset. If I'm right, this will overwrite the 0 we wrote in userRegLoop above.
+    LDY #(intDefaultEnd - intDefault) - 0						;Number of entries in lookup table for IntegraB defaults
+.L8A2D
+    LDX intDefault-FullResetPrvTemplate+FullResetPrv+&00,Y				;address of relocated intDefault table:		(address for data)
+    LDA intDefault-FullResetPrvTemplate+FullResetPrv+&01,Y				;address of relocated intDefault table+1:	(data)
+    JSR WriteUserReg								;Write IntegraB default value to RTC User RAM
+    DEY
+    DEY
+    BPL L8A2D								;Repeat for all 16 values
+    ; SFTODO: We could just do LDA #&7F:STA systemViaBase + viaRegisterInterruptEnable - we know we're running on the host...
+    ; Simulate a power-on reset
+    LDA #osbyteWriteSheila							;Write to SHEILA (&FExx)
+    LDX #systemViaBase + viaRegisterInterruptEnable					;Write to SHEILA+&4E (&FE4E)
+    LDY #&7F								;Data to be written
+    JSR OSBYTE								;Write &7F to SHEILA+&4E (System VIA)
+    JMP (RESET)								;Carry out Reset
 
 .zeroPageAUpToC0
-       	  STA ptr + 1								;This is relocated address &285D
-            LDA #&00								;Start at address &8000 or &3000
-            STA ptr	  
-            TAY
-.ZeroLoop   LDA #&00								;Store &00
-            STA (ptr),Y
-            INY
-            BNE ZeroLoop
-            INC L0000+&01
-            LDA L0000+&01
-            CMP #&C0
-            BNE ZeroLoop								;Until address is &C000
-            RTS
+    STA ptr + 1								;This is relocated address &285D
+    LDA #&00								;Start at address &8000 or &3000
+    STA ptr
+    TAY
+.ZeroLoop
+    LDA #&00								;Store &00
+    STA (ptr),Y
+    INY
+    BNE ZeroLoop
+    INC L0000+&01
+    LDA L0000+&01
+    CMP #&C0
+    BNE ZeroLoop								;Until address is &C000
+    RTS
 
 ;lookup table for IntegraB defaults - Address (X) / Data (A)
 ;Read by code at &8834
 ;For data at addresses &00-&31, data is stored in RTC RAM at location Addr + &0E (RTC RAM &0E-&3F)
 ;For data at addresses &32 and above, data is stored in private RAM at location &8300 + Addr OR &80.
-.intDefault	EQUB userRegBankInsertStatus,&FF						;*INSERT status for ROMS &0F to &08. Default: &FF (All 8 ROMS enabled)
-		EQUB userRegBankInsertStatus + 1,&FF						;*INSERT status for ROMS &07 to &00. Default: &FF (All 8 ROMS enabled)
-;		EQUB userRegModeShadowTV,&E7							;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift. Default was &17. Changed to &E7 in IBOS 1.21
-;		EQUB userRegModeShadowTV,&20							;0-2: FDRIVE / 3-5: CAPS. Default was &23. Changed to &20 in IBOS 1.21
-		EQUB userRegModeShadowTV,&17							;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift.
-		EQUB userRegFdriveCaps,&23							;0-2: FDRIVE / 3-5: CAPS.
-		EQUB userRegKeyboardDelay,&19							;0-7: Keyboard Delay
-		EQUB userRegKeyboardRepeat,&05						;0-7: Keyboard Repeat
-		EQUB userRegPrinterIgnore,&0A							;0-7: Printer Ignore
-		EQUB userRegTubeBaudPrinter,&2D						;0: Tube / 2-4: BAUD / 5-7: Printer
-;		EQUB userRegDiscNetBootData,&A1						;0: File system / 4: Boot / 5-7: Data. Default was &A0. Changed to &A1 in IBOS 1.21
-		EQUB userRegDiscNetBootData,&A0						;0: File system / 4: Boot / 5-7: Data.
-		EQUB userRegOsModeShx,&04							;0-2: OSMODE / 3: SHX
-;		EQUB userRegCentury,20 							;Century - Default was &13 (1900). Changed to &14 (2000) in IBOS 1.21
-		EQUB userRegCentury,19 							;Century - Default is &13 (1900)
-		EQUB userRegBankWriteProtectStatus,&FF
-		EQUB userRegBankWriteProtectStatus + 1,&FF
-		EQUB userRegPrvPrintBufferStart,&90
-		EQUB userRegRamPresenceFlags,&0F						;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks).
+.intDefault
+    EQUB userRegBankInsertStatus,&FF						;*INSERT status for ROMS &0F to &08. Default: &FF (All 8 ROMS enabled)
+    EQUB userRegBankInsertStatus + 1,&FF						;*INSERT status for ROMS &07 to &00. Default: &FF (All 8 ROMS enabled)
+    ;		EQUB userRegModeShadowTV,&E7							;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift. Default was &17. Changed to &E7 in IBOS 1.21
+    ;		EQUB userRegModeShadowTV,&20							;0-2: FDRIVE / 3-5: CAPS. Default was &23. Changed to &20 in IBOS 1.21
+    EQUB userRegModeShadowTV,&17							;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift.
+    EQUB userRegFdriveCaps,&23							;0-2: FDRIVE / 3-5: CAPS.
+    EQUB userRegKeyboardDelay,&19							;0-7: Keyboard Delay
+    EQUB userRegKeyboardRepeat,&05						;0-7: Keyboard Repeat
+    EQUB userRegPrinterIgnore,&0A							;0-7: Printer Ignore
+    EQUB userRegTubeBaudPrinter,&2D						;0: Tube / 2-4: BAUD / 5-7: Printer
+    ; EQUB userRegDiscNetBootData,&A1						;0: File system / 4: Boot / 5-7: Data. Default was &A0. Changed to &A1 in IBOS 1.21
+    EQUB userRegDiscNetBootData,&A0						;0: File system / 4: Boot / 5-7: Data.
+    EQUB userRegOsModeShx,&04							;0-2: OSMODE / 3: SHX
+    ;		EQUB userRegCentury,20 							;Century - Default was &13 (1900). Changed to &14 (2000) in IBOS 1.21
+    EQUB userRegCentury,19 							;Century - Default is &13 (1900)
+    EQUB userRegBankWriteProtectStatus,&FF
+    EQUB userRegBankWriteProtectStatus + 1,&FF
+    EQUB userRegPrvPrintBufferStart,&90
+    EQUB userRegRamPresenceFlags,&0F						;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks).
 .intDefaultEnd
-	  ASSERT (P% + 2) - FullResetPrvTemplate <= 256 ; SFTODO: +2 because as per above SFTODO I think we actually use an extra entry off the end of this table
+    ASSERT (P% + 2) - FullResetPrvTemplate <= 256 ; SFTODO: +2 because as per above SFTODO I think we actually use an extra entry off the end of this table
 }
 
 
