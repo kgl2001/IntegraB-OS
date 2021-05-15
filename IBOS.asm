@@ -179,7 +179,8 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 ; RAM, so there's no conflict here; see the code for *ROMS, which treats banks 0-3 differently.
 ; ENHANCE: Could we auto-detect this on startup instead of requiring the user to configure it?
 ; Maybe stop treating banks 0-3 as a special case and just add 64K (for the main and
-; shadow/private RAM) to the sideways RAM count when displaying the banner?
+; shadow/private RAM) to the sideways RAM count when displaying the banner? Ken already has
+; some code to change the behaviour in this area.
 userRegRamPresenceFlags = &7F
 
 ; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
