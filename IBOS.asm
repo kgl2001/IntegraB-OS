@@ -2395,7 +2395,8 @@ IgnoredBits = %00111110
     JMP osbyte45Internal
 			
 ; Test for OSBYTE &49 (73) - Integra-B calls
-; SFTODO: Rename these labels so we have something like "CheckOsbyte49" for the test and "Osbyte49" for the actual "yes, now do it"? (Not just 49, all of them.)
+; SFTODO: Rename these labels so we have something like "CheckOsbyte49" for the test and
+; "Osbyte49" for the actual "yes, now do it"? (Not just 49, all of them.)
 .osbyte49
 {
 prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvRtcUpdateEndedOptionsGenerateServiceCall
