@@ -2155,22 +2155,16 @@ InputBufSize = 256
 {
     ; Zero user registers &00-&32 inclusive, except userRegLangFile which is treated as a special case.
 .L89C2
-    LDX #&32								;Start with register &32
+    LDX #&32
 .UserRegLoop
-    LDA #&00								;Set to 0
-    CPX #userRegLangFile							;Check if register &5 (LANG/FILE parameters)
-    BNE NotlangFile								;No? Then branch
-    LDA romselCopy								;Read current ROM number
-    ASL A
-    ASL A
-    ASL A
-    ASL A									;move to upper 4 bits (LANG parameter)
-    ORA romselCopy								;Read current ROM number & save to lower 4 bits (FILE parameter)
-;	  LDA #&EC								;Force LANG: 14, FILE: 12 in IBOS 1.21 (in place of ORA &F4 in line above)
-.NotlangFile
-    JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
-    DEX
-    BPL UserRegLoop
+    LDA #0:CPX #userRegLangFile:BNE NotLangFile
+    ; We default LANG and FILE to IBOS (i.e. the current bank); this isn't all that useful, but
+    ; it will at least give consistent results and offer a * prompt where the user can change
+    ; this. In IBOS 1.21, default LANG to &E and FILE to &C: LDA #&EC
+    LDA romselCopy:ASL A:ASL A:ASL A:ASL A:ORA romselCopy
+.NotLangFile
+    JSR WriteUserReg
+    DEX:BPL UserRegLoop
 
 FullResetPrv = &2800
     JSR InitialiseRtcTime								;Stop Clock and Initialise RTC registers &00 to &0B
