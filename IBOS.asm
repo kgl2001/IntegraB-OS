@@ -177,6 +177,9 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 ; non-sideways RAM (the 32K on the model B, plus the 32K of shadow/private RAM on the
 ; Integra-B). Banks 0-3 are the sockets on the motherboard and are assumed to never contain
 ; RAM, so there's no conflict here; see the code for *ROMS, which treats banks 0-3 differently.
+; ENHANCE: Could we auto-detect this on startup instead of requiring the user to configure it?
+; Maybe stop treating banks 0-3 as a special case and just add 64K (for the main and
+; shadow/private RAM) to the sideways RAM count when displaying the banner?
 userRegRamPresenceFlags = &7F
 
 ; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
@@ -6004,9 +6007,9 @@ SFTODOTMP2 = L00AB
     JSR printSpace
     LDA #'(':JSR OSWRCH
     LDA SFTODOTMP:LSR A:TAY
-    ; Note that at least in IBOS 1.20, the low bit of userRegRamPresenceFlags doesn't reflect
-    ; sideways RAM, but the main 32K of RAM. This doesn't matter here because we mask it off
-    ; using the table at LA34A.
+    ; Note that at least in IBOS 1.20, the low two bits of userRegRamPresenceFlags don't
+    ; reflect sideways RAM, but the main 32K of RAM and the 32K of shadow/private RAM. This
+    ; doesn't matter here because we mask it off using the table at LA34A.
     LDX #userRegRamPresenceFlags:JSR ReadUserReg
     AND LA34A,Y:BNE LA380 ; branch if this is a sideways RAM bank
     LDA #' ':BNE LA38D ; always branch
