@@ -2167,19 +2167,16 @@ InputBufSize = 256
     DEX:BPL UserRegLoop
 
 FullResetPrv = &2800
-    JSR InitialiseRtcTime								;Stop Clock and Initialise RTC registers &00 to &0B
-    LDX #&00								;Relocate 256 bytes of code to main memory
+    JSR InitialiseRtcTime
+    LDX #0 ; copy 256 bytes of code/data
 .CopyLoop
-    LDA FullResetPrvTemplate,X
-    STA FullResetPrv,X
-    INX
-    BNE CopyLoop
+    LDA FullResetPrvTemplate,X:STA FullResetPrv,X
+    INX:BNE CopyLoop
     JMP FullResetPrv
 
 ; This code is relocated from IBOS ROM to RAM starting at FullResetPrv
 .FullResetPrvTemplate
 ptr = &00 ; 2 bytes
-.L89E9
     LDA romselCopy								;Get current SWR bank number.
     PHA									;Save it
     LDX #maxBank								;Start at SWR bank 15
