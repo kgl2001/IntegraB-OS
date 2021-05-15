@@ -2177,35 +2177,22 @@ FullResetPrv = &2800
 ; This code is relocated from IBOS ROM to RAM starting at FullResetPrv
 .FullResetPrvTemplate
 ptr = &00 ; 2 bytes
-    LDA romselCopy								;Get current SWR bank number.
-    PHA									;Save it
-    LDX #maxBank								;Start at SWR bank 15
+    LDA romselCopy:PHA
+    ; Zero all sideways RAM.
+    LDX #maxBank
 .ZeroSwrLoop
-    STX romselCopy								;Select memory bank
-    STX romsel
-    LDA #&80								;Start at address &8000
-    JSR ZeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv				;Fill bank with &00 (will try both RAM & ROM)
-    DEX
-    BPL ZeroSwrLoop								;Until all RAM banks are wiped.
-    LDA #ramselShen OR ramselPrvs841						;Set Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
-    STA ramselCopy
-    STA ramsel
-    LDA #romselPrvEn								;Set Private RAM Enable (PRVEN) & Unset Shadow / Main toggle (MEMSEL)
-    STA romselCopy
-    STA romsel
-    LDA #&30								;Start at shadow address &3000
-    JSR ZeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv				;Fill shadow and private memory with &00
-    LDA #&FF								;Write &FF to PRVS1 &830C..&830F
-    STA prvSFTODOFOURBANKS
-    STA prvSFTODOFOURBANKS + 1
-    STA prvSFTODOFOURBANKS + 2
-    STA prvSFTODOFOURBANKS + 3
-    LDA #&00								;Unset Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
-    STA ramselCopy
-    STA ramsel
-    PLA									;Restore SWR bank
-    STA romselCopy
-    STA romsel
+    STX romselCopy:STX romsel
+    LDA #&80:JSR ZeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv ; SFTODO: mildly magic
+    DEX:BPL ZeroSwrLoop
+    ; Zero shadow/private RAM.
+    LDA #ramselShen OR ramselPrvs841:STA ramselCopy:STA ramsel
+    LDA #romselPrvEn:STA romselCopy:STA romsel
+    LDA #&30:JSR ZeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv ; SFTODO: mildly magic
+    LDA #&FF
+    STA prvSFTODOFOURBANKS    :STA prvSFTODOFOURBANKS + 1
+    STA prvSFTODOFOURBANKS + 2:STA prvSFTODOFOURBANKS + 3
+    LDA #0:STA ramselCopy:STA ramsel
+    PLA:STA romselCopy:STA romsel
   ; SFTODO: I may be misreading this code, but won't it access one double-byte entry *past* IntDefaultEnd? Effectively treating PHP:SEI as a pair of bytes &08,&78? (Assuming they fit in the 256 bytes copied to main RAM.) I would have expected to write -2 on the next line not -0. Does user reg &08 get used at all? If it never gets overwritten, we could test this by seeing if it holds &78 after a reset. If I'm right, this will overwrite the 0 we wrote in UserRegLoop above.
     LDY #(IntDefaultEnd - IntDefault) - 0						;Number of entries in lookup table for IntegraB defaults
 .L8A2D
