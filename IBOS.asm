@@ -2546,10 +2546,8 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     CMP #&80
     BCC L8C4C
     PHA
-    LDA #'|'
-    JSR OSWRCH								;write to screen
-    LDA #'!'								;'!'
-    JSR OSWRCH								;write to screen
+    LDA #'|':JSR OSWRCH
+    LDA #'!':JSR OSWRCH
     PLA
 .L8C4C
     AND #&7F
@@ -2559,8 +2557,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     AND #&3F
 .L8C54
     PHA
-    LDA #'|'
-    JSR OSWRCH								;write to screen
+    LDA #'|':JSR OSWRCH
     PLA
     CMP #&20
     BCS L8C6D
