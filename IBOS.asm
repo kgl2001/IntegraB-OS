@@ -2507,29 +2507,27 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     LDA (transientCmdPtr),Y:CMP #'?':BEQ ShowBoot
     LDA transientCmdPtr:STA osCmdPtr:LDA transientCmdPtr + 1:STA osCmdPtr + 1
     SEC:JSR GSINIT
-    SEC
-    BEQ L8C0C
+    SEC:BEQ NoBootCommand ; branch with C set if *BOOT argument is empty and unquoted
     LDX #1
-.L8BFE
-    JSR GSREAD:BCS L8C0E
+.CopyLoop
+    JSR GSREAD:BCS BootCommandLengthInX ; branch if end of string
     STA prvBootCommand - 1,X
-    INX:CPX #prvBootCommandMaxLength:BNE L8BFE
-    CLC									;otherwise set error flag
-.L8C0C
-    LDX #0								;wipe parameter SFTODO?
-.L8C0E
+    INX:CPX #prvBootCommandMaxLength:BNE CopyLoop
+    CLC
+.NoBootCommand
+    LDX #0
+.BootCommandLengthInX
     STX prvBootCommandLength
     PRVDIS
-    BCC L8C19								;check for error
+    BCC GenerateTooLongError
     JMP ExitAndClaimServiceCall
 			
-.L8C19
+.GenerateTooLongError
     JSR RaiseError
     EQUB &FD
     EQUS "Too long", &00
 
 .ShowBoot
-.L8C26
     LDX prv81
     BEQ L8C39
     LDX #&01
@@ -3023,7 +3021,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     PLA
     RTS
 			
-; Page out private RAM.
+; Page out private RAM. Preserves A, X, Y and carry.
 ; SFTODO: This clears PRVS1 in RAMSEL, but is that actually necessary? If PRVEN is
 ; clear none of the private RAM is accessible. Do we ever just set PRVEN and rely
 ; on RAMSEL already having some of PRVS1/4/8 set? The name "pageOutPrv1" is chosen
