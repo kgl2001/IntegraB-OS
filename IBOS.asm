@@ -2156,10 +2156,10 @@ InputBufSize = 256
     ; Zero user registers &00-&32 inclusive, except userRegLangFile which is treated as a special case.
 .L89C2
     LDX #&32								;Start with register &32
-.userRegLoop
+.UserRegLoop
     LDA #&00								;Set to 0
     CPX #userRegLangFile							;Check if register &5 (LANG/FILE parameters)
-    BNE notLangFile								;No? Then branch
+    BNE NotlangFile								;No? Then branch
     LDA romselCopy								;Read current ROM number
     ASL A
     ASL A
@@ -2167,10 +2167,10 @@ InputBufSize = 256
     ASL A									;move to upper 4 bits (LANG parameter)
     ORA romselCopy								;Read current ROM number & save to lower 4 bits (FILE parameter)
 ;	  LDA #&EC								;Force LANG: 14, FILE: 12 in IBOS 1.21 (in place of ORA &F4 in line above)
-.notLangFile
+.NotlangFile
     JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
     DEX
-    BPL userRegLoop
+    BPL UserRegLoop
 
 FullResetPrv = &2800
     JSR InitialiseRtcTime								;Stop Clock and Initialise RTC registers &00 to &0B
@@ -2189,13 +2189,13 @@ ptr = &00 ; 2 bytes
     LDA romselCopy								;Get current SWR bank number.
     PHA									;Save it
     LDX #maxBank								;Start at SWR bank 15
-.zeroSWRLoop
+.ZeroSwrLoop
     STX romselCopy								;Select memory bank
     STX romsel
     LDA #&80								;Start at address &8000
-    JSR zeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv				;Fill bank with &00 (will try both RAM & ROM)
+    JSR ZeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv				;Fill bank with &00 (will try both RAM & ROM)
     DEX
-    BPL zeroSWRLoop								;Until all RAM banks are wiped.
+    BPL ZeroSwrLoop								;Until all RAM banks are wiped.
     LDA #ramselShen OR ramselPrvs841						;Set Private RAM bits (PRVSx) & Shadow RAM Enable (SHEN)
     STA ramselCopy
     STA ramsel
@@ -2203,7 +2203,7 @@ ptr = &00 ; 2 bytes
     STA romselCopy
     STA romsel
     LDA #&30								;Start at shadow address &3000
-    JSR zeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv				;Fill shadow and private memory with &00
+    JSR ZeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv				;Fill shadow and private memory with &00
     LDA #&FF								;Write &FF to PRVS1 &830C..&830F
     STA prvSFTODOFOURBANKS
     STA prvSFTODOFOURBANKS + 1
@@ -2215,11 +2215,11 @@ ptr = &00 ; 2 bytes
     PLA									;Restore SWR bank
     STA romselCopy
     STA romsel
-  ; SFTODO: I may be misreading this code, but won't it access one double-byte entry *past* intDefaultEnd? Effectively treating PHP:SEI as a pair of bytes &08,&78? (Assuming they fit in the 256 bytes copied to main RAM.) I would have expected to write -2 on the next line not -0. Does user reg &08 get used at all? If it never gets overwritten, we could test this by seeing if it holds &78 after a reset. If I'm right, this will overwrite the 0 we wrote in userRegLoop above.
-    LDY #(intDefaultEnd - intDefault) - 0						;Number of entries in lookup table for IntegraB defaults
+  ; SFTODO: I may be misreading this code, but won't it access one double-byte entry *past* IntDefaultEnd? Effectively treating PHP:SEI as a pair of bytes &08,&78? (Assuming they fit in the 256 bytes copied to main RAM.) I would have expected to write -2 on the next line not -0. Does user reg &08 get used at all? If it never gets overwritten, we could test this by seeing if it holds &78 after a reset. If I'm right, this will overwrite the 0 we wrote in UserRegLoop above.
+    LDY #(IntDefaultEnd - IntDefault) - 0						;Number of entries in lookup table for IntegraB defaults
 .L8A2D
-    LDX intDefault-FullResetPrvTemplate+FullResetPrv+&00,Y				;address of relocated intDefault table:		(address for data)
-    LDA intDefault-FullResetPrvTemplate+FullResetPrv+&01,Y				;address of relocated intDefault table+1:	(data)
+    LDX IntDefault-FullResetPrvTemplate+FullResetPrv+&00,Y				;address of relocated IntDefault table:		(address for data)
+    LDA IntDefault-FullResetPrvTemplate+FullResetPrv+&01,Y				;address of relocated IntDefault table+1:	(data)
     JSR WriteUserReg								;Write IntegraB default value to RTC User RAM
     DEY
     DEY
@@ -2232,7 +2232,7 @@ ptr = &00 ; 2 bytes
     JSR OSBYTE								;Write &7F to SHEILA+&4E (System VIA)
     JMP (RESET)								;Carry out Reset
 
-.zeroPageAUpToC0
+.ZeroPageAUpToC0
     STA ptr + 1								;This is relocated address &285D
     LDA #&00								;Start at address &8000 or &3000
     STA ptr
@@ -2252,7 +2252,7 @@ ptr = &00 ; 2 bytes
 ;Read by code at &8834
 ;For data at addresses &00-&31, data is stored in RTC RAM at location Addr + &0E (RTC RAM &0E-&3F)
 ;For data at addresses &32 and above, data is stored in private RAM at location &8300 + Addr OR &80.
-.intDefault
+.IntDefault
     EQUB userRegBankInsertStatus,&FF						;*INSERT status for ROMS &0F to &08. Default: &FF (All 8 ROMS enabled)
     EQUB userRegBankInsertStatus + 1,&FF						;*INSERT status for ROMS &07 to &00. Default: &FF (All 8 ROMS enabled)
     ;		EQUB userRegModeShadowTV,&E7							;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift. Default was &17. Changed to &E7 in IBOS 1.21
@@ -2272,7 +2272,7 @@ ptr = &00 ; 2 bytes
     EQUB userRegBankWriteProtectStatus + 1,&FF
     EQUB userRegPrvPrintBufferStart,&90
     EQUB userRegRamPresenceFlags,&0F						;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks).
-.intDefaultEnd
+.IntDefaultEnd
     ASSERT (P% + 2) - FullResetPrvTemplate <= 256 ; SFTODO: +2 because as per above SFTODO I think we actually use an extra entry off the end of this table
 }
 
