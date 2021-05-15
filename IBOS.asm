@@ -1994,7 +1994,8 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
 .SwitchInPrivateRAM
     PHA
     ; SFTODO: Shouldn't we be updating ramselCopy and (especially) romselCopy here? I know we
-    ; have interrupts disabled but is there no risk of an NMI?
+    ; have interrupts disabled but is there no risk of an NMI? See
+    ; https://stardot.org.uk/forums/viewtopic.php?f=54&t=22552.
     LDA ramselCopy:AND #ramselShen:ORA #ramselPrvs1:STA ramsel
     LDA romselCopy:ORA #romselPrvEn:STA romsel
     PLA
