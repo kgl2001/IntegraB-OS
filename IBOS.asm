@@ -149,7 +149,7 @@ rtcUserBase = &0E
 ; accessing them, which will be handled automatically by
 ; ReadUserReg/WriteUserReg if necessary).
 userRegLangFile = &05 ; b0-3: FILE, b4-7: LANG
-userRegBankInsertStatus = &06 ; 2 bytes, 1 bit per bank
+userRegBankInsertStatus = &06 ; 2 bytes, 1 bit per bank, bit number == bank number
 userRegModeShadowTV = &0A ; 0-2: MODE / 3: SHADOW / 4: TV interlace / 5-7: TV screen shift
 userRegFdriveCaps = &0B ; 0-2: FDRIVE / 3-5: CAPS
 userRegKeyboardDelay = &0C ; 0-7: Keyboard delay
@@ -157,7 +157,7 @@ userRegKeyboardRepeat = &0D ; 0-7: Keyboard repeat
 userRegPrinterIgnore = &0E ; 0-7: Printer ignore
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7: Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
-userRegOsModeShx = &32 ; b0-2: OSMODE / b3: SHX / b4: automatic daylight saving time adjust SFTODO: Should rename this now we've discovered b4
+userRegOsModeShx = &32 ; 0-2: OSMODE / 3: SHX / 4: automatic daylight saving time adjust SFTODO: Should rename this now we've discovered b4
 ; SFTODO: b4 of userRegOsModeShx doesn't seem to be exposed via *CONFIGURE/*STATUS - should it be? Might be interesting to try setting this bit manually and seeing if it works. If it's not going to be exposed we could save some code by deleting the support for it.
 userRegAlarm = &33 ; SFTODO? bits 0-5?? SFTODO: bit 7 seems to be the "R" flag from *ALARM command ("repeat"???)
     userRegAlarmRepeatBit = 1 << 7
@@ -2225,25 +2225,21 @@ ptr = &00 ; 2 bytes
 
 ; Default values for user registers
 .UserRegDefaultTable
-    EQUB userRegBankInsertStatus,&FF						;*INSERT status for ROMS &0F to &08. Default: &FF (All 8 ROMS enabled)
-    EQUB userRegBankInsertStatus + 1,&FF						;*INSERT status for ROMS &07 to &00. Default: &FF (All 8 ROMS enabled)
-    ;		EQUB userRegModeShadowTV,&E7							;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift. Default was &17. Changed to &E7 in IBOS 1.21
-    ;		EQUB userRegModeShadowTV,&20							;0-2: FDRIVE / 3-5: CAPS. Default was &23. Changed to &20 in IBOS 1.21
-    EQUB userRegModeShadowTV,&17							;0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift.
-    EQUB userRegFdriveCaps,&23							;0-2: FDRIVE / 3-5: CAPS.
-    EQUB userRegKeyboardDelay,&19							;0-7: Keyboard Delay
-    EQUB userRegKeyboardRepeat,&05						;0-7: Keyboard Repeat
-    EQUB userRegPrinterIgnore,&0A							;0-7: Printer Ignore
-    EQUB userRegTubeBaudPrinter,&2D						;0: Tube / 2-4: BAUD / 5-7: Printer
-    ; EQUB userRegDiscNetBootData,&A1						;0: File system / 4: Boot / 5-7: Data. Default was &A0. Changed to &A1 in IBOS 1.21
-    EQUB userRegDiscNetBootData,&A0						;0: File system / 4: Boot / 5-7: Data.
-    EQUB userRegOsModeShx,&04							;0-2: OSMODE / 3: SHX
-    ;		EQUB userRegCentury,20 							;Century - Default was &13 (1900). Changed to &14 (2000) in IBOS 1.21
-    EQUB userRegCentury,19 							;Century - Default is &13 (1900)
-    EQUB userRegBankWriteProtectStatus,&FF
-    EQUB userRegBankWriteProtectStatus + 1,&FF
-    EQUB userRegPrvPrintBufferStart,&90
-    EQUB userRegRamPresenceFlags,&0F						;Bit set if RAM located in 32k bank. Clear if ROM is located in bank. Default is &0F (lowest 4 x 32k banks).
+    EQUB userRegBankInsertStatus + 0, &FF     	; default to no banks unplugged
+    EQUB userRegBankInsertStatus + 1, &FF 	; default to no banks unplugged
+    EQUB userRegModeShadowTV, &17 		; IBOS 1.21 defaults to &E7
+    EQUB userRegFdriveCaps, &23 		; IBOS 1.21 defaults to &20
+    EQUB userRegKeyboardDelay, &19
+    EQUB userRegKeyboardRepeat, &05
+    EQUB userRegPrinterIgnore, &0A
+    EQUB userRegTubeBaudPrinter, &2D
+    EQUB userRegDiscNetBootData, &A0		; IBOS 1.21 defaults to &A1
+    EQUB userRegOsModeShx, &04
+    EQUB userRegCentury, 19			; IBOS 1.21 defaults to 20
+    EQUB userRegBankWriteProtectStatus + 0, &FF
+    EQUB userRegBankWriteProtectStatus + 1, &FF
+    EQUB userRegPrvPrintBufferStart, &90
+    EQUB userRegRamPresenceFlags, &0F		; 64K non-SWR and 64K SWR in banks 4-7
 .UserRegDefaultTableEnd
 
     ; SFTODO: +2 because as per above SFTODO I think we actually use an extra entry off the end
