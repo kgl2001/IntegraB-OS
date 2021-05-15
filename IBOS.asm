@@ -2188,42 +2188,40 @@ ptr = &00 ; 2 bytes
     LDA #ramselShen OR ramselPrvs841:STA ramselCopy:STA ramsel
     LDA #romselPrvEn:STA romselCopy:STA romsel
     LDA #&30:JSR ZeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv ; SFTODO: mildly magic
+    ; Initialise prvSFTODOFOURBANKS.
     LDA #&FF
     STA prvSFTODOFOURBANKS    :STA prvSFTODOFOURBANKS + 1
     STA prvSFTODOFOURBANKS + 2:STA prvSFTODOFOURBANKS + 3
     LDA #0:STA ramselCopy:STA ramsel
     PLA:STA romselCopy:STA romsel
-  ; SFTODO: I may be misreading this code, but won't it access one double-byte entry *past* IntDefaultEnd? Effectively treating PHP:SEI as a pair of bytes &08,&78? (Assuming they fit in the 256 bytes copied to main RAM.) I would have expected to write -2 on the next line not -0. Does user reg &08 get used at all? If it never gets overwritten, we could test this by seeing if it holds &78 after a reset. If I'm right, this will overwrite the 0 we wrote in UserRegLoop above.
-    LDY #(IntDefaultEnd - IntDefault) - 0						;Number of entries in lookup table for IntegraB defaults
-.L8A2D
-    LDX IntDefault-FullResetPrvTemplate+FullResetPrv+&00,Y				;address of relocated IntDefault table:		(address for data)
-    LDA IntDefault-FullResetPrvTemplate+FullResetPrv+&01,Y				;address of relocated IntDefault table+1:	(data)
-    JSR WriteUserReg								;Write IntegraB default value to RTC User RAM
-    DEY
-    DEY
-    BPL L8A2D								;Repeat for all 16 values
-    ; SFTODO: We could just do LDA #&7F:STA systemViaBase + viaRegisterInterruptEnable - we know we're running on the host...
-    ; Simulate a power-on reset
-    LDA #osbyteWriteSheila							;Write to SHEILA (&FExx)
-    LDX #systemViaBase + viaRegisterInterruptEnable					;Write to SHEILA+&4E (&FE4E)
-    LDY #&7F								;Data to be written
-    JSR OSBYTE								;Write &7F to SHEILA+&4E (System VIA)
-    JMP (RESET)								;Carry out Reset
+    ; Set the user registers to their default values.
+    ; SFTODO: I may be misreading this code, but won't it access one double-byte entry *past*
+    ; IntDefaultEnd? Effectively treating PHP:SEI as a pair of bytes &08,&78? (Assuming they
+    ; fit in the 256 bytes copied to main RAM.) I would have expected to write -2 on the next
+    ; line not -0. Does user reg &08 get used at all? If it never gets overwritten, we could
+    ; test this by seeing if it holds &78 after a reset. If I'm right, this will overwrite the
+    ; 0 we wrote in UserRegLoop above.
+    LDY #(IntDefaultEnd - IntDefault) - 0
+.SetDefaultLoop
+    LDX IntDefault-FullResetPrvTemplate+FullResetPrv+&00,Y
+    LDA IntDefault-FullResetPrvTemplate+FullResetPrv+&01,Y
+    JSR WriteUserReg
+    DEY:DEY:BPL SetDefaultLoop
+    ; SQUASH: We could just do LDA #&7F:STA systemViaBase + viaRegisterInterruptEnable - we
+    ; know we're running on the host...
+    ; Simulate a power-on reset.
+    LDA #osbyteWriteSheila:LDX #systemViaBase + viaRegisterInterruptEnable:LDY #&7F:JSR OSBYTE
+    JMP (RESET)
 
 .ZeroPageAUpToC0
-    STA ptr + 1								;This is relocated address &285D
-    LDA #&00								;Start at address &8000 or &3000
-    STA ptr
+    STA ptr + 1
+    LDA #0:STA ptr
     TAY
 .ZeroLoop
-    LDA #&00								;Store &00
-    STA (ptr),Y
-    INY
-    BNE ZeroLoop
-    INC L0000+&01
-    LDA L0000+&01
-    CMP #&C0
-    BNE ZeroLoop								;Until address is &C000
+    LDA #0:STA (ptr),Y
+    INY:BNE ZeroLoop
+    INC ptr + 1
+    LDA ptr + 1:CMP #&C0:BNE ZeroLoop
     RTS
 
 ;lookup table for IntegraB defaults - Address (X) / Data (A)
