@@ -2500,79 +2500,80 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JMP ExitServiceCall
 }
 
-;*BOOT Command
-;The *BOOT parameters are stored in Private RAM at &81xx
-;They are copied to *KEY10 (BREAK) and executed on a power on reset
-;Checks for ? parameter and prints out details;
-;Checks for blank and clears table
+; *BOOT Command
+.boot
 {
-.^boot      PRVEN								;switch in private RAM
-            LDA (transientCmdPtr),Y
-            CMP #'?'
-            BEQ L8C26								;Print *BOOT parameters
-            LDA transientCmdPtr
-            STA osCmdPtr
-            LDA transientCmdPtr + 1
-            STA osCmdPtr + 1
-            SEC
-            JSR GSINIT
-            SEC
-            BEQ L8C0C
-            LDX #&01
-.L8BFE      JSR GSREAD
-            BCS L8C0E
-            STA prvBootCommand - 1,X
-            INX									;get next character
-            CPX #prvBootCommandMaxLength								;check if parameter is too long
-            BNE L8BFE								;loop if not too long
-            CLC									;otherwise set error flag
-.L8C0C      LDX #&00								;wipe parameter
-.L8C0E      STX prvBootCommandLength
-            PRVDIS								;switch out private RAM
-            BCC L8C19								;check for error
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+    PRVEN
+    LDA (transientCmdPtr),Y:CMP #'?':BEQ ShowBoot
+    LDA transientCmdPtr:STA osCmdPtr:LDA transientCmdPtr + 1:STA osCmdPtr + 1
+    SEC:JSR GSINIT
+    SEC
+    BEQ L8C0C
+    LDX #1
+.L8BFE
+    JSR GSREAD:BCS L8C0E
+    STA prvBootCommand - 1,X
+    INX:CPX #prvBootCommandMaxLength:BNE L8BFE
+    CLC									;otherwise set error flag
+.L8C0C
+    LDX #0								;wipe parameter SFTODO?
+.L8C0E
+    STX prvBootCommandLength
+    PRVDIS
+    BCC L8C19								;check for error
+    JMP ExitAndClaimServiceCall
 			
-.L8C19      JSR RaiseError								;Goto error handling, where calling address is pulled from stack
+.L8C19
+    JSR RaiseError
+    EQUB &FD
+    EQUS "Too long", &00
 
-	  EQUB &FD
-	  EQUS "Too long", &00
+.ShowBoot
+.L8C26
+    LDX prv81
+    BEQ L8C39
+    LDX #&01
+.L8C2D
+    LDA prv81,X
+    JSR L8C3C
+    INX
+    CPX prv81
+    BNE L8C2D
+.L8C39
+    JMP OSNEWLPrvDisExitAndClaimServiceCall
 
-.L8C26      LDX prv81
-            BEQ L8C39
-            LDX #&01
-.L8C2D      LDA prv81,X
-            JSR L8C3C
-            INX
-            CPX prv81
-            BNE L8C2D
-.L8C39      JMP OSNEWLPrvDisExitAndClaimServiceCall
-
-.L8C3C      CMP #&80
-            BCC L8C4C
-            PHA
-            LDA #'|'
-            JSR OSWRCH								;write to screen
-            LDA #'!'								;'!'
-            JSR OSWRCH								;write to screen
-            PLA
-.L8C4C      AND #&7F
-            CMP #&20
-            BCS L8C61
-.L8C52      AND #&3F
-.L8C54      PHA
-            LDA #'|'
-            JSR OSWRCH								;write to screen
-            PLA
-            CMP #&20
-            BCS L8C6D
-            ORA #&40
-.L8C61      CMP #&7F
-            BEQ L8C52
-            CMP #&22
-            BEQ L8C54
-            CMP #&7C
-            BEQ L8C54
-.L8C6D      JMP OSWRCH
+.L8C3C
+    CMP #&80
+    BCC L8C4C
+    PHA
+    LDA #'|'
+    JSR OSWRCH								;write to screen
+    LDA #'!'								;'!'
+    JSR OSWRCH								;write to screen
+    PLA
+.L8C4C
+    AND #&7F
+    CMP #&20
+    BCS L8C61
+.L8C52
+    AND #&3F
+.L8C54
+    PHA
+    LDA #'|'
+    JSR OSWRCH								;write to screen
+    PLA
+    CMP #&20
+    BCS L8C6D
+    ORA #&40
+.L8C61
+    CMP #&7F
+    BEQ L8C52
+    CMP #&22
+    BEQ L8C54
+    CMP #&7C
+    BEQ L8C54
+.L8C6D
+    JMP OSWRCH
 }
 
 ; *PURGE Command
