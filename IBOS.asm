@@ -2528,39 +2528,34 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     EQUS "Too long", &00
 
 .ShowBoot
-    LDX prvBootCommandLength:BEQ L8C39
+    LDX prvBootCommandLength:BEQ FinishShow
     LDX #1
-.L8C2D
+.ShowLoop
     LDA prvBootCommand - 1,X:JSR L8C3C
-    INX:CPX prvBootCommandLength:BNE L8C2D
-.L8C39
+    INX:CPX prvBootCommandLength:BNE ShowLoop
+.FinishShow
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 
 .L8C3C
-    CMP #&80
-    BCC L8C4C
+    CMP #&80:BCC NotTopBitSet ; SQUASH: TAY:BPL?
     PHA
     LDA #'|':JSR OSWRCH
     LDA #'!':JSR OSWRCH
     PLA
-.L8C4C
+.NotTopBitSet
     AND #&7F
-    CMP #&20
-    BCS L8C61
-.L8C52
+    CMP #&20:BCS NotLowControl
+.HighControl
     AND #&3F
 .L8C54
     PHA
     LDA #'|':JSR OSWRCH
     PLA
-    CMP #&20
-    BCS L8C6D
-    ORA #&40
-.L8C61
-    CMP #&7F
-    BEQ L8C52
-    CMP #&22
-    BEQ L8C54
+    CMP #&20:BCS L8C6D
+    ORA #'@'
+.NotLowControl
+    CMP #&7F:BEQ HighControl
+    CMP #'"':BEQ L8C54
     CMP #&7C
     BEQ L8C54
 .L8C6D
