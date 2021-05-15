@@ -2528,15 +2528,11 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     EQUS "Too long", &00
 
 .ShowBoot
-    LDX prv81
-    BEQ L8C39
-    LDX #&01
+    LDX prvBootCommandLength:BEQ L8C39
+    LDX #1
 .L8C2D
-    LDA prv81,X
-    JSR L8C3C
-    INX
-    CPX prv81
-    BNE L8C2D
+    LDA prvBootCommand - 1,X:JSR L8C3C
+    INX:CPX prvBootCommandLength:BNE L8C2D
 .L8C39
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 
