@@ -2531,12 +2531,13 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     LDX prvBootCommandLength:BEQ FinishShow
     LDX #1
 .ShowLoop
-    LDA prvBootCommand - 1,X:JSR L8C3C
+    LDA prvBootCommand - 1,X:JSR PrintEscapedCharacter
     INX:CPX prvBootCommandLength:BNE ShowLoop
 .FinishShow
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 
-.L8C3C
+; SQUASH: This has only one caller
+.PrintEscapedCharacter
     CMP #&80:BCC NotTopBitSet ; SQUASH: TAY:BPL?
     PHA
     LDA #'|':JSR OSWRCH
@@ -2547,18 +2548,17 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     CMP #&20:BCS NotLowControl
 .HighControl
     AND #&3F
-.L8C54
+.Special
     PHA
     LDA #'|':JSR OSWRCH
     PLA
-    CMP #&20:BCS L8C6D
+    CMP #&20:BCS Printable
     ORA #'@'
 .NotLowControl
-    CMP #&7F:BEQ HighControl
-    CMP #'"':BEQ L8C54
-    CMP #&7C
-    BEQ L8C54
-.L8C6D
+    CMP #vduDel:BEQ HighControl
+    CMP #'"':BEQ Special
+    CMP #'|':BEQ Special
+.Printable
     JMP OSWRCH
 }
 
