@@ -712,7 +712,7 @@ prvOsMode = prv83 + &3C ; working copy of OSMODE, initialised from relevant bits
 prvShx = prv83 + &3D ; working copy of SHX, initialised from relevant bit of userRegOsModeShx in service01 (uses prvOn/prvOff convention)
 prvOsbyte6FStack = prv83 + &3E ; used as 8 bit deep stack by osbyte6FInternal
 prvDesiredTubeState = prv83 + &40 ; b7 set iff we want the tube on (*not* always 0 or &FF)
-prvSFTODOTUBEISH = prv83 + &41
+prvTubeOnOffInProgress = prv83 + &41 ; &FF if we're turning tube on or off, 0 otherwise
 prvTubeReleasePending = prv83 + &42 ; used during OSWORD 42; &FF means we have claimed the tube and need to release it at end of transfer, 0 means we don't
 ; prvLastFilingSystem is used to track the last filing system selected, so we can preserve the current filing system on a soft reset.
 prvLastFilingSystem = prv83 + &43
@@ -2989,12 +2989,12 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 
 .^DisableTube
     LDA #0:LDX #prvDesiredTubeState - prv83:JSR WritePrivateRam8300X
-    LDA #&FF:LDX #prvSFTODOTUBEISH - prv83:JSR WritePrivateRam8300X
+    LDA #&FF:LDX #prvTubeOnOffInProgress - prv83:JSR WritePrivateRam8300X
     LDA #0:STA tubePresenceFlag
     ; Re-select the current filing system.
     LDA #osargsReadFilingSystemNumber:LDX #TransientZP:LDY #0:JSR OSARGS ; SQUASH: don't set X?
     TAY:LDX #serviceSelectFilingSystem:JSR DoOsbyteIssueServiceRequest
-    LDA #0:LDX #prvSFTODOTUBEISH - prv83:JMP WritePrivateRam8300X
+    LDA #0:LDX #prvTubeOnOffInProgress - prv83:JMP WritePrivateRam8300X
 
 .TurnTubeOn
     LDA #&81:STA tubeReg1Status
@@ -3008,13 +3008,13 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 .EnableTube
     BIT tubePresenceFlag:BMI ExitAndClaimServiceCallIndirect
     LDA #&FF:LDX #prvDesiredTubeState - prv83:JSR WritePrivateRam8300X
-    LDX #prvSFTODOTUBEISH - prv83:JSR WritePrivateRam8300X
+    LDX #prvTubeOnOffInProgress - prv83:JSR WritePrivateRam8300X
     LDX #&FF:LDY #0:JSR DoOsbyteIssueServiceRequest
     LDA #&FF:STA tubePresenceFlag
     LDX #serviceTubePostInitialisation:LDY #0:JSR DoOsbyteIssueServiceRequest
     LDA #osargsReadFilingSystemNumber:LDX #&A8:LDY #&00:JSR OSARGS:TAY ; SQUASH: Don't LDX?
     LDX #serviceSelectFilingSystem:JSR DoOsbyteIssueServiceRequest
-    LDA #0:LDX #prvSFTODOTUBEISH - prv83:JSR WritePrivateRam8300X
+    LDA #0:LDX #prvTubeOnOffInProgress - prv83:JSR WritePrivateRam8300X
     LDA #&7F
 .TubeReg2Full
     BIT tubeReg2Status:BVC TubeReg2Full
@@ -4083,7 +4083,7 @@ tmp = &A8
 {
     XASSERT_USE_PRV1
     JSR clearShenPrvEn:PHA
-    BIT prvSFTODOTUBEISH:BMI L9836
+    BIT prvTubeOnOffInProgress:BMI L9836
     LDA lastBreakType:BEQ SoftReset
     ; If we're in the middle of a full reset, the contents of RTC registers/private RAM might
     ; be gibberish so don't carry out any logic depending on them.
@@ -4091,7 +4091,7 @@ tmp = &A8
     LDX #userRegTubeBaudPrinter:JSR ReadUserReg:AND #1:BNE WantTube ; branch if *CONFIGURE TUBE
     LDA #&FF
 .WantTube
-    STA prvDesiredTubeState ; note A is 1 or &FF here
+    STA prvDesiredTubeState ; note A is 1 or &FF here, so we must always test b7 not 0/non-0
 .SoftReset
     BIT prvDesiredTubeState:BPL L983D
 .L9836
@@ -6397,8 +6397,8 @@ SFTODOTMP2 = L00AB
     LDX #userRegBankInsertStatus + 1:JSR ReadUserReg:STA transientRomBankMask + 1
     JSR unplugBanksUsingTransientRomBankMask
 .Finish
-; SFTODO: Next bit of code is either claiming or not claiming the service call based on prvSFTODOTUBEISH; it will return with A=&10 (this call) or 0.
-    LDX #prvSFTODOTUBEISH - prv83:JSR ReadPrivateRam8300X
+; SFTODO: Next bit of code is either claiming or not claiming the service call based on prvTubeOnOffInProgress; it will return with A=&10 (this call) or 0.
+    LDX #prvTubeOnOffInProgress - prv83:JSR ReadPrivateRam8300X
     EOR #&FF
     AND #&10
     TSX:STA L0103,X	; modify stacked A, i.e. A we will return from the service call with
