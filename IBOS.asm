@@ -711,7 +711,7 @@ prvOff = 0
 prvOsMode = prv83 + &3C ; working copy of OSMODE, initialised from relevant bits of userRegOsModeShx in service01
 prvShx = prv83 + &3D ; working copy of SHX, initialised from relevant bit of userRegOsModeShx in service01 (uses prvOn/prvOff convention)
 prvOsbyte6FStack = prv83 + &3E ; used as 8 bit deep stack by osbyte6FInternal
-prvSFTODOTUBE2ISH = prv83 + &40
+prvDesiredTubeState = prv83 + &40 ; b7 set iff we want the tube on (*not* always 0 or &FF)
 prvSFTODOTUBEISH = prv83 + &41
 prvTubeReleasePending = prv83 + &42 ; used during OSWORD 42; &FF means we have claimed the tube and need to release it at end of transfer, 0 means we don't
 ; prvLastFilingSystem is used to track the last filing system selected, so we can preserve the current filing system on a soft reset.
@@ -2988,7 +2988,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     TAX:JMP DoOsbyteEnterLanguage
 
 .^DisableTube
-    LDA #0:LDX #prvSFTODOTUBE2ISH - prv83:JSR WritePrivateRam8300X
+    LDA #0:LDX #prvDesiredTubeState - prv83:JSR WritePrivateRam8300X
     LDA #&FF:LDX #prvSFTODOTUBEISH - prv83:JSR WritePrivateRam8300X
     LDA #0:STA tubePresenceFlag
     ; Re-select the current filing system.
@@ -3007,7 +3007,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ; SFTODO: Some code in common with DisableTube here (OSARGS/filing system reselection), could factor it out
 .EnableTube
     BIT tubePresenceFlag:BMI ExitAndClaimServiceCallIndirect
-    LDA #&FF:LDX #prvSFTODOTUBE2ISH - prv83:JSR WritePrivateRam8300X
+    LDA #&FF:LDX #prvDesiredTubeState - prv83:JSR WritePrivateRam8300X
     LDX #prvSFTODOTUBEISH - prv83:JSR WritePrivateRam8300X
     LDX #&FF:LDY #0:JSR DoOsbyteIssueServiceRequest
     LDA #&FF:STA tubePresenceFlag
@@ -4091,9 +4091,9 @@ tmp = &A8
     LDX #userRegTubeBaudPrinter:JSR ReadUserReg:AND #1:BNE WantTube ; branch if *CONFIGURE TUBE
     LDA #&FF
 .WantTube
-    STA prvSFTODOTUBE2ISH
+    STA prvDesiredTubeState ; note A is 1 or &FF here
 .SoftReset
-    BIT prvSFTODOTUBE2ISH:BPL L983D
+    BIT prvDesiredTubeState:BPL L983D
 .L9836
     PLA:JSR PRVDISStaRamsel
     JMP ExitServiceCall
