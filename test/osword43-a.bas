@@ -10,7 +10,8 @@ REM - ROMA should be loaded into test_bank, *not* ROMB. (Press CTRL-BREAK
 REM   and use *ROMS to check this; the test roms don't show in *HELP.)
 REM
 REM The above behaviour has been confirmed on an emulated Master 128.
-REM IBOS 1.20 fails this test; it loads ROMB.
+REM IBOS 1.20 fails this test; it loads ROMB (confirmed on real hardware
+REM using bank 12).
 
 test_bank=4
 
