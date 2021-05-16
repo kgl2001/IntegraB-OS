@@ -6,12 +6,13 @@ REM - We must have sideways RAM in test_bank.
 REM - Ideally test_bank should contain a recognisable ROM.
 REM
 REM After:
-REM - "CHUNK" should be the contents of test_bank from test_start to test_start+test_length
+REM - "CHUNK" should be the contents of test_bank from test_start to
+REM   test_start+test_length
 REM
 REM The above behaviour has been confirmed on an emulated Master 128.
-REM IBOS 1.20 fails this test; it saves only buffer_size bytes, although it does
-REM (not checked thoroughly) seem to be saving from the correct location in
-REM the correct bank.
+REM IBOS 1.20 fails this test (confirmed on real hardware); it saves only
+REM buffer_size bytes, although it does seem to be saving from the correct
+REM location in the correct bank.
 
 test_bank=4
 test_start=&A000
