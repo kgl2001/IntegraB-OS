@@ -6,12 +6,15 @@ REM - We must have sideways RAM in test_bank.
 REM - Ideally test_bank should contain a recognisable ROM.
 REM
 REM After:
-REM - "CHUNK" should be the contents of test_bank from test_start to test_start+test_length
+REM - "CHUNK" should be the contents of test_bank from test_start to
+REM   test_start+test_length
 REM
 REM The above behaviour has been confirmed on an emulated Master 128.
-REM IBOS 1.20 fails this test; it creates a zero-length "CHUNK" file. (I think it
-REM *might* sometimes also generate a "Bad address" error, but I'm not sure; this
-REM doesn't always happen.)
+REM IBOS 1.20 fails this test; it creates a zero-length "CHUNK" file (confirmed
+REM on real hardware).
+REM (On IBOS 1.20 this test *might* sometimes also generate a "Bad address"
+REM error, but I'm not sure; this doesn't always happen, and it has definitely
+REM not been seen on real hardware.)
 
 test_bank=4
 test_start=&A000

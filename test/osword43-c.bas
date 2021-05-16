@@ -13,7 +13,7 @@ REM does hang, but pressing BREAK shows "CHUNK" has been created with the correc
 REM length and I think this is acceptable given the program has been overwritten;
 REM this probably depends on the exact contents of sideways RAM.)
 REM IBOS 1.20 fails this test; it creates a zero-length "CHUNK" file and generates
-REM a "Bad address" error.
+REM a "Bad address" error (confirmed on real hardware).
 
 test_bank=4
 test_start=&A000

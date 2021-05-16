@@ -6,7 +6,7 @@ REM preserved in screen memory) in both shadow and non-shadow modes using
 REM OSWRSC. We deliberately adjust both the address at &D6 and the Y register
 REM to check both are respected.
 REM
-REM This works fine on IBOS 1.20.
+REM This works fine on IBOS 1.20 (confirmed on real hardware).
 
 *SHADOW 1
 MODE 0
