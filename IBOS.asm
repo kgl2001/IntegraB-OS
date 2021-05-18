@@ -7083,7 +7083,7 @@ UnitsChar = prvTmp3
 .SkipLeadingZero
     LDA UnitsChar:JMP EmitAToDateBufferUsingY
 
-;postfix for dates. eg 25th, 1st, 2nd, 3rd
+; Suffixesfor dates, e.g. 25th, 1st, 2nd, 3rd
 .dateSuffixes
     EQUS "th", "st", "nd", "rd"
 
