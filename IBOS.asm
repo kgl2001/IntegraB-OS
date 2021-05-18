@@ -7070,15 +7070,14 @@ UnitsChar = prvTmp3
 ; X=3 => "  "  " 5"  "25"	Right-aligned in a two character field with no leading 0s, 0 shown as blank
 .^emitADecimalFormatted ; SFTODO: should have ToDateBuffer in name
     ; SQUASH: Could we DEX:BEQ/BNE instead of doing all the CPXs?
-    XASSERT_USE_PRV1
     JSR ConvertAToTensUnitsChars
     LDY transientDateBufferIndex
     CPX #0:BEQ printTensChar ; SQUASH: TXA instead of CPX #0
     LDA TensChar:CMP #'0':BNE printTensChar
-    CPX #1:BEQ skipLeadingZero
+    CPX #1:BEQ skipLeadingZero ; SQUASH: DEX:BEQ?
     LDA #' ':STA TensChar
     LDA UnitsChar:CMP #'0':BNE printTensChar
-    CPX #3:BNE printTensChar
+    CPX #3:BNE printTensChar ; SQUASH: DEX:BEQ?
     LDA #' ':STA UnitsChar
 .printTensChar
     LDA TensChar:STA (transientDateBufferPtr),Y:INY
