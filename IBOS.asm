@@ -6794,52 +6794,37 @@ Tmp = TransientZP + 6
 
 ; SFTODO: the "in" in the next two exported labels is maybe confusing, "storeTo" might be better but even more longwinded - anyway, just a note for when I finally clean up all the label names
 {
+TmpYear = prvTmp3
+TmpCentury = prvTmp2
+
 ; As CalculateDayOfWeekInA, except we also update prvDateDayOfWeek with the calculated day of the week, and set SFTODO:PROBABLY b3 of prvDateSFTODOQ if this changes prvDateDayOfWeek from its previous value.
 .^CalculateDayOfWeekInPrvDateDayOfWeek
     CLC:BCC Common ; always branch
 ; SFTODO: Use a magic formula to calculate the day of the week for prvDate{Century,Year,Month,DayOfMonth}; I don't know how this works, but presumably it does.
 ; We return with the calculated day of the week in A.
 .^CalculateDayOfWeekInA
-            SEC
+    SEC
 .Common
     XASSERT_USE_PRV1
     PHP
-    LDA prvDateYear
-    STA prvTmp3
-    LDA prvDateCentury
-    STA prvTmp2
+    LDA prvDateYear:STA TmpYear
+    LDA prvDateCentury:STA TmpCentury
     ; SFTODO: We seem to be decrementing the date by one month here, there is a general "if this goes negative, borrow from the next highest unit" quality. I'm not entirely clear why we start off with SBC #2, maybe we are decrementing by two months, or maybe we are switching to some kind of start-in-March system, complete guesswork in that respect.
-    SEC
-    LDA prvDateMonth
-    SBC #2
-    STA prvTmp4
-    BMI January ; SFTODO? I think this is right
-    CMP #1
-    BCS DecrementDone ; branch if March or later month?
-.January
-    CLC
-    ADC #12 ; SFTODO: so we now have original month plus 10??
-    STA prvTmp4
-    DEC prvTmp3
-    BPL DecrementDone ; branch if wasn't year 0
-    CLC
-    LDA prvTmp3 ; SFTODO: don't we know this is 255 in practice and thus the ADC #100 will always give us A=99?
-    ADC #100
-    STA prvTmp3
-    DEC prvTmp2
-    BPL DecrementDone
-    CLC
-    LDA prvTmp2
-    ADC #100
-    STA prvTmp2
+    SEC:LDA prvDateMonth:SBC #2:STA prvTmp4
+    BMI JanuaryOrFebruary ; branch is prvDateMonth is January
+    CMP #1:BCS DecrementDone ; branch if March or later
+.JanuaryOrFebruary
+    CLC:ADC #12:STA prvTmp4 ; prvTmp4 = prvDateMonth + 10
+    DEC TmpYear:BPL DecrementDone ; branch if wasn't year 0
+    CLC:LDA TmpYear:ADC #100:STA TmpYear ; SQUASH: Just do "LDA #99"?
+    ; SQUASH: Is the following branch always taken? Don't we really only support 19xx/20xx dates?
+    DEC TmpCentury:BPL DecrementDone
+    CLC:LDA TmpCentury:ADC #100:STA TmpCentury
 .DecrementDone ; SFTODO: rename to "noBorrow"?
-    LDA prvTmp4
-    STA prvA
-    LDA #130
-    STA prvB
+    LDA prvTmp4:STA prvA
+    LDA #130:STA prvB
     JSR mul8 ; DC=A*B
-    ASL prvDC
-    ROL prvDC + 1
+    ASL prvDC:ROL prvDC + 1
     SEC
     LDA prvDC:SBC #19:STA prvA
     LDA prvDC + 1:SBC #0:STA prvB
@@ -6849,28 +6834,16 @@ Tmp = TransientZP + 6
     CLC
     LDA prvDC + 1
     ADC prvDateDayOfMonth
-    ADC prvTmp3
+    ADC TmpYear
 .LA97E
-    STA prv82+&4A
-    LDA prvTmp3
-    LSR A
-    LSR A
-    CLC
-    ADC prvA
     STA prvA
-    LDA prvTmp2
-    LSR A
-    LSR A
-    CLC
-    ADC prvA
-    ASL prvTmp2
-    SEC
-    SBC prvTmp2
+    LDA TmpYear:LSR A:LSR A:CLC:ADC prvA:STA prvA
+    LDA TmpCentury:LSR A:LSR A
+    CLC:ADC prvA:ASL TmpCentury
+    SEC:SBC TmpCentury
     PHP
     BCS LA9A5
-    SEC
-    SBC #&01
-    EOR #&FF
+    SEC:SBC #1:EOR #&FF
 .LA9A5
     STA prvA
     LDA #0:STA prvB
@@ -6878,16 +6851,15 @@ Tmp = TransientZP + 6
     JSR SFTODOPSEUDODIV ; SFTODO: HERE WE WILL DIVIDE WITHOUT ANY WEIRDNESS
     PLP
     BCS LA9C0
-    SEC
-    SBC #&01
-    EOR #&FF
-    CLC
-    ADC #&07
+    SEC:SBC #1:EOR #&FF
+    CLC:ADC #7 ; SFTODO: DAYSPERWEEK?
 .LA9C0
-    CMP #&07
+    CMP #7 ; SFTODO: DAYSPERWEEK?
     BCC LA9C6
-    SBC #&07
+    SBC #7 ; SFTODO: DAYSPERWEEK?
 .LA9C6
+    ; SQUASH: Do we need to update prvA here? Shorter to do "SEC:SBC #1". We could BEQ to "STA
+    ; prvDateDayOfWeek", skipping "LDA prvA".
     STA prvA
     INC prvA
     LDA prvA
