@@ -7069,32 +7069,21 @@ UnitsChar = prvTmp3
 ; X=2 => " 0"  " 5"  "25"	Right-aligned in a two character field with no leading 0s
 ; X=3 => "  "  " 5"  "25"	Right-aligned in a two character field with no leading 0s, 0 shown as blank
 .^emitADecimalFormatted ; SFTODO: should have ToDateBuffer in name
+    ; SQUASH: Could we DEX:BEQ/BNE instead of doing all the CPXs?
     XASSERT_USE_PRV1
-            JSR ConvertAToTensUnitsChars						;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
-            LDY transientDateBufferIndex						;get buffer pointer
-.LAB41      CPX #&00
-            BEQ printTensChar
-            LDA TensChar								;get 10s
-            CMP #'0'								;is it '0'
-            BNE printTensChar
-            CPX #&01	
-            BEQ skipLeadingZero
-            LDA #' '								;convert '0' to ' '
-            STA TensChar								;and save to &824E
-            LDA UnitsChar								;get 1s
-            CMP #'0'								;is it '0'
-            BNE printTensChar
-            CPX #&03
-            BNE printTensChar
-            LDA #' '								;convert '0' to ' '
-            STA UnitsChar								;and save to &824F
+    JSR ConvertAToTensUnitsChars
+    LDY transientDateBufferIndex
+    CPX #0:BEQ printTensChar ; SQUASH: TXA instead of CPX #0
+    LDA TensChar:CMP #'0':BNE printTensChar
+    CPX #1:BEQ skipLeadingZero
+    LDA #' ':STA TensChar
+    LDA UnitsChar:CMP #'0':BNE printTensChar
+    CPX #3:BNE printTensChar
+    LDA #' ':STA UnitsChar
 .printTensChar
-	  LDA TensChar								;get 10s
-            STA (transientDateBufferPtr),Y						;store at buffer &XY?Y
-            INY									;increase buffer pointer
+    LDA TensChar:STA (transientDateBufferPtr),Y:INY
 .skipLeadingZero
-            LDA UnitsChar								;get 1s
-            JMP EmitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return.
+    LDA UnitsChar:JMP EmitAToDateBufferUsingY
 
 ;postfix for dates. eg 25th, 1st, 2nd, 3rd
 .dateSuffixes
