@@ -7064,24 +7064,24 @@ UnitsChar = prvTmp3
 
 ; Emit A (<=99) into transientDateBuffer, formatted as a decimal number according to X:
 ;   A    0     5     25
-; X=0 => "00"  "05"  "25"	Right-aligned in a two character field with leading 0s
-; X=1 => "0"   "5"   "25"	Left-aligned with no padding, 1 or 2 characters
-; X=2 => " 0"  " 5"  "25"	Right-aligned in a two character field with no leading 0s
-; X=3 => "  "  " 5"  "25"	Right-aligned in a two character field with no leading 0s, 0 shown as blank
-.^emitADecimalFormatted ; SFTODO: should have ToDateBuffer in name
+; X=0 => "00"  "05"  "25"  Right-aligned in two character field, leading 0s
+; X=1 => "0"   "5"   "25"  Left-aligned with no padding, 1 or 2 characters
+; X=2 => " 0"  " 5"  "25"  Right-aligned in two character field, no leading 0s
+; X=3 => "  "  " 5"  "25"  Right-aligned in two character field, no leading 0s, 0 shown as blank
+.^EmitADecimalFormatted ; SFTODO: should have ToDateBuffer in name
     ; SQUASH: Could we DEX:BEQ/BNE instead of doing all the CPXs?
     JSR ConvertAToTensUnitsChars
     LDY transientDateBufferIndex
-    CPX #0:BEQ printTensChar ; SQUASH: TXA instead of CPX #0
-    LDA TensChar:CMP #'0':BNE printTensChar
-    CPX #1:BEQ skipLeadingZero ; SQUASH: DEX:BEQ?
+    CPX #0:BEQ PrintTensChar ; SQUASH: TXA instead of CPX #0
+    LDA TensChar:CMP #'0':BNE PrintTensChar
+    CPX #1:BEQ SkipLeadingZero ; SQUASH: DEX:BEQ?
     LDA #' ':STA TensChar
-    LDA UnitsChar:CMP #'0':BNE printTensChar
-    CPX #3:BNE printTensChar ; SQUASH: DEX:BEQ?
+    LDA UnitsChar:CMP #'0':BNE PrintTensChar
+    CPX #3:BNE PrintTensChar ; SQUASH: DEX:BEQ?
     LDA #' ':STA UnitsChar
-.printTensChar
+.PrintTensChar
     LDA TensChar:STA (transientDateBufferPtr),Y:INY
-.skipLeadingZero
+.SkipLeadingZero
     LDA UnitsChar:JMP EmitAToDateBufferUsingY
 
 ;postfix for dates. eg 25th, 1st, 2nd, 3rd
@@ -7202,10 +7202,10 @@ Options = transientDateSFTODO1
 .SomethingToDo
     LDA Options:CMP #prvDateSFTODO2UseHours:BCC ShowMinutes
     ; Emit hours.
-    LDX #0 ; X is formatting option for emitADecimalFormatted; 0 means "00" style.
+    LDX #0 ; X is formatting option for EmitADecimalFormatted; 0 means "00" style.
     ; SQUASH: Omit EOR and use BEQ instead of BNE?
     AND #prvDateSFTODO2NoLeadingZero:EOR #prvDateSFTODO2NoLeadingZero:BNE LeadingZero
-    INX:INX ; X=2 => emitADecimalFormatted will use " 0" style
+    INX:INX ; X=2 => EmitADecimalFormatted will use " 0" style
 .LeadingZero
     LDA Options:AND #prvDateSFTODO212Hour:PHP
     LDA prvDateHours
@@ -7217,19 +7217,19 @@ Options = transientDateSFTODO1
 .ZeroHours
     LDA #12 ; 12am
 .HoursInA
-    JSR emitADecimalFormatted
+    JSR EmitADecimalFormatted
     LDA #':':JSR EmitAToDateBuffer
 
 .ShowMinutes
-    LDX #0 ; X is formatting option for emitADecimalFormatted; 0 means "00" style.
+    LDX #0 ; X is formatting option for EmitADecimalFormatted; 0 means "00" style.
     LDA Options
     CMP #prvDateSFTODO2UseHours:BCS ShowMinutesAs00 ; branch if hour shown
     CMP #prvDateSFTODO212Hour:BEQ ShowMinutesAs00 ; branch if 24 hour clock
     ; Options could be 0, 2 or 3 here but I suspect in practice it will either be 0 or 2, and
     ; thus this is effectively using prvDateSFTODO2NoLeadingZero to select "00" or " 0" format.
-    TAX ; X is formatting option for emitADecimalFormatted
+    TAX ; X is formatting option for EmitADecimalFormatted
 .ShowMinutesAs00
-    LDA prvDateMinutes:JSR emitADecimalFormatted
+    LDA prvDateMinutes:JSR EmitADecimalFormatted
     LDA Options
     CMP #prvDateSFTODO2MinutesControl:BCC separatorColon
     CMP #prvDateSFTODO2MinutesControl OR prvDateSFTODO2UseHours:BCC ShowAmPm
@@ -7239,7 +7239,7 @@ Options = transientDateSFTODO1
     LDA #':'
 .separatorInA
     JSR EmitAToDateBuffer
-    LDX #0:LDA prvDateSeconds:JSR emitADecimalFormatted ; emit seconds using "00" format
+    LDX #0:LDA prvDateSeconds:JSR EmitADecimalFormatted ; emit seconds using "00" format
 
 .ShowAmPm
     LDA Options:CMP #prvDateSFTODO2UseHours:BCC Finish
@@ -7363,7 +7363,7 @@ Options = transientDateSFTODO1
             BEQ LACD0
             TAX
 .LACD0      LDA prvDateDayOfMonth							;read Day of Month
-            JSR emitADecimalFormatted							;X controls formatting
+            JSR EmitADecimalFormatted							;X controls formatting
             LDA transientDateSFTODO1
             CMP #&04
             BCC LACE5
@@ -7397,7 +7397,7 @@ Options = transientDateSFTODO1
             BEQ formatInX
             TAX
 .formatInX  LDA prvDateMonth								;read month
-            JSR emitADecimalFormatted							;X controls formatting
+            JSR EmitADecimalFormatted							;X controls formatting
             JMP LAD2A
 
 .LAD18      LDX #&03
@@ -7428,10 +7428,10 @@ Options = transientDateSFTODO1
             BEQ emitCenturyTick
             LDX #&00
             LDA prvDateCentury								;read century
-            JSR emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+            JSR EmitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 .emitYear   LDX #&00
             LDA prvDateYear								;read year
-            JMP emitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
+            JMP EmitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
 			
 .^LAD5Arts      RTS
 
@@ -8526,7 +8526,7 @@ Column = prvC
 .ColumnLoop
     LDA #' ':JSR EmitAToDateBuffer
     LDX CellIndex:LDA prvDateBuffer2,X
-    LDX #3:JSR emitADecimalFormatted ; emit A with 0 formatted as "  " and 5 as " 5"
+    LDX #3:JSR EmitADecimalFormatted ; emit A with 0 formatted as "  " and 5 as " 5"
     INC CellIndex
     INC Column:LDA Column:CMP #6:BCC ColumnLoop ; SFTODO: prob use one of named constants I plan to introduce in GenerateInternalCalendar
     LDA #vduCr:JSR EmitAToDateBuffer
