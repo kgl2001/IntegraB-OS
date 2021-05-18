@@ -7108,15 +7108,15 @@ UnitsChar = prvTmp3
     JSR ConvertAToTensUnitsChars						;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
     LDA TensChar								;get 10s
     CMP #'1'								;check for '1'
-    BNE not1x								;branch if not 1.
-.thSuffix
+    BNE Not1x								;branch if not 1.
+.ThSuffix
     LDX #&00								;if the number is in 10s, then always 'th'
     JMP SuffixInX ; SFTODO: Could BEQ ; always
 			
-.not1x
+.Not1x
     LDA UnitsChar								;get 1s
     CMP #'4'								;check if '4'
-    BCS thSuffix								;branch if >='4'
+    BCS ThSuffix								;branch if >='4'
     AND #&0F								;mask lower 4 bits, converting ASCII digit to binary
     ASL A									;x2 - 1 becomes 2, 2 becomes 4, 3 becomes 6
     TAX
@@ -7124,15 +7124,15 @@ UnitsChar = prvTmp3
     PLP									;restore carry flag. Used to select capitalisation
     LDY transientDateBufferIndex						;get buffer pointer
     LDA dateSuffixes,X							;get 1st character from table + offset
-    BCC noCaps1								;don't capitalise
+    BCC NoCaps1								;don't capitalise
     AND #CapitaliseMask								;capitalise
-.noCaps1
+.NoCaps1
     STA (transientDateBufferPtr),Y						;store at buffer &XY?Y
     INY									;increase buffer pointer
     LDA dateSuffixes+1,X							;get 2nd character from table + offset
-    BCC noCaps2								;don't capitalise
+    BCC NoCaps2								;don't capitalise
     AND #CapitaliseMask								;capitalise
-.noCaps2
+.NoCaps2
     JMP EmitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
 
 ; Convert binary value in A to two-digit ASCII representation at TensChar/UnitsChar.
