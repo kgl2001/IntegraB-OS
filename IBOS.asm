@@ -7512,45 +7512,28 @@ Options = transientDateSFTODO1
 .ConvertDateToAbsoluteDayNumber
 {
     XASSERT_USE_PRV1
-    LDA #0
-    STA prvDateSFTODOX
-    SEC
-    LDA prvDateCentury
-    SBC #19
-    BCC LAE26 ; SFTODO: branch if error? (branch if prvDateCentury<19, but LAE26 is used below too)
-    BEQ centuryAdjustInA
-    CMP #1
-    BNE LAE26
+    LDA #0:STA prvDateSFTODOX
+    SEC:LDA prvDateCentury:SBC #19:BCC Error ; fail for dates before 1900
+    BEQ CenturyAdjustInA
+    CMP #1:BNE Error ; fail for dates after 2099
     LDA #100
-.centuryAdjustInA
-    CLC
-    ADC prvDateYear
-    ; A now contains yearsSince1900=four digit year-1900.
-    PHA
-    STA prvA
-    LDA #lo(daysPerYear)
-    STA prvB
+.CenturyAdjustInA
+    CLC:ADC prvDateYear
+    ; A now contains YearsSince1900=four digit year-1900.
+    PHA:STA prvA
+    LDA #lo(daysPerYear):STA prvB
     JSR mul8
-    ; We now have prvDC = yearsSince1900*lo(daysPerYear); prvDC+1 might be as high as 84 if yearsSince1900=199
-    CLC
-    PLA
-    PHA
-    ADC prvDC + 1
-    STA prvDC + 1
-    ; We now have prvDC += yearsSince1900*hi(daysPerYear)*256, since hi(daysPerYear) == 1 SFTODO: note this may overflow, e.g. if yearsSince1900=199 prvDC + 1 "should" be 84+199=283, but we don't check
-    PLA
-    LSR A
-    LSR A
-    CLC
-    ADC prvDC
-    STA prvDC
-    ; SFTODO: Could save a few bytes with BCC:INC trick
-    LDA prvDC + 1
-    ADC #0
-    STA prvDC + 1
-    ; prvDC += yearsSince1900 DIV 4
-    BCS LAE26 ; branch if we've overflowed SFTODO: seems a little pointless, we didn't check for overflow above so why only here? Just maybe this works out correctly, but I'm a little dubious.
-    ; We have prvDC = yearsSince1900*daysPerYear + yearsSince1900 DIV 4 = days since January 1st 1900.
+    ; We now have prvDC = YearsSince1900*lo(daysPerYear); prvDC+1 might be as high as 84 if
+    ; YearsSince1900=199
+    CLC:PLA:PHA:ADC prvDC + 1:STA prvDC + 1
+    ; We now have prvDC += YearsSince1900*hi(daysPerYear)*256, since hi(daysPerYear) == 1
+    ; ENHANCE: Note this may overflow, e.g. if YearsSince1900=199, prvDC+1 should be
+    ; 84+199=283, but we don't check.
+    PLA:LSR A:LSR A:CLC:ADC prvDC:STA prvDC
+    LDA prvDC + 1:ADC #0:STA prvDC + 1 ; SQUASH: Use INCCS
+    ; We now have prvDC += YearsSince1900 DIV 4
+    BCS Error ; branch if we've overflowed SFTODO: seems a little pointless, we didn't check for overflow above so why only here? Just maybe this works out correctly, but I'm a little dubious.
+    ; We have prvDC = YearsSince1900*daysPerYear + YearsSince1900 DIV 4 = days since January 1st 1900.
     JSR ConvertDateToRelativeDayNumber
     CLC
     LDA prvDateSFTODO4
@@ -7560,10 +7543,10 @@ Options = transientDateSFTODO1
     ADC prvDC + 1
     STA prvDateSFTODO4 + 1
     ; We have now (SFTODO: ignoring possible bug in ConvertDateToRelativeDayNumber) calculated the number of days from January 1st 1900 to prvDate.
-    BCS LAE26 ; branch if we've overflowed SFTODO: pointless? well, at least inconsistent/incomplete?
+    BCS Error ; branch if we've overflowed SFTODO: pointless? well, at least inconsistent/incomplete?
     RTS
 			
-.LAE26
+.Error
     LDA #&FF
     STA prvDateSFTODOX
     RTS
