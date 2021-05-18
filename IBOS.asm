@@ -7101,39 +7101,32 @@ UnitsChar = prvTmp3
     EQUS "th", "st", "nd", "rd"
 
 ; Emit ordinal suffix for A (<=99) into transientDateBuffer; if C is set it will be capitalised.
-; SFTODO: This only has one caller, can it just be inlined?
+; SQUASH: This only has one caller, can it just be inlined?
 .^EmitOrdinalSuffix
     XASSERT_USE_PRV1
-    PHP									;save carry flag. Used to select capitalisation
-    JSR ConvertAToTensUnitsChars						;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
-    LDA TensChar								;get 10s
-    CMP #'1'								;check for '1'
-    BNE Not1x								;branch if not 1.
+    PHP
+    JSR ConvertAToTensUnitsChars
+    LDA TensChar:CMP #'1':BNE Not1x
 .ThSuffix
-    LDX #&00								;if the number is in 10s, then always 'th'
-    JMP SuffixInX ; SFTODO: Could BEQ ; always
-			
+    LDX #0:JMP SuffixInX ; SQUASH: Could BEQ ; always
 .Not1x
-    LDA UnitsChar								;get 1s
-    CMP #'4'								;check if '4'
-    BCS ThSuffix								;branch if >='4'
-    AND #&0F								;mask lower 4 bits, converting ASCII digit to binary
-    ASL A									;x2 - 1 becomes 2, 2 becomes 4, 3 becomes 6
-    TAX
+    LDA UnitsChar
+    CMP #'4':BCS ThSuffix
+    AND #&0F ; convert ASCII digit to binary
+    ASL A:TAX ; X=units digit*2=index into dateSuffixes
 .SuffixInX
-    PLP									;restore carry flag. Used to select capitalisation
-    LDY transientDateBufferIndex						;get buffer pointer
-    LDA dateSuffixes,X							;get 1st character from table + offset
-    BCC NoCaps1								;don't capitalise
-    AND #CapitaliseMask								;capitalise
+    PLP
+    LDY transientDateBufferIndex
+    LDA dateSuffixes,X
+    BCC NoCaps1
+    AND #CapitaliseMask
 .NoCaps1
-    STA (transientDateBufferPtr),Y						;store at buffer &XY?Y
-    INY									;increase buffer pointer
-    LDA dateSuffixes+1,X							;get 2nd character from table + offset
-    BCC NoCaps2								;don't capitalise
-    AND #CapitaliseMask								;capitalise
+    STA (transientDateBufferPtr),Y:INY
+    LDA dateSuffixes + 1,X
+    BCC NoCaps2
+    AND #CapitaliseMask
 .NoCaps2
-    JMP EmitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
+    JMP EmitAToDateBufferUsingY
 
 ; Convert binary value in A to two-digit ASCII representation at TensChar/UnitsChar.
 .ConvertAToTensUnitsChars
