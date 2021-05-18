@@ -7059,8 +7059,8 @@ MaxOutputLength = prvTmp4 ; SFTODO: rename this, I think it's "max chars to prin
 }
 			
 {
-tensChar = prvTmp2
-unitsChar = prvTmp3
+TensChar = prvTmp2
+UnitsChar = prvTmp3
 
 ; Emit A (<=99) into transientDateBuffer, formatted as a decimal number according to X:
 ;   A    0     5     25
@@ -7070,30 +7070,30 @@ unitsChar = prvTmp3
 ; X=3 => "  "  " 5"  "25"	Right-aligned in a two character field with no leading 0s, 0 shown as blank
 .^emitADecimalFormatted ; SFTODO: should have ToDateBuffer in name
     XASSERT_USE_PRV1
-            JSR convertAToTensUnitsChars						;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
+            JSR ConvertAToTensUnitsChars						;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
             LDY transientDateBufferIndex						;get buffer pointer
 .LAB41      CPX #&00
             BEQ printTensChar
-            LDA tensChar								;get 10s
+            LDA TensChar								;get 10s
             CMP #'0'								;is it '0'
             BNE printTensChar
             CPX #&01	
             BEQ skipLeadingZero
             LDA #' '								;convert '0' to ' '
-            STA tensChar								;and save to &824E
-            LDA unitsChar								;get 1s
+            STA TensChar								;and save to &824E
+            LDA UnitsChar								;get 1s
             CMP #'0'								;is it '0'
             BNE printTensChar
             CPX #&03
             BNE printTensChar
             LDA #' '								;convert '0' to ' '
-            STA unitsChar								;and save to &824F
+            STA UnitsChar								;and save to &824F
 .printTensChar
-	  LDA tensChar								;get 10s
+	  LDA TensChar								;get 10s
             STA (transientDateBufferPtr),Y						;store at buffer &XY?Y
             INY									;increase buffer pointer
 .skipLeadingZero
-            LDA unitsChar								;get 1s
+            LDA UnitsChar								;get 1s
             JMP EmitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return.
 
 ;postfix for dates. eg 25th, 1st, 2nd, 3rd
@@ -7104,46 +7104,47 @@ unitsChar = prvTmp3
 ; SFTODO: This only has one caller, can it just be inlined?
 .^EmitOrdinalSuffix
     XASSERT_USE_PRV1
-            PHP									;save carry flag. Used to select capitalisation
-            JSR convertAToTensUnitsChars						;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
-            LDA tensChar								;get 10s
-            CMP #'1'								;check for '1'
-            BNE not1x								;branch if not 1.
-.thSuffix   LDX #&00								;if the number is in 10s, then always 'th'
-            JMP SuffixInX ; SFTODO: Could BEQ ; always
+    PHP									;save carry flag. Used to select capitalisation
+    JSR ConvertAToTensUnitsChars						;Split number in register A into 10s and 1s, characterise and store units in &824F and 10s in &824E
+    LDA TensChar								;get 10s
+    CMP #'1'								;check for '1'
+    BNE not1x								;branch if not 1.
+.thSuffix
+    LDX #&00								;if the number is in 10s, then always 'th'
+    JMP SuffixInX ; SFTODO: Could BEQ ; always
 			
-.not1x      LDA unitsChar								;get 1s
-            CMP #'4'								;check if '4'
-            BCS thSuffix								;branch if >='4'
-            AND #&0F								;mask lower 4 bits, converting ASCII digit to binary
-            ASL A									;x2 - 1 becomes 2, 2 becomes 4, 3 becomes 6
-            TAX
-.SuffixInX  PLP									;restore carry flag. Used to select capitalisation
-            LDY transientDateBufferIndex						;get buffer pointer
-            LDA dateSuffixes,X							;get 1st character from table + offset
-            BCC noCaps1								;don't capitalise
-            AND #CapitaliseMask								;capitalise
-.noCaps1    STA (transientDateBufferPtr),Y						;store at buffer &XY?Y
-            INY									;increase buffer pointer
-            LDA dateSuffixes+1,X							;get 2nd character from table + offset
-            BCC noCaps2								;don't capitalise
-            AND #CapitaliseMask								;capitalise
-.noCaps2    JMP EmitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
+.not1x
+    LDA UnitsChar								;get 1s
+    CMP #'4'								;check if '4'
+    BCS thSuffix								;branch if >='4'
+    AND #&0F								;mask lower 4 bits, converting ASCII digit to binary
+    ASL A									;x2 - 1 becomes 2, 2 becomes 4, 3 becomes 6
+    TAX
+.SuffixInX
+    PLP									;restore carry flag. Used to select capitalisation
+    LDY transientDateBufferIndex						;get buffer pointer
+    LDA dateSuffixes,X							;get 1st character from table + offset
+    BCC noCaps1								;don't capitalise
+    AND #CapitaliseMask								;capitalise
+.noCaps1
+    STA (transientDateBufferPtr),Y						;store at buffer &XY?Y
+    INY									;increase buffer pointer
+    LDA dateSuffixes+1,X							;get 2nd character from table + offset
+    BCC noCaps2								;don't capitalise
+    AND #CapitaliseMask								;capitalise
+.noCaps2
+    JMP EmitAToDateBufferUsingY							;store at buffer &XY?Y, increase buffer pointer, save buffer pointer and return
 
-;Split number in register A into 10s and 1s, characterise and store 1s in &824F and 10s in &824E
-.convertAToTensUnitsChars
-            LDY #&FF
-            SEC
-.tensLoop   INY									;starting at 0
-            SBC #10
-            BCS tensLoop								;count 10s till negative. Total 10s stored in Y
-            ADC #10									;restore last subtract to get positive again. This gets the units
-            ORA #'0'								;convert units to character
-            STA unitsChar								;save units to &824F
-            TYA									;get 10s
-            ORA #'0'								;convert 10s to character
-            STA tensChar								;save 10s to &824F
-            RTS
+; Convert binary value in A to two-digit ASCII representation at TensChar/UnitsChar.
+.ConvertAToTensUnitsChars
+    LDY #&FF
+    SEC
+.TensLoop
+    INY
+    SBC #10:BCS TensLoop
+    ADC #10:ORA #'0':STA UnitsChar
+    TYA:ORA #'0':STA TensChar
+    RTS
 }
 
 {
