@@ -7534,7 +7534,11 @@ Options = transientDateSFTODO1
     LDA prvDC + 1:ADC #0:STA prvDC + 1 ; SQUASH: Use INCCS - careful with folllowing BCS...
     BCS Error ; branch if we've overflowed
     ; At this point prvDC = YearsSince1900*daysPerYear + YearsSince1900 DIV 4 = days since
-    ; January 1st 1900.
+    ; January 1st 1900. ENHANCE: I'm not sure this is right - even with the TYA->TAX bug fix in
+    ; ConvertDateToRelativeDayNumber, date.bas test still fails. I think the problem might be
+    ; that we should be adding "(YearsSince1900-1) DIV 4" not "YearsSince1900 DIV 4", since in
+    ; January 1904 the leap day has not occurred yet, and we should leave it to
+    ; ConvertDateToRelativeDayNumber to take the leap day for the current year into account.
     JSR ConvertDateToRelativeDayNumber
     CLC
     LDA prvDateSFTODO4:ADC prvDC:STA prvDateSFTODO4
