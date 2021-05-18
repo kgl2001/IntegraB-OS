@@ -6863,14 +6863,18 @@ TmpCentury = prvTmp2
     STA prvA
     INC prvA
     LDA prvA
-    PLP ; get stacked flags from entry
-    BCS Rts
-    CMP prvDateDayOfWeek
-    BEQ LA9DF
+    PLP:BCS Rts ; test stacked flags from entry; C set => return result in A
+    ; Return result in A and at prvDateDayOfWeek; test to see if the existing value was correct
+    ; and update prvDateSFTODOQ if it wasn't. SFTODO: I think that comment is a touch glib. I'm
+    ; not 100% confident yet but a lot of the time SFTODOQ is about errors - but the way we
+    ; behave here seems odd from that POV, we *set* the bit if the existing value wasn't right,
+    ; but then we update prvDateDayOfWeek so it *is* right, which means the bit we just set
+    ; indicates "was wrong but is no longer wrong". I suspect this is being used to indicate
+    ; something like "open" or "didn't match user's specification". It may be that the updated
+    ; value is not relevant in some/all cases where we use this code path.
+    CMP prvDateDayOfWeek:BEQ LA9DF
     ; SFTODO: I think it's right to be using the SFTODOQ labels here but not sure yet
-    LDA #prvDateSFTODOQDayOfWeek
-    ORA prvDateSFTODOQ
-    STA prvDateSFTODOQ
+    LDA #prvDateSFTODOQDayOfWeek:ORA prvDateSFTODOQ:STA prvDateSFTODOQ
 .LA9DF
     LDA prvA
     STA prvDateDayOfWeek
