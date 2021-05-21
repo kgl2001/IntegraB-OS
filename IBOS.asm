@@ -2179,21 +2179,23 @@ FullResetPrv = &2800
 
 ; This code is relocated from IBOS ROM to RAM starting at FullResetPrv
 .FullResetPrvTemplate
+    OPT 7:O%=P%:P%=FullResetPrv
+
 ptr = &00 ; 2 bytes
     LDA romselCopy:PHA
     ; Zero all sideways RAM.
     LDX #maxBank
 .ZeroSwrLoop
     STX romselCopy:STX romsel
-    LDA #&80:JSR ZeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv ; SFTODO: mildly magic
+    LDA #&80:JSR ZeroPageAUpToC0 ; SFTODO: mildly magic
     DEX:BPL ZeroSwrLoop
     ; Zero shadow/private RAM.
     LDA #ramselShen OR ramselPrvs841:STA ramselCopy:STA ramsel
     LDA #romselPrvEn:STA romselCopy:STA romsel
-    LDA #&30:JSR ZeroPageAUpToC0-FullResetPrvTemplate+FullResetPrv ; SFTODO: mildly magic
+    LDA #&30:JSR ZeroPageAUpToC0 ; SFTODO: mildly magic
     ; Initialise prvSFTODOFOURBANKS.
     LDA #&FF
-    STA prvSFTODOFOURBANKS    :STA prvSFTODOFOURBANKS + 1
+    STA prvSFTODOFOURBANKS + 0:STA prvSFTODOFOURBANKS + 1
     STA prvSFTODOFOURBANKS + 2:STA prvSFTODOFOURBANKS + 3
     LDA #0:STA ramselCopy:STA ramsel
     PLA:STA romselCopy:STA romsel
@@ -2206,8 +2208,8 @@ ptr = &00 ; 2 bytes
     ; 0 we wrote in ZeroUserRegLoop above.
     LDY #(UserRegDefaultTableEnd - UserRegDefaultTable) - 0
 .SetDefaultLoop
-    LDX UserRegDefaultTable-FullResetPrvTemplate+FullResetPrv+&00,Y
-    LDA UserRegDefaultTable-FullResetPrvTemplate+FullResetPrv+&01,Y
+    LDX UserRegDefaultTable + 0,Y
+    LDA UserRegDefaultTable + 1,Y
     JSR WriteUserReg
     DEY:DEY:BPL SetDefaultLoop
     ; SQUASH: We could just do LDA #&7F:STA systemViaBase + viaRegisterInterruptEnable - we
@@ -2248,7 +2250,9 @@ ptr = &00 ; 2 bytes
 
     ; SFTODO: +2 because as per above SFTODO I think we actually use an extra entry off the end
     ; of this table.
-    ASSERT (P% + 2) - FullResetPrvTemplate <= 256
+    ASSERT (P% + 2) - FullResetPrv <= 256
+
+    OPT 3:P%=O%
 }
 
 
