@@ -4306,12 +4306,12 @@ RamPresenceFlags = TransientZP
     JSR CopyYxToVariableMainRamSubroutine
     PLA:BEQ Ram
     ; ROM - so patch variableMainRamSubroutine's ROM header to say "ROM" instead of "RAM"
-    LDA #'O':STA WriteRomHeaderTemplateDataAO
+    LDA #'O':STA WriteRomHeaderDataAO
 .Ram
     LDA prvOswordBlockCopy + 1 ; SFTODO: THIS IS THE SAME LOCATINO AS IN SRROM/SRDATA SO WE NEED A GLOBAL NAME FOR IT RATHER THAN JUST THE LOCAL ONE WE CURRENTLY HAVE (bankTmp)
     JSR checkRamBankAndMakeAbsolute
     STA prvOswordBlockCopy + 1
-    STA WriteRomHeaderTemplateSFTODO
+    STA WriteRomHeaderDataSFTODO
     JMP variableMainRamSubroutine
 }
 
@@ -5146,14 +5146,14 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ;ROM Header
 .SrDataHeader
     EQUB opcodeRts
-.^WriteRomHeaderTemplateSFTODO ; SFTODO: Why do we modify this byte of the header?
+.^WriteRomHeaderDataSFTODO ; SFTODO: Why do we modify this byte of the header?
     EQUB           &00,&00
     EQUB opcodeRts,&00,&00
     EQUB RomTypeSrData ; SFTODO: This constant is arguably misnamed since we use it for *SRROM banks too (I think)
     EQUB &0C
     EQUB &FF
     EQUS "R"
-.^WriteRomHeaderTemplateDataAO
+.^WriteRomHeaderDataAO
     EQUS "AM", &00
     EQUS "(C)"
 .SrDataHeaderEnd
