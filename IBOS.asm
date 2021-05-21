@@ -5108,22 +5108,23 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ;this code is relocated to and executed at &03A7
 .wipeRamTemplate
 {
-      	  LDX romselCopy
-            STA romselCopy
-            STA romsel
-            LDA #&00
-.L9E41      STA prv80+&00 ; SFTODO: Change to &8000? I think this is wiping arbitrary banks, not particular private RAM.
-            INC variableMainRamSubroutine+L9E41-wipeRamTemplate+1								;Self modifying code - increment LSB of STA in line above
-            BNE L9E41									;Test for overflow
-            INC variableMainRamSubroutine+L9E41-wipeRamTemplate+2								;Increment MSB of STA in line above
-            BIT variableMainRamSubroutine+L9E41-wipeRamTemplate+2								;test MSB bit 6 (have we reached &4000?)
-            BVC L9E41									;No? Then loop
-            LDA romselCopy
-	  ; SQUASH: We could replace next three instructions with JMP osStxRomselAndCopyAndRts.
-            STX romselCopy
-            STX romsel
-            RTS
-            ASSERT P% - wipeRamTemplate <= variableMainRamSubroutineMaxSize
+    OPT 7:O%=P%:P%=variableMainRamSubroutine
+
+    LDX romselCopy
+    STA romselCopy:STA romsel
+    LDA #0
+.wipeLoop
+.staAbs
+    STA &8000 ; SFTODO: mildly magic
+    INC staAbs + 1:BNE wipeLoop
+    INC staAbs + 2:BIT staAbs + 2:BVC wipeLoop ; test high byte bit 6 (have we reached &4000?)
+    LDA romselCopy
+    ; SQUASH: We could replace next three instructions with JMP osStxRomselAndCopyAndRts.
+    STX romselCopy:STX romsel
+    RTS
+
+    ASSERT O% - wipeRamTemplate <= variableMainRamSubroutineMaxSize
+    OPT 3:P%=O%
 }
 
 ;write ROM header to RAM at bank A
