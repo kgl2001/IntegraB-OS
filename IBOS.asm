@@ -753,6 +753,7 @@ bufNumPrinter = 3 ; OS buffer number for the printer buffer
 eventNumUser = 9
 
 opcodeJmpAbsolute = &4C
+opcodeRts = &60
 opcodeJmpIndirect = &6C
 opcodeCmpAbs = &CD
 opcodeLdaAbs = &AD
@@ -2248,11 +2249,10 @@ ptr = &00 ; 2 bytes
     EQUB userRegRamPresenceFlags, &0F		; 64K non-SWR and 64K SWR in banks 4-7
 .UserRegDefaultTableEnd
 
+    OPT 3:P%=O%
     ; SFTODO: +2 because as per above SFTODO I think we actually use an extra entry off the end
     ; of this table.
-    ASSERT (P% + 2) - FullResetPrv <= 256
-
-    OPT 3:P%=O%
+    ASSERT (P% + 2) - FullResetPrvTemplate <= 256
 }
 
 
@@ -4306,13 +4306,12 @@ RamPresenceFlags = TransientZP
     JSR CopyYxToVariableMainRamSubroutine
     PLA:BEQ Ram
     ; ROM - so patch variableMainRamSubroutine's ROM header to say "ROM" instead of "RAM"
-    LDA #'O'
-    STA variableMainRamSubroutine + (WriteRomHeaderTemplateDataAO - WriteRomHeaderTemplate)
+    LDA #'O':STA WriteRomHeaderTemplateDataAO
 .Ram
     LDA prvOswordBlockCopy + 1 ; SFTODO: THIS IS THE SAME LOCATINO AS IN SRROM/SRDATA SO WE NEED A GLOBAL NAME FOR IT RATHER THAN JUST THE LOCAL ONE WE CURRENTLY HAVE (bankTmp)
     JSR checkRamBankAndMakeAbsolute
     STA prvOswordBlockCopy + 1
-    STA variableMainRamSubroutine + (WriteRomHeaderTemplateSFTODO - WriteRomHeaderTemplate)
+    STA WriteRomHeaderTemplateSFTODO
     JMP variableMainRamSubroutine
 }
 
@@ -5123,42 +5122,44 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
     STX romselCopy:STX romsel
     RTS
 
-    ASSERT O% - wipeRamTemplate <= variableMainRamSubroutineMaxSize
     OPT 3:P%=O%
+    ASSERT P% - wipeRamTemplate <= variableMainRamSubroutineMaxSize
 }
 
 ;write ROM header to RAM at bank A
 ;this code is relocated to and executed at &03A7
 .WriteRomHeaderTemplate
 {
-      	  LDX romselCopy
-            STA romselCopy
-            STA romsel
-            LDY #&0F
-.L9E62      LDA variableMainRamSubroutine + srDataHeader - WriteRomHeaderTemplate,Y
-            STA &8000,Y    
-            DEY
-            BPL L9E62
-            LDA romselCopy
-	  ; SQUASH: We could replace next three instructions with JMP osStxRomselAndCopyAndRts.
-            STX romselCopy
-            STX romsel
-            RTS
+    OPT 7:O%=P%:P%=variableMainRamSubroutine
+
+    LDX romselCopy
+    STA romselCopy:STA romsel
+    LDY #(SrDataHeaderEnd - SrDataHeader) - 1
+.CopyLoop
+    LDA SrDataHeader,Y:STA &8000,Y ; SFTODO: mildly magic
+    DEY:BPL CopyLoop
+    LDA romselCopy
+    ; SQUASH: We could replace next three instructions with JMP osStxRomselAndCopyAndRts.
+    STX romselCopy:STX romsel
+    RTS
 
 ;ROM Header
-.srDataHeader
-	  EQUB &60
+.SrDataHeader
+    EQUB opcodeRts
 .^WriteRomHeaderTemplateSFTODO ; SFTODO: Why do we modify this byte of the header?
-            EQUB     &00,&00
-	  EQUB &60,&00,&00
-	  EQUB RomTypeSrData ; SFTODO: This constant is arguably misnamed since we use it for *SRROM banks too (I think)
-	  EQUB &0C
-	  EQUB &FF
-	  EQUS "R"
+    EQUB           &00,&00
+    EQUB opcodeRts,&00,&00
+    EQUB RomTypeSrData ; SFTODO: This constant is arguably misnamed since we use it for *SRROM banks too (I think)
+    EQUB &0C
+    EQUB &FF
+    EQUS "R"
 .^WriteRomHeaderTemplateDataAO
-            EQUS "AM", &00
-	  EQUS "(C)"
-            ASSERT P% - WriteRomHeaderTemplate <= variableMainRamSubroutineMaxSize
+    EQUS "AM", &00
+    EQUS "(C)"
+.SrDataHeaderEnd
+
+    OPT 3:P%=O%
+    ASSERT P% - WriteRomHeaderTemplate <= variableMainRamSubroutineMaxSize
 }
 
 ;save ROM / RAM at bank X to file system
