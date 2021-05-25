@@ -5543,7 +5543,7 @@ osfileBlock = L02EE
     LDX prvOswordBlockCopy + 12 ; low byte of filename in I/O processor
     LDY prvOswordBlockCopy + 13 ; high byte of filename in I/O processor
     JSR OSFIND
-    CMP #0:BEQ GenerateNotFoundErrorIndirect
+    CMP #0:BEQ GenerateNotFoundErrorIndirect ; SQUASH: CMP #0->TAX/TAY? Depends if we can corrupt them...
     STA L02EE
     RTS
 
