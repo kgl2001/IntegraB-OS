@@ -5171,35 +5171,34 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 
 ;save ROM / RAM at bank X to file system
 ;this code is relocated to and executed at &03A7
+; SFTODO: Y ON ENTRY IS BYTES TO READ
 .saveSwrTemplate
 {
-      	  TXA
-	  LDX romselCopy
-            STA romselCopy
-            STA romsel
-            INY
-            ; SFTODO: We could STY this directly to immediate operand of CPY #n, saving a byte.
-            STY variableMainRamSubroutine + (saveSwrTemplateBytesToRead - saveSwrTemplate)
-            LDY #&00
-            ; SFTODO: It would be shorter by one byte to just STY to overwrite the operand of LDY #n after JSR OSBPUT.
-.L9E91      STY variableMainRamSubroutine + (saveSwrTemplateSavedY - saveSwrTemplate)
-            LDA (L00A8),Y
-            LDY L02EE
-            JSR OSBPUT
-            LDY variableMainRamSubroutine + (saveSwrTemplateSavedY - saveSwrTemplate)
-            INY
-            CPY variableMainRamSubroutine + (saveSwrTemplateBytesToRead - saveSwrTemplate)
-            BNE L9E91
-            LDA romselCopy
-            STX romselCopy
-            STX romsel
-            TAX
-            RTS
-.saveSwrTemplateBytesToRead
-saveSwrTemplateSavedY = saveSwrTemplateBytesToRead + 1
-            ; There are two bytes of space used here when this copied into RAM, but
-            ; they're not present in the ROM, hence P% + 2 in the next line.
-            ASSERT (P% + 2) - saveSwrTemplate <= variableMainRamSubroutineMaxSize
+    ORG variableMainRamSubroutine
+
+    TXA
+    LDX romselCopy
+    STA romselCopy:STA romsel
+    ; SQUASH: We could STY this directly to immediate operand of CPY #n, saving a byte.
+    INY:STY BytesToRead
+    LDY #0
+    ; SQUASH: It would be shorter by one byte to just STY to overwrite the operand of LDY #n after JSR OSBPUT.
+.Loop
+    STY SavedY
+    LDA (L00A8),Y:LDY L02EE:JSR OSBPUT ; SFTODO: magic addresses
+    LDY SavedY
+    INY:CPY BytesToRead:BNE Loop
+    LDA romselCopy
+    STX romselCopy:STX romsel
+    TAX
+    RTS
+BytesToRead = P% ; 1 byte
+SavedY = P% + 1 ; 1 byte
+
+    RELOCATE variableMainRamSubroutine, saveSwrTemplate
+    ; There are two bytes of space used at BytesToRead/SavedY when this copied into RAM, but
+    ; they're not present in the ROM, hence P% + 2 in the next line.
+    ASSERT (P% + 2) - saveSwrTemplate <= variableMainRamSubroutineMaxSize
 }
 
 ;load ROM / RAM at bank X from file system
