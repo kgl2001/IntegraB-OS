@@ -5427,14 +5427,20 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
     RTS
 }
 			
-; SFTODO: Could we move PRVEN to L9FF8 before the STA and save three bytes by not duplicating it for srsave and srload? Note that PrvEn preserves A.
 {
 ; SFTODO: *SRSAVE seems quite badly broken, I think because of problems with
 ; OSWORD &43.
 ; "*SRSAVE FOO A000 C000 4 Q" generates "Bad address" and saves nothing.
 ; "*SRSAVE FOO A000 C000 4" does seem to create the file correctly but then
 ; generates a "Bad address" error.
-; SFTODO: Ken has pointed out those commands are (using Integra-B *SRSAVE conventions) trying to save one byte past the end of sideways RAM, hence "Bad address". I don't know if we should consider changing this to be more Acorn DFS SRAM utils-like in a new version of IBOS or not, but those actual commands do work fine if the end address is fixed. (We could potentially quibble about whether it's right that one of those error-generating command creates an empty file and the other doesn't, but I don't think this is a big deal, and I have no idea what Acorn DFS does either.)
+; SFTODO: Ken has pointed out those commands are (using Integra-B *SRSAVE conventions) trying
+; to save one byte past the end of sideways RAM, hence "Bad address". I don't know if we should
+; consider changing this to be more Acorn DFS SRAM utils-like in a new version of IBOS or not,
+; but those actual commands do work fine if the end address is fixed. (We could potentially
+; quibble about whether it's right that one of those error-generating command creates an empty
+; file and the other doesn't, but I don't think this is a big deal, and I have no idea what
+; Acorn DFS does either.)
+
 ;*SRSAVE Command
 .^srsave
     PRVEN ; SQUASH: PRVEN preserves A, so move this to Common?
@@ -5533,24 +5539,19 @@ osfileBlock = L02EE
 ; SFTODO: Perhaps rename openOswordFile or similar, as I suspect there are other
 ; file-opening calls (e.g. *CREATE) in IBOS
 .openFile
-{
     XASSERT_USE_PRV1
-            LDX prvOswordBlockCopy + 12                                                   ;low byte of filename in I/O processor
-            LDY prvOswordBlockCopy + 13                                                   ;high byte of filename in I/O processor
-            JSR OSFIND
-            CMP #&00
-            BEQ GenerateNotFoundErrorIndirect
-            STA L02EE
-            RTS
-}
+    LDX prvOswordBlockCopy + 12 ; low byte of filename in I/O processor
+    LDY prvOswordBlockCopy + 13 ; high byte of filename in I/O processor
+    JSR OSFIND
+    CMP #0:BEQ GenerateNotFoundErrorIndirect
+    STA L02EE
+    RTS
 
 .CloseHandleL02EE
-{
-.LA098      LDA #osfindClose
-            LDY L02EE
-            JMP OSFIND
-}
-			
+    LDA #osfindClose
+    LDY L02EE
+    JMP OSFIND
+
 ;OSWORD &42 (66) - Sideways RAM transfer
 ;
 ;A selects an OSWORD routine.
