@@ -5411,12 +5411,15 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
 ;00F1 contains Y reg for most recent OSBYTE/OSWORD
 ;where X contains low byte of the parameter block address
 ;and   Y contains high byte of the parameter block address. 
-
 .copyOswordDetailsToPrv
 {
     PRVEN
+    ; ENHANCE/SQUASH: Note that we store Y on top of X; it should presumably be stored at
+    ; prvOswordBlockOrigAddr + 1. We could fix this, but looking over the code I think this is
+    ; only used for OSWORD &42/&43 and I don't believe they ever refer to
+    ; prvOswordBlockOrigAddr anyway, so we could probably just remove these instructions.
     LDA oswdbtX:STA prvOswordBlockOrigAddr
-    LDA oswdbtY:STA prvOswordBlockOrigAddr ; SFTODO: this looks wrong, shouldn't it be prvOswordBlockOrigAddr + 1? Is this ever used?
+    LDA oswdbtY:STA prvOswordBlockOrigAddr
     LDY #prvOswordBlockCopySize - 1
 .CopyLoop
     LDA (oswdbtX),Y:STA prvOswordBlockCopy,Y
@@ -8610,6 +8613,7 @@ Column = prvC
 {
     JSR SaveTransientZP
     PRVEN
+    ; SQUASH: Could we share some of the repetitions of the next two lines?
     LDA oswdbtX:STA prvOswordBlockOrigAddr
     LDA oswdbtY:STA prvOswordBlockOrigAddr + 1
     JSR oswordsv
