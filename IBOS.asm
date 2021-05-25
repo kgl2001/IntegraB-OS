@@ -874,6 +874,15 @@ MACRO PRVS81EN ; SFTODO: Better name?
     JSR pageInPrvs81
 ENDMACRO
 
+; SFTODO: DOCUMENT
+MACRO RELOCATE From, To
+    ASSERT To >= &8000 ; sanity check
+    ASSERT P% - From <= 256 ; sanity check
+    COPYBLOCK From, P%, To
+    CLEAR From, P%
+    ORG To + (P% - From)
+ENDMACRO
+
 start = &8000
 end = &C000
 ORG start
@@ -2180,7 +2189,7 @@ FullResetPrv = &2800
 
 ; This code is relocated from IBOS ROM to RAM starting at FullResetPrv
 .FullResetPrvTemplate
-    OPT 7:O%=P%:P%=FullResetPrv
+    ORG FullResetPrv
 
 ptr = &00 ; 2 bytes
     LDA romselCopy:PHA
@@ -2249,7 +2258,8 @@ ptr = &00 ; 2 bytes
     EQUB userRegRamPresenceFlags, &0F		; 64K non-SWR and 64K SWR in banks 4-7
 .UserRegDefaultTableEnd
 
-    OPT 3:P%=O%
+    COPYBLOCK FullResetPrv, P%, FullResetPrvTemplate
+    ORG FullResetPrvTemplate + (P% - FullResetPrv)
     ; SFTODO: +2 because as per above SFTODO I think we actually use an extra entry off the end
     ; of this table.
     ASSERT (P% + 2) - FullResetPrvTemplate <= 256
@@ -5107,7 +5117,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ;this code is relocated to and executed at &03A7
 .wipeRamTemplate
 {
-    OPT 7:O%=P%:P%=variableMainRamSubroutine
+    ORG variableMainRamSubroutine
 
     LDX romselCopy
     STA romselCopy:STA romsel
@@ -5122,7 +5132,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
     STX romselCopy:STX romsel
     RTS
 
-    OPT 3:P%=O%
+    RELOCATE variableMainRamSubroutine, wipeRamTemplate
     ASSERT P% - wipeRamTemplate <= variableMainRamSubroutineMaxSize
 }
 
@@ -5130,7 +5140,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ;this code is relocated to and executed at &03A7
 .WriteRomHeaderTemplate
 {
-    OPT 7:O%=P%:P%=variableMainRamSubroutine
+    ORG variableMainRamSubroutine
 
     LDX romselCopy
     STA romselCopy:STA romsel
@@ -5158,7 +5168,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
     EQUS "(C)"
 .SrDataHeaderEnd
 
-    OPT 3:P%=O%
+    RELOCATE variableMainRamSubroutine, WriteRomHeaderTemplate
     ASSERT P% - WriteRomHeaderTemplate <= variableMainRamSubroutineMaxSize
 }
 
