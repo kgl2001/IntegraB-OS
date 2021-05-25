@@ -5274,46 +5274,43 @@ SavedY = P% + 1 ; 1 byte
 ; SFTODO: If Y=255 on entry I think we will transfer 256 bytes, but double-check that later.
 .tubeTransferTemplate
 {
-       	  TXA
-            LDX romselCopy
-            STA romselCopy
-            STA romsel
-            INY
-            STY variableMainRamSubroutine + (tubeTransferTemplateTransferSize - tubeTransferTemplate)
-            LDY #&00
+    ORG variableMainRamSubroutine
+
+    TXA
+    LDX romselCopy
+    STA romselCopy:STA romsel
+    INY:STY TransferSize
+    LDY #0
 .^tubeTransferTemplateReadSwr
-.L9F07      BIT tubeReg3Status
-            BVC L9F07
-            LDA (transientOs4243SwrAddr),Y
-            STA tubeReg3Data
+.Loop
+    BIT tubeReg3Status:BVC Loop
+    LDA (transientOs4243SwrAddr),Y:STA tubeReg3Data
 .^tubeTransferTemplateReadSwrEnd
-            JSR variableMainRamSubroutine + (tubeTransferTemplateRts - tubeTransferTemplate)
-            JSR variableMainRamSubroutine + (tubeTransferTemplateRts - tubeTransferTemplate)
-            JSR variableMainRamSubroutine + (tubeTransferTemplateRts - tubeTransferTemplate)
-            INY
-            CPY variableMainRamSubroutine + (tubeTransferTemplateTransferSize - tubeTransferTemplate)
-            BNE L9F07
-            LDA romselCopy
-            STX romselCopy
-            STX romsel
-            TAX
-.tubeTransferTemplateRts
-            RTS
-.tubeTransferTemplateTransferSize
-            ; There is a byte of space used here when this copied into RAM, but
-            ; it's not present in the ROM, hence P% + 1 in the next line.
-            ASSERT (P% + 1) - tubeTransferTemplate <= variableMainRamSubroutineMaxSize
+    JSR Delay:JSR Delay:JSR Delay ; SFTODO: Inconsistent of using Delay vs Rts for labels like this?
+    INY:CPY TransferSize:BNE Loop
+    LDA romselCopy
+    STX romselCopy:STX romsel
+    TAX
+.Delay
+    RTS
+
+TransferSize = P% ; 1 byte
+
+    RELOCATE variableMainRamSubroutine, tubeTransferTemplate
+    ; There is a byte of space used at TransferSize when this copied into RAM but it's not
+    ; present in the ROM, hence P% + 1 in the next line.
+    ASSERT (P% + 1) - tubeTransferTemplate <= variableMainRamSubroutineMaxSize
 
 
 ;This code is relocated to &03B5. Refer to code at &9F98
 ; SFTODO: The first three bytes of patched code are the same either way, unless
 ; there's another hidden patch we could save three bytes by not patching those.
 .^tubeTransferTemplateWriteSwr
-            BIT tubeReg3Status
-            BPL tubeTransferTemplateWriteSwr
-            LDA tubeReg3Data
-            STA (transientOs4243SwrAddr),Y
-            ASSERT P% - tubeTransferTemplateWriteSwr == tubeTransferTemplateReadSwrEnd - tubeTransferTemplateReadSwr
+    BIT tubeReg3Status
+    BPL tubeTransferTemplateWriteSwr
+    LDA tubeReg3Data
+    STA (transientOs4243SwrAddr),Y
+    ASSERT P% - tubeTransferTemplateWriteSwr == tubeTransferTemplateReadSwrEnd - tubeTransferTemplateReadSwr
 }
 
 ; Copy a short piece of code from YX to variableMainRamSubroutine. This is used to allow code
@@ -5376,7 +5373,7 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
     LDY #tubeTransferTemplateReadSwrEnd - tubeTransferTemplateReadSwr - 1
 .PatchLoop
     LDA tubeTransferTemplateWriteSwr,Y
-    STA variableMainRamSubroutine + (tubeTransferTemplateReadSwr - tubeTransferTemplate),Y
+    STA tubeTransferTemplateReadSwr,Y
     DEY:BPL PatchLoop
 .Rts
     RTS
