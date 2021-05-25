@@ -5246,8 +5246,7 @@ SavedY = P% + 1 ; 1 byte
     TXA
     LDX romselCopy
     STA romselCopy:STA romsel
-    CPY #0 ; SQUASH: TYA?
-    BEQ LastByte
+    CPY #0:BEQ LastByte ; SQUASH: CPY #0 -> TYA?
 .Loop
 .^mainRamTransferTemplateLdaStaPair1
     LDA (transientOs4243SwrAddr),Y
