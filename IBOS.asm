@@ -874,7 +874,8 @@ MACRO PRVS81EN ; SFTODO: Better name?
     JSR pageInPrvs81
 ENDMACRO
 
-; SFTODO: DOCUMENT
+; Helper macro for copying a block of code assembled in main RAM (at the address it will
+; actually run at) into the ROM.
 MACRO RELOCATE From, To
     ASSERT To >= &8000 ; sanity check
     ASSERT P% - From <= 256 ; sanity check
@@ -5090,27 +5091,23 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ;this code is relocated to and executed at &03A7
 .TestRamTemplate
 {
-      	  LDX romselCopy										;Read current ROM number from &F4 and store in X
-            STA romselCopy										;Write new ROM number from A to &F4
-            STA romsel									;Write new ROM number from A to &FE30
-            LDA romBinaryVersion									;Read contents of &8008
-            EOR #&FF									;and XOR with &FF 
-            STA romBinaryVersion									;Write XORd data back to &8008
-            JSR variableMainRamSubroutine+L9E37-TestRamTemplate								;Delay 1 before read back
-            JSR variableMainRamSubroutine+L9E37-TestRamTemplate								;Delay 2 before read back
-            JSR variableMainRamSubroutine+L9E37-TestRamTemplate								;Delay 3 before read back
-            JSR variableMainRamSubroutine+L9E37-TestRamTemplate								;Delay 4 before read back
-            CMP romBinaryVersion									;Does contents of &8008 match what has been written?
-            PHP										;Save test
-            EOR #&FF									;XOR again with &FF to restore original data
-            STA romBinaryVersion									;store original data back to &8008
-            LDA romselCopy										;read current ROM number from &F4 and store in A
-            STX romselCopy										;restore original ROM number to &F4
-            STX romsel									;restore original ROM number to &FE30
-            TAX										;copy original ROM number from A to X
-            PLP										;recover test
-.L9E37	  RTS
-            ASSERT P% - TestRamTemplate <= variableMainRamSubroutineMaxSize
+    ORG variableMainRamSubroutine
+
+    LDX romselCopy
+    STA romselCopy:STA romsel
+    LDA romBinaryVersion:EOR #&FF:STA romBinaryVersion
+    JSR Delay:JSR Delay:JSR Delay:JSR Delay
+    CMP romBinaryVersion:PHP
+    EOR #&FF:STA romBinaryVersion
+    LDA romselCopy
+    STX romselCopy:STX romsel
+    TAX
+    PLP
+.Delay
+    RTS
+
+    RELOCATE variableMainRamSubroutine, TestRamTemplate
+    ASSERT P% - TestRamTemplate <= variableMainRamSubroutineMaxSize
 }
 
 ;Wipe RAM at bank A
