@@ -5575,20 +5575,21 @@ osfileBlock = L02EE
 
 .osword42
 {
-	  JSR copyOswordDetailsToPrv						;copy osword42 paramter block to Private memory &8220..&822F. Copy address of original block to Private memory &8230..&8231
-            JSR adjustPrvOsword42Block						;convert pseudo RAM bank to absolute and shuffle parameter block
+    JSR copyOswordDetailsToPrv
+    JSR adjustPrvOsword42Block
 .^LA0A6
     XASSERT_USE_PRV1
-       JSR getAddressesAndLengthFromPrvOswordBlockCopy
-            BCS LA0B1 ; SFTODO: I don't believe this branch can ever be taken
-            JSR PrepareMainSidewaysRamTransfer
-            JSR doTransfer
-.LA0B1      PHP
-            BIT prvTubeReleasePending
-            BPL LA0BC
-            LDA #tubeEntryRelease + tubeClaimId
-            JSR tubeEntry
-.LA0BC      JMP plpPrvDisexitSc
+    JSR getAddressesAndLengthFromPrvOswordBlockCopy
+    BCS LA0B1 ; SFTODO: I don't believe this branch can ever be taken
+    JSR PrepareMainSidewaysRamTransfer
+    JSR doTransfer
+.LA0B1
+    PHP
+    BIT prvTubeReleasePending:BPL NoTubeReleasePending
+    LDA #tubeEntryRelease + tubeClaimId
+    JSR tubeEntry
+.NoTubeReleasePending
+    JMP plpPrvDisexitSc
 }
 
 ;SFTODOWIP
