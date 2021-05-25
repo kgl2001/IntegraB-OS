@@ -5395,19 +5395,16 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
     RTS
 }
 
-;Relocation code then check for RAM banks.
-; SFTODO: "Using..." part of name is perhaps OTT, but it might be important to "remind" us that this tramples over variableMainRamSubroutine - perhaps change later once more code is labelled up
+; Relocation code then check for RAM banks.
+; SFTODO: "Using..." part of name is perhaps OTT, but it might be important to "remind" us that
+; this tramples over variableMainRamSubroutine - perhaps change later once more code is
+; labelled up
 .TestRamUsingVariableMainRamSubroutine
-{
-            TXA
-            PHA
-            LDX #lo(TestRamTemplate)
-            LDY #hi(TestRamTemplate)
-            JSR CopyYxToVariableMainRamSubroutine								;relocate &32 bytes of code from &9E0A to &03A7
-            PLA
-            JMP variableMainRamSubroutine								;Call relocated code
-}
-			
+    TXA:PHA
+    LDX #lo(TestRamTemplate):LDY #hi(TestRamTemplate):JSR CopyYxToVariableMainRamSubroutine
+    PLA
+    JMP variableMainRamSubroutine
+
 ;this routine is called by osword42 and osword43
 ;
 ;00F0 contains X reg for most recent OSBYTE/OSWORD
