@@ -5239,27 +5239,30 @@ SavedY = P% + 1 ; 1 byte
 ;this code is relocated to and executed at &03A7
 .mainRamTransferTemplate
 {
-      	  TXA									;&03A7
-            LDX romselCopy									;&03A8
-            STA romselCopy									;&03AA
-            STA romsel								;&03AC
-            CPY #&00								;&03AF
-            BEQ mainRamTransferTemplateLdaStaPair2
+    ORG variableMainRamSubroutine
+
+    TXA
+    LDX romselCopy
+    STA romselCopy:STA romsel
+    CPY #0 ; SQUASH: TYA?
+    BEQ mainRamTransferTemplateLdaStaPair2
+.Loop
 .^mainRamTransferTemplateLdaStaPair1
-            LDA (transientOs4243SwrAddr),Y								;&03B3 - Note this is changed to &AA by code at &9FA4
-            STA (transientOs4243MainAddr),Y								;&03B5 - Note this is changed to &A8 by code at &9FA4
-            DEY									;&03B7
-            BNE mainRamTransferTemplateLdaStaPair1
+    LDA (transientOs4243SwrAddr),Y
+    STA (transientOs4243MainAddr),Y
+    DEY:BNE Loop
 
 .^mainRamTransferTemplateLdaStaPair2
-            LDA (transientOs4243SwrAddr),Y								;&03BA - Note this is changed to &AA by code at &9FA4
-            STA (transientOs4243MainAddr),Y								;&03BC - Note this is changed to &A8 by code at &9FA4
-            LDA romselCopy									;&03BE
-            STX romselCopy									;&03C0
-            STX romsel								;&03C2
-            TAX									;&03C5
-            RTS									;&03C6
-            ASSERT P% - mainRamTransferTemplate <= variableMainRamSubroutineMaxSize
+    LDA (transientOs4243SwrAddr),Y
+    STA (transientOs4243MainAddr),Y
+    LDA romselCopy
+    STX romselCopy
+    STX romsel
+    TAX
+    RTS
+
+    RELOCATE variableMainRamSubroutine, mainRamTransferTemplate
+    ASSERT P% - mainRamTransferTemplate <= variableMainRamSubroutineMaxSize
 }
 
 ; Transfer Y+1 bytes between host (sideways RAM, starting at address in L00A8)
@@ -5384,11 +5387,11 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
     ; Patch the code at variableMainRamSubroutine to swap the operands of LDA and STA, thereby
     ; swapping the transfer direction.
     LDA #transientOs4243MainAddr
-    STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair1 + 1 - mainRamTransferTemplate)
-    STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair2 + 1 - mainRamTransferTemplate)
+    STA mainRamTransferTemplateLdaStaPair1 + 1
+    STA mainRamTransferTemplateLdaStaPair2 + 1
     LDA #transientOs4243SwrAddr
-    STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair1 + 3 - mainRamTransferTemplate)
-    STA variableMainRamSubroutine + (mainRamTransferTemplateLdaStaPair2 + 3 - mainRamTransferTemplate)
+    STA mainRamTransferTemplateLdaStaPair1 + 3
+    STA mainRamTransferTemplateLdaStaPair2 + 3
 .Rts2
     RTS
 }
