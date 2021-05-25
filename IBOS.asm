@@ -5281,13 +5281,14 @@ SavedY = P% + 1 ; 1 byte
     STA romselCopy:STA romsel
     INY:STY TransferSize
     LDY #0
-.^tubeTransferTemplateReadSwr
-.Loop
-    BIT tubeReg3Status:BVC Loop
+.^tubeTransferReadSwr
+.CopyLoop
+.Full
+    BIT tubeReg3Status:BVC Full
     LDA (transientOs4243SwrAddr),Y:STA tubeReg3Data
-.^tubeTransferTemplateReadSwrEnd
+.^tubeTransferReadSwrEnd
     JSR Delay:JSR Delay:JSR Delay ; SFTODO: Inconsistent of using Delay vs Rts for labels like this?
-    INY:CPY TransferSize:BNE Loop
+    INY:CPY TransferSize:BNE CopyLoop
     LDA romselCopy
     STX romselCopy:STX romsel
     TAX
@@ -5302,15 +5303,14 @@ TransferSize = P% ; 1 byte
     ASSERT (P% + 1) - tubeTransferTemplate <= variableMainRamSubroutineMaxSize
 
 
-;This code is relocated to &03B5. Refer to code at &9F98
-; SFTODO: The first three bytes of patched code are the same either way, unless
-; there's another hidden patch we could save three bytes by not patching those.
-.^tubeTransferTemplateWriteSwr
-    BIT tubeReg3Status
-    BPL tubeTransferTemplateWriteSwr
-    LDA tubeReg3Data
-    STA (transientOs4243SwrAddr),Y
-    ASSERT P% - tubeTransferTemplateWriteSwr == tubeTransferTemplateReadSwrEnd - tubeTransferTemplateReadSwr
+; This fragment of code is copied over tubeTransferReadSwr to convert it into a write.
+; SQUASH: The first three bytes (the BIT instruction) of patched code are the same either way,
+; unless there's another hidden patch we could save three bytes by not patching those.
+.^tubeTransferWriteSwr
+.Empty
+    BIT tubeReg3Status:BPL Empty
+    LDA tubeReg3Data:STA (transientOs4243SwrAddr),Y
+    ASSERT P% - tubeTransferWriteSwr == tubeTransferReadSwrEnd - tubeTransferReadSwr
 }
 
 ; Copy a short piece of code from YX to variableMainRamSubroutine. This is used to allow code
@@ -5370,10 +5370,10 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
     BIT Function:BPL Rts ; branch if this is a read from sideways RAM
     ; Patch the tubeTransfer code at variableMainRamSubroutine for writing to sideways RAM
     ; instead of reading.
-    LDY #tubeTransferTemplateReadSwrEnd - tubeTransferTemplateReadSwr - 1
+    LDY #tubeTransferReadSwrEnd - tubeTransferReadSwr - 1
 .PatchLoop
-    LDA tubeTransferTemplateWriteSwr,Y
-    STA tubeTransferTemplateReadSwr,Y
+    LDA tubeTransferWriteSwr,Y
+    STA tubeTransferReadSwr,Y
     DEY:BPL PatchLoop
 .Rts
     RTS
