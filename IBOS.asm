@@ -5414,17 +5414,14 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
 
 .copyOswordDetailsToPrv
 {
-            PRVEN								;switch in private RAM
-            LDA oswdbtX								;get value of X reg
-            STA prvOswordBlockOrigAddr							;and save to private memory &8230
-            LDA oswdbtY								;get value of Y reg
-            STA prvOswordBlockOrigAddr							;and save to private memory &8230  <-This looks wrong. Should this be &8231??? SFTODO: Looks odd indeed, maybe prvOswordBlockOrigAddr is never actually used?! (I haven't checked yet)
-            LDY #prvOswordBlockCopySize - 1
-.L9FE2      LDA (oswdbtX),Y								;copy the parameter block from its current location in memory
-            STA prvOswordBlockCopy,Y							;to private memory &8220..&822F
-            DEY									;total of 16 bytes
-            BPL L9FE2
-            RTS
+    PRVEN
+    LDA oswdbtX:STA prvOswordBlockOrigAddr
+    LDA oswdbtY:STA prvOswordBlockOrigAddr ; SFTODO: this looks wrong, shouldn't it be prvOswordBlockOrigAddr + 1? Is this ever used?
+    LDY #prvOswordBlockCopySize - 1
+.CopyLoop
+    LDA (oswdbtX),Y:STA prvOswordBlockCopy,Y
+    DEY:BPL CopyLoop
+    RTS
 }
 			
 ; SFTODO: Could we move PRVEN to L9FF8 before the STA and save three bytes by not duplicating it for srsave and srload? Note that PrvEn preserves A.
