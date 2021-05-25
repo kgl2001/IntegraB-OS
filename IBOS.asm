@@ -5192,11 +5192,12 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
     STX romselCopy:STX romsel
     TAX
     RTS
+
 BytesToRead = P% ; 1 byte
 SavedY = P% + 1 ; 1 byte
 
     RELOCATE variableMainRamSubroutine, saveSwrTemplate
-    ; There are two bytes of space used at BytesToRead/SavedY when this copied into RAM, but
+    ; There are two bytes of space used at BytesToRead/SavedY when this copied into RAM but
     ; they're not present in the ROM, hence P% + 2 in the next line.
     ASSERT (P% + 2) - saveSwrTemplate <= variableMainRamSubroutineMaxSize
 }
@@ -5205,33 +5206,33 @@ SavedY = P% + 1 ; 1 byte
 ;this code is relocated to and executed at &03A7
 .loadSwrTemplate
 {
-       	  TXA
-            LDX romselCopy
-            STA romselCopy
-            STA romsel
-            INY
-            ; SFTODO: We could STY this directly to immediate operand of CPY #n, saving a byte.
-            STY variableMainRamSubroutine + (loadSwrTemplateBytesToRead - loadSwrTemplate)
-            LDY #&00
-            ; SFTODO: It would be shorter by one byte to just STY to overwrite the operand of LDY #n after JSR OSBGET.
-.L9EBC      STY variableMainRamSubroutine + (loadSwrTemplateSavedY - loadSwrTemplate)
-            LDY L02EE
-            JSR OSBGET
-            LDY variableMainRamSubroutine + (loadSwrTemplateSavedY - loadSwrTemplate)
-            STA (transientOs4243SwrAddr),Y ; SFTODO: I think this is used by OSWORD &43, if so rename transientOs4243SwrAddr TO INDICATE APPLIES TO BOTH (tho that's only a temp name)
-            INY
-            CPY variableMainRamSubroutine + (loadSwrTemplateBytesToRead - loadSwrTemplate)
-            BNE L9EBC
-            LDA romselCopy
-            STX romselCopy
-            STX romsel
-            TAX
-            RTS
-.loadSwrTemplateBytesToRead
-loadSwrTemplateSavedY = loadSwrTemplateBytesToRead + 1
-            ; There are two bytes of space used here when this copied into RAM, but
-            ; they're not present in the ROM, hence P% + 2 in the next line.
-            ASSERT (P% + 2) - loadSwrTemplate <= variableMainRamSubroutineMaxSize
+    ORG variableMainRamSubroutine
+
+    TXA
+    LDX romselCopy
+    STA romselCopy:STA romsel
+    ; SQUASH: We could STY this directly to immediate operand of CPY #n, saving a byte.
+    INY:STY BytesToRead
+    LDY #0
+    ; SQUASH: It would be shorter by one byte to just STY to overwrite the operand of LDY #n after JSR OSBGET.
+.Loop
+    STY SavedY
+    LDY L02EE:JSR OSBGET
+    LDY SavedY
+    STA (transientOs4243SwrAddr),Y ; SFTODO: I think this is used by OSWORD &43, if so rename transientOs4243SwrAddr TO INDICATE APPLIES TO BOTH (tho that's only a temp name)
+    INY:CPY BytesToRead:BNE Loop
+    LDA romselCopy
+    STX romselCopy:STX romsel
+    TAX
+    RTS
+
+BytesToRead = P% ; 1 byte
+SavedY = P% + 1 ; 1 byte
+
+    RELOCATE variableMainRamSubroutine, loadSwrTemplate
+    ; There are two bytes of space used at BytesToRead/SavedY when this copied into RAM but
+    ; they're not present in the ROM, hence P% + 2 in the next line.
+    ASSERT (P% + 2) - loadSwrTemplate <= variableMainRamSubroutineMaxSize
 }
 
 ;Function TBC
