@@ -5258,12 +5258,12 @@ SavedY = P% + 1 ; 1 byte
     LDA (transientOs4243SwrAddr),Y
     STA (transientOs4243MainAddr),Y
     LDA romselCopy
-    STX romselCopy
-    STX romsel
+    STX romselCopy:STX romsel
     TAX
     RTS
 
     RELOCATE variableMainRamSubroutine, mainRamTransferTemplate
+    ; SFTODO: Can maybe add a RELOCATE_CHECK which does following ASSERT (allowing for extra data where present)
     ASSERT P% - mainRamTransferTemplate <= variableMainRamSubroutineMaxSize
 }
 
