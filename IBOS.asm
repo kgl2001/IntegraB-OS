@@ -5237,6 +5237,8 @@ SavedY = P% + 1 ; 1 byte
 
 ;Function TBC
 ;this code is relocated to and executed at &03A7
+; SFTODO: The need to separate treatment of the last byte seems awkward (especially when it
+; means extra patching), can we avoid it?
 .mainRamTransferTemplate
 {
     ORG variableMainRamSubroutine
@@ -5245,13 +5247,14 @@ SavedY = P% + 1 ; 1 byte
     LDX romselCopy
     STA romselCopy:STA romsel
     CPY #0 ; SQUASH: TYA?
-    BEQ mainRamTransferTemplateLdaStaPair2
+    BEQ LastByte
 .Loop
 .^mainRamTransferTemplateLdaStaPair1
     LDA (transientOs4243SwrAddr),Y
     STA (transientOs4243MainAddr),Y
     DEY:BNE Loop
 
+.LastByte
 .^mainRamTransferTemplateLdaStaPair2
     LDA (transientOs4243SwrAddr),Y
     STA (transientOs4243MainAddr),Y
