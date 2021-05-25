@@ -5436,32 +5436,37 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
 ; generates a "Bad address" error.
 ; SFTODO: Ken has pointed out those commands are (using Integra-B *SRSAVE conventions) trying to save one byte past the end of sideways RAM, hence "Bad address". I don't know if we should consider changing this to be more Acorn DFS SRAM utils-like in a new version of IBOS or not, but those actual commands do work fine if the end address is fixed. (We could potentially quibble about whether it's right that one of those error-generating command creates an empty file and the other doesn't, but I don't think this is a big deal, and I have no idea what Acorn DFS does either.)
 ;*SRSAVE Command
-.^srsave	  PRVEN								;switch in private RAM
-            LDA #&00								;function "save absolute"
-            JMP L9FF8
+.^srsave
+    PRVEN ; SQUASH: PRVEN preserves A, so move this to Common?
+    LDA #&00 ; function "save absolute"
+    JMP Common ; SQUASH: BEQ always
 			
 ;*SRLOAD Command
-.^srload	  PRVEN								;switch in private RAM
-            LDA #&80								;function "load absolute"
-.L9FF8      STA prvOswordBlockCopy
-            JSR getSrsaveLoadFilename
-            JSR parseOsword4243BufferAddress
-            BIT prvOswordBlockCopy							;function
-            BMI notSave
-            JSR parseOsword4243Length
-	  ; SFTODO: Once the code is all worked out for both OSWORD &42 and &43, it's probably best to define constants e.g. prvOswordBlockCopyBufferLength = prvOswordBlockCopy + 6 and use those everywhere, instead of relying on comments on each line.
-            LDA prvOswordBlockCopy + 6							;low byte of buffer length
-            STA prvOswordBlockCopy + 10							;low byte of data length
-            LDA prvOswordBlockCopy + 7							;high byte of buffer length
-            STA prvOswordBlockCopy + 11							;high byte of data length
-.notSave    JSR ParseBankNumberIfPresent
-            JSR parseSrsaveLoadFlags
-            LDA prvOswordBlockCopy + 2							;byte 0 of "buffer address" we parsed earlier
-            STA prvOswordBlockCopy + 8							;low byte of sideways start address
-            LDA prvOswordBlockCopy + 3							;byte 1 of "buffer address" we parsed earlier
-            STA prvOswordBlockCopy + 9							;high byte of sideways start address
-            BIT prvOswordBlockCopy + 7
-            JMP osword43Internal
+.^srload
+    PRVEN
+    LDA #&80 ; function "load absolute"
+.Common
+    STA prvOswordBlockCopy
+    JSR getSrsaveLoadFilename
+    JSR parseOsword4243BufferAddress
+    BIT prvOswordBlockCopy:BMI NotSave ; test function
+    JSR parseOsword4243Length
+    ; SFTODO: Once the code is all worked out for both OSWORD &42 and &43, it's probably best
+    ; to define constants e.g. prvOswordBlockCopyBufferLength = prvOswordBlockCopy + 6 and use
+    ; those everywhere, instead of relying on comments on each line.
+    LDA prvOswordBlockCopy + 6 ; low byte of buffer length
+    STA prvOswordBlockCopy + 10 ; low byte of data length
+    LDA prvOswordBlockCopy + 7 ; high byte of buffer length
+    STA prvOswordBlockCopy + 11 ; high byte of data length
+.NotSave
+    JSR ParseBankNumberIfPresent
+    JSR parseSrsaveLoadFlags
+    LDA prvOswordBlockCopy + 2 ; byte 0 of "buffer address" we parsed earlier
+    STA prvOswordBlockCopy + 8 ; low byte of sideways start address
+    LDA prvOswordBlockCopy + 3 ; byte 1 of "buffer address" we parsed earlier
+    STA prvOswordBlockCopy + 9 ; high byte of sideways start address
+    BIT prvOswordBlockCopy + 7 ; SFTODO: document what's at this address
+    JMP osword43Internal
 }
 
 ; Fix up an adjusted OSWORD &43 buffer at prvOswordBlockCopy so:
