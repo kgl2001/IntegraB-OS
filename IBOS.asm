@@ -9526,11 +9526,11 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     LDA ModeChangeState:CMP #ModeChangeStateEnteringShadowMode:BNE CheckOtherModeChangeStates
     LDA vduStatus:ORA #vduStatusShadow:STA vduStatus
 .AdjustCrtcHorz
-    ; DELETE: There seems to be an undocumented feature of IBOS which will perform a horizontal
-    ; screen shift (analogous to the vertical shift controlled by *TV/*CONFIGURE TV) based on
-    ; userRegHorzTV. This is not exposed in *CONFIGURE/*STATUS, but it does seem to work if you
-    ; use *FX162,54 to write directly to the RTC register. In a modified IBOS this should
-    ; probably either be removed to save space or exposed via *CONFIGURE/*STATUS.
+    ; ENHANCE/DELETE: There seems to be an undocumented feature of IBOS which will perform a
+    ; horizontal screen shift (analogous to the vertical shift controlled by *TV/*CONFIGURE TV)
+    ; based on userRegHorzTV. This is not exposed in *CONFIGURE/*STATUS, but it does seem to
+    ; work if you use *FX162,54 to write directly to the RTC register. In a modified IBOS this
+    ; should probably either be removed to save space or exposed via *CONFIGURE/*STATUS.
     LDX #userRegHorzTV:JSR ReadUserReg
     CLC:ADC #&62
     LDX currentMode
@@ -9551,10 +9551,9 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
 Ptr = &A8
 ScreenStart = &3000
 
-; SFTODO: The next two subroutines are probably effectively saying "do nothing
-; if the shadow state hasn't changed, otherwise do SwapShadowIfShxEnabled". I
-; have given them poor names for now and should revisit this once exatly when
-; they're called becomes clearer.
+; SFTODO: The next two subroutines are probably effectively saying "do nothing if the shadow
+; state hasn't changed, otherwise do SwapShadowIfShxEnabled". I have given them poor names for
+; now and should revisit this once exatly when they're called becomes clearer.
 ; SFTODO: This has only one caller
 .^MaybeSwapShadow1
     LDA vduStatus:AND #vduStatusShadow:BEQ SwapShadowIfShxEnabled
@@ -9991,8 +9990,7 @@ ScreenStart = &3000
 .^LdaPrintBufferReadPtr
     PHA
     LDX #prvPrintBufferReadPtrIndex
-    LDA #opcodeLdaAbs
-    BNE Common ; always branch
+    LDA #opcodeLdaAbs:BNE Common ; always branch
 
 ; Temporarily page in ROM bank prvPrintBufferBankList[prvPrintBufferWriteBankIndex] and do STA (prvPrintBufferWritePtr)
 .^StaPrintBufferWritePtr
