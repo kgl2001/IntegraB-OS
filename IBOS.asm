@@ -323,7 +323,11 @@ ModeChangeStateEnteringNonShadowMode = 3 ; we're changing into a non-shadow mode
 
 ; This is part of CFS/RFS workspace which IBOS temporarily borrows; various different
 ; code templates are copied here for execution.
+RomAccessSubroutine = &0380
 variableMainRamSubroutine = &03A7 ; SFTODO: POOR NAME
+; SFTODO: I don't know if RomAccessSubroutine does actually need to avoid overlapping
+; variableMainRamSubroutine; should check.
+RomAccessSubroutineMaxSize = variableMainRamSubroutine - RomAccessSubroutine
 variableMainRamSubroutineMaxSize = &32 ; SFTODO: ASSERT ALL THE SUBROUTINES ARE SMALLER THAN THIS
 
 ; This is filing system workspace which IBOS borrows. SFTODO: I'm slightly
@@ -2259,8 +2263,8 @@ ptr = &00 ; 2 bytes
     EQUB userRegRamPresenceFlags, &0F		; 64K non-SWR and 64K SWR in banks 4-7
 .UserRegDefaultTableEnd
 
-    COPYBLOCK FullResetPrv, P%, FullResetPrvTemplate
-    ORG FullResetPrvTemplate + (P% - FullResetPrv)
+    ; SFTODO: USE RELOCATE
+    RELOCATE FullResetPrv, FullResetPrvTemplate
     ; SFTODO: +2 because as per above SFTODO I think we actually use an extra entry off the end
     ; of this table.
     ASSERT (P% + 2) - FullResetPrvTemplate <= 256
@@ -2773,13 +2777,13 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     PHP:SEI
     ; Flip the bits of TestAddress in bank Y and see if the change persists, i.e. if there's
     ; RAM in that bank.
-    LDA #lo(TestAddress):STA ramRomAccessSubroutineVariableInsn + 1
-    LDA #hi(TestAddress):STA ramRomAccessSubroutineVariableInsn + 2
-    LDA #opcodeLdaAbs:STA ramRomAccessSubroutineVariableInsn:JSR ramRomAccessSubroutine:EOR #&FF
+    LDA #lo(TestAddress):STA RomAccessSubroutineVariableInsn + 1
+    LDA #hi(TestAddress):STA RomAccessSubroutineVariableInsn + 2
+    LDA #opcodeLdaAbs:STA RomAccessSubroutineVariableInsn:JSR RomAccessSubroutine:EOR #&FF
     ; SQUASH: We keep stashing A temporarily in X here, but couldn't we just use X to do the
     ; modifications so A is naturally preserved?
-    TAX:LDA #opcodeStaAbs:STA ramRomAccessSubroutineVariableInsn:TXA:JSR ramRomAccessSubroutine
-    TAX:LDA #opcodeCmpAbs:STA ramRomAccessSubroutineVariableInsn:TXA:JSR ramRomAccessSubroutine
+    TAX:LDA #opcodeStaAbs:STA RomAccessSubroutineVariableInsn:TXA:JSR RomAccessSubroutine
+    TAX:LDA #opcodeCmpAbs:STA RomAccessSubroutineVariableInsn:TXA:JSR RomAccessSubroutine
     SEC
     BNE IsRom
     CLC
@@ -2797,7 +2801,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     TXA:EOR #&FF
     ; SQUASH: We are stashing A temporarily in X here, but couldn't we just use X to do the
     ; modifications so A is naturally preserved?
-    TAX:LDA #opcodeStaAbs:STA ramRomAccessSubroutineVariableInsn:TXA:JSR ramRomAccessSubroutine
+    TAX:LDA #opcodeStaAbs:STA RomAccessSubroutineVariableInsn:TXA:JSR RomAccessSubroutine
     PLP
     JMP CommonEnd
 .NotEmpty
@@ -9823,9 +9827,9 @@ ScreenStart = &3000
     JSR PurgePrintBuffer
     PRVDIS
     ; Copy the rom access subroutine used by the printer buffer from ROM into RAM.
-    LDY #romRomAccessSubroutineEnd - romRomAccessSubroutine - 1
+    LDY #RomAccessSubroutineTemplateEnd - RomAccessSubroutineTemplate - 1
 .SubroutineCopyLoop
-    LDA romRomAccessSubroutine,Y:STA ramRomAccessSubroutine,Y
+    LDA RomAccessSubroutineTemplate,Y:STA RomAccessSubroutine,Y
     DEY:BPL SubroutineCopyLoop
 
     ; Save the parent values of INSV, REMV and CNPV at
@@ -9960,26 +9964,27 @@ ScreenStart = &3000
     DECCC prvPrintBufferFreeHigh
     RTS
 
-;code relocated to &0380
-;this code either reads, writes or compares the contents of ROM Y address &8000 with A
-; SFTODO: Both here and with the vector RAM stub, it might be better to use a
+; A code template copied to RAM at RomAccessSubroutine which is patched at runtime to
+; read, write or compare A against a byte of sideways ROM in bank Y. X is corrupted.
+; SFTODO: Both here (now done) and with the vector RAM stub, it might be better to use a
 ; naming convention where the ROM copy is suffixed "Template" and the RAM copy doesn't
 ; have any special naming. The current naming convention isn't that bad, but when it's
 ; natural for the name of this subroutine to include "Rom" it gets a little confusing.
-ramRomAccessSubroutine = &0380 ; SFTODO: Move this line?
-.romRomAccessSubroutine
-.LBF5A      LDX romselCopy				;relocates to &0380
-            STY romselCopy				;relocates to &0382
-            STY romsel			;relocates to &0384
-.romRomAccessSubroutineVariableInsn
-ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubroutineVariableInsn - romRomAccessSubroutine)
-	  EQUB &00			;relocates to &0387. Note this byte gets dynamically changed by the code to &AD (LDA &), &8D (STA &) and &CD (CMP &)
-	  EQUB $00,$80			;relocates to &0388. So this becomes either LDA &8000, STA &8000 or CMP &8000
-	  ; SQUASH: We could replace next three instructions with JMP osStxRomselAndCopyAndRts.
-            STX romselCopy				;relocates to &038A
-            STX romsel			;relocates to &038C
-            RTS				;relocates to &038F
-.romRomAccessSubroutineEnd
+.RomAccessSubroutineTemplate
+    ORG RomAccessSubroutine
+
+    LDX romselCopy
+    STY romselCopy
+    STY romsel
+.RomAccessSubroutineVariableInsn
+    EQUB $00, $00, $80 ; <abs instruction> &8000; patched at runtime when copied into RAM
+	; SQUASH: We could replace next three instructions with JMP osStxRomselAndCopyAndRts.
+    STX romselCopy:STX romsel
+    RTS
+
+    RELOCATE RomAccessSubroutine, RomAccessSubroutineTemplate
+.RomAccessSubroutineTemplateEnd
+    ASSERT P% - RomAccessSubroutineTemplate <= RomAccessSubroutineMaxSize
 
 {
 ; Temporarily page in ROM bank prvPrintBufferBankList[prvPrintBufferReadBankIndex] and do LDA (prvPrintBufferReadPtr)
@@ -9996,12 +10001,12 @@ ramRomAccessSubroutineVariableInsn = ramRomAccessSubroutine + (romRomAccessSubro
     LDA #opcodeStaAbs
 .Common
     XASSERT_USE_PRV1
-    STA ramRomAccessSubroutineVariableInsn
-    LDA prvPrintBufferPtrBase    ,X:STA ramRomAccessSubroutineVariableInsn + 1
-    LDA prvPrintBufferPtrBase + 1,X:STA ramRomAccessSubroutineVariableInsn + 2
+    STA RomAccessSubroutineVariableInsn
+    LDA prvPrintBufferPtrBase    ,X:STA RomAccessSubroutineVariableInsn + 1
+    LDA prvPrintBufferPtrBase + 1,X:STA RomAccessSubroutineVariableInsn + 2
     LDY prvPrintBufferPtrBase + 2,X:LDA prvPrintBufferBankList,Y:TAY
     PLA
-    JMP ramRomAccessSubroutine
+    JMP RomAccessSubroutine
 }
 
 .PurgePrintBuffer
