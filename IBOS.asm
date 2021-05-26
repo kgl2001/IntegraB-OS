@@ -9088,6 +9088,11 @@ BytesToCopy = osPrintBufSize
 ; SFTODO: I would like to get the whole ROM disassembled first before writing a permanent
 ; comment, but this is why e.g. rdchvHandler can do JSR setMemsel without explicitly reverting
 ; that change.
+; SFTODO: Also worth noting this means we know romsel has none of the high bits set inside our
+; vector handlers; presumably the same is also true when we're entered via a service call
+; because the OS will page us in with those bits clear. In a few places in the code it
+; superficially looks as though we would break if fg application happened to have high bits
+; set, but it wouldn't (unless there's something lurking somewhere I've missed).
 ; SFTODO: Experience with Ozmoo suggests it's *probably* OK, but does IBOS always restore
 ; RAMSEL/RAMID to their original values if it changes them? Or at least the PRVSx bits?
 .romCodeStub
