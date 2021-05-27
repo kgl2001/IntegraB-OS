@@ -6223,28 +6223,25 @@ SFTODOTMP2 = L00AB
             PRVDIS								;switch out private RAM
             RTS
 }
-			
-;Called by *UNPLUG Immediate
-;Set bytes in ROM Type Table to 0 for banks with a 0 bit in transientRomBankMask; other banks are not touched.
+
+; Set bytes in the ROM type table to 0 for banks with a 0 bit in transientRomBankMask; other
+; banks are not touched.
 .unplugBanksUsingTransientRomBankMask
 {
-            LDY #maxBank
-.unplugLoop ASL transientRomBankMask
-            ROL transientRomBankMask + 1
-            BCS SkipBank
-            LDA #&00
-            STA RomTypeTable,Y
-.SkipBank   DEY
-            BPL unplugLoop
-            RTS
+    LDY #maxBank
+.Loop
+    ASL transientRomBankMask:ROL transientRomBankMask + 1:BCS SkipBank
+    LDA #0:STA RomTypeTable,Y
+.SkipBank
+    DEY:BPL Loop
+    RTS
 }
-			
-;Invert all bits in &AE and &AF
+
+; Invert the bits in transientRomBankMask.
 .InvertTransientRomBankMask
     LDA transientRomBankMask:EOR #&FF:STA transientRomBankMask
     LDA transientRomBankMask + 1:EOR #&FF:STA transientRomBankMask + 1
     RTS
-
 
 ; Assign default pseudo RAM banks to absolute RAM banks.
 ; For OSMODEs other than 2: W..Z = 4..7
