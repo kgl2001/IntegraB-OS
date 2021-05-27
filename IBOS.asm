@@ -6905,9 +6905,11 @@ TmpCentury = prvTmp2
     RTS
 }
 
-; SFTODOWIP
-; SFTODO: This description is a bit of a guess, but I think it's a fairly good one
-; We output month calendars with 7 rows for Sun-Sat and up to 6 columns; to see 6 columns may be needed, consider a 31-day month where 1st is a Saturday. Populate the buffer pointed to by prvDateSFTODO4 so elements 0-6 are the day numbers to display in row 0 (the day numbers of the Sundays), elements 7-13 are the day numbers to dispay in row 1 (the day numbers of the Mondays), etc, for a total of 6*7=42 elements. Blank cells have day number 0.
+; We output month calendars with 7 rows for Sun-Sat and up to 6 columns; to see 6 columns may
+; be needed, consider a 31-day month where the 1st is a Saturday. Populate the buffer pointed
+; to by prvDateSFTODO4 so elements 0-6 are the day numbers to display in row 0 (the day numbers
+; of the Sundays), elements 7-13 are the day numbers to dispay in row 1 (the day numbers of the
+; Mondays), etc, for a total of 6*7=42 elements. Blank cells contain day number 0.
 .GenerateInternalCalendar
 {
 ; SFTODO: 7 ROWS, 6 COLUMNS ARE KEY NUMBERS HERE AND WE SHOULD PROBABLY BE CALCULATING SOME NAMED CONSTANTS (EG 42) FROM OTHER NAMED CONSTANTS WHICH ARE 6 AND 7
