@@ -7331,139 +7331,134 @@ Options = transientDateSFTODO1
 ; 1. Optionally emit the day of the week, optionally truncated and/or capitalised, and optionally followed by some punctuation. prvDataSFTODO2's high nybble controls most of those options, although prvDataSFTODO3=0 will prevent punctuation and cause an early return.
     {
 	  LDA prvDateSFTODO2
-	  ; SFTODO: Use LsrA4
-            LSR A
-            LSR A
-            LSR A
-            LSR A
-            STA transientDateSFTODO1
-            BEQ SFTODOSTEP2
-            AND #&01
-            EOR #&01
-            TAY
-            LDA transientDateSFTODO1
-            LDX #&00
-            CMP #&05
-            BCS maxCharsInX
-            LDX #&03
-            CMP #&03
-            BCS maxCharsInX
-            DEX
+	  ; SQUASH: Use LsrA4
+      LSR A:LSR A:LSR A:LSR A
+      STA transientDateSFTODO1
+      BEQ SFTODOSTEP2
+      AND #1
+      EOR #1
+      TAY
+      LDA transientDateSFTODO1
+      LDX #&00
+      CMP #&05
+      BCS maxCharsInX
+      LDX #3
+      CMP #3
+      BCS maxCharsInX
+      DEX
 .maxCharsInX
-	  LDA prvDateDayOfWeek							;get day of week
-            CLC									;Carry Set=Month, Clear=Day of Week
-            JSR EmitDayOrMonthName							;X is maximum number of characters to emit, Y controls capitalisation
-            LDA prvDateSFTODO3
-            BNE LACA0
-            JMP LAD5Arts
+      ; Emit prvDateDayOfWeek's name with a maximum of X characters; Y controls capitalisation.
+	  LDA prvDateDayOfWeek:CLC:JSR EmitDayOrMonthName
+      LDA prvDateSFTODO3
+      BNE LACA0
+      JMP LAD5Arts
 
-.LACA0      LDA prvDateSFTODO1
-            AND #&0F
-            STA transientDateSFTODO1
-            CMP #&04
-            BCC LACB6
-            LDA #','
-            JSR EmitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-            LDA transientDateSFTODO1
-            CMP #&08
-            BCC SFTODOSTEP2
-.LACB6      LDA #' '
-            JSR EmitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+.LACA0
+      LDA prvDateSFTODO1
+      AND #&0F
+      STA transientDateSFTODO1
+      CMP #&04
+      BCC LACB6
+      LDA #',':JSR EmitAToDateBuffer
+      LDA transientDateSFTODO1
+      CMP #&08
+      BCC SFTODOSTEP2
+.LACB6
+      LDA #' ':JSR EmitAToDateBuffer
     }
 .SFTODOSTEP2
     {
 ; 2. Optionally print the day of the month with optional formatting/capitalisation. Options controlled by b0-2 of prvDateSFTODO3. If b3-7 of prvDateSFTODO3 are zero we return early. Otherwise we output dataSeparators[b0-2 of prvDataSFTODO1].
-            LDA prvDateSFTODO3
-            AND #&07
-            STA transientDateSFTODO1
-            BEQ SFTODOSTEP3MAYBE
-            LDX #&01
-            CMP #&04
-            BCS LACD0
-            DEX
-            CMP #&03
-            BEQ LACD0
-            TAX
-.LACD0      LDA prvDateDayOfMonth							;read Day of Month
-            JSR EmitADecimalFormatted							;X controls formatting
-            LDA transientDateSFTODO1
-            CMP #&04
-            BCC LACE5
-            BEQ LACDF
-            CLC									;don't capitalise
-.LACDF      LDA prvDateDayOfMonth							;Get Day of Month from RTC
-            JSR EmitOrdinalSuffix							;Convert to text, then save to buffer XY?Y, increment buffer address offset.
-.LACE5      LDA prvDateSFTODO3
-            AND #&F8
-            BEQ LAD5Arts
-            LDA prvDateSFTODO1
-            AND #&03								;mask lower 3 bits
-            TAX
-            LDA dateSeparators,X							;get character from look up table
-            JSR EmitAToDateBuffer							;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+        LDA prvDateSFTODO3
+        AND #&07
+        STA transientDateSFTODO1
+        BEQ SFTODOSTEP3MAYBE
+        LDX #&01
+        CMP #&04
+        BCS LACD0
+        DEX
+        CMP #&03
+        BEQ LACD0
+        TAX
+.LACD0
+        LDA prvDateDayOfMonth
+        JSR EmitADecimalFormatted ; X controls formatting
+        LDA transientDateSFTODO1
+        CMP #&04
+        BCC LACE5
+        BEQ LACDF
+        CLC ; don't capitalise
+.LACDF
+        LDA prvDateDayOfMonth:JSR EmitOrdinalSuffix
+.LACE5
+        LDA prvDateSFTODO3
+        AND #&F8
+        BEQ LAD5Arts
+        LDA prvDateSFTODO1
+        AND #&03
+        TAX
+        LDA dateSeparators,X
+        JSR EmitAToDateBuffer
     }
 ; 3. Look at b3-5 of prvDateSFTODO3; if they're 0, jump to step 4. Otherwise emit the month with optional formatting. Then stop if b5-6 of prvDateSFTODO3 are 0. Otherwise emit a dateSeparator based on low two bits of prvDateSFTODO1.
 .SFTODOSTEP3MAYBE
     {
-	  LDA prvDateSFTODO3
-            LSR A
-            LSR A
-            LSR A
-            AND #&07
-            STA transientDateSFTODO1
-            BEQ SFTODOSTEP4MAYBE
-            CMP #&04
-            BCS LAD18
-            LDX #&00
-            CMP #&03
-            BEQ formatInX
-            TAX
-.formatInX  LDA prvDateMonth								;read month
-            JSR EmitADecimalFormatted							;X controls formatting
-            JMP LAD2A
+        LDA prvDateSFTODO3
+        LSR A:LSR A:LSR A
+        AND #&07
+        STA transientDateSFTODO1
+        BEQ SFTODOSTEP4MAYBE
+        CMP #&04
+        BCS LAD18
+        LDX #&00
+        CMP #&03
+        BEQ formatInX
+        TAX
+.formatInX
+        LDA prvDateMonth:JSR EmitADecimalFormatted ; X controls formatting
+        JMP LAD2A
 
-.LAD18      LDX #&03
-            CMP #&06
-            BCC LAD20
-            LDX #&00
-.LAD20      AND #&01
-            TAY
-            LDA prvDateMonth								;Get Month
-            SEC									;Carry Set=Month, Clear=Day of Week
-            JSR EmitDayOrMonthName							;X is max characters to emit, Y controls capitalisation
-.LAD2A      LDA prvDateSFTODO3
-            AND #&C0
-            BEQ LAD5Arts
-            LDA prvDateSFTODO1
-            AND #&03								;mask lower 3 bits
-            TAX
-            LDA dateSeparators,X								;get character from look up table
-            JSR EmitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
+.LAD18
+        LDX #&03
+        CMP #&06
+        BCC LAD20
+        LDX #&00
+.LAD20
+        AND #&01
+        TAY
+        ; Emit prvDateMonth's name with a maximum of X characters; Y controls capitalisation.
+        LDA prvDateMonth:SEC:JSR EmitDayOrMonthName
+.LAD2A
+        LDA prvDateSFTODO3
+        AND #&C0
+        BEQ LAD5Arts
+        LDA prvDateSFTODO1
+        AND #&03
+        TAX
+        LDA dateSeparators,X:JSR EmitAToDateBuffer
     }
 .SFTODOSTEP4MAYBE ; SFTODO: THESE STEP N LABELS SHOULD BE CHANGED TO REFLECT THINGS LIKE DAYOFWEEK, DAY, MONTH
     {
-	  LDA prvDateSFTODO3
-            AND #&C0
-            BEQ LAD5Arts
-            CMP #&80
-            BCC emitYear
-            BEQ emitCenturyTick
-            LDX #&00
-            LDA prvDateCentury								;read century
-            JSR EmitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
-.emitYear   LDX #&00
-            LDA prvDateYear								;read year
-            JMP EmitADecimalFormatted								;convert to characters, store in buffer XY?Y, increase buffer pointer, save buffer pointer and return
-			
-.^LAD5Arts      RTS
+        LDA prvDateSFTODO3
+        AND #&C0
+        BEQ LAD5Arts
+        CMP #&80
+        BCC emitYear
+        BEQ emitCenturyTick
+        LDX #&00
+        LDA prvDateCentury:JSR EmitADecimalFormatted
+.emitYear
+        LDX #&00
+        LDA prvDateYear:JMP EmitADecimalFormatted
+
+.^LAD5Arts
+        RTS
 
 .emitCenturyTick
-	  LDA #'''								;'''
-            JSR EmitAToDateBuffer								;save the contents of A to buffer address + buffer address offset, then increment buffer address offset
-            JMP emitYear
+        LDA #''':JSR EmitAToDateBuffer
+        JMP emitYear
     }
 }
-			
 
 ;read buffer address from &8224 and store at &A8
 ;set buffer pointer to 0
