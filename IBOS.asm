@@ -6914,59 +6914,60 @@ TmpCentury = prvTmp2
 daysInMonth = transientDateSFTODO2
 
     XASSERT_USE_PRV1
-            LDA #1
-            STA prvDateDayOfMonth
-            JSR CalculateDayOfWeekInPrvDateDayOfWeek
-            LDY prvDateMonth
-            JSR GetDaysInMonthY
-            STA daysInMonth
+    LDA #1
+    STA prvDateDayOfMonth
+    JSR CalculateDayOfWeekInPrvDateDayOfWeek
+    LDY prvDateMonth
+    JSR GetDaysInMonthY
+    STA daysInMonth
 .makePrvDateDayOfWeekGe37Loop
-            CLC
-            LDA daysInMonth
-            ADC prvDateDayOfWeek
-            CMP #37
-            BCS prvDateDayOfWeekGe37
-            CLC
-            LDA prvDateDayOfWeek
-            ADC #7
-            STA prvDateDayOfWeek
-            JMP makePrvDateDayOfWeekGe37Loop
+    CLC
+    LDA daysInMonth
+    ADC prvDateDayOfWeek
+    CMP #37
+    BCS prvDateDayOfWeekGe37
+    CLC
+    LDA prvDateDayOfWeek
+    ADC #7
+    STA prvDateDayOfWeek
+    JMP makePrvDateDayOfWeekGe37Loop
 .prvDateDayOfWeekGe37
-            LDA prvDateSFTODO4
-            STA transientDateSFTODO1
-            LDA prvDateSFTODO4 + 1
-            STA transientDateSFTODO1 + 1
-            LDA #0
-            LDY #42
+    LDA prvDateSFTODO4
+    STA transientDateSFTODO1
+    LDA prvDateSFTODO4 + 1
+    STA transientDateSFTODO1 + 1
+    LDA #0
+    LDY #42
 .zeroBufferLoop
-	  DEY
-            STA (transientDateSFTODO1),Y
-            BNE zeroBufferLoop
-            INC daysInMonth ; bump daysInMonth so the following loop can use a strictly less than comparison
+    DEY
+    STA (transientDateSFTODO1),Y
+    BNE zeroBufferLoop
+    INC daysInMonth ; bump daysInMonth so the following loop can use a strictly less than comparison
 .DayOfMonthLoop
-            LDA prvDateDayOfMonth
-            CMP daysInMonth
-            BCC notDone ; SFTODO: Could we BCS to a nearby RTS (there's one just above) to save a byte
-            RTS
-.notDone    ADC prvDateDayOfWeek
-            SEC:SBC #2:STA prvA
-            LDA #0:STA prvB
-            LDA #7:STA prvC
-            JSR SFTODOPSEUDODIV ; SFTODO: WILL ALWAYS DIVIDE WITH NO WEIRDNESS
-            STA prvA ; SFTODO: Ignoring SFTODOPSEUDODIV quirk with prvB, we are setting A = (prvDateDayOfWeek + 2) MOD 7 - though remember we adjusted prvDateDayOfWeek above for currently unclear reasons (I suspect they're something to do with blanks in the first column of dates, ish)
-            LDA #&06
-            STA prvB
-            LDA prvD ; SFTODO: stash result of pseudo-division as mul8 will corrupt prvD
-            PHA
-            JSR mul8 ; SFTODO: prvDC = 6 * the A we calculated above
-            PLA
-            CLC
-            ADC prvC ; SFTODO: add the stashed pseudo-division result to the low byte of the multiplication we just did (we *probably* know the high byte in prvD is zero and can be ignored)
-            TAY
-            LDA prvDateDayOfMonth
-            STA (transientDateSFTODO1),Y ; SFTODO: I think what we're doing here is putting the day-of-month numbers into the order we need to output them a line at a time (although the exact nature of how we're doing that via the above calculations isn't completely clear yet)
-            INC prvDateDayOfMonth
-            JMP DayOfMonthLoop
+    LDA prvDateDayOfMonth
+    CMP daysInMonth
+    BCC notDone ; SFTODO: Could we BCS to a nearby RTS (there's one just above) to save a byte
+    RTS
+.notDone
+    ADC prvDateDayOfWeek
+    SEC:SBC #2:STA prvA
+    LDA #0:STA prvB
+    LDA #7:STA prvC
+    JSR SFTODOPSEUDODIV ; SFTODO: WILL ALWAYS DIVIDE WITH NO WEIRDNESS
+    STA prvA ; SFTODO: Ignoring SFTODOPSEUDODIV quirk with prvB, we are setting A = (prvDateDayOfWeek + 2) MOD 7 - though remember we adjusted prvDateDayOfWeek above for currently unclear reasons (I suspect they're something to do with blanks in the first column of dates, ish)
+    LDA #&06
+    STA prvB
+    LDA prvD ; SFTODO: stash result of pseudo-division as mul8 will corrupt prvD
+    PHA
+    JSR mul8 ; SFTODO: prvDC = 6 * the A we calculated above
+    PLA
+    CLC
+    ADC prvC ; SFTODO: add the stashed pseudo-division result to the low byte of the multiplication we just did (we *probably* know the high byte in prvD is zero and can be ignored)
+    TAY
+    LDA prvDateDayOfMonth
+    STA (transientDateSFTODO1),Y ; SFTODO: I think what we're doing here is putting the day-of-month numbers into the order we need to output them a line at a time (although the exact nature of how we're doing that via the above calculations isn't completely clear yet)
+    INC prvDateDayOfMonth
+    JMP DayOfMonthLoop
 }
 
 {
@@ -7035,7 +7036,7 @@ daysInMonth = transientDateSFTODO2
     EQUB October   - DayMonthNames
     EQUB November  - DayMonthNames
     EQUB December  - DayMonthNames
-    EQUB End       - DayMonthNames
+    EQUB End       - DayMonthNames ; SFTODO: is this entry used? probably, just a thought...
 }
 
 
