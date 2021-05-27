@@ -7273,6 +7273,7 @@ Options = transientDateSFTODO1
     RTS
 }
 
+{
 ;Separators for Time Display? SFTODO: seems probable, need to update this comment when it becomes clear
 .dateSeparators ; SFTODO: using "date" for consistency with prvDate* variables, maybe revisit after - all the "time"/"date"/"calendar" stuff has a lot of common code
     EQUS " ", "/", ".", "-"
@@ -7323,8 +7324,7 @@ Options = transientDateSFTODO1
 ;     b6..7: 0 => don't emit anything after month
 ;            b7: 0 => don't emit century, 1 => emit century
 ;            b6: (if century is emitted) 0 => emit "'" as century 1=> emit century as two digit number
-.emitDateToDateBuffer ; SFTODO: "date" here as in "the day identifier, omitting any time indicator within that day"
-{
+.^emitDateToDateBuffer ; SFTODO: "date" here as in "the day identifier, omitting any time indicator within that day"
     XASSERT_USE_PRV1
 ; SFTODO: Experimentally using nested scopes here to try to make things clearer, by making it more obvious that some labels have restricted scope - not sure if this is really helpful, let's see
 ; SFTODO: Chopping the individual blocks up into macros might make things clearer?
