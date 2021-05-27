@@ -6246,27 +6246,28 @@ SFTODOTMP2 = L00AB
     RTS
 
 
-;Assign default pseudo RAM banks to absolute RAM banks
-;For OSMODEs, 0, 1, 3, 4 & 5: W..Z = 4..7
-;For OSMODE 2: W..Z = 12..15
-; SFTODO: This has only one caller
-; SFTODO: The OSMODE 2 behaviour seems weird; surely we *don't* have SWR in banks 12-15 (isn't IBOS in bank 15, for a start?), so while this is nominally B+-compatible (although not even that; doesn't the B+ have SWR in banks 0, 1, 12, 13 or something like that?), as soon as any softwre actually tries to work with these banks, won't it break? Maybe I'm missing something...
+; Assign default pseudo RAM banks to absolute RAM banks.
+; For OSMODEs other than 2: W..Z = 4..7
+; For OSMODE 2: W..Z = 12..15
+; SQUASH: This has only one caller
+; ENHANCE: The OSMODE 2 behaviour seems weird; surely we *don't* have SWR in banks 12-15 (isn't
+; IBOS almost always in bank 15, for a start?), so while this is nominally B+-compatible
+; (although not even that; doesn't the B+ have SWR in banks 0, 1, 12, 13 or something like
+; that?), as soon as any softwre actually tries to work with these banks, won't it break? Maybe
+; I'm missing something...
 .assignDefaultPseudoRamBanks
 {
-.LA4E3      PRVEN								;switch in private RAM
-            LDA prvOsMode								;read OSMODE
-            LDX #&03								;a total of 4 pseudo banks
-            LDY #&07								;for osmodes other than 2, absolute banks are 4..7
-            CMP #&02								;check for osmode 2
-            BNE NotOsMode2
-            LDY #maxBank								;if osmode is 2, absolute banks are 12..15
+    PRVEN
+    LDA prvOsMode
+    LDX #3 ; SFTODO: mildly magic, 4 pseudo banks
+    LDY #7; for OSMODEs other than 2, absolute banks are 4..7
+    CMP #2:BNE NotOsMode2
+    LDY #maxBank ; if OSMODE is 2, absolute banks are 12..15
 .NotOsMode2
-.loop	  TYA									;
-            STA prvPseudoBankNumbers,X							;assign pseudo bank to the appropriate absolute bank
-            DEY									;reduce absolute bank number by 1
-            DEX									;reduce pseudo bank number by 1
-            BPL loop								;until all 4 pseudo banks have been assigned an appropriate absolute bank
-            JMP PrvDis								;switch out private RAM
+.Loop
+    TYA:STA prvPseudoBankNumbers,X
+    DEY:DEX:BPL Loop
+    JMP PrvDis
 }
 
 {
