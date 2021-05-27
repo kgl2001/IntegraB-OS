@@ -6426,22 +6426,17 @@ SFTODOTMP2 = L00AB
 .mul8
 {
     XASSERT_USE_PRV1
-            LDA #&00
-            STA prvDC + 1
-            LDX #&08
-.loop       ASL A
-            ROL prvDC + 1
-            ASL prvB
-            BCC noAdd
-            CLC
-            ADC prvA
-            BCC noCarry
-            INC prvDC + 1
-.noCarry
-.noAdd      DEX
-            BNE loop
-            STA prvDC
-            RTS
+    LDA #0:STA prvDC + 1
+    LDX #8
+.Loop
+    ASL A:ROL prvDC + 1
+    ASL prvB:BCC NoAdd
+    CLC:ADC prvA
+    INCCS prvDC + 1
+.NoAdd
+    DEX:BNE Loop
+    STA prvDC
+    RTS
 }
 
 ; SFTODO: Ignoring the setup, the loop looks very much to me like division of prvA=prvD by prvC, with the result in prvD and the remainder in A. But the setup code says that if prvB (which is otherwise unused)>=prvC, we return with prvD=result=prvA and "remainder" prvB
