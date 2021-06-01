@@ -6158,27 +6158,27 @@ SFTODOTMP2 = L00AB
     JSR ConvertIntegerDefaultDecimal:BCC ParsedDecimalOK
     LDA (transientCmdPtr),Y:AND #CapitaliseMask
     CMP #'F'+1:BCS MaybePseudo
-    CMP #'A':BCC LA492
+    CMP #'A':BCC SecClvRts
     SBC #'A'-10:JMP ParsedBank ; SQUASH: could probably do "BPL ; always" to save a byte
 .MaybePseudo
-    CMP #'Z'+1:BCS LA492
-    CMP #'W':BCC LA492
+    CMP #'Z'+1:BCS SecClvRts
+    CMP #'W':BCC SecClvRts
     SBC #'W'
     CLC:ADC #prvPseudoBankNumbers - prv83:TAX:JSR ReadPrivateRam8300X
 .ParsedBank
     INY
 .ParsedDecimalOK
-    CMP #maxBank+1:BCS LA495
+    CMP #maxBank+1:BCS SevRts
 .EndOfLine
     CLV
     RTS
 			
-.LA492
+.SecClvRts
     SEC
     CLV
     RTS
 			
-.LA495
+.SevRts
     BIT Rts ; set V
 .Rts
     RTS
