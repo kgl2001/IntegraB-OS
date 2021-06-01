@@ -6193,35 +6193,23 @@ SFTODOTMP2 = L00AB
 }
 
 {
-; SFTODO: This only has one caller - probably irrelevant given we also have LA49C entry point
 .^createRomBankMaskAndInsertBanks
-            JSR createRomBankMask
-;Read ROM Type from ROM header for ROMs with a 1 bit in transientRomBankMask and save to ROM Type Table and Private RAM; used to immediately *INSERT a ROM without waiting for BREAK.
+    JSR createRomBankMask
+; Read ROM type from ROM header for ROMs with a 1 bit in transientRomBankMask and save to the
+; OS ROM type table and our private copy. This is used to immediately *INSERT ROMs without
+; waiting for BREAK.
 .^insertBanksUsingTransientRomBankMask
-            PRVEN								;switch in private RAM
-
-
-            LDY #maxBank
-.bankLoop   ASL transientRomBankMask
-            ROL transientRomBankMask + 1
-            BCC SkipBank
-            LDA #lo(RomType)
-            STA osRdRmPtr								;address pointer into paged ROM
-            LDA #hi(RomType)
-            STA osRdRmPtr + 1								;address pointer into paged ROM
-            TYA
-            PHA
-            JSR OSRDRM								;Read ROM Type from paged ROM
-            TAX
-            PLA
-            TAY
-            TXA
-            STA RomTypeTable,Y								;Save ROM Type to ROM Type table
-            STA prvRomTypeTableCopy,Y								;Save ROM Type to Private RAM copy of ROM Type table
-.SkipBank   DEY
-            BPL bankLoop
-            PRVDIS								;switch out private RAM
-            RTS
+    PRVEN
+    LDY #maxBank
+.BankLoop
+    ASL transientRomBankMask:ROL transientRomBankMask + 1:BCC SkipBank
+    LDA #lo(RomType):STA osRdRmPtr:LDA #hi(RomType):STA osRdRmPtr + 1
+    TYA:PHA:JSR OSRDRM:TAX:PLA:TAY:TXA \ read byte at osRdRmPtr from bank Y into A, preserving Y
+    STA RomTypeTable,Y:STA prvRomTypeTableCopy,Y
+.SkipBank
+    DEY:BPL BankLoop
+    PRVDIS
+    RTS
 }
 
 ; Set bytes in the ROM type table to 0 for banks with a 0 bit in transientRomBankMask; other
