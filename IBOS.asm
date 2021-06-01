@@ -6145,12 +6145,16 @@ SFTODOTMP2 = L00AB
             RTS
 }
 
-; Parse a bank number from the command line, converting W-Z into the corresponding real bank numbers.
-; Return with C clear if and only if we parsed a bank number, which will be in A.
-; If C is set, V will be clear iff there was nothing left on the command line.
+; Parse a bank number from the command line, converting pseudo banks W-Z into the corresponding
+; absolute bank numbers. If a bank is parsed successfully, return with C and V clear and the
+; bank in A. If a bank is not parsed successfully, return with C set; V will be set iff the
+; problem was the use of a pseudo bank for which no absolute bank has been defined.
+; SFTODO: Maybe check callers agree with this understanding of return convention?
 .ParseBankNumber
 {
-; SFTODO: Would it be more compact to check for W-Z *first*, then use ConvertIntegerDefaultHex? This might only work if we do a "proper" upper case conversion, not sure.
+    ; SQUASH: Would it be more compact to check for W-Z *first*, then use
+    ; ConvertIntegerDefaultHex? This might only work if we do a "proper" upper case conversion,
+    ; not sure.
     JSR FindNextCharAfterSpace:BCS EndOfLine
     LDA (transientCmdPtr),Y:CMP #',':BNE NotComma
     INY
@@ -6168,6 +6172,8 @@ SFTODOTMP2 = L00AB
 .ParsedBank
     INY
 .ParsedDecimalOK
+    ; SFTODO: I believe this branch should only be taken if prvPseudoBankNumbers contains &FF
+    ; to indicate an undefined bank.
     CMP #maxBank+1:BCS SevRts
 .EndOfLine
     CLV
