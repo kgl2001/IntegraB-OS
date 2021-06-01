@@ -6110,39 +6110,31 @@ SFTODOTMP2 = L00AB
     RTS
 }
 
-; Set 16-bit word at transientRomBankMask to 1<<A, i.e. set it to 0 except bit A. Y is preserved.
-; SFTODO: Am I missing something, or wouldn't it be far easier just to do a 16-bit rotate left in a loop? Maybe that wouldn't be shorter. Maybe this is performance critical? (Doubt it)
-; SFTODO: I suspect this is creating some sort of ROM bank mask, but that is speculation at moment so label may be misleading.
-.createRomBankMask
 {
-            PHA
-            LDA #&00
-            STA transientRomBankMask
-            STA transientRomBankMask + 1
-            PLA
+; Set 16-bit word at transientRomBankMask to 1<<A, i.e. set it to 0 except bit A. Y is preserved.
+; SQUASH: Am I missing something, or wouldn't it be far easier just to do a 16-bit rotate left
+; in a loop? Maybe that wouldn't be shorter. Maybe this is performance critical? (Doubt it)
+.^createRomBankMask
+    PHA
+    LDA #0:STA transientRomBankMask:STA transientRomBankMask + 1
+    PLA
+
 ; Set bit A of the 16-bit word at transientRomBankMask. Y is preserved.
-; SFTODO: Speculating this is ROM mask, hence label name, which may not be right.
 .^addToRomBankMask
-.LA43B      TAX
-            TYA
-            PHA
-            TXA                                                                                     ;A is now same as on entry
-            LDX #&00
-            CMP #&08
-            BCC LA447
-            LDX #&01
-.LA447      AND #&07
-            TAY
-            LDA #&00
-            SEC
-.LA44D      ROL A
-            DEY
-            BPL LA44D
-            ORA transientRomBankMask,X
-            STA transientRomBankMask,X
-            PLA
-            TAY
-            RTS
+    TAX:TYA:PHA:TXA ; push Y, preserving A
+    LDX #0
+    CMP #8:BCC LowByte
+    LDX #1 ; SQUASH: INX
+.LowByte
+    AND #7:TAY
+    LDA #0
+    SEC
+.Loop
+    ROL A
+    DEY:BPL Loop
+    ORA transientRomBankMask,X:STA transientRomBankMask,X
+    PLA:TAY
+    RTS
 }
 
 ; Parse a bank number from the command line, converting pseudo banks W-Z into the corresponding
