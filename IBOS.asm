@@ -6151,45 +6151,37 @@ SFTODOTMP2 = L00AB
 .ParseBankNumber
 {
 ; SFTODO: Would it be more compact to check for W-Z *first*, then use ConvertIntegerDefaultHex? This might only work if we do a "proper" upper case conversion, not sure.
-            JSR FindNextCharAfterSpace								;find next character. offset stored in Y
-            BCS endOfLine
-            LDA (transientCmdPtr),Y
-            CMP #','
-            BNE LA464
-            INY
-.LA464      JSR ConvertIntegerDefaultDecimal
-            BCC parsedDecimalOK
-            LDA (transientCmdPtr),Y
-            AND #CapitaliseMask                                                                                ;convert to upper case (imperfect but presumably good enough)
-            CMP #'F'+1
-            BCS LA47A
-            CMP #'A'
-            BCC LA492
-            SBC #'A'-10
-            JMP LA48B ; SFTODO: could probably do "BPL LA48B ; always branch" to save a byte
+    JSR FindNextCharAfterSpace:BCS EndOfLine
+    LDA (transientCmdPtr),Y:CMP #',':BNE NotComma
+    INY
+.NotComma
+    JSR ConvertIntegerDefaultDecimal:BCC ParsedDecimalOK
+    LDA (transientCmdPtr),Y:AND #CapitaliseMask
+    CMP #'F'+1:BCS MaybePseudo
+    CMP #'A':BCC LA492
+    SBC #'A'-10:JMP ParsedBank ; SQUASH: could probably do "BPL ; always" to save a byte
+.MaybePseudo
+    CMP #'Z'+1:BCS LA492
+    CMP #'W':BCC LA492
+    SBC #'W'
+    CLC:ADC #prvPseudoBankNumbers - prv83:TAX:JSR ReadPrivateRam8300X
+.ParsedBank
+    INY
+.ParsedDecimalOK
+    CMP #maxBank+1:BCS LA495
+.EndOfLine
+    CLV
+    RTS
 			
-.LA47A      CMP #'Z'+1
-            BCS LA492
-            CMP #'W'
-            BCC LA492
-            SBC #'W'
-            CLC
-            ADC #prvPseudoBankNumbers - prv83
-            TAX
-            JSR ReadPrivateRam8300X								;read data from Private RAM &83xx (Addr = X, Data = A)
-.LA48B      INY
-.parsedDecimalOK
-            CMP #&10
-            BCS LA495
-.endOfLine  CLV
-            RTS
+.LA492
+    SEC
+    CLV
+    RTS
 			
-.LA492      SEC
-            CLV
-            RTS
-			
-.LA495      BIT rts ; set V
-.rts        RTS
+.LA495
+    BIT Rts ; set V
+.Rts
+    RTS
 }
 
 {
