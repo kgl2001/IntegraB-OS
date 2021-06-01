@@ -6247,11 +6247,10 @@ SFTODOTMP2 = L00AB
 ; For OSMODEs other than 2: W..Z = 4..7
 ; For OSMODE 2: W..Z = 12..15
 ; SQUASH: This has only one caller
-; ENHANCE: The OSMODE 2 behaviour seems weird; surely we *don't* have SWR in banks 12-15 (isn't
-; IBOS almost always in bank 15, for a start?), so while this is nominally B+-compatible
-; (although not even that; doesn't the B+ have SWR in banks 0, 1, 12, 13 or something like
-; that?), as soon as any softwre actually tries to work with these banks, won't it break? Maybe
-; I'm missing something...
+; The OSMODE 2 behaviour is presumably intended to support an installation where IBOS is in
+; IC101 (bank 3) and four additional RAM chips have been installed to give sideways RAM in
+; banks 12-15. Note that OSMODE 4 is like OSMODE 2 but with the standard allocation of pseudo
+; to absolute RAM banks.
 .assignDefaultPseudoRamBanks
 {
     PRVEN
