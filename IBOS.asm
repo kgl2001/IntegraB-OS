@@ -4461,26 +4461,24 @@ RamPresenceFlags = TransientZP
 
 {
 ;*SRROM Command
-.^srrom	  SEC
-            BCS common
+.^srrom
+    SEC:BCS Common ; always branch
 
 ;*SRDATA Command
 .^srdata
-            CLC
-.common     PHP
-            JSR ParseRomBankListChecked2
-            PRVEN								;switch in private RAM
-            LDX #&00
-.bankLoop   ROR transientRomBankMask + 1
-            ROR transientRomBankMask
-            BCC SkipBank
-            PLP
-            PHP
-            JSR doBankX
-.SkipBank   INX
-            CPX #maxBank + 1
-            BNE bankLoop
-            JMP plpPrvDisexitSc
+    CLC
+.Common
+    PHP
+    JSR ParseRomBankListChecked2
+    PRVEN
+    LDX #0
+.BankLoop
+    ROR transientRomBankMask + 1:ROR transientRomBankMask:BCC SkipBank
+    PLP:PHP
+    JSR doBankX
+.SkipBank
+    INX:CPX #maxBank + 1:BNE BankLoop
+    JMP plpPrvDisexitSc ; SQUASH: close enough to BEQ always?
 
 ; SFTODO: This has only one caller, just above, can it simply be inlined?
 ; SFTODO: This seems to remove and maybe re-add (depending on C on entry; C set means SRROM, C clear means SRDATA) bank X to SFTODOFOURBANKS, but only adding if X is suitable.
