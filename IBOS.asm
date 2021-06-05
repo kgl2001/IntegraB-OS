@@ -5950,15 +5950,11 @@ osfileBlock = L02EE
 ;*INSERT Command
 .^insert
     JSR ParseRomBankListChecked
-    LDX #userRegBankInsertStatus
-    JSR ReadUserReg
-    ORA transientRomBankMask
-    JSR WriteUserReg
-    LDX #userRegBankInsertStatus + 1 ; SQUASH: ASSERT:INX?
-    JSR ReadUserReg
-    ORA transientRomBankMask + 1
+    LDX #userRegBankInsertStatus + 0:JSR ReadUserReg:ORA transientRomBankMask + 0:JSR WriteUserReg
+    ; SQUASH: Replace LDX # with ASSERT:INX?
+    LDX #userRegBankInsertStatus + 1:JSR ReadUserReg:ORA transientRomBankMask + 1
     JSR WriteUserRegAndCheckNextCharI:BNE ExitAndClaimServiceCallIndirect1 ; branch if not 'I'
-    INY
+    INY ; skip 'I'
     JSR insertBanksUsingTransientRomBankMask
 .ExitAndClaimServiceCallIndirect1
     JMP ExitAndClaimServiceCall
@@ -5966,27 +5962,23 @@ osfileBlock = L02EE
 .WriteUserRegAndCheckNextCharI
     JSR WriteUserReg
     JSR FindNextCharAfterSpace
-    LDA (transientCmdPtr),Y
+    LDA (transientCmdPtr),Y ; SQUASH: redundant?
     AND #CapitaliseMask
     CMP #'I' ; check for 'I' (Immediate)
     RTS
 
 ;*UNPLUG Command
 .^unplug
-    JSR ParseRomBankListChecked
-    JSR InvertTransientRomBankMask
-    LDX #userRegBankInsertStatus
-    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-    AND L00AE
-    JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
-    LDX #userRegBankInsertStatus + 1 ; SQUASH: ASSERT:INX?
-    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-    AND L00AF ; SFTODO: MAGIC ADDRESS
+    JSR ParseRomBankListChecked:JSR InvertTransientRomBankMask
+    ; SFTODO: L00AE/L00AF are magic addresses
+    LDX #userRegBankInsertStatus + 0:JSR ReadUserReg:AND L00AE:JSR WriteUserReg
+    ; SQUASH: Replace LDX # with ASSERT:INX?
+    LDX #userRegBankInsertStatus + 1:JSR ReadUserReg:AND L00AF
     JSR WriteUserRegAndCheckNextCharI:BNE ExitAndClaimServiceCallIndirect2 ; branch if not 'I'
-    INY
+    INY ; skip 'I'
     JSR unplugBanksUsingTransientRomBankMask
 .ExitAndClaimServiceCallIndirect2
-    JMP ExitAndClaimServiceCall								;Exit Service Call
+    JMP ExitAndClaimServiceCall
 }
 
 {
