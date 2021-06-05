@@ -4479,16 +4479,17 @@ RamPresenceFlags = TransientZP
     INX:CPX #maxBank + 1:BNE BankLoop
     JMP plpPrvDisexitSc ; SQUASH: close enough to BEQ always?
 
-; SQUASH: This has only one caller, just above, can it simply be inlined?
-; SFTODO: This seems to use L00AD as scratch space too - is there really no second zero page (=> shorter code) location we could have used instead of prvOswordBlockCopy + 1?
-; SFTODO: Probably not, but is there any chance of sharing more code between this and srset?
-; SFTODO: I think this returns with C clear on success, C set on error - if C is set, V indicates something - *but* our one caller doesn't seem to check C or V, so this is a bit pointless
-bankTmp = prvOswordBlockCopy + 1 ; we just use this as scratch space SFTODO: ah, maybe we are just using this location because other really-OSWORD code uses the same subroutines which expect the bank to be in this location
-romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" label on RHS
+    ; SQUASH: This has only one caller and a single RTS, so can it just be inlined?
+    ; SQUASH: DoBankX seems to set/clear C/V to indicate things, but nothing seems to check them.
+    ; SQUASH: Although some other code uses prvOswordBlockCopy + 1 to hold a bank number, I
+    ; don't believe this code is ever used in conjunction with an OSWORD call. If that's right,
+    ; we could shorten the code slightly by using a zero-page temporary for bankTmp.
+bankTmp = prvOswordBlockCopy + 1
+RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
 .DoBankX
     STX bankTmp
     PHP
-    LDA #0:ROR A:STA romRamFlagTmp ; put C in b7 of romRamFlagTmp
+    LDA #0:ROR A:STA RomRamFlagTmp ; put C in b7 of RomRamFlagTmp
     JSR TestRamUsingVariableMainRamSubroutine:BNE FailSFTODOA ; branch if not RAM
     LDA prvRomTypeTableCopy,X:BEQ EmptyBank
     CMP #RomTypeSrData:BNE FailSFTODOA
@@ -4497,7 +4498,7 @@ romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" l
     PLP:BCS IsSrrom
     LDA bankTmp:JSR AddBankAToSFTODOFOURBANKS:BCS FailSFTODOB ; branch if already had max banks
 .IsSrrom
-    LDA romRamFlagTmp:JSR WriteRomHeaderAndPatchUsingVariableMainRamSubroutine
+    LDA RomRamFlagTmp:JSR WriteRomHeaderAndPatchUsingVariableMainRamSubroutine
     LDX bankTmp:LDA #RomTypeSrData:STA prvRomTypeTableCopy,X:STA RomTypeTable,X
 .RestoreXRts
 	LDX bankTmp
