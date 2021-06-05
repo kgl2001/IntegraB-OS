@@ -5931,20 +5931,18 @@ osfileBlock = L02EE
 .ParseRomBankListChecked
 {
     JSR ParseRomBankList
-    BCC rts
+    BCC Rts
     BVC GenerateSyntaxErrorIndirect
 .^badId
-.LA2EB
     JSR RaiseError
-
     EQUB &80
 	EQUS "Bad id", &00
 
 .GenerateSyntaxErrorIndirect
     JMP GenerateSyntaxErrorForTransientCommandIndex
 
-    ; SFTODO: Can we repurpose another nearby RTS and get rid of this?
-.rts
+    ; SQUASH: Can we repurpose another nearby RTS and get rid of this?
+.Rts
     RTS
 }
 
