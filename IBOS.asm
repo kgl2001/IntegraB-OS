@@ -4475,7 +4475,7 @@ RamPresenceFlags = TransientZP
 .BankLoop
     ROR transientRomBankMask + 1:ROR transientRomBankMask:BCC SkipBank
     PLP:PHP
-    JSR doBankX
+    JSR DoBankX
 .SkipBank
     INX:CPX #maxBank + 1:BNE BankLoop
     JMP plpPrvDisexitSc ; SQUASH: close enough to BEQ always?
@@ -4487,44 +4487,47 @@ RamPresenceFlags = TransientZP
 ; SFTODO: I think this returns with C clear on success, C set on error - if C is set, V indicates something - *but* our one caller doesn't seem to check C or V, so this is a bit pointless
 bankTmp = prvOswordBlockCopy + 1 ; we just use this as scratch space SFTODO: ah, maybe we are just using this location because other really-OSWORD code uses the same subroutines which expect the bank to be in this location
 romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" label on RHS
-.doBankX
-            STX bankTmp
-            PHP
-            LDA #&00
-            ROR A
-            STA romRamFlagTmp
-            JSR TestRamUsingVariableMainRamSubroutine
-            BNE failSFTODOA								;branch if not RAM
-            LDA prvRomTypeTableCopy,X
-            BEQ emptyBank
-            CMP #RomTypeSrData
-            BNE failSFTODOA
-.emptyBank  LDA bankTmp
-            JSR removeBankAFromSFTODOFOURBANKS
-            PLP
-            BCS isSrrom
-            LDA bankTmp
-            JSR AddBankAToSFTODOFOURBANKS
-            BCS failSFTODOB ; SFTODO: branch if we already had four banks and so couldn't add this one
-.isSrrom    LDA romRamFlagTmp
-            JSR WriteRomHeaderAndPatchUsingVariableMainRamSubroutine
-            LDX bankTmp
-            LDA #RomTypeSrData
-            STA prvRomTypeTableCopy,X
-            STA RomTypeTable,X
-.restoreXRts
-	  LDX bankTmp
-.rts        RTS
+.DoBankX
+    STX bankTmp
+    PHP
+    LDA #0
+    ROR A
+    STA romRamFlagTmp
+    JSR TestRamUsingVariableMainRamSubroutine
+    BNE FailSFTODOA								;branch if not RAM
+    LDA prvRomTypeTableCopy,X
+    BEQ EmptyBank
+    CMP #RomTypeSrData
+    BNE FailSFTODOA
+.EmptyBank
+    LDA bankTmp
+    JSR removeBankAFromSFTODOFOURBANKS
+    PLP
+    BCS IsSrrom
+    LDA bankTmp
+    JSR AddBankAToSFTODOFOURBANKS
+    BCS FailSFTODOB ; SFTODO: branch if we already had four banks and so couldn't add this one
+.IsSrrom
+    LDA romRamFlagTmp
+    JSR WriteRomHeaderAndPatchUsingVariableMainRamSubroutine
+    LDX bankTmp
+    LDA #RomTypeSrData
+    STA prvRomTypeTableCopy,X
+    STA RomTypeTable,X
+.RestoreXRts
+	LDX bankTmp
+.Rts
+    RTS
 
-.failSFTODOA
+.FailSFTODOA
 	  PLP
-            SEC
-            CLV
-            BCS restoreXRts ; always branch
-.failSFTODOB
+      SEC
+      CLV
+      BCS RestoreXRts ; always branch
+.FailSFTODOB
 	  SEC
-            BIT rts ; set V
-            BCS restoreXRts ; always branch
+      BIT Rts ; set V
+      BCS RestoreXRts ; always branch
 }
 
 {
