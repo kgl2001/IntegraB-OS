@@ -5946,47 +5946,47 @@ osfileBlock = L02EE
 .rts        RTS
 }
 
-;*INSERT Command
 {
-.^insert    JSR ParseRomBankListChecked								;Error check input data
-            LDX #userRegBankInsertStatus						;get *INSERT status
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            ORA transientRomBankMask								;update *INSERT status
-            JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
-            LDX #userRegBankInsertStatus + 1
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            ORA transientRomBankMask + 1
-            JSR WriteUserRegAndCheckNextCharI						;Check for Immediate 'I' flag
-            BNE ExitAndClaimServiceCallIndirect1								;Exit if not immediate
-            INY
-            JSR insertBanksUsingTransientRomBankMask					;Initialise inserted ROMs
+;*INSERT Command
+.^insert
+    JSR ParseRomBankListChecked
+    LDX #userRegBankInsertStatus
+    JSR ReadUserReg
+    ORA transientRomBankMask
+    JSR WriteUserReg
+    LDX #userRegBankInsertStatus + 1 ; SQUASH: ASSERT:INX?
+    JSR ReadUserReg
+    ORA transientRomBankMask + 1
+    JSR WriteUserRegAndCheckNextCharI:BNE ExitAndClaimServiceCallIndirect1 ; branch if not 'I'
+    INY
+    JSR insertBanksUsingTransientRomBankMask
 .ExitAndClaimServiceCallIndirect1
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+    JMP ExitAndClaimServiceCall
 
 .WriteUserRegAndCheckNextCharI
-            JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
-            JSR FindNextCharAfterSpace							;find next character. offset stored in Y
-            LDA (transientCmdPtr),Y
-            AND #CapitaliseMask								;Capitalise
-            CMP #'I'								;and check for 'I' (Immediate)
-            RTS
+    JSR WriteUserReg
+    JSR FindNextCharAfterSpace
+    LDA (transientCmdPtr),Y
+    AND #CapitaliseMask
+    CMP #'I' ; check for 'I' (Immediate)
+    RTS
 
 ;*UNPLUG Command
-.^unplug	  JSR ParseRomBankListChecked								;Error check input data
-            JSR InvertTransientRomBankMask								;Invert all bits in &AE and &AF
-            LDX #&06								;INSERT status for ROMS &0F to &08
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            AND L00AE
-            JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
-            LDX #&07								;INSERT status for ROMS &07 to &00
-            JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
-            AND L00AF
-            JSR WriteUserRegAndCheckNextCharI						;Check for Immediate 'I' flag
-            BNE ExitAndClaimServiceCallIndirect2
-            INY
-            JSR unplugBanksUsingTransientRomBankMask
+.^unplug
+    JSR ParseRomBankListChecked
+    JSR InvertTransientRomBankMask
+    LDX #userRegBankInsertStatus
+    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
+    AND L00AE
+    JSR WriteUserReg								;Write to RTC clock User area. X=Addr, A=Data
+    LDX #userRegBankInsertStatus + 1 ; SQUASH: ASSERT:INX?
+    JSR ReadUserReg								;Read from RTC clock User area. X=Addr, A=Data
+    AND L00AF ; SFTODO: MAGIC ADDRESS
+    JSR WriteUserRegAndCheckNextCharI:BNE ExitAndClaimServiceCallIndirect2 ; branch if not 'I'
+    INY
+    JSR unplugBanksUsingTransientRomBankMask
 .ExitAndClaimServiceCallIndirect2
-            JMP ExitAndClaimServiceCall								;Exit Service Call
+    JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
 {
@@ -6111,7 +6111,8 @@ SFTODOTMP2 = L00AB
 }
 
 {
-; Set 16-bit word at transientRomBankMask to 1<<A, i.e. set it to 0 except bit A. Y is preserved.
+; Set the 16-bit word at transientRomBankMask to 1<<A, i.e. set it to 0 then set bit A. Y is
+; preserved.
 ; SQUASH: Am I missing something, or wouldn't it be far easier just to do a 16-bit rotate left
 ; in a loop? Maybe that wouldn't be shorter. Maybe this is performance critical? (Doubt it)
 .^createRomBankMask
