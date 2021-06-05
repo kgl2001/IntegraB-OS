@@ -5930,20 +5930,22 @@ osfileBlock = L02EE
 
 .ParseRomBankListChecked
 {
-            JSR ParseRomBankList
-            BCC rts
-            BVC GenerateSyntaxErrorIndirect
+    JSR ParseRomBankList
+    BCC rts
+    BVC GenerateSyntaxErrorIndirect
 .^badId
-.LA2EB      JSR RaiseError								;Goto error handling, where calling address is pulled from stack
+.LA2EB
+    JSR RaiseError
 
-	  EQUB &80
-	  EQUS "Bad id", &00
+    EQUB &80
+	EQUS "Bad id", &00
 
 .GenerateSyntaxErrorIndirect
-            JMP GenerateSyntaxErrorForTransientCommandIndex
+    JMP GenerateSyntaxErrorForTransientCommandIndex
 
-	  ; SFTODO: Can we repurpose another nearby RTS and get rid of this?
-.rts        RTS
+    ; SFTODO: Can we repurpose another nearby RTS and get rid of this?
+.rts
+    RTS
 }
 
 {
