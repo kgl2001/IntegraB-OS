@@ -4474,14 +4474,12 @@ RamPresenceFlags = TransientZP
     LDX #0
 .BankLoop
     ROR transientRomBankMask + 1:ROR transientRomBankMask:BCC SkipBank
-    PLP:PHP
-    JSR DoBankX
+    PLP:PHP:JSR DoBankX
 .SkipBank
     INX:CPX #maxBank + 1:BNE BankLoop
     JMP plpPrvDisexitSc ; SQUASH: close enough to BEQ always?
 
-; SFTODO: This has only one caller, just above, can it simply be inlined?
-; SFTODO: This seems to remove and maybe re-add (depending on C on entry; C set means SRROM, C clear means SRDATA) bank X to SFTODOFOURBANKS, but only adding if X is suitable.
+; SQUASH: This has only one caller, just above, can it simply be inlined?
 ; SFTODO: This seems to use L00AD as scratch space too - is there really no second zero page (=> shorter code) location we could have used instead of prvOswordBlockCopy + 1?
 ; SFTODO: Probably not, but is there any chance of sharing more code between this and srset?
 ; SFTODO: I think this returns with C clear on success, C set on error - if C is set, V indicates something - *but* our one caller doesn't seem to check C or V, so this is a bit pointless
@@ -4490,44 +4488,33 @@ romRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA SFTODO: Use a "proper" l
 .DoBankX
     STX bankTmp
     PHP
-    LDA #0
-    ROR A
-    STA romRamFlagTmp
-    JSR TestRamUsingVariableMainRamSubroutine
-    BNE FailSFTODOA								;branch if not RAM
-    LDA prvRomTypeTableCopy,X
-    BEQ EmptyBank
-    CMP #RomTypeSrData
-    BNE FailSFTODOA
+    LDA #0:ROR A:STA romRamFlagTmp ; put C in b7 of romRamFlagTmp
+    JSR TestRamUsingVariableMainRamSubroutine:BNE FailSFTODOA ; branch if not RAM
+    LDA prvRomTypeTableCopy,X:BEQ EmptyBank
+    CMP #RomTypeSrData:BNE FailSFTODOA
 .EmptyBank
-    LDA bankTmp
-    JSR removeBankAFromSFTODOFOURBANKS
-    PLP
-    BCS IsSrrom
-    LDA bankTmp
-    JSR AddBankAToSFTODOFOURBANKS
-    BCS FailSFTODOB ; SFTODO: branch if we already had four banks and so couldn't add this one
+    LDA bankTmp:JSR removeBankAFromSFTODOFOURBANKS
+    PLP:BCS IsSrrom
+    LDA bankTmp:JSR AddBankAToSFTODOFOURBANKS:BCS FailSFTODOB ; branch if already had max banks
 .IsSrrom
-    LDA romRamFlagTmp
-    JSR WriteRomHeaderAndPatchUsingVariableMainRamSubroutine
-    LDX bankTmp
-    LDA #RomTypeSrData
-    STA prvRomTypeTableCopy,X
-    STA RomTypeTable,X
+    LDA romRamFlagTmp:JSR WriteRomHeaderAndPatchUsingVariableMainRamSubroutine
+    LDX bankTmp:LDA #RomTypeSrData:STA prvRomTypeTableCopy,X:STA RomTypeTable,X
 .RestoreXRts
 	LDX bankTmp
 .Rts
     RTS
 
+    ; SQUASH: Set/clear V first in both these cases, then the first can "BVC always" to SEC:BCS
+    ; RestoreXRts in second.
 .FailSFTODOA
-	  PLP
-      SEC
-      CLV
-      BCS RestoreXRts ; always branch
+	PLP
+    SEC
+    CLV
+    BCS RestoreXRts ; always branch
 .FailSFTODOB
-	  SEC
-      BIT Rts ; set V
-      BCS RestoreXRts ; always branch
+	SEC
+    BIT Rts ; set V
+    BCS RestoreXRts ; always branch
 }
 
 {
@@ -5092,7 +5079,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 
 ;test slots for RAM by writing to &8008 - ROM header
 ;On entry A=ROM bank to test
-;On exit A=X=ROM bank that has been tested. Z contains test result.
+;On exit A=X=ROM bank that has been tested. Z contains test result (Z set iff RAM).
 ;this code is relocated to and executed at &03A7
 .TestRamTemplate
 {
