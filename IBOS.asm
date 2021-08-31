@@ -1,3 +1,4 @@
+SFTODOTWEAKS = TRUE ; SFTODO: TEMP HACK
 ; Terminology:
 ; - "private RAM" is the 12K of RAM which can be paged in via PRVEN+PRVS1/4/8 in
 ;   the &8000-&AFFF region
@@ -903,7 +904,11 @@ GUARD end
     EQUB &FF ; binary version number
 .Title
     EQUS "IBOS", 0
+IF SFTODOTWEAKS
+    EQUS "1.2X" ; version string
+ELSE
     EQUS "1.20" ; version string
+ENDIF
 .Copyright
     EQUS 0, "(C) "
 .ComputechStart
@@ -3930,6 +3935,18 @@ Tmp = TransientZP + 6
 .service01
 {
 tmp = &A8
+
+IF SFTODOTWEAKS
+    ; ANFS 4.18 issues service call 1 a second time during reset. This causes various problems,
+    ; most noticeably a lock up where IbosSetup can claim the vectors a second time and the
+    ; parent vectors handlers point back into IBOS, causing an infinite loop when we try to
+    ; chain to the parent. We check right away to see if we've already claimed the vectors
+    ; (just checking BYTEV is enough) and ignore this service call if we have.
+    LDA BYTEVL:CMP #lo(osPrintBuf):BNE VectorsNotAlreadyClaimed
+    LDA BYTEVH:CMP #hi(osPrintBuf):BEQ VectorsAlreadyClaimed
+.VectorsNotAlreadyClaimed
+ENDIF
+
     ; SFTODO: What are prv83+[1-7] here? We are setting them to &FF.
     ; SQUASH: I think this code is high enough in the IBOS ROM we don't need to be indirecting
     ; via WritePrivateRam8300X and could just set PRV1 and access directly?
@@ -3943,6 +3960,7 @@ tmp = &A8
     ; If we're in the middle of a full reset, the contents of RTC registers/private RAM might
     ; be gibberish so don't carry out any logic depending on them.
     BIT FullResetFlag:BPL NotFullReset ; SQUASH: BMI and get rid of following JMP?
+.VectorsAlreadyClaimed
     JMP ExitServiceCallIndirect
 .NotFullReset
     LDX #userRegPrvPrintBufferStart:JSR ReadUserReg
@@ -9550,6 +9568,7 @@ ScreenStart = &3000
     ; If we're in OSMODE 0, don't install vector handlers, set up the print buffer or enable
     ; shadow RAM.
     LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X:BEQ OsMode0
+
     JSR installOSPrintBufStub
 
     ; Save the parent values of BYTEV, WORDV, WRCHV and RDCHV at parentVectorTbl1 and install
@@ -9567,7 +9586,8 @@ ScreenStart = &3000
     CPX #8:BNE Loop
     PLP
 
-    JSR InitPrintBuffer
+    JSR InitPrintBuffer ; claims additional vectors
+
     LDA lastBreakType:BNE DisableShadow ; branch if not soft reset
     LDX #prvLastScreenMode - prv83:JSR ReadPrivateRam8300X:BPL DisableShadow
     ; Enable shadow RAM.
