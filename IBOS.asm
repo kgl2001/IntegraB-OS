@@ -3930,6 +3930,7 @@ Tmp = TransientZP + 6
 .service01
 {
 tmp = &A8
+    ; SFTODO: What are prv83+[1-7] here? We are setting them to &FF.
     ; SQUASH: I think this code is high enough in the IBOS ROM we don't need to be indirecting
     ; via WritePrivateRam8300X and could just set PRV1 and access directly?
     LDA #0:STA ramselCopy:STA ramsel ; shadow off SFTODO?
