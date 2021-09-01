@@ -1653,6 +1653,9 @@ TmpCommandIndex = &AC
     JMP ExitServiceCall ; SQUASH: BEQ ; always branch
 
 .CallHandlerX
+    ; SQUASH: If we split the handler table into low and high tables we could
+    ; possibly save three bytes by no longer needing to double X. This assumes
+    ; none of the handler subroutines use the value in X on entry.
     TXA:ASL A:TAX ; double X as we have 16-bit entries at HandlerTable
     ; Push the handler address - 1 onto the stack and transfer control using RTS.
     LDA HandlerTable+1,X:PHA
