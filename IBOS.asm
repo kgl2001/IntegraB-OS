@@ -1,4 +1,3 @@
-SFTODOTWEAKS = FALSE ; SFTODO: TEMP HACK
 ; Terminology:
 ; - "private RAM" is the 12K of RAM which can be paged in via PRVEN+PRVS1/4/8 in
 ;   the &8000-&AFFF region
@@ -908,8 +907,8 @@ IF IBOS_VERSION == 120
     EQUS "1.20" ; version string
 ELIF IBOS_VERSION == 121
     EQUS "1.21" ; version string
-ELIF SFTODOTWEAKS
-    EQUS "1.2X" ; version string
+ELIF IBOS_VERSION == 122
+    EQUS "1.22" ; version string
 ENDIF
 .Copyright
     EQUS 0, "(C) "
@@ -921,7 +920,11 @@ IF IBOS_VERSION == 120
 ELSE
     EQUS "BBC Micro"
 .ComputechEnd
+IF IBOS_VERSION == 121
     EQUS " 2019", 0
+ELSE
+    EQUS " 2021", 0
+ENDIF
 ENDIF
 
 ;Store *Command reference table pointer address in X & Y
@@ -3966,7 +3969,7 @@ Tmp = TransientZP + 6
 {
 tmp = &A8
 
-IF SFTODOTWEAKS
+IF IBOS_VERSION >= 122
     ; ANFS 4.18 issues service call 1 a second time during reset. This causes various problems,
     ; most noticeably a lock up where IbosSetup can claim the vectors a second time and the
     ; parent vectors handlers point back into IBOS, causing an infinite loop when we try to
@@ -10031,6 +10034,8 @@ IF IBOS_VERSION == 120
     SAVE "IBOS-120.rom", start, end
 ELIF IBOS_VERSION == 121
     SAVE "IBOS-121.rom", start, end
+ELIF IBOS_VERSION == 122
+    SAVE "IBOS-122.rom", start, end
 ELSE
     ERROR "Unknown IBOS_VERSION"
 ENDIF
