@@ -1,4 +1,4 @@
-SFTODOTWEAKS = TRUE ; SFTODO: TEMP HACK
+SFTODOTWEAKS = FALSE ; SFTODO: TEMP HACK
 ; Terminology:
 ; - "private RAM" is the 12K of RAM which can be paged in via PRVEN+PRVS1/4/8 in
 ;   the &8000-&AFFF region
@@ -904,17 +904,25 @@ GUARD end
     EQUB &FF ; binary version number
 .Title
     EQUS "IBOS", 0
-IF SFTODOTWEAKS
-    EQUS "1.2X" ; version string
-ELSE
+IF IBOS_VERSION == 120
     EQUS "1.20" ; version string
+ELIF IBOS_VERSION == 121
+    EQUS "1.21" ; version string
+ELIF SFTODOTWEAKS
+    EQUS "1.2X" ; version string
 ENDIF
 .Copyright
     EQUS 0, "(C) "
 .ComputechStart
+IF IBOS_VERSION == 120
     EQUS "Computech"
 .ComputechEnd
     EQUS " 1989", 0
+ELSE
+    EQUS "BBC Micro"
+.ComputechEnd
+    EQUS " 2019", 0
+ENDIF
 
 ;Store *Command reference table pointer address in X & Y
 .CmdRef
@@ -2184,10 +2192,16 @@ InputBufSize = 256
     LDX #&32
 .ZeroUserRegLoop
     LDA #0:CPX #userRegLangFile:BNE NotLangFile
+IF IBOS_VERSION == 120
     ; We default LANG and FILE to IBOS (i.e. the current bank); this isn't all that useful, but
     ; it will at least give consistent results and offer a * prompt where the user can change
-    ; this. In IBOS 1.21, default LANG to &E and FILE to &C: LDA #&EC
+    ; this.
     LDA romselCopy:ASL A:ASL A:ASL A:ASL A:ORA romselCopy
+ELSE
+    ; In IBOS 1.21, default LANG to &E and FILE to &C.
+    ; SQUASH: All but the last LDA instruction are redundant.
+    LDA romselCopy:ASL A:ASL A:ASL A:ASL A:LDA #&EC
+ENDIF
 .NotLangFile
     JSR WriteUserReg
     DEX:BPL ZeroUserRegLoop
@@ -2256,15 +2270,28 @@ ptr = &00 ; 2 bytes
 .UserRegDefaultTable
     EQUB userRegBankInsertStatus + 0, &FF     	; default to no banks unplugged
     EQUB userRegBankInsertStatus + 1, &FF 	; default to no banks unplugged
-    EQUB userRegModeShadowTV, &17 		; IBOS 1.21 defaults to &E7
-    EQUB userRegFdriveCaps, &23 		; IBOS 1.21 defaults to &20
+IF IBOS_VERSION == 120
+    EQUB userRegModeShadowTV, &17
+    EQUB userRegFdriveCaps, &23
+ELSE
+    EQUB userRegModeShadowTV, &E7
+    EQUB userRegFdriveCaps, &20
+ENDIF
     EQUB userRegKeyboardDelay, &19
     EQUB userRegKeyboardRepeat, &05
     EQUB userRegPrinterIgnore, &0A
     EQUB userRegTubeBaudPrinter, &2D
-    EQUB userRegDiscNetBootData, &A0		; IBOS 1.21 defaults to &A1
+IF IBOS_VERSION == 120
+    EQUB userRegDiscNetBootData, &A0
+ELSE
+    EQUB userRegDiscNetBootData, &A1
+ENDIF
     EQUB userRegOsModeShx, &04
-    EQUB userRegCentury, 19			; IBOS 1.21 defaults to 20
+IF IBOS_VERSION == 120
+    EQUB userRegCentury, 19
+ELSE
+    EQUB userRegCentury, 20
+ENDIF
     EQUB userRegBankWriteProtectStatus + 0, &FF
     EQUB userRegBankWriteProtectStatus + 1, &FF
     EQUB userRegPrvPrintBufferStart, &90
@@ -6596,10 +6623,14 @@ SFTODOTMP2 = L00AB
     EQUB 0  ; rtcRegAlarmMinutes
     EQUB 0  ; rtcRegHours
     EQUB 0  ; rtcRegAlarmHours
-    EQUB 2  ; rtcRegDayOfWeek: Monday SFTODO: This will be 7 (Saturday) for IBOS 1.21, where we presumably default to 2000 not 1900
+IF IBOS_VERSION == 120
+    EQUB 2  ; rtcRegDayOfWeek: Monday
+ELSE
+    EQUB 7  ; rtcRegDayOfWeek: Saturday
+ENDIF
     EQUB 1  ; rtcRegDayOfMonth: 1st
     EQUB 1  ; rtcRegMonth: January
-    EQUB 0  ; rtcRegYear: 1900 SFTODO: presumably 2000 in IBOS 1.21 as a result of changes elsewhere?
+    EQUB 0  ; rtcRegYear: 1900 SFTODO: presumably this means 2000 in IBOS 1.21? does any other code need to change?
     ASSERT P% - InitialRtcTimeValues == (rtcRegYear - rtcRegSeconds) + 1
 
 ; SFTODO: Is this responsible for forcing reg B DSE bit off? This *would* matter if we wanted to use DSE.
@@ -9996,7 +10027,13 @@ MaxPrintBufferStart = prv8End - 1024 ; print buffer must be at least 1K
 }
 
 PRINT end - P%, "bytes free"
-SAVE "IBOS-01.rom", start, end
+IF IBOS_VERSION == 120
+    SAVE "IBOS-120.rom", start, end
+ELIF IBOS_VERSION == 121
+    SAVE "IBOS-121.rom", start, end
+ELSE
+    ERROR "Unknown IBOS_VERSION"
+ENDIF
 
 ; SFTODO: Would it be possible to save space by factoring out "LDX #prvOsMode:JSR
 ; ReadPrivateRam8300X" into a subroutine?
