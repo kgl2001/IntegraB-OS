@@ -1,2 +1,3 @@
 IBOS_VERSION = 120
+IBOS120_VARIANT = 0 ; original IBOS 1.20
 include "IBOS.asm"

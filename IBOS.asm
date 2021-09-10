@@ -17,6 +17,10 @@
 ;
 ; ENHANCE: An idea for a possible enhancement in a future version of IBOS.
 
+IF IBOS_VERSION != 120
+    IBOS120_VARIANT = 0
+ENDIF
+
 ; SFTODO: The following constants and associated comments are a bit randomly ordered, this should be tidied up eventually.
 ; For example, it might help to move the comments about RTC register use nearer to the private memory allocations, as
 ; some of those are copies of each other.
@@ -2275,7 +2279,11 @@ ptr = &00 ; 2 bytes
     EQUB userRegBankInsertStatus + 1, &FF 	; default to no banks unplugged
 IF IBOS_VERSION == 120
     EQUB userRegModeShadowTV, &17
+IF IBOS120_VARIANT == 0
     EQUB userRegFdriveCaps, &23
+ELSE
+    EQUB userRegFdriveCaps, &20
+ENDIF
 ELSE
     EQUB userRegModeShadowTV, &E7
     EQUB userRegFdriveCaps, &20
@@ -2284,13 +2292,13 @@ ENDIF
     EQUB userRegKeyboardRepeat, &05
     EQUB userRegPrinterIgnore, &0A
     EQUB userRegTubeBaudPrinter, &2D
-IF IBOS_VERSION == 120
+IF IBOS_VERSION == 120 AND IBOS120_VARIANT == 0
     EQUB userRegDiscNetBootData, &A0
 ELSE
     EQUB userRegDiscNetBootData, &A1
 ENDIF
     EQUB userRegOsModeShx, &04
-IF IBOS_VERSION == 120
+IF IBOS_VERSION == 120 AND IBOS120_VARIANT == 0
     EQUB userRegCentury, 19
 ELSE
     EQUB userRegCentury, 20
@@ -6626,7 +6634,7 @@ SFTODOTMP2 = L00AB
     EQUB 0  ; rtcRegAlarmMinutes
     EQUB 0  ; rtcRegHours
     EQUB 0  ; rtcRegAlarmHours
-IF IBOS_VERSION == 120
+IF IBOS_VERSION == 120 AND IBOS120_VARIANT == 0
     EQUB 2  ; rtcRegDayOfWeek: Monday
 ELSE
     EQUB 7  ; rtcRegDayOfWeek: Saturday
@@ -10031,7 +10039,11 @@ MaxPrintBufferStart = prv8End - 1024 ; print buffer must be at least 1K
 
 PRINT end - P%, "bytes free"
 IF IBOS_VERSION == 120
+IF IBOS120_VARIANT == 0
     SAVE "IBOS-120.rom", start, end
+ELSE
+    SAVE "IBOS-120-b-em.rom", start, end
+ENDIF
 ELIF IBOS_VERSION == 121
     SAVE "IBOS-121.rom", start, end
 ELIF IBOS_VERSION == 122
