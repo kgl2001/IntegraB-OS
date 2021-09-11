@@ -3980,7 +3980,7 @@ tmp = &A8
 IF IBOS_VERSION >= 122
     ; ANFS 4.18 issues service call 1 a second time during reset. This causes various problems,
     ; most noticeably a lock up where IbosSetup can claim the vectors a second time and the
-    ; parent vectors handlers point back into IBOS, causing an infinite loop when we try to
+    ; parent vector handlers point back into IBOS, causing an infinite loop when we try to
     ; chain to the parent. We check right away to see if we've already claimed the vectors
     ; (just checking BYTEV is enough) and ignore this service call if we have.
     LDA BYTEVL:CMP #lo(osPrintBuf):BNE VectorsNotAlreadyClaimed
