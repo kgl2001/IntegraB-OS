@@ -9342,10 +9342,33 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     JMP returnViaParentBYTEV
 
 ; Examine buffer status (http://beebwiki.mdfs.net/OSBYTE_%2698)
-; SFTODO: What's going on here? Why do we need to override the OS implementation of this at
-; all? See the ENHANCE: comment above PrintBufferNotEmpty, but I'm not sure that's relevant -
-; note that we are accessing the OS 1.20 buffer via OS pointer &FA, which will *only* work if
-; the buffer is the standard OS one not something else (such as our own printer buffer).
+
+; OSBYTE &98 has different behaviour in OS 1.20 and OS 2.00 onwards, so we have to implement
+; the OS 2.00 behaviour if we're in OSMODE>=2.
+;
+; In OS 1.20, for non-empty buffers, OSBYTE &98 returns with Y set so "LDA (&FA),Y" will
+; retrieve the next character from the buffer.
+;
+; In OS 2.00, for non-empty buffers, OSBYTE &98 returns with Y containing the next character
+; from the buffer.
+;
+; ENHANCE: It's important to bear in mind when reading the following that OSBYTE &98 can be
+; used for any buffer, not just the printer buffer. That said, when it is called for the
+; printer buffer, I suspect the code here is buggy. Note that we steal the RAM used by the OS
+; printer buffer for ramCodeStub except in OSMODE 0, so forwarding the call on to the parent
+; BYTEV is unlikely to give a correct result, and nor is accessing anything via the pointer at
+; L00FA. A correct implementation would probably handle the printer buffer as a special case,
+; using CheckPrintBufferEmpty and LdaPrintBufferReadPtr.
+;
+; In OSMODE 1, we'd probably need to store the next character in a spare byte of main RAM, set
+; &FA to point to that spare byte and return with Y=0 in order for the caller to be able to see
+; the character. (The real buffer is in private RAM and won't be visible to the caller whatever
+; we set &FA and Y to.) The AUG says interrupts should be disabled when calling OSBYTE &98 and
+; retrieving the character so we would probably get away with this.
+;
+; In practice OSBYTE &98 is probably not used to query the state of the printer buffer very
+; much, and I believe this code will work correctly and emulate the appropriate OS behaviour in
+; all OSMODEs for all buffers other than the printer buffer.
 .osbyte98Handler
     JSR jmpParentBYTEV:BCS returnFromBYTEV ; branch if buffer empty
     ; SFTODO: Why is this taking more care than usual (PRVEN or ReadPrivateRam8300X) to
