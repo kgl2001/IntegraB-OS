@@ -9761,12 +9761,15 @@ ScreenStart = &3000
     LDA L0107,X:ORA #flagC:STA L0107,X ; modify stacked flags so C is set
     JMP RestoreRamselClearPrvenReturnFromVectorHandler ; SQUASH: BNE ; always branch
 
-; ENHANCE: The following code returns the character in Y for examine and A for remove, which is
+; IBOS versions before 1.23 return the character in Y for examine and A for remove, which is
 ; the wrong way round. This works in practice for the all-important case of the OS removing
 ; characters from the printer buffer to send to the printer because OS 1.20 expects the
-; character to be in A for remove. It's pretty unlikely any non-OS code is ever going to call
-; REMV on the printer buffer, but ideally we would return the character in both A and Y for
-; both examine and remove. See https://stardot.org.uk/forums/viewtopic.php?f=54&p=319880.
+; character to be in A for remove. See
+; https://stardot.org.uk/forums/viewtopic.php?f=54&p=319880 for discussion on this.
+;
+; The pre-1.23 behaviour did cause some problems in practice, as discussed here:
+; https://stardot.org.uk/forums/viewtopic.php?f=3&t=22868&start=990
+; 1.23 returns the character in A and Y for both examine and remove to be safe.
 
 .PrintBufferNotEmpty
     LDA L0107,X:AND_NOT flagC:STA L0107,X ; modify stacked flags so C is clear
