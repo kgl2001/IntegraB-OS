@@ -530,7 +530,7 @@ L0406       = &0406
 L0700       = &0700
 L0880       = &0880
 ; The OS printer buffer is stolen for use by our code stub; we take over printer
-; buffering responsibilities using our private RAM so the OS won't touch this
+; buffering responsibilities using our private RAM so the OS won't touch this
 ; memory.
 osPrintBuf  = &0880 ; &0880
 osPrintBufSize = &40
@@ -913,6 +913,8 @@ ELIF IBOS_VERSION == 121
     EQUS "1.21" ; version string
 ELIF IBOS_VERSION == 122
     EQUS "1.22" ; version string
+ELIF IBOS_VERSION == 123
+    EQUS "1.23" ; version string
 ENDIF
 .Copyright
     EQUS 0, "(C) "
@@ -926,8 +928,10 @@ ELSE
 .ComputechEnd
 IF IBOS_VERSION == 121
     EQUS " 2019", 0
-ELSE
+ELIF IBOS_VERSION == 122
     EQUS " 2021", 0
+ELSE
+    EQUS " 2022", 0
 ENDIF
 ENDIF
 
@@ -9772,6 +9776,9 @@ ScreenStart = &3000
     LDA L0107,X:AND #flagV:BNE ExamineBuffer ; test V in stacked flags from caller
     ; V was cleared by the caller, so we're removing a character from the buffer.
     PLA:STA L0108,X ; overwrite stacked A with character read from our buffer
+IF IBOS_VERSION >= 123
+    STA L0102,X ; overwrite stacked Y with character read from our buffer
+ENDIF
     JSR AdvancePrintBufferReadPtr
     JSR IncrementPrintBufferFree
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
@@ -9779,6 +9786,9 @@ ScreenStart = &3000
 .ExamineBuffer
     ; V was set by the caller, so we're just examining the buffer without removing anything.
     PLA:STA L0102,X ; overwrite stacked Y with character peeked from our buffer
+IF IBOS_VERSION >= 123
+    STA L0108,X ; overwrite stacked A with character peeked from our buffer
+ENDIF
     FALLTHROUGH_TO RestoreRamselClearPrvenReturnFromVectorHandler
 }
 
@@ -10071,6 +10081,8 @@ ELIF IBOS_VERSION == 121
     SAVE "IBOS-121.rom", start, end
 ELIF IBOS_VERSION == 122
     SAVE "IBOS-122.rom", start, end
+ELIF IBOS_VERSION == 123
+    SAVE "IBOS-123.rom", start, end
 ELSE
     ERROR "Unknown IBOS_VERSION"
 ENDIF

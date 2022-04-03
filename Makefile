@@ -1,4 +1,4 @@
-all: IBOS-120.rom IBOS-120-b-em.rom IBOS-121.rom IBOS-122.rom tags TAGS
+all: IBOS-120.rom IBOS-120-b-em.rom IBOS-121.rom IBOS-122.rom IBOS-123.rom tags TAGS
 
 tags TAGS: IBOS.asm
 	python beebasm-tags.py IBOS.asm
@@ -25,5 +25,7 @@ IBOS-121.rom: IBOS-121.asm IBOS.asm Makefile
 IBOS-122.rom: IBOS-122.asm IBOS.asm Makefile
 	beebasm -w -v -i IBOS-122.asm > IBOS-122.lst
 
+IBOS-123.rom: IBOS-123.asm IBOS.asm Makefile
+	beebasm -w -v -i IBOS-123.asm > IBOS-123.lst
 clean:
-	/bin/rm -f IBOS-120.lst IBOS-120.rom IBOS-120-variant.rom IBOS-120-b-em.lst IBOS-120-b-em.rom IBOS-120-b-em-variant.rom IBOS-121.lst IBOS-121.rom IBOS-121-variant.rom tags TAGS
+	/bin/rm -f IBOS-120.lst IBOS-120.rom IBOS-120-variant.rom IBOS-120-b-em.lst IBOS-120-b-em.rom IBOS-120-b-em-variant.rom IBOS-121.lst IBOS-121.rom IBOS-121-variant.rom IBOS-122.lst IBOS-122.rom IBOS-123.rom IBOS-123.lst tags TAGS
