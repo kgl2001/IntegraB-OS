@@ -21,6 +21,13 @@ IF IBOS_VERSION != 120
     IBOS120_VARIANT = 0
 ENDIF
 
+; This code uses macro names which start with 6502 mnemonics, which beebasm only allows if the
+; -w option is used. Deliberately generate an error ASAP if this is the case with a comment
+; on the problematic line to tell the user how to fix the problem.
+MACRO INCTEST
+ENDMACRO
+INCTEST ; if this fails to assemble, please give beebasm the "-w" option
+
 ; SFTODO: The following constants and associated comments are a bit randomly ordered, this should be tidied up eventually.
 ; For example, it might help to move the comments about RTC register use nearer to the private memory allocations, as
 ; some of those are copies of each other.
