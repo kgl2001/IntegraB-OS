@@ -366,6 +366,18 @@ serviceAboutToEnterLanguage = &2A
 serviceUpdateEnded = &49 ; New IBOS service call to tell sideways ROMs about RTC update cycles
 serviceTubePostInitialisation = &FE
 
+; The following constants define stack addresses for values which are on the stack inside
+; VectorEntry; see the comment there for more details. These are typically used in code of the
+; form "TSX:LDA VectorEntryStackedFoo+n,X", where n is a small constant offset to allow for
+; additional values pushed onto the stack between VectorEntry and the point at which the LDA is
+; executing.
+; SFTODO: It might be worth doing this for other stack accesses too, e.g. the service call
+; handler stacked A/X/Y/flags.
+VectorEntryStackedY     = &101
+VectorEntryStackedX     = &102
+VectorEntryStackedFlags = &106
+VectorEntryStackedA     = &107
+
 INSVH       = &022B
 INSVL       = &022A
 KEYVH       = &0229
@@ -9147,11 +9159,11 @@ ASSERT parentVectorTbl2End <= osPrintBuf + osPrintBufSize
 .RestoreOrigVectorRegs
 {
     TSX
-    LDA L0108,X:PHA ; get original flags
-    LDA L0109,X:PHA ; get original A
-    LDA L0104,X:PHA ; get original X
-    ; SQUASH: We could save a byte here by doing LDY L0103,X directly.
-    LDA L0103,X:TAY ; get original Y
+    LDA VectorEntryStackedFlags+2,X:PHA
+    LDA VectorEntryStackedA+2,X:PHA
+    LDA VectorEntryStackedX+2,X:PHA
+    ; SQUASH: We could save a byte here by doing LDY VectorEntryStackedY+2,X directly.
+    LDA VectorEntryStackedY+2,X:TAY ; get original Y
     PLA:TAX
     PLA
     PLP
@@ -9171,10 +9183,10 @@ ASSERT parentVectorTbl2End <= osPrintBuf + osPrintBufSize
     ; So at this point the stack is as described in the big comment in VectorEntry but with
     ; everything moved up five bytes (X=S-5, if S is the value of the stack pointer in that
     ; comment).
-    TYA:TSX:STA L0106,X ; overwrite original stacked Y
-    PLA:STA L0107,X ; overwrite original stacked X
-    PLA:STA L010C,X ; overwrite original stacked A
-    PLA:STA L010B,X ; overwrite original stacked flags
+    TYA:TSX:STA VectorEntryStackedY+5,X
+    PLA:STA VectorEntryStackedX+5,X
+    PLA:STA VectorEntryStackedA+5,X
+    PLA:STA VectorEntryStackedFlags+5,X
     RTS
 }
 
@@ -9225,12 +9237,13 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     ;   &108,S  return address from "JSR ramCodeStubCallIBOS" (low)
     ;   &109,S  return address from "JSR ramCodeStubCallIBOS" (high)
     ;   &10A,S  xxx (caller's data; nothing to do with us)
+    ; The VectorEntryStacked* constants correspond to these addresses.
     ;
     ; The low byte of the return address at &108,S will be the address of the JSR
     ; ramCodeStubCallIBOS plus 2. We mask off the low bits (which are sufficient to distinguish
     ; the 7 different callers) and use them to transfer control to the handler for the relevant
     ; vector.
-    TSX:LDA L0108,X:AND #&3F:TAX
+    TSX:LDA L0108,X:AND #&3F:TAX ; SFTODO: add a VectorEntryStacked* constant? prob not if only one use...
     LDA vectorHandlerTbl-1,X:PHA
     LDA vectorHandlerTbl-2,X:PHA
     RTS
@@ -9282,8 +9295,8 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     ; control via RTS, which will add 1. We overwrite the return address from "JSR
     ; ramCodeStubCallIBOS" on the stack.
     SEC
-    LDA parentVectorTbl,Y:SBC #1:STA L0108,X
-    LDA parentVectorTbl+1,Y:SBC #0:STA L0109,X
+    LDA parentVectorTbl,Y:SBC #1:STA L0108,X ; SFTODO: L0108->name+n?
+    LDA parentVectorTbl+1,Y:SBC #0:STA L0109,X ; SFTODO: L0109->name+n?
     PLA:TAY
     PLA:TAX
     RTS
@@ -9721,7 +9734,7 @@ ScreenStart = &3000
 
 .InsvHandler
 {
-    TSX:LDA L0102,X ; get original X=buffer number
+    TSX:LDA VectorEntryStackedX,X ; get original X=buffer number
     CMP #bufNumPrinter:BEQ IsPrinterBuffer
     LDA #ibosINSVIndex:JMP forwardToParentVectorTblEntry
 
@@ -9731,16 +9744,16 @@ ScreenStart = &3000
     TSX
     JSR CheckPrintBufferFull:BCC PrintBufferNotFull
     ; Return to caller with carry set to indicate insertion failed.
-    LDA L0107,X:ORA #flagC:STA L0107,X ; modify stacked flags so C is set
+    LDA VectorEntryStackedFlags+1,X:ORA #flagC:STA VectorEntryStackedFlags+1,X
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
 
 .PrintBufferNotFull
-    LDA L0108,X ; get original A=character to insert
+    LDA VectorEntryStackedA+1,X ; get original A=character to insert
     JSR StaPrintBufferWritePtr
     JSR AdvancePrintBufferWritePtr
     JSR DecrementPrintBufferFree
     ; Return to caller with carry clear to indicate insertion succeeded.
-    TSX:LDA L0107,X:AND_NOT flagC:STA L0107,X ; modify stacked flags so C is clear
+    TSX:LDA VectorEntryStackedFlags+1,X:AND_NOT flagC:STA VectorEntryStackedFlags+1,X
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
 }
 
@@ -9748,7 +9761,7 @@ ScreenStart = &3000
 ; InsvHandler/RemvHandler/CnpvHandler to save space?
 .RemvHandler
 {
-    TSX:LDA L0102,X ; get original X=buffernumber
+    TSX:LDA VectorEntryStackedX,X ; get original X=buffernumber
     CMP #bufNumPrinter:BEQ IsPrinterBuffer
     LDA #ibosREMVIndex:JMP forwardToParentVectorTblEntry
 			
@@ -9758,7 +9771,7 @@ ScreenStart = &3000
     TSX
     JSR CheckPrintBufferEmpty:BCC PrintBufferNotEmpty
     ; SQUASH: Some similarity with InsvHandler here, could we factor out common code?
-    LDA L0107,X:ORA #flagC:STA L0107,X ; modify stacked flags so C is set
+    LDA VectorEntryStackedFlags+1,X:ORA #flagC:STA VectorEntryStackedFlags+1,X
     JMP RestoreRamselClearPrvenReturnFromVectorHandler ; SQUASH: BNE ; always branch
 
 ; IBOS versions before 1.23 return the character in Y for examine and A for remove, which is
@@ -9772,15 +9785,15 @@ ScreenStart = &3000
 ; 1.23 returns the character in A and Y for both examine and remove to be safe.
 
 .PrintBufferNotEmpty
-    LDA L0107,X:AND_NOT flagC:STA L0107,X ; modify stacked flags so C is clear
+    LDA VectorEntryStackedFlags+1,X:AND_NOT flagC:STA VectorEntryStackedFlags+1,X
     JSR LdaPrintBufferReadPtr
     TSX
-    PHA ; note this doesn't affect X so our L01xx,X references stay the same
-    LDA L0107,X:AND #flagV:BNE ExamineBuffer ; test V in stacked flags from caller
+    PHA ; note this doesn't affect X so our stack,X references stay the same
+    LDA VectorEntryStackedFlags+1,X:AND #flagV:BNE ExamineBuffer
     ; V was cleared by the caller, so we're removing a character from the buffer.
-    PLA:STA L0108,X ; overwrite stacked A with character read from our buffer
+    PLA:STA VectorEntryStackedA+1,X ; overwrite stacked A with character read from our buffer
 IF IBOS_VERSION >= 123
-    STA L0102,X ; overwrite stacked Y with character read from our buffer
+    STA VectorEntryStackedY+1,X ; overwrite stacked Y with character read from our buffer
 ENDIF
     JSR AdvancePrintBufferReadPtr
     JSR IncrementPrintBufferFree
@@ -9788,9 +9801,9 @@ ENDIF
 
 .ExamineBuffer
     ; V was set by the caller, so we're just examining the buffer without removing anything.
-    PLA:STA L0102,X ; overwrite stacked Y with character peeked from our buffer
+    PLA:STA VectorEntryStackedY+1,X ; overwrite stacked Y with character peeked from our buffer
 IF IBOS_VERSION >= 123
-    STA L0108,X ; overwrite stacked A with character peeked from our buffer
+    STA VectorEntryStackedA+1,X ; overwrite stacked A with character peeked from our buffer
 ENDIF
     FALLTHROUGH_TO RestoreRamselClearPrvenReturnFromVectorHandler
 }
@@ -9807,14 +9820,14 @@ ENDIF
 
 .CnpvHandler
 {
-    TSX:LDA L0102,X ; get original X=buffer number
+    TSX:LDA VectorEntryStackedX,X ; get original X=buffer number
     CMP #bufNumPrinter:BEQ IsPrinterBuffer
     LDA #ibosCNPVIndex:JMP forwardToParentVectorTblEntry
 
 .IsPrinterBuffer
     LDA ramselCopy:PHA
     PRVEN
-    TSX:LDA L0107,X:AND #flagV:BEQ Count ; test V in stacked flags from caller
+    TSX:LDA VectorEntryStackedFlags+1,X:AND #flagV:BEQ Count
     ; We're purging the buffer.
     LDX #prvPrintBufferPurgeOption - prv83:JSR ReadPrivateRam8300X:BEQ PurgeOff
     JSR PurgePrintBuffer
@@ -9822,11 +9835,11 @@ ENDIF
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
 
 .Count
-    LDA L0107,X:AND #flagC:BNE CountSpaceLeft ; test C in stacked flags from caller
+    LDA VectorEntryStackedFlags+1,X:AND #flagC:BNE CountSpaceLeft
     ; We're counting the entries in the buffer; return them as 16-bit value YX.
     JSR GetPrintBufferUsed
-    TXA:TSX:STA L0103,X ; overwrite stacked X, so we return A to caller in X
-    TYA:STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
+    TXA:TSX:STA VectorEntryStackedX+1,X ; overwrite stacked X, so we return A to caller in X
+    TYA:STA VectorEntryStackedY+1,X ; overwrite stacked Y, so we return A to caller in Y
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
 
 .CountSpaceLeft
@@ -9834,8 +9847,8 @@ ENDIF
     JSR GetPrintBufferFree
     ; SQUASH: Following code is identical to fragment just above, we could JMP to it to avoid
     ; this duplication.
-    TXA:TSX:STA L0103,X ; overwrite stacked X, so we return A to caller in X
-    TYA:STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
+    TXA:TSX:STA VectorEntryStackedX+1,X ; overwrite stacked X, so we return A to caller in X
+    TYA:STA VectorEntryStackedY+1,X ; overwrite stacked Y, so we return A to caller in Y
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
 }
 
