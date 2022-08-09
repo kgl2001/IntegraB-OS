@@ -2046,7 +2046,7 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
     PHA ; SQUASH: move this into SwitchOutPrivateRAM
     JMP SwitchOutPrivateRAM
 
-; Page in private RAM temporarily and do LDA prv83,X. A, X and Y are preserved, flags reflect A
+; Page in private RAM temporarily and do LDA prv83,X. X and Y are preserved, flags reflect A
 ; on exit.
 .^ReadPrivateRam8300X
     PHP:SEI
