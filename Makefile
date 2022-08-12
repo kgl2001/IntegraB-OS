@@ -1,4 +1,4 @@
-all: IBOS-120.rom IBOS-120-b-em.rom IBOS-121.rom IBOS-122.rom IBOS-123.rom tags TAGS
+all: IBOS-120.rom IBOS-120-b-em.rom IBOS-121.rom IBOS-122.rom IBOS-123.rom IBOS-124.rom tags TAGS
 
 tags TAGS: IBOS.asm
 	python beebasm-tags.py IBOS.asm
@@ -34,5 +34,11 @@ IBOS-123.rom: IBOS-123.asm IBOS.asm Makefile
 	@# make doesn't (correctly, but unhelpfully) say there's nothing to do.
 	@md5sum IBOS-123.rom | grep -q 9ad2a73e45e3f272f016b25149af31e3 || (echo "New IBOS 1.23 ROM is not identical to original"; mv IBOS-123.rom IBOS-123-variant.rom; exit 1)
 
+IBOS-124.rom: IBOS-124.asm IBOS.asm Makefile
+	beebasm -w -v -i IBOS-124.asm > IBOS-124.lst
+	@# We rename the output if it's not identical so that doing a subsequent
+	@# make doesn't (correctly, but unhelpfully) say there's nothing to do.
+	@md5sum IBOS-124.rom | grep -q fd497b0e55cf6c187a9edbd201364c71 || (echo "New IBOS 1.24 ROM is not identical to original"; mv IBOS-124.rom IBOS-124-variant.rom; exit 1)
+
 clean:
-	/bin/rm -f IBOS-120.lst IBOS-120.rom IBOS-120-variant.rom IBOS-120-b-em.lst IBOS-120-b-em.rom IBOS-120-b-em-variant.rom IBOS-121.lst IBOS-121.rom IBOS-121-variant.rom IBOS-122.lst IBOS-122.rom IBOS-123.rom IBOS-123.lst tags TAGS
+	/bin/rm -f IBOS-120.lst IBOS-120.rom IBOS-120-variant.rom IBOS-120-b-em.lst IBOS-120-b-em.rom IBOS-120-b-em-variant.rom IBOS-121.lst IBOS-121.rom IBOS-121-variant.rom IBOS-122.lst IBOS-122.rom IBOS-123.rom IBOS-123.lst IBOS-124.rom IBOS-124.lst tags TAGS

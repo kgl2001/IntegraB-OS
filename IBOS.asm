@@ -73,7 +73,7 @@ INCTEST ; if this fails to assemble, please give beebasm the "-w" option
 ;&18..&1B - Used to store the RAM banks that are assigned to *BUFFER. Up to 4 RAM banks can be assigned. Set to &FF if nothing assigned. 
 ;&2C..&3B - Private RAM Copy of ROM Type
 ;3C - OSMODE ?
-
+;49 - prvSetPrinterTypePending
 
 ;RTC Clock Registers
 ;The RTC is a Harris CDP6818; the datasheet can be downloaded from https://datasheetspdf.com/pdf-file/546796/HarrisSemiconductor/CDP6818/1
@@ -754,6 +754,8 @@ prvRtcUpdateEndedOptions = prv83 + &44
 	prvRtcUpdateEndedOptionsGenerateUserEvent = 1<<0
 	prvRtcUpdateEndedOptionsGenerateServiceCall = 1<<1
 
+prvSetPrinterTypePending = prv83 + &49 ; Flag used to ensure *FX5 is only set on power up or hard break.
+
 prvIbosBankNumber = prv83 + &00 ; SFTODO: not sure about this, but service01 seems to set this
 prvPseudoBankNumbers = prv83 + &08 ; 4 bytes, absolute RAM bank number for the Pseudo RAM banks W, X, Y, Z; SFTODO: may be &FF indicating "no such bank" if SRSET is used?
 prvSFTODOFOURBANKS = prv83 + &0C ; 4 bytes, SFTODO: something to do with the pseudo RAM banks I think
@@ -934,6 +936,8 @@ ELIF IBOS_VERSION == 122
     EQUS "1.22" ; version string
 ELIF IBOS_VERSION == 123
     EQUS "1.23" ; version string
+ELIF IBOS_VERSION == 124
+    EQUS "1.24" ; version string
 ENDIF
 .Copyright
     EQUS 0, "(C) "
@@ -2222,13 +2226,13 @@ InputBufSize = 256
     LDX #&32
 .ZeroUserRegLoop
     LDA #0:CPX #userRegLangFile:BNE NotLangFile
-IF IBOS_VERSION == 120
-    ; We default LANG and FILE to IBOS (i.e. the current bank); this isn't all that useful, but
-    ; it will at least give consistent results and offer a * prompt where the user can change
-    ; this.
+IF IBOS_VERSION == 120 OR IBOS_VERSION >= 124
+    ; We default LANG and FILE to IBOS (i.e. the current bank); this isn't all that useful for FILE but
+    ; it will give consistent results, and with IBOS as the current language we will enter the NLE so
+    ; the user can issue *CONFIGURE commands.
     LDA romselCopy:ASL A:ASL A:ASL A:ASL A:ORA romselCopy
 ELSE
-    ; In IBOS 1.21, default LANG to &E and FILE to &C.
+    ; Default LANG to &E and FILE to &C.
     ; SQUASH: All but the last LDA instruction are redundant.
     LDA romselCopy:ASL A:ASL A:ASL A:ASL A:LDA #&EC
 ENDIF
@@ -3891,6 +3895,15 @@ Tmp = TransientZP + 6
     LDA XKEYVBank:ORA #romselMemsel:STA XKEYVBank
 .NoGenie
 
+IF IBOS_VERSION >= 124
+    ; This code is to set *FX5 based of the values stored in Private RAM.
+     LDX #prvSetPrinterTypePending - prv83:JSR ReadPrivateRam8300X:BEQ LeavePrinterTypeAlone
+     LDA #prvOff:JSR WritePrivateRam8300X
+     LDX #userRegTubeBaudPrinter:JSR ReadUserReg
+     JSR LsrA5:TAX:LDA #osbyteSetPrinterType:JSR OSBYTE
+.LeavePrinterTypeAlone
+ENDIF
+
     ; SFTODO: Why set SQWE here? Is this meaningful? Is there some hardware mechanism which
     ; will force SQWE *off* on reset which thus allows it to be abused here as a "has service
     ; call 3 been issued yet?" flag???? See service10 for a check of SQWE...
@@ -4030,6 +4043,12 @@ ENDIF
     LDX #userRegPrvPrintBufferStart:JSR ReadUserReg
     LDX #prvPrvPrintBufferStart-prv83:JSR WritePrivateRam8300X
     LDX lastBreakType:BEQ SoftReset
+
+IF IBOS_VERSION >= 124
+    ASSERT prvSetPrinterTypePending - prv83 <> 0
+    LDX #prvSetPrinterTypePending - prv83:TXA:JSR WritePrivateRam8300X
+ENDIF
+
     LDX #userRegOsModeShx:JSR ReadUserReg
     PHA
     AND #7:LDX #prvOsMode - prv83:JSR WritePrivateRam8300X
@@ -4089,7 +4108,11 @@ ENDIF
     AND #&07:CLC:ADC #1 ; mask off baud rate bits and add 1 to convert to 1-8 range
     PHA:TAX:LDA #osbyteSetSerialReceiveRate:JSR OSBYTE
     PLA:TAX:LDA #osbyteSetSerialTransmitRate:JSR OSBYTE
-    PLA:JSR LsrA3:TAX:LDA #osbyteSetPrinterType:JSR OSBYTE
+    PLA
+    
+IF IBOS_VERSION < 124
+    JSR LsrA3:TAX:LDA #osbyteSetPrinterType:JSR OSBYTE
+ENDIF
 
     LDX #userRegFdriveCaps:JSR ReadUserReg:PHA
 
@@ -4136,6 +4159,11 @@ ENDIF
 .ExitServiceCallIndirect
     JMP ExitServiceCall
 }
+
+IF IBOS_VERSION >= 124
+.LsrA5
+    LSR A
+ENDIF
 
 ; SQUASH: LsrA4 has only one caller (but there are places where it should be used and isn't).
 .LsrA4
@@ -9789,7 +9817,7 @@ ScreenStart = &3000
 ;
 ; The pre-1.23 behaviour did cause some problems in practice, as discussed here:
 ; https://stardot.org.uk/forums/viewtopic.php?f=3&t=22868&start=990
-; 1.23 returns the character in A and Y for both examine and remove to be safe.
+; 1.23+ returns the character in A and Y for both examine and remove to be safe.
 
 .PrintBufferNotEmpty
     LDA VectorEntryStackedFlags+1,X:AND_NOT flagC:STA VectorEntryStackedFlags+1,X
@@ -10106,6 +10134,8 @@ ELIF IBOS_VERSION == 122
     SAVE "IBOS-122.rom", start, end
 ELIF IBOS_VERSION == 123
     SAVE "IBOS-123.rom", start, end
+ELIF IBOS_VERSION == 124
+    SAVE "IBOS-124.rom", start, end
 ELSE
     ERROR "Unknown IBOS_VERSION"
 ENDIF
