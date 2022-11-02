@@ -6912,9 +6912,9 @@ TmpCentury = prvTmp2
     LDA prvDateYear:STA TmpYear
     LDA prvDateCentury:STA TmpCentury
     ; Convert the supplied date into one where the year starts in March; prvTmp4 is the month
-    ; number in this adjusted calendar, with 1=March and 12=February. SFTODO: I am guessing,
-    ; but I suspect this is done as it makes it easier to have the leap day occur right at the
-    ; end of the year.
+    ; number in this adjusted calendar, with 1=March and 12=February, and the year/century are
+    ; in Tmp{Year,Century}. SFTODO: I am guessing, but I suspect this is done as it makes it
+    ; easier to have the leap day occur right at the end of the year.
     SEC:LDA prvDateMonth:SBC #2:STA prvTmp4
     BMI JanuaryOrFebruary ; branch if prvDateMonth is January
     CMP #1:BCS DateAdjustedForMarchBasedYear ; branch if March or later
@@ -6933,11 +6933,10 @@ TmpCentury = prvTmp2
     SEC
     LDA prvDC    :SBC #lo(19):STA prvBA
     LDA prvDC + 1:SBC #hi(19):STA prvBA + 1
-; SFTODO: So BA=prvTmp4*130-19??
+; SFTODO: So BA=prvTmp4*130*2-19??
     LDA #100:STA prvC
     JSR SFTODOPSEUDODIV ; SFTODO: Don't really know what's going on here yet, but I think this *could* invoke the weird prvB>=prvC condition in SFTODOPSEUDODIV.
     CLC:LDA prvD:ADC prvDateDayOfMonth:ADC TmpYear
-.LA97E
     STA prvA
     LDA TmpYear:LSR A:LSR A:CLC:ADC prvA:STA prvA
     LDA TmpCentury:LSR A:LSR A
