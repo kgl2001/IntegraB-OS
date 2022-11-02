@@ -715,6 +715,7 @@ prv2DateDayOfWeek = prv82 + &47
 prvTmp6 = prv82 + &48
 prvA = prv82 + &4A ; SFTODO: tweak name!
 prvB = prv82 + &4B ; SFTODO: tweak name!
+prvBA = prvA ; SFTODO: prvA and prvB together treated as a 16-bit value with high byte in prvB
 prvC = prv82 + &4C ; SFTODO: tweak name!
 prvD = prv82 + &4D ; SFTODO: tweak name!
 prvDC = prvC ; SFTODO: prvC and prvD together treated as a 16-bit value with high byte in prvD
@@ -6528,21 +6529,19 @@ SFTODOTMP2 = L00AB
     RTS
 }
 
-; SFTODO: Ignoring the setup, the loop looks very much to me like division of prvA=prvD by prvC, with the result in prvD and the remainder in A. But the setup code says that if prvB (which is otherwise unused)>=prvC, we return with prvD=result=prvA and "remainder" prvB
+; SFTODO: Divide 16-bit value at prvBA by the 8-bit value at prvC, returning the result in prvD and the remainder in A. *Except* that if prvB>=prvC on entry, we return with prvD set to prvA and A set to prvB. I am not really sure about this, I think this might be detecting the case where the result won't fit in 8 bits, but even if it is, I don't see why those return values are helpful.
 .SFTODOPSEUDODIV
 {
     XASSERT_USE_PRV1
     LDX #8 ; 8-bit division
     ; If prvB>=prvC, return with prvD=prvA, A=prvB.
-    LDA prvA:STA prvD
-    LDA prvB
+    LDA prvBA:STA prvD
+    LDA prvBA + 1
     CMP prvC:BCS Rts ; SFTODO: branch if prvB>=prvC
     ; SFTODO: Set prvD=prvA DIV prvC, A=prvA MOD prvC
 .Loop
-    ROL prvD
-    ROL A
-    CMP prvC
-    BCC NeedBorrow
+    ROL prvD:ROL A
+    CMP prvC:BCC NeedBorrow
     SBC prvC
 .NeedBorrow
     DEX:BNE Loop
@@ -6937,15 +6936,12 @@ TmpCentury = prvTmp2
     JSR mul8 ; DC=A*B
     ASL prvDC:ROL prvDC + 1
     SEC
-    LDA prvDC:SBC #19:STA prvA
-    LDA prvDC + 1:SBC #0:STA prvB
+    LDA prvDC    :SBC #lo(19):STA prvBA
+    LDA prvDC + 1:SBC #hi(19):STA prvBA + 1
 ; SFTODO: So BA=prvTmp4*130-19??
-    LDA #100:STA prvDC
+    LDA #100:STA prvC
     JSR SFTODOPSEUDODIV ; SFTODO: Don't really know what's going on here yet, but I think this *could* invoke the weird prvB>=prvC condition in SFTODOPSEUDODIV.
-    CLC
-    LDA prvDC + 1
-    ADC prvDateDayOfMonth
-    ADC TmpYear
+    CLC:LDA prvD:ADC prvDateDayOfMonth:ADC TmpYear
 .LA97E
     STA prvA
     LDA TmpYear:LSR A:LSR A:CLC:ADC prvA:STA prvA
