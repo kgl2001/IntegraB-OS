@@ -1384,6 +1384,8 @@ ENDIF
     LDA #vduCr:JSR EmitDynamicSyntaxCharacter
 
 IF IBOS_VERSION <= 124
+; This label is in the wrong place and as a result the error message is not always emitted
+; correctly when we're entered with V set.
 .DontEmitParameters
 ENDIF
     PLA:STA transientTblPtr:PLA:STA transientTblPtr + 1
@@ -1670,6 +1672,9 @@ TmpCommandIndex = &AC
     JSR CmdRef
     SEC
 IF IBOS_VERSION >= 125
+    ; Earlier versions of IBOS just used whatever happened to be in V - often the result of
+    ; ConvertIntegerDefaultDecimal or similar - which meant that whether the parameters were
+    ; included in the error message was a bit arbitrary. We always want to show them.
     CLV
 ENDIF
     JMP DynamicSyntaxGenerationForAUsingYX
@@ -1982,6 +1987,8 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
     RTS
 .NothingParsed
 IF IBOS_VERSION <= 124
+    ; Beeping here is a bit odd (* command parsing errors don't normally beep), and as
+    ; bugs/quirks in the error generation are fixed in 1.25 we don't really need it any more.
     LDA #vduBell:JSR OSWRCH
 ENDIF
     LDA #0
@@ -6349,6 +6356,7 @@ SFTODOTMP2 = L00AB
     JMP PrvDis
 }
 
+; SQUASH: These commands may not actually be useful and could potentially be removed.
 {
 ; SFTODO: This little fragment of code is only called once via JMP, can't it just be moved to avoid the JMP (and improve readability)?
 .^LA4FE
