@@ -2234,7 +2234,7 @@ InputBufSize = 256
     RTS
 
 .AcknowledgeEscapeAndGenerateErrorIndirect
-.L89BF      JMP AcknowledgeEscapeAndGenerateError
+    JMP AcknowledgeEscapeAndGenerateError
 }
 
 ;Start of full reset
