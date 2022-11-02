@@ -6952,8 +6952,8 @@ TmpCentury = prvTmp2
     BCS LA9A5
     SEC:SBC #1:EOR #&FF
 .LA9A5
-    STA prvA
-    LDA #0:STA prvB
+    STA prvBA
+    LDA #0:STA prvBA + 1
     LDA #7:STA prvC
     JSR SFTODOPSEUDODIV ; SFTODO: HERE WE WILL DIVIDE WITHOUT ANY WEIRDNESS
     PLP
@@ -7022,8 +7022,8 @@ daysInMonth = transientDateSFTODO2
     RTS
 .notDone
     ADC prvDateDayOfWeek
-    SEC:SBC #2:STA prvA
-    LDA #0:STA prvB
+    SEC:SBC #2:STA prvBA
+    LDA #0:STA prvBA + 1
     LDA #7:STA prvC
     JSR SFTODOPSEUDODIV ; SFTODO: WILL ALWAYS DIVIDE WITH NO WEIRDNESS
     STA prvA ; SFTODO: Ignoring SFTODOPSEUDODIV quirk with prvB, we are setting A = (prvDateDayOfWeek + 2) MOD 7 - though remember we adjusted prvDateDayOfWeek above for currently unclear reasons (I suspect they're something to do with blanks in the first column of dates, ish)
@@ -7930,8 +7930,8 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     RTS
 			
 .LB086
-    STA prvA
-    LDA #0:STA prvB
+    STA prvBA
+    LDA #0:STA prvBA + 1
     LDA #7:STA prvC
     JSR SFTODOPSEUDODIV ; SFTODO: WILL ALWAYS DIVIDE WITH NO WEIRDNESS
     TAX
@@ -8102,8 +8102,8 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .InterpretParsedYear
 {
     XASSERT_USE_PRV1
-    LDA ConvertIntegerResult:STA prvA
-    LDA ConvertIntegerResult + 1:STA prvB
+    LDA ConvertIntegerResult    :STA prvBA
+    LDA ConvertIntegerResult + 1:STA prvBA + 1
     LDA #100:STA prvC
     JSR SFTODOPSEUDODIV ; SFTODO: IN PRACTICE THIS WILL ALWAYS DO DIVISION WITH NO WEIRDNESS (9999 WOULD GIVE PRVB=39<100)
     STA prvDateYear
