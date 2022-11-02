@@ -1354,8 +1354,8 @@ LastEntry = &A9
 ;     C clear => write output to screen (vduTab jumps to a fixed column for alignment)
 ;                V clear => prefix with two leading spaces
 ;                V set => no leading spaces
-;     V set => don't emit parameters
-;     V clear => emit parameters
+;     V set => don't emit parameters or carriage return
+;     V clear => emit parameters then carriage return
 .DynamicSyntaxGenerationForAUsingYX
 {
     PHA
