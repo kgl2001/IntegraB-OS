@@ -6901,7 +6901,7 @@ TmpCentury = prvTmp2
 
 ; As CalculateDayOfWeekInA, except we also update prvDateDayOfWeek with the calculated day of the week, and set SFTODO:PROBABLY b3 of prvDateSFTODOQ if this changes prvDateDayOfWeek from its previous value.
 .^CalculateDayOfWeekInPrvDateDayOfWeek
-    CLC:BCC Common ; always branch
+    CLC:BCC Common ; always branch SQUASH: "BCC Common"->"LDA #" opcode to skip the following SEC?
 ; SFTODO: Use a magic formula to calculate the day of the week for prvDate{Century,Year,Month,DayOfMonth}; I don't know how this works, but presumably it does.
 ; We return with the calculated day of the week in A.
 .^CalculateDayOfWeekInA
