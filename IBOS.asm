@@ -1379,16 +1379,8 @@ LastEntry = &A9
     INY:LDA (transientTblPtr),Y:TAY
     PLA
     JSR EmitEntryAFromTableYX
-IF IBOS_VERSION >= 125
-.DontEmitParameters
-ENDIF
     LDA #vduCr:JSR EmitDynamicSyntaxCharacter
-
-IF IBOS_VERSION <= 124
-; This label is in the wrong place and as a result the error message is not always emitted
-; correctly when we're entered with V set.
 .DontEmitParameters
-ENDIF
     PLA:STA transientTblPtr:PLA:STA transientTblPtr + 1
     PLA
 .^rts
