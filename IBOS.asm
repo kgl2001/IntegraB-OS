@@ -6458,6 +6458,7 @@ SFTODOTMP2 = L00AB
     LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeAt:BNE SoftReset ; SFTODO: Rename label given use here?
     ; The last break wasn't a soft reset and the "@" key is held down, which will trigger a
     ; full reset.
+    ; SQUASH: If we use X instead of A here, we could replace "LDA #&FF" with DEX to save a byte.
     LDA #0:STA breakInterceptJmp ; cancel any break intercept which might have been set up
     LDA #&FF:STA FullResetFlag ; record that a full reset is in progress
     ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
