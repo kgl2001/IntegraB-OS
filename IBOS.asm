@@ -6911,18 +6911,21 @@ TmpCentury = prvTmp2
     PHP
     LDA prvDateYear:STA TmpYear
     LDA prvDateCentury:STA TmpCentury
-    ; SFTODO: We seem to be decrementing the date by one month here, there is a general "if this goes negative, borrow from the next highest unit" quality. I'm not entirely clear why we start off with SBC #2, maybe we are decrementing by two months, or maybe we are switching to some kind of start-in-March system, complete guesswork in that respect.
+    ; Convert the supplied date into one where the year starts in March; prvTmp4 is the month
+    ; number in this adjusted calendar, with 1=March and 12=February. SFTODO: I am guessing,
+    ; but I suspect this is done as it makes it easier to have the leap day occur right at the
+    ; end of the year.
     SEC:LDA prvDateMonth:SBC #2:STA prvTmp4
-    BMI JanuaryOrFebruary ; branch is prvDateMonth is January
-    CMP #1:BCS DecrementDone ; branch if March or later
+    BMI JanuaryOrFebruary ; branch if prvDateMonth is January
+    CMP #1:BCS DateAdjustedForMarchBasedYear ; branch if March or later
 .JanuaryOrFebruary
     CLC:ADC #12:STA prvTmp4 ; prvTmp4 = prvDateMonth + 10
-    DEC TmpYear:BPL DecrementDone ; branch if wasn't year 0
-    CLC:LDA TmpYear:ADC #100:STA TmpYear ; SQUASH: Just do "LDA #99"?
+    DEC TmpYear:BPL DateAdjustedForMarchBasedYear ; branch if wasn't year 0
+    CLC:LDA TmpYear:ADC #100:STA TmpYear ; SQUASH: Just do "LDA #99:STA TmpYear"?
     ; SQUASH: Is the following branch always taken? Don't we really only support 19xx/20xx dates?
-    DEC TmpCentury:BPL DecrementDone
+    DEC TmpCentury:BPL DateAdjustedForMarchBasedYear
     CLC:LDA TmpCentury:ADC #100:STA TmpCentury
-.DecrementDone ; SFTODO: rename to "noBorrow"?
+.DateAdjustedForMarchBasedYear
     LDA prvTmp4:STA prvA
     LDA #130:STA prvB
     JSR mul8 ; DC=A*B
