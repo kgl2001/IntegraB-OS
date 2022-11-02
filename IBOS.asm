@@ -938,6 +938,8 @@ ELIF IBOS_VERSION == 123
     EQUS "1.23" ; version string
 ELIF IBOS_VERSION == 124
     EQUS "1.24" ; version string
+ELIF IBOS_VERSION == 125
+    EQUS "1.25" ; version string
 ENDIF
 .Copyright
     EQUS 0, "(C) "
@@ -1376,9 +1378,14 @@ LastEntry = &A9
     INY:LDA (transientTblPtr),Y:TAY
     PLA
     JSR EmitEntryAFromTableYX
+IF IBOS_VERSION >= 125
+.DontEmitParameters
+ENDIF
     LDA #vduCr:JSR EmitDynamicSyntaxCharacter
 
+IF IBOS_VERSION <= 124
 .DontEmitParameters
+ENDIF
     PLA:STA transientTblPtr:PLA:STA transientTblPtr + 1
     PLA
 .^rts
@@ -1662,6 +1669,9 @@ TmpCommandIndex = &AC
     LDA transientCommandIndex
     JSR CmdRef
     SEC
+IF IBOS_VERSION >= 125
+    CLV
+ENDIF
     JMP DynamicSyntaxGenerationForAUsingYX
 
 ;service entry point
@@ -1971,7 +1981,9 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
     LDA ConvertIntegerResult
     RTS
 .NothingParsed
+IF IBOS_VERSION <= 124
     LDA #vduBell:JSR OSWRCH
+ENDIF
     LDA #0
     LDY OriginalCmdPtrY
     SEC
@@ -3896,7 +3908,7 @@ Tmp = TransientZP + 6
 .NoGenie
 
 IF IBOS_VERSION >= 124
-    ; This code is to set *FX5 based of the values stored in Private RAM.
+    ; This code is to set *FX5 based off the values stored in Private RAM.
      LDX #prvSetPrinterTypePending - prv83:JSR ReadPrivateRam8300X:BEQ LeavePrinterTypeAlone
      LDA #prvOff:JSR WritePrivateRam8300X
      LDX #userRegTubeBaudPrinter:JSR ReadUserReg
@@ -10136,6 +10148,8 @@ ELIF IBOS_VERSION == 123
     SAVE "IBOS-123.rom", start, end
 ELIF IBOS_VERSION == 124
     SAVE "IBOS-124.rom", start, end
+ELIF IBOS_VERSION == 125
+    SAVE "IBOS-125.rom", start, end
 ELSE
     ERROR "Unknown IBOS_VERSION"
 ENDIF
