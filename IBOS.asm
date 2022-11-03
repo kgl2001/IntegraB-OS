@@ -6521,11 +6521,17 @@ SFTODOTMP2 = L00AB
     RTS
 }
 
-; SFTODO: Divide 16-bit value at prvBA by the 8-bit value at prvC, returning the result in prvD and the remainder in A. *Except* that if prvB>=prvC on entry, we return with prvD set to prvA and A set to prvB. I am not really sure about this, I think this might be detecting the case where the result won't fit in 8 bits, but even if it is, I don't see why those return values are helpful.
+; Divide 16-bit value at prvBA by the 8-bit value at prvC, returning the result in prvD and the
+; remainder in A. *Except* that if prvB>=prvC on entry, we return with prvD set to prvA and A
+; set to prvB.
+; SFTODO: I am not really sure about this prvB>=prvC condition; I think this might be detecting
+; the case where the result won't fit in 8 bits, but even if it is, I don't see why those
+; return values are helpful. As it happens I don't believe any div168 caller can
+; actually trigger this behaviour and SQUASH: if that's true, the check could be removed.
 ; SQUASH: Several callers do "LDA #0:STA prvBA + 1" before calling this; we could have an
-; alternate entry point which does that before falling through into SFTODOPSEUDODIV to avoid
+; alternate entry point div88 which does that before falling through into div168 to avoid
 ; duplicating that common code.
-.SFTODOPSEUDODIV
+.div168
 {
     XASSERT_USE_PRV1
     LDX #8 ; 8-bit division
@@ -6938,7 +6944,7 @@ TmpCentury = prvTmp2
     LDA prvDC + 1:SBC #hi(19):STA prvBA + 1
 ; SFTODO: So BA=prvTmp4*130*2-19??
     LDA #100:STA prvC
-    JSR SFTODOPSEUDODIV ; SFTODO: Don't really know what's going on here yet, but I think this *could* invoke the weird prvB>=prvC condition in SFTODOPSEUDODIV.
+    JSR div168 ; SFTODO: I don't think this can invoked the weird prvB>=prvC case, because prvTmp4<=12 and 12*130*2-19=&C1D, so prvB<=&C
     ; SFTODO: (adjusted_month*260-19) DIV 100 does seem, based on checking just the first first months, to give the day-of-week "offset" for different months, i.e. it is *probably* an empirically derived formula which happens to take into account the different month lengths.
     ; SFTODO: I might guess we add TmpYear in the next line because the day-of-week for a given date is (ignoring leap years) moved along one each year
     CLC:LDA prvD:ADC prvDateDayOfMonth:ADC TmpYear
@@ -6954,7 +6960,7 @@ TmpCentury = prvTmp2
     STA prvBA
     LDA #0:STA prvBA + 1
     LDA #daysPerWeek:STA prvC ; SFTODO: DIVIDING BY 7 AND TAKING REMAINDER TO GET DAY OF WEEK - I THINK ALL THE STUFF ABOVE HAS REALLY BEEN ABOUT THE RESULT MODULO 7, AND WE DIDN'T NEED TO CARE OVERLY MUCH ABOUT EVERYTHING ELSE WE ADDED (HENCE WE CAN ADD THE YEAR RATHER THAN "1" TO ACCOUNT FOR DOW ADVANCING BY ONE EACH YEAR)
-    JSR SFTODOPSEUDODIV ; SFTODO: HERE WE WILL DIVIDE WITHOUT ANY WEIRDNESS
+    JSR div168 ; SFTODO: HERE WE WILL DIVIDE WITHOUT ANY WEIRDNESS
     PLP
     BCS LA9C0
     SEC:SBC #1:EOR #&FF
@@ -7024,8 +7030,8 @@ daysInMonth = transientDateSFTODO2
     SEC:SBC #2:STA prvBA
     LDA #0:STA prvBA + 1
     LDA #7:STA prvC
-    JSR SFTODOPSEUDODIV ; SFTODO: WILL ALWAYS DIVIDE WITH NO WEIRDNESS
-    STA prvA ; SFTODO: Ignoring SFTODOPSEUDODIV quirk with prvB, we are setting A = (prvDateDayOfWeek + 2) MOD 7 - though remember we adjusted prvDateDayOfWeek above for currently unclear reasons (I suspect they're something to do with blanks in the first column of dates, ish)
+    JSR div168 ; SFTODO: WILL ALWAYS DIVIDE WITH NO WEIRDNESS
+    STA prvA ; SFTODO: Ignoring div168 quirk with prvB, we are setting A = (prvDateDayOfWeek + 2) MOD 7 - though remember we adjusted prvDateDayOfWeek above for currently unclear reasons (I suspect they're something to do with blanks in the first column of dates, ish)
     LDA #6:STA prvB
     LDA prvD ; SFTODO: stash result of pseudo-division as mul8 will corrupt prvD
     PHA
@@ -7932,7 +7938,7 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     STA prvBA
     LDA #0:STA prvBA + 1
     LDA #7:STA prvC
-    JSR SFTODOPSEUDODIV ; SFTODO: WILL ALWAYS DIVIDE WITH NO WEIRDNESS
+    JSR div168 ; SFTODO: WILL ALWAYS DIVIDE WITH NO WEIRDNESS
     TAX
     INX
     STX prvDateDayOfWeek
@@ -8104,7 +8110,7 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     LDA ConvertIntegerResult    :STA prvBA
     LDA ConvertIntegerResult + 1:STA prvBA + 1
     LDA #100:STA prvC
-    JSR SFTODOPSEUDODIV ; SFTODO: IN PRACTICE THIS WILL ALWAYS DO DIVISION WITH NO WEIRDNESS (9999 WOULD GIVE PRVB=39<100)
+    JSR div168 ; SFTODO: IN PRACTICE THIS WILL ALWAYS DO DIVISION WITH NO WEIRDNESS (9999 WOULD GIVE PRVB=39<100)
     STA prvDateYear
     LDA prvD:BNE CenturyInA
 .^GetUserRegCentury
