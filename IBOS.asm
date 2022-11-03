@@ -713,6 +713,7 @@ prv2DateMonth = prv82 + &45
 prv2DateDayOfMonth = prv82 + &46
 prv2DateDayOfWeek = prv82 + &47
 prvTmp6 = prv82 + &48
+; SFTODO: It might be a good idea to move all the "pseudo-registers" up one and start with B, then we don't have a clash with the CPU's A register and thinking/talking about things gets a little easier. (C still clashes with carry, but that's not a massive problem, ditto D. We could start at E just to be completely unambiguous though.)
 prvA = prv82 + &4A ; SFTODO: tweak name!
 prvB = prv82 + &4B ; SFTODO: tweak name!
 prvBA = prvA ; SFTODO: prvA and prvB together treated as a 16-bit value with high byte in prvB
@@ -6942,30 +6943,29 @@ TmpCentury = prvTmp2
     SEC
     LDA prvDC    :SBC #lo(19):STA prvBA
     LDA prvDC + 1:SBC #hi(19):STA prvBA + 1
-; SFTODO: So BA=prvTmp4*130*2-19??
+    ; We have BA = prvTmp4*130*2-19.
     LDA #100:STA prvC
     JSR div168 ; SFTODO: I don't think this can invoked the weird prvB>=prvC case, because prvTmp4<=12 and 12*130*2-19=&C1D, so prvB<=&C
     ; SFTODO: (adjusted_month*260-19) DIV 100 does seem, based on checking just the first first months, to give the day-of-week "offset" for different months, i.e. it is *probably* an empirically derived formula which happens to take into account the different month lengths.
     ; SFTODO: I might guess we add TmpYear in the next line because the day-of-week for a given date is (ignoring leap years) moved along one each year
-    CLC:LDA prvD:ADC prvDateDayOfMonth:ADC TmpYear
-    STA prvA
-    LDA TmpYear:LSR A:LSR A:CLC:ADC prvA:STA prvA ; SFTODO: something to do with leap years I suspect
-    LDA TmpCentury:LSR A:LSR A
-    CLC:ADC prvA:ASL TmpCentury
-    SEC:SBC TmpCentury
+    ; prvD <= (12*130*2-19) DIV 100 == 31
+    CLC:LDA prvD:ADC prvDateDayOfMonth:ADC TmpYear:STA prvA ; prvA = prvD+prvDateDayOfMonth+TmpYear, which can't overflow as worst case is 31+31+99=161.
+    LDA TmpYear:LSR A:LSR A:CLC:ADC prvA:STA prvA ; prvA += TmpYear/4, which can't overflow as worst case is 161+(99/4)=185.
+    LDA TmpCentury:LSR A:LSR A:CLC:ADC prvA ; A=prvA+(TmpCentury/4), which can't overflow as worst case is 185+(20>>2)=190.
+    ASL TmpCentury:SEC:SBC TmpCentury ; A -= TmpCentury*2.
     PHP
-    BCS LA9A5
-    SEC:SBC #1:EOR #&FF
-.LA9A5
+    BCS NoUnderflow1
+    SEC:SBC #1:EOR #&FF ; SQUASH: we know C is clear, so omit SEC and do SBC #0?
+.NoUnderflow1
     STA prvBA
     LDA #0:STA prvBA + 1
     LDA #daysPerWeek:STA prvC ; SFTODO: DIVIDING BY 7 AND TAKING REMAINDER TO GET DAY OF WEEK - I THINK ALL THE STUFF ABOVE HAS REALLY BEEN ABOUT THE RESULT MODULO 7, AND WE DIDN'T NEED TO CARE OVERLY MUCH ABOUT EVERYTHING ELSE WE ADDED (HENCE WE CAN ADD THE YEAR RATHER THAN "1" TO ACCOUNT FOR DOW ADVANCING BY ONE EACH YEAR)
     JSR div168 ; SFTODO: HERE WE WILL DIVIDE WITHOUT ANY WEIRDNESS
     PLP
-    BCS LA9C0
-    SEC:SBC #1:EOR #&FF
+    BCS NoUnderflow2
+    SEC:SBC #1:EOR #&FF ; SQUASH: as above
     CLC:ADC #7 ; SFTODO: DAYSPERWEEK?
-.LA9C0
+.NoUnderflow2
     CMP #7 ; SFTODO: DAYSPERWEEK?
     BCC LA9C6
     SBC #7 ; SFTODO: DAYSPERWEEK?
