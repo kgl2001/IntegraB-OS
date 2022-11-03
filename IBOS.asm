@@ -6906,6 +6906,7 @@ Tmp = TransientZP + 6
 
 ; SFTODO: the "in" in the next two exported labels is maybe confusing, "storeTo" might be better but even more longwinded - anyway, just a note for when I finally clean up all the label names
 {
+TmpMonth = prvTmp4
 TmpYear = prvTmp3
 TmpCentury = prvTmp2
 
@@ -6921,31 +6922,31 @@ TmpCentury = prvTmp2
     PHP
     LDA prvDateYear:STA TmpYear
     LDA prvDateCentury:STA TmpCentury
-    ; Convert the supplied date into one where the year starts in March; prvTmp4 is the month
+    ; Convert the supplied date into one where the year starts in March; TmpMonth is the month
     ; number in this adjusted calendar, with 1=March and 12=February, and the year/century are
     ; in Tmp{Year,Century}. SFTODO: I am guessing, but I suspect this is done as it makes it
     ; easier to have the leap day occur right at the end of the year.
-    SEC:LDA prvDateMonth:SBC #2:STA prvTmp4
+    SEC:LDA prvDateMonth:SBC #2:STA TmpMonth
     BMI JanuaryOrFebruary ; branch if prvDateMonth is January
     CMP #1:BCS DateAdjustedForMarchBasedYear ; branch if March or later
 .JanuaryOrFebruary
-    CLC:ADC #12:STA prvTmp4 ; prvTmp4 = prvDateMonth + 10
+    CLC:ADC #12:STA TmpMonth ; TmpMonth = prvDateMonth + 10
     DEC TmpYear:BPL DateAdjustedForMarchBasedYear ; branch if wasn't year 0
     CLC:LDA TmpYear:ADC #100:STA TmpYear ; SQUASH: Just do "LDA #99:STA TmpYear"?
     ; SQUASH: Is the following branch always taken? Don't we really only support 19xx/20xx dates?
     DEC TmpCentury:BPL DateAdjustedForMarchBasedYear
     CLC:LDA TmpCentury:ADC #100:STA TmpCentury
 .DateAdjustedForMarchBasedYear
-    LDA prvTmp4:STA prvA
+    LDA TmpMonth:STA prvA
     LDA #130:STA prvB
     JSR mul8 ; DC=A*B
     ASL prvDC:ROL prvDC + 1
     SEC
     LDA prvDC    :SBC #lo(19):STA prvBA
     LDA prvDC + 1:SBC #hi(19):STA prvBA + 1
-    ; We have BA = prvTmp4*130*2-19.
+    ; We have BA = TmpMonth*130*2-19.
     LDA #100:STA prvC
-    JSR div168 ; SFTODO: I don't think this can invoked the weird prvB>=prvC case, because prvTmp4<=12 and 12*130*2-19=&C1D, so prvB<=&C
+    JSR div168 ; SFTODO: I don't think this can invoked the weird prvB>=prvC case, because TmpMonth<=12 and 12*130*2-19=&C1D, so prvB<=&C
     ; SFTODO: (adjusted_month*260-19) DIV 100 does seem, based on checking just the first first months, to give the day-of-week "offset" for different months, i.e. it is *probably* an empirically derived formula which happens to take into account the different month lengths.
     ; SFTODO: I might guess we add TmpYear in the next line because the day-of-week for a given date is (ignoring leap years) moved along one each year
     ; prvD <= (12*130*2-19) DIV 100 == 31
