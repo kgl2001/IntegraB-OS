@@ -7070,16 +7070,12 @@ daysInMonth = transientDateSFTODO2
     SEC:SBC #2:STA prvBA
     LDA #0:STA prvBA + 1
     LDA #7:STA prvC
-    JSR div168 ; SFTODO: WILL ALWAYS DIVIDE WITH NO WEIRDNESS
-    STA prvA ; SFTODO: Ignoring div168 quirk with prvB, we are setting A = (prvDateDayOfWeek + 2) MOD 7 - though remember we adjusted prvDateDayOfWeek above for currently unclear reasons (I suspect they're something to do with blanks in the first column of dates, ish)
+    JSR div168 ; strange "prvB >= prvC" case can't occur
+    STA prvA ; SFTODO: we are setting A = (prvDateDayOfWeek + 2) MOD 7 - though remember we adjusted prvDateDayOfWeek above for currently unclear reasons (I suspect they're something to do with blanks in the first column of dates, ish)
     LDA #6:STA prvB
-    LDA prvD ; SFTODO: stash result of pseudo-division as mul8 will corrupt prvD
-    PHA
+    LDA prvD:PHA ; SFTODO: stash result of division as mul8 will corrupt prvD
     JSR mul8 ; SFTODO: prvDC = 6 * the A we calculated above
-    PLA
-    CLC
-    ADC prvC ; SFTODO: add the stashed pseudo-division result to the low byte of the multiplication we just did (we *probably* know the high byte in prvD is zero and can be ignored)
-    TAY
+    PLA:CLC:ADC prvC:TAY ; SFTODO: add the stashed pseudo-division result to the low byte of the multiplication we just did (we *probably* know the high byte in prvD is zero and can be ignored)
     LDA prvDateDayOfMonth:STA (transientDateSFTODO1),Y
     INC prvDateDayOfMonth
     JMP DayOfMonthLoop ; SQUASH: BPL always?
