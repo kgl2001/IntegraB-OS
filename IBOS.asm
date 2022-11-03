@@ -6910,22 +6910,33 @@ TmpMonth = prvTmp4
 TmpYear = prvTmp3
 TmpCentury = prvTmp2
 
-; As CalculateDayOfWeekInA, except we also update prvDateDayOfWeek with the calculated day of the week, and set SFTODO:PROBABLY b3 of prvDateSFTODOQ if this changes prvDateDayOfWeek from its previous value.
+; As CalculateDayOfWeekInA, except we also update prvDateDayOfWeek with the calculated day of
+; the week, and set SFTODO:PROBABLY b3 of prvDateSFTODOQ if this changes prvDateDayOfWeek from
+; its previous value.
 .^CalculateDayOfWeekInPrvDateDayOfWeek
     CLC:BCC Common ; always branch SQUASH: "BCC Common"->"LDA #" opcode to skip the following SEC?
-; SFTODO: Use a magic formula to calculate the day of the week for prvDate{Century,Year,Month,DayOfMonth}; I don't know how this works, but presumably it does.
-; We return with the calculated day of the week in A.
+; Calculate the day of the week for the date in prvDate* and return with it in A.
 .^CalculateDayOfWeekInA
     SEC
 .Common
     XASSERT_USE_PRV1
-    PHP
-    LDA prvDateYear:STA TmpYear
-    LDA prvDateCentury:STA TmpCentury
+    PHP ; save C on entry for later use
+    ; SFTODO: I don't claim to fully understand the algorithm used here so I've added comments
+    ; which document the calculations the code is carrying out to make it easier to see what's
+    ; going on but without pretending they fully explain why it works. I can sort of see how
+    ; it works though:
+    ; - We simplify leap year handling by pretending the year starts in March, so leap days
+    ; - occur at the end of the year, not part way through it.
+    ; - We "accumulate" a value in prvA and only ultimately care about prvA mod 7, but as long as
+    ;   we don't overflow we can add things which cause prvA mod 7 to move appropriately. Except
+    ;   for leap years, any given date is one day of the week later each year, so we can add the
+    ;   year number in to take this into account, for example.
+
     ; Convert the supplied date into one where the year starts in March; TmpMonth is the month
     ; number in this adjusted calendar, with 1=March and 12=February, and the year/century are
-    ; in Tmp{Year,Century}. SFTODO: I am guessing, but I suspect this is done as it makes it
-    ; easier to have the leap day occur right at the end of the year.
+    ; in Tmp{Year,Century}.
+    LDA prvDateYear:STA TmpYear
+    LDA prvDateCentury:STA TmpCentury
     SEC:LDA prvDateMonth:SBC #2:STA TmpMonth
     BMI JanuaryOrFebruary ; branch if prvDateMonth is January
     CMP #1:BCS DateAdjustedForMarchBasedYear ; branch if March or later
@@ -6937,6 +6948,18 @@ TmpCentury = prvTmp2
     DEC TmpCentury:BPL DateAdjustedForMarchBasedYear
     CLC:LDA TmpCentury:ADC #100:STA TmpCentury
 .DateAdjustedForMarchBasedYear
+
+    ; Set prvA = (TmpMonth*130*2-19) DIV 100. It just so happens that prvA MOD 7 is then the day
+    ; of the week (with some fixed offset needed for any particular year) which TmpMonth starts on.
+    ; - For March 2022 we have TmpMonth=1 so prvA=2. March 2022 starts on a Tuesday.
+    ; - For December 2022 we have TmpMonth=10 so prvA=25=4 (mod 7). December 2022 starts on a
+    ;   Thursday, which is two days later than Tuesday, and note that the prvA mod 7 value is
+    ;   two larger the value calculated for March 2022.
+    ; - For February 2023 we have TmpMonth=12 so prvA=31=3 (mod 7). Given the above, we'd expect
+    ;   February 2023 to start on a Wednesday, and it does.
+    ; I have checked this for all 12 months against the 2022-23 calendar and the formula gives the
+    ; right result for each one. I don't know where the formula comes from, presumably someone
+    ; sat down and played around until they found something that happened to work.
     LDA TmpMonth:STA prvA
     LDA #130:STA prvB
     JSR mul8 ; DC=A*B
@@ -6946,36 +6969,53 @@ TmpCentury = prvTmp2
     LDA prvDC + 1:SBC #hi(19):STA prvBA + 1
     ; We have BA = TmpMonth*130*2-19.
     LDA #100:STA prvC
-    JSR div168 ; SFTODO: I don't think this can invoked the weird prvB>=prvC case, because TmpMonth<=12 and 12*130*2-19=&C1D, so prvB<=&C
-    ; SFTODO: (adjusted_month*260-19) DIV 100 does seem, based on checking just the first first months, to give the day-of-week "offset" for different months, i.e. it is *probably* an empirically derived formula which happens to take into account the different month lengths.
-    ; SFTODO: I might guess we add TmpYear in the next line because the day-of-week for a given date is (ignoring leap years) moved along one each year
-    ; prvD <= (12*130*2-19) DIV 100 == 31
-    CLC:LDA prvD:ADC prvDateDayOfMonth:ADC TmpYear:STA prvA ; prvA = prvD+prvDateDayOfMonth+TmpYear, which can't overflow as worst case is 31+31+99=161.
-    LDA TmpYear:LSR A:LSR A:CLC:ADC prvA:STA prvA ; prvA += TmpYear/4, which can't overflow as worst case is 161+(99/4)=185.
-    LDA TmpCentury:LSR A:LSR A:CLC:ADC prvA ; A=prvA+(TmpCentury/4), which can't overflow as worst case is 185+(20>>2)=190.
-    ASL TmpCentury:SEC:SBC TmpCentury ; A -= TmpCentury*2.
+    ; This div168 call can't invoke the strange "prvB >= prvC" case, because TmpMonth<=12 so
+    ; prvB<=hi(12*130*2-19)<=12.
+    JSR div168
+    ; The result is in prvD and we know prvD <= (12*130*2-19)/100 == 31.
+
+    ; Adjust prvA based on prvDateDayOfMonth, TmpYear and TmpCentury. I don't pretend to
+    ; understand the precise logic here, but this is effectively shifting the day of week value
+    ; we just calculated so that it uses a "standard" day numbering. It's important we don't
+    ; overflow our 8-bit range here (because 256 is not a multiple of 7); the comments in
+    ; brackets show the worst case to demonstrate that we won't overflow.
+
+    ; prvA = prvD + prvDateDayOfMonth + TmpYear (wc: 31+31+99=161)
+    CLC:LDA prvD:ADC prvDateDayOfMonth:ADC TmpYear:STA prvA
+    ; prvA += TmpYear/4 (wc: 161+99/4=185)
+    LDA TmpYear:LSR A:LSR A:CLC:ADC prvA:STA prvA
+    ; A = prvA + (TmpCentury/4) (wc: 185+99/4=209)
+    LDA TmpCentury:LSR A:LSR A:CLC:ADC prvA
+    ; A -= TmpCentury*2
+    ASL TmpCentury:SEC:SBC TmpCentury
+    ; That subtraction might have underflowed, so do some fix up if it did.
     PHP
     BCS NoUnderflow1
-    SEC:SBC #1:EOR #&FF ; SQUASH: we know C is clear, so omit SEC and do SBC #0?
+    SEC:SBC #1:EOR #&FF ; negate A SQUASH: we know C is clear, so omit SEC and do SBC #0?
 .NoUnderflow1
+
+    ; Set A = A MOD 7.
     STA prvBA
     LDA #0:STA prvBA + 1
-    LDA #daysPerWeek:STA prvC ; SFTODO: DIVIDING BY 7 AND TAKING REMAINDER TO GET DAY OF WEEK - I THINK ALL THE STUFF ABOVE HAS REALLY BEEN ABOUT THE RESULT MODULO 7, AND WE DIDN'T NEED TO CARE OVERLY MUCH ABOUT EVERYTHING ELSE WE ADDED (HENCE WE CAN ADD THE YEAR RATHER THAN "1" TO ACCOUNT FOR DOW ADVANCING BY ONE EACH YEAR)
-    JSR div168 ; SFTODO: HERE WE WILL DIVIDE WITHOUT ANY WEIRDNESS
+    LDA #daysPerWeek:STA prvC
+    JSR div168 ; prvB == 0, prvC == 7, so the "prvB >= prvC" case can't occur
+
     PLP
     BCS NoUnderflow2
-    SEC:SBC #1:EOR #&FF ; SQUASH: as above
-    CLC:ADC #7 ; SFTODO: DAYSPERWEEK?
+    SEC:SBC #1:EOR #&FF ; negate A SQUASH: as above
+    CLC:ADC #daysPerWeek
 .NoUnderflow2
-    CMP #7 ; SFTODO: DAYSPERWEEK?
-    BCC LA9C6
-    SBC #7 ; SFTODO: DAYSPERWEEK?
-.LA9C6
-    ; SQUASH: Do we need to update prvA here? Shorter to do "SEC:SBC #1". We could BEQ to "STA
-    ; prvDateDayOfWeek", skipping "LDA prvA".
-    STA prvA
-    INC prvA
-    LDA prvA
+    CMP #daysPerWeek
+    BCC InRange
+    SBC #daysPerWeek
+.InRange
+
+    ; Bump A by 1; this is probably to convert from the 0-based day-of-week numbering which is
+    ; natural when working mod 7 to 1-based day-of-week numbering elsewhere in the code.
+    ; SQUASH: Do we need to update prvA here? Shorter to do "SEC:SBC #1" if we can make it
+    ; work. Or maybe we could PHA here and then PLA later. This isn't utterly trivial.
+    STA prvA:INC prvA:LDA prvA
+
     PLP:BCS Rts ; test stacked flags from entry; C set => return result in A
     ; Return result in A and at prvDateDayOfWeek; test to see if the existing value was correct
     ; and update prvDateSFTODOQ if it wasn't. SFTODO: I think that comment is a touch glib. I'm
@@ -6989,8 +7029,7 @@ TmpCentury = prvTmp2
     ; SFTODO: I think it's right to be using the SFTODOQ labels here but not sure yet
     LDA #prvDateSFTODOQDayOfWeek:ORA prvDateSFTODOQ:STA prvDateSFTODOQ
 .LA9DF
-    LDA prvA
-    STA prvDateDayOfWeek
+    LDA prvA:STA prvDateDayOfWeek
 .Rts
     RTS
 }
