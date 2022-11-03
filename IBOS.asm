@@ -7174,7 +7174,7 @@ MaxOutputLength = prvTmp4 ; SFTODO: rename this, I think it's "max chars to prin
 .UseLowerCase
     LDY #&FF:STY LocalCapitaliseMask
 .LocalCapitaliseMaskSet
-    ; Set X and EndCalOffset so the string to print is at DayMonthNames+[X, EndCaloffset).
+    ; Set X and EndCalOffset so the string to print is at DayMonthNames+[X, EndCalOffset).
     TAX
     INX:LDA DayMonthNameOffsetTable,X:STA EndCalOffset ; SQUASH: Use DayMonthNameOffsetTable+1 to avoid INX/DEX
     DEX:LDA DayMonthNameOffsetTable,X:TAX
@@ -7264,7 +7264,7 @@ UnitsChar = prvTmp3
 
 {
 .AmPmSuffixes
-	  EQUS "am", "pm"
+    EQUS "am", "pm"
 
 ; Emit "am" or "pm" time suffix for hour A (<=23) into transientDateBuffer.
 ; SFTODO: This only has one caller, could it just be inlined?
@@ -7278,7 +7278,8 @@ UnitsChar = prvTmp3
 }
 
 IF FALSE
-; SQUASH: EmitAmPmForHourA is a bit more complex than necessary - here's a shorter alternative implementation, not tested!
+; SQUASH: EmitAmPmForHourA is a bit more complex than necessary - here's a shorter alternative
+; implementation, not tested!
 .EmitAmPmForHourA
 {
     LDX #'a'
