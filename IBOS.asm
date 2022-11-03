@@ -6522,6 +6522,9 @@ SFTODOTMP2 = L00AB
 }
 
 ; SFTODO: Divide 16-bit value at prvBA by the 8-bit value at prvC, returning the result in prvD and the remainder in A. *Except* that if prvB>=prvC on entry, we return with prvD set to prvA and A set to prvB. I am not really sure about this, I think this might be detecting the case where the result won't fit in 8 bits, but even if it is, I don't see why those return values are helpful.
+; SQUASH: Several callers do "LDA #0:STA prvBA + 1" before calling this; we could have an
+; alternate entry point which does that before falling through into SFTODOPSEUDODIV to avoid
+; duplicating that common code.
 .SFTODOPSEUDODIV
 {
     XASSERT_USE_PRV1
