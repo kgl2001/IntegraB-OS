@@ -7211,7 +7211,7 @@ UnitsChar = prvTmp3
     CPX #1:BEQ SkipLeadingZero ; SQUASH: DEX:BEQ?
     LDA #' ':STA TensChar
     LDA UnitsChar:CMP #'0':BNE PrintTensChar
-    CPX #3:BNE PrintTensChar ; SQUASH: DEX:BEQ?
+    CPX #3:BNE PrintTensChar ; SQUASH: #3 needs changing if use DEX above
     LDA #' ':STA UnitsChar
 .PrintTensChar
     LDA TensChar:STA (transientDateBufferPtr),Y:INY
