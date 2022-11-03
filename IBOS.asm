@@ -6936,9 +6936,11 @@ TmpCentury = prvTmp2
 ; SFTODO: So BA=prvTmp4*130*2-19??
     LDA #100:STA prvC
     JSR SFTODOPSEUDODIV ; SFTODO: Don't really know what's going on here yet, but I think this *could* invoke the weird prvB>=prvC condition in SFTODOPSEUDODIV.
+    ; SFTODO: (adjusted_month*260-19) DIV 100 does seem, based on checking just the first first months, to give the day-of-week "offset" for different months, i.e. it is *probably* an empirically derived formula which happens to take into account the different month lengths.
+    ; SFTODO: I might guess we add TmpYear in the next line because the day-of-week for a given date is (ignoring leap years) moved along one each year
     CLC:LDA prvD:ADC prvDateDayOfMonth:ADC TmpYear
     STA prvA
-    LDA TmpYear:LSR A:LSR A:CLC:ADC prvA:STA prvA
+    LDA TmpYear:LSR A:LSR A:CLC:ADC prvA:STA prvA ; SFTODO: something to do with leap years I suspect
     LDA TmpCentury:LSR A:LSR A
     CLC:ADC prvA:ASL TmpCentury
     SEC:SBC TmpCentury
@@ -6948,7 +6950,7 @@ TmpCentury = prvTmp2
 .LA9A5
     STA prvBA
     LDA #0:STA prvBA + 1
-    LDA #7:STA prvC
+    LDA #daysPerWeek:STA prvC ; SFTODO: DIVIDING BY 7 AND TAKING REMAINDER TO GET DAY OF WEEK - I THINK ALL THE STUFF ABOVE HAS REALLY BEEN ABOUT THE RESULT MODULO 7, AND WE DIDN'T NEED TO CARE OVERLY MUCH ABOUT EVERYTHING ELSE WE ADDED (HENCE WE CAN ADD THE YEAR RATHER THAN "1" TO ACCOUNT FOR DOW ADVANCING BY ONE EACH YEAR)
     JSR SFTODOPSEUDODIV ; SFTODO: HERE WE WILL DIVIDE WITHOUT ANY WEIRDNESS
     PLP
     BCS LA9C0
