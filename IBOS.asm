@@ -6686,12 +6686,14 @@ SFTODOTMP2 = L00AB
     JSR CopyRtcDateToPrv
     JMP CopyRtcTimeToPrv ; SQUASH: move and fall through?
 
-; SQUASH: Dead code
+IF IBOS_VERSION < 126
+; Dead code
 {
 .CopyPrvDateTimeToRtc
     JSR CopyPrvTimeToRtc
     JMP CopyPrvDateToRtc
 }
+ENDIF
 
 ; Wait until any RTC update in progress	is complete.
 .WaitOutRTCUpdate
@@ -8320,7 +8322,15 @@ EndIndex = transientDateSFTODO2 ; exclusive
     LDA #0:STA prvDateDayOfWeek
     JSR ConvertIntegerDefaultDecimal:BCS ParseError:STA prvDateDayOfMonth
     LDA (transientCmdPtr),Y:INY
-    CMP #'/':BNE ParseError
+    CMP #'/'
+IF IBOS_VERSION <126
+    BNE ParseError
+ELSE
+    BEQ SlashBetweenDayAndMonth
+    CMP #' '
+    BNE ParseError
+.SlashBetweenDayAndMonth
+ENDIF
     JSR ConvertIntegerDefaultDecimal
 IF IBOS_VERSION < 126
     BCS ParseError
@@ -8353,11 +8363,26 @@ charsToMatch = transientCmdPtr + 4
 ENDIF
     STA prvDateMonth
     LDA (transientCmdPtr),Y:INY
-    CMP #'/':BNE ParseError
-    JSR ConvertIntegerDefaultDecimal:BCS ParseError:JSR InterpretParsedYear
+    CMP #'/'
+IF IBOS_VERSION <126
+    BNE ParseError
+ELSE
+    BEQ SlashBetweenMonthAndYear
+    CMP #' '
+    BNE ParseError
+.SlashBetweenMonthAndYear
+ENDIF
+    JSR ConvertIntegerDefaultDecimal:BCS ParseError
+IF IBOS_VERSION >= 126
+    TYA:PHA
+ENDIF
+    JSR InterpretParsedYear
     JSR ValidateDateTimeAssumingLeapYear
     LDA prvDateSFTODOQ:AND #prvDateSFTODOQCenturyYearMonthDayOfMonth:BNE ParseError
     JSR CalculateDayOfWeekInPrvDateDayOfWeek
+IF IBOS_VERSION >= 126
+    PLA:TAY
+ENDIF
     CLC
     RTS
 
@@ -8793,6 +8818,14 @@ ENDIF
 
 IF IBOS_VERSION >= 126
 ;OSWORD &0F (15) Write real time clock
+; YX?0 is the function code, the string starts at YX+1:
+;  8 - Set time to value in format "HH:MM:SS"
+; 16 - Set date to value in format "Day,DD Mon Year"
+; 24 - Set time and date to value in format "Day,DD Mon Year.HH:MM:SS"
+;
+; Parsing in here is relatively free-and-easy, but that seems to be how OS 3.20 does it as well.
+; I haven't tried to emulate the behaviour of OS 3.20 when given invalid strings; all I really
+; care about is that we handle valid strings correctly and invalid strings without crashing.
 ;
 ; We claim the call even if the function code is unrecognised or we fail to parse the provided
 ; string. I'm not completely clear what the "correct" behaviour is here, but in practice this
@@ -8802,25 +8835,35 @@ IF IBOS_VERSION >= 126
 {
     JSR SaveTransientZP
     PRVEN
-    ; TODO: We aren't using the oswordsv/oswordrs style from other OSWORDs, in part because
+    ; We aren't using the oswordsv/oswordrs style from other OSWORDs, in part because
     ; prvOswordBlockCopySize is only 16, which isn't large enough for OSWORD &0F.
     LDA oswdbtX:STA transientCmdPtr
     LDA oswdbtY:STA transientCmdPtr + 1
-    LDY #0:LDA (transientCmdPtr),Y
-    ; TODO: Depending on how this code works, there may well be possibilities for implementing 24 by executing both 8 and 16 (perhaps with an initial "set time to 00:00:00 to avoid wraparound worries, as we don't update time+date atomically")
-    CMP #8:BEQ SetTime
-    CMP #16:BEQ SetDate
-    CMP #24:BNE Done
-    BRK ; TODO IMPLEMENT CODE 24
-.SetTime
-    INY
+    JSR CopyRtcDateTimeToPrv
+    LDY #0
+    LDA (transientCmdPtr),Y:BEQ Done:AND_NOT 8+16:BNE Done ; check function code is 8, 16 or 24
+    LDA (transientCmdPtr),Y:PHA
+    INY ; skip function code so (transientCmdPtr),Y accesses first byte of string
+    CMP #8:BEQ NoDate
+    INY:INY:INY:INY ; skip the three letter date and comma (or whatever)
+    JSR ParseAndValidateDate:PLA:BCS Done ; branch if unable to parse
+    PHA
+.NoDate
+    PLA:CMP #24:BNE NoDateTimeSeparator
+    INY ; skip the "." (or whatever) between the date and time
+.NoDateTimeSeparator
+    CMP #16:BEQ NoTime
     JSR ParseAndValidateTime:BCS Done ; branch if unable to parse
+.NoTime
+    ; TODO: Is there any risk that we set the time to 23:59:59, it rolls over to 00:00:00 and
+    ; then we set the date, effectively setting the time just under one day earlier than the
+    ; user wanted? This may not be possible depending on whether setting the time resets the
+    ; "sub-second" count to zero and things like that.
     JSR CopyPrvTimeToRtc
+    JSR CopyPrvDateToRtc
 .Done
     PRVDIS
     JMP RestoreTransientZPAndExitAndClaimServiceCall
-.SetDate
-    BRK ; TODO IMPLEMENT CODE 16
 }
 ENDIF
 			
