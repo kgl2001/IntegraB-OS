@@ -1,8 +1,10 @@
+PYTHON = python2
+
 all: IBOS-120.rom IBOS-120-b-em.rom IBOS-121.rom IBOS-122.rom IBOS-123.rom IBOS-124.rom IBOS-125.rom tags TAGS
 
 tags TAGS: IBOS.asm
-	python beebasm-tags.py IBOS.asm
-	python beebasm-tags.py -e IBOS.asm
+	$(PYTHON) beebasm-tags.py IBOS.asm
+	$(PYTHON) beebasm-tags.py -e IBOS.asm
 
 IBOS-120.rom: IBOS-120.asm IBOS.asm Makefile
 	beebasm -w -v -i IBOS-120.asm > IBOS-120.lst
