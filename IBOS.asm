@@ -1875,10 +1875,9 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
 ;     0 0 => integer parsed, result in ConvertIntegerResult, low byte in A and flags reflect A
 ;     0 1 => not possible
 ;     1 0 => input was empty, nothing to parse
-;     1 1 => input not empty but nothing was parsed (we will have beeped)
+;     1 1 => input not empty but nothing was parsed (v1.24 and earlier will have beeped)
 ;            ConvertIntegerResult and A will be 0 but flags will not reflect A
 ;
-; ENHANCE: Beeping when we fail to parse seems a little unconventional, disable this?
 ; SQUASH: Could we use some loops to do the four byte arithmetic?
 {
 Tmp = FilingSystemWorkspace + 4 ; 4 bytes
@@ -7142,6 +7141,9 @@ daysInMonth = transientDateSFTODO2
     EQUB Thursday  - DayMonthNames
     EQUB Friday    - DayMonthNames
     EQUB Saturday  - DayMonthNames
+IF IBOS_VERSION >= 126
+.^MonthNameOffsetTable
+ENDIF
     EQUB January   - DayMonthNames
     EQUB February  - DayMonthNames
     EQUB March     - DayMonthNames
@@ -8319,7 +8321,35 @@ EndIndex = transientDateSFTODO2 ; exclusive
     JSR ConvertIntegerDefaultDecimal:BCS ParseError:STA prvDateDayOfMonth
     LDA (transientCmdPtr),Y:INY
     CMP #'/':BNE ParseError
-    JSR ConvertIntegerDefaultDecimal:BCS ParseError:STA prvDateMonth
+    JSR ConvertIntegerDefaultDecimal
+IF IBOS_VERSION < 126
+    BCS ParseError
+ELSE
+currentMonth = transientCmdPtr + 2
+initialY = transientCmdPtr + 3
+charsToMatch = transientCmdPtr + 4
+    BCC MonthInA
+    ; We couldn't parse the month as an integer, but it may be a three character month name. We
+    ; implement this for the benefit of OSWORD &0F, but this also means *DATE= will accept it,
+    ; which seems like a reasonable bonus rather than a problem. As the main motivation for
+    ; this is OSWORD &0F, we don't attempt to accept longer versions of the month name.
+    LDA #MonthsPerYear:STA currentMonth
+    STY initialY
+.MonthLoop
+    ; -1 in the next line as currentMonth is 1-based but MonthNameOffset is 0-based.
+    LDY currentMonth:LDX MonthNameOffsetTable-1,Y
+    LDY initialY
+    LDA #3:STA charsToMatch
+.MonthCharLoop
+    LDA (transientCmdPtr),Y:ORA #LowerCaseMask:CMP DayMonthNames,X:BNE NoMatch
+    INY:INX:DEC charsToMatch:BNE MonthCharLoop
+    LDA currentMonth:BNE MonthInA ; always branch
+.NoMatch
+    DEC currentMonth:BNE MonthLoop
+    BEQ ParseError ; always branch
+.MonthInA
+ENDIF
+    STA prvDateMonth
     LDA (transientCmdPtr),Y:INY
     CMP #'/':BNE ParseError
     JSR ConvertIntegerDefaultDecimal:BCS ParseError:JSR InterpretParsedYear
