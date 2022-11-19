@@ -1,4 +1,6 @@
 REM Test using OSWORD &0F to set the time.
+REM
+REM This passes on a Master 128 running MOS 3.23 in b-em.
 
 DIM block% 256
 
