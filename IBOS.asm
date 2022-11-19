@@ -8346,7 +8346,9 @@ charsToMatch = transientCmdPtr + 4
     LDA currentMonth:BNE MonthInA ; always branch
 .NoMatch
     DEC currentMonth:BNE MonthLoop
-    BEQ ParseError ; always branch
+.ParseError
+    SEC
+    RTS
 .MonthInA
 ENDIF
     STA prvDateMonth
@@ -8358,10 +8360,12 @@ ENDIF
     JSR CalculateDayOfWeekInPrvDateDayOfWeek
     CLC
     RTS
-			
+
+IF IBOS_VERSION < 126
 .ParseError
     SEC
     RTS
+ENDIF
 }
 
 ; Alarm interrupt handler code.
