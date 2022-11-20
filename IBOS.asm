@@ -8800,9 +8800,10 @@ ENDIF
 {
     JSR SaveTransientZP
     PRVEN
-    ; SQUASH: Could we share some of the repetitions of the next two lines?
+IF IBOS_VERSION < 126
     LDA oswdbtX:STA prvOswordBlockOrigAddr
     LDA oswdbtY:STA prvOswordBlockOrigAddr + 1
+ENDIF
     JSR oswordsv
     JSR oswd0e_1
     BCS osword0ea
@@ -8877,8 +8878,10 @@ ENDIF
 .^osword49
     JSR SaveTransientZP
     PRVEN
+IF IBOS_VERSION < 126
     LDA oswdbtX:STA prvOswordBlockOrigAddr
     LDA oswdbtY:STA prvOswordBlockOrigAddr + 1
+ENDIF
     JSR oswordsv ; save the OSWORD block
     JSR oswd49_1 ; execute the OSWORD call
     BCS Success
@@ -8899,10 +8902,11 @@ ENDIF
 			
 ;Save OSWORD XY entry table
 {
-Ptr = &AE
 
 .^oswordsv ; SFTODO: rename
     XASSERT_USE_PRV1
+IF IBOS_VERSION < 126
+Ptr = &AE
     LDA prvOswordBlockOrigAddr:STA Ptr
     LDA prvOswordBlockOrigAddr + 1:STA Ptr + 1
     LDY #prvOswordBlockCopySize - 1
@@ -8910,6 +8914,15 @@ Ptr = &AE
     LDA (Ptr),Y:STA prvOswordBlockCopy,Y
     DEY:BPL Loop
     RTS
+ELSE
+    LDA oswdbtX:STA prvOswordBlockOrigAddr
+    LDA oswdbtY:STA prvOswordBlockOrigAddr + 1
+    LDY #prvOswordBlockCopySize - 1
+.Loop
+    LDA (oswdbtX),Y:STA prvOswordBlockCopy,Y
+    DEY:BPL Loop
+    RTS
+ENDIF
 }
 			
 ;Restore OSWORD XY entry table
