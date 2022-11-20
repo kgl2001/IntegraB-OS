@@ -2594,7 +2594,6 @@ IF IBOS_VERSION >= 126
 ; We claim the call even if the function code is unrecognised or we fail to parse the provided
 ; string. I'm not completely clear what the "correct" behaviour is here, but in practice this
 ; should be fine.
-; TODO: THIS IS WIP!
 .osword0f
 {
     JSR SaveTransientZP
@@ -2614,9 +2613,9 @@ IF IBOS_VERSION >= 126
     PHA
     ; Skip the three letter day of the week and the following comma, or whatever else might be
     ; there. The day of the week is at best redundant and at worst inconsistent, so we just
-    ; ignore it (as does OS 3.20) and calculate the correct day of week ourselves in
-    ; ParseAndValidateDate.
-    ; TODO: OS 3.20 may not ignore day-of-week, at least not always. Not sure yet.
+    ; ignore it and calculate the correct day of week ourselves in ParseAndValidateDate. (OS
+    ; 3.20 trusts the user to supply the day of the week correctly, but it would take extra
+    ; code to parse it and it would only open up the possibility of it being set incorrectly.)
     INY:INY:INY:INY
     JSR ParseAndValidateDate
     PLA

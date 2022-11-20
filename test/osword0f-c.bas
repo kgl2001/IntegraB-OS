@@ -25,7 +25,7 @@ PRINT "Testing ";year%;"/";FNpad(month%);"/";FNpad(day%);"..."
 FOR hour%=0 TO 23 STEP 5
 FOR minute%=0 TO 55 STEP 5
 second%=(hour%+minute%) MOD 60
-set_time$="Mon,"+FNpad(day%)+" "+month$(month%)+" "+STR$(year%)+"."+FNpad(hour%)+":"+FNpad(minute%)+":"+FNpad(second%)
+set_time$=day_of_week$(day_of_week%)+","+FNpad(day%)+" "+month$(month%)+" "+STR$(year%)+"."+FNpad(hour%)+":"+FNpad(minute%)+":"+FNpad(second%)
 REM Set the date/time...
 block%?0=24
 set_offset%=(hour%*60+minute%)*60+second%

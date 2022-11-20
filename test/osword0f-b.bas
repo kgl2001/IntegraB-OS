@@ -25,7 +25,7 @@ PRINT "Testing ";year%;"/";FNpad(month%);"/";FNpad(day%);"..."
 REM We read the current time so we can check it hasn't been modified by the date set operation.
 initial_time_date$=FNcurrent_time_date
 initial_offset%=FNcurrent_offset(initial_time_date$)
-set_time$="Mon,"+FNpad(day%)+" "+month$(month%)+" "+STR$(year%)
+set_time$=day_of_week$(day_of_week%)+","+FNpad(day%)+" "+month$(month%)+" "+STR$(year%)
 REM The Master accepts leading zeroes or spaces on day numbers, so exercise both here.
 IF day%<10 AND (day% MOD 3)=0 THEN set_time$=LEFT$(set_time$,4)+" "+MID$(set_time$,6)
 REM Set the date...
