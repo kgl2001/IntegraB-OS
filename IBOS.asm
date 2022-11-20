@@ -2638,10 +2638,6 @@ IF IBOS_VERSION >= 126
 ENDIF
 
 ; Unrecognised OSWORD call - Service call &08
-;
-; ENHANCE: We could implement OSWORD &0F to set the date/time, although this probably isn't all
-; that big an omission. (Don't get carried away; "function 5" to set from centiseconds since
-; 1900 isn't implemented on the Master.)
 .service08
 {
     LDA oswdbtA
