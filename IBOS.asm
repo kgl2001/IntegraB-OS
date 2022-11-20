@@ -2581,7 +2581,7 @@ IF IBOS_VERSION < 126
 ENDIF
 
 IF IBOS_VERSION >= 126
-;OSWORD &0F (15) Write real time clock
+; OSWORD &0F (15) Write real time clock
 ; YX?0 is the function code, the string starts at YX+1:
 ;  8 - Set time to value in format "HH:MM:SS"
 ; 15 - Set date to value in format "Day,DD Mon Year"
