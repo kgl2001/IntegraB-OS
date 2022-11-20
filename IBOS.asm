@@ -8831,6 +8831,7 @@ IF IBOS_VERSION >= 126
 ; string. I'm not completely clear what the "correct" behaviour is here, but in practice this
 ; should be fine.
 ; TODO: THIS IS WIP!
+; TODO: DOES THE DATE SET ACCOMMODATE DAY NUMBERS OF FORM " 2" OR JUST "02"? MASTER ACCEPTS EITHER
 .osword0f
 {
     JSR SaveTransientZP
@@ -8841,6 +8842,7 @@ IF IBOS_VERSION >= 126
     LDA oswdbtY:STA transientCmdPtr + 1
     JSR CopyRtcDateTimeToPrv
     LDY #0
+    ; TODO: I suspect the function code for set date is 15 not 16...
     LDA (transientCmdPtr),Y:BEQ Done:AND_NOT 8+16:BNE Done ; check function code is 8, 16 or 24
     LDA (transientCmdPtr),Y:PHA
     INY ; skip function code so (transientCmdPtr),Y accesses first byte of string
