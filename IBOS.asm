@@ -2616,6 +2616,7 @@ IF IBOS_VERSION >= 126
     ; there. The day of the week is at best redundant and at worst inconsistent, so we just
     ; ignore it (as does OS 3.20) and calculate the correct day of week ourselves in
     ; ParseAndValidateDate.
+    ; TODO: OS 3.20 may not ignore day-of-week, at least not always. Not sure yet.
     INY:INY:INY:INY
     JSR ParseAndValidateDate
     PLA
