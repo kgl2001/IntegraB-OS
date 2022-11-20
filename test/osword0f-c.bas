@@ -16,6 +16,7 @@ DATA 31,28,31,30,31,30,31,31,30,31,30,31
 
 DIM block% 256
 
+REM TODO: If we ignored the century when testing the value read back, we'd probably pass OK on Master OS 3.20 and 3.23.
 day_of_week%=6:REM Saturday
 FOR year%=2000 TO 2099
 FOR month%=1 TO 12
