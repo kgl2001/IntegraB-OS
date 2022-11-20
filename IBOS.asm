@@ -9398,8 +9398,11 @@ ASSERT parentVectorTbl2End <= osPrintBuf + osPrintBufSize
     LDA VectorEntryStackedFlags+2,X:PHA
     LDA VectorEntryStackedA+2,X:PHA
     LDA VectorEntryStackedX+2,X:PHA
-    ; SQUASH: We could save a byte here by doing LDY VectorEntryStackedY+2,X directly.
-    LDA VectorEntryStackedY+2,X:TAY ; get original Y
+IF IBOS_VERSION < 126
+    LDA VectorEntryStackedY+2,X:TAY
+ELSE
+    LDY VectorEntryStackedY+2,X
+ENDIF
     PLA:TAX
     PLA
     PLP
