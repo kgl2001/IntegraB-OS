@@ -8344,7 +8344,7 @@ IF IBOS_VERSION < 126
     BCS ParseError
 ELSE
 currentMonth = transientCmdPtr + 2
-initialY = transientCmdPtr + 3
+savedY = transientCmdPtr + 3
 charsToMatch = transientCmdPtr + 4
     BCC MonthInA
     ; We couldn't parse the month as an integer, but it may be a three character month name. We
@@ -8352,11 +8352,11 @@ charsToMatch = transientCmdPtr + 4
     ; which seems like a reasonable bonus rather than a problem. As the main motivation for
     ; this is OSWORD &0F, we don't attempt to accept longer versions of the month name.
     LDA #MonthsPerYear:STA currentMonth
-    STY initialY
+    STY savedY
 .MonthLoop
     ; -1 in the next line as currentMonth is 1-based but MonthNameOffset is 0-based.
     LDY currentMonth:LDX MonthNameOffsetTable-1,Y
-    LDY initialY
+    LDY savedY
     LDA #3:STA charsToMatch
 .MonthCharLoop
     LDA (transientCmdPtr),Y:ORA #LowerCaseMask:CMP DayMonthNames,X:BNE NoMatch
@@ -8382,14 +8382,14 @@ ELSE
 ENDIF
     JSR ConvertIntegerDefaultDecimal:BCS ParseError
 IF IBOS_VERSION >= 126
-    TYA:PHA
+    STY savedY
 ENDIF
     JSR InterpretParsedYear
     JSR ValidateDateTimeAssumingLeapYear
     LDA prvDateSFTODOQ:AND #prvDateSFTODOQCenturyYearMonthDayOfMonth:BNE ParseError
     JSR CalculateDayOfWeekInPrvDateDayOfWeek
 IF IBOS_VERSION >= 126
-    PLA:TAY
+    LDY savedY
 ENDIF
     CLC
     RTS
