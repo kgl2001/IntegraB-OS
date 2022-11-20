@@ -2563,7 +2563,8 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JMP ExitAndClaimServiceCall
 }
 
-; SQUASH: Dead code
+IF IBOS_VERSION < 126
+; Dead code
 {
     LDA vduStatus
     AND #&EF
@@ -2577,6 +2578,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     STA vduStatus
     RTS
 }
+ENDIF
 
 ; Unrecognised OSWORD call - Service call &08
 ;
@@ -3862,7 +3864,8 @@ Tmp = TransientZP + 6
     PLA:ORA Tmp:JMP SetConfigValueA
 }
 
-; SFTODO: This entire block is dead code
+IF IBOS_VERSION < 126
+; Dead code
 {
 .L95BF
     LDA #&00
@@ -3888,6 +3891,7 @@ Tmp = TransientZP + 6
     STA L00AE
     RTS
 }
+ENDIF
 			
 ; Autoboot - Service call &03
 ; Note that we are expecting to be in bank 15, so nothing else can intercept this call before
@@ -4436,10 +4440,12 @@ RamPresenceFlags = TransientZP
     RTS
 }
 
-; SQUASH: Dead data
+IF IBOS_VERSION < 126
+; Dead data
 {
     EQUS "RAM","ROM"
 }
+ENDIF
 
 ; SQUASH: This has only one caller
 ; A=0 on entry means the header should say "RAM", otherwise it will say "ROM". A is also copied into the (unused) second byte of the bank's service entry; SFTODO: I don't know why specifically, but maybe this is just done because that's what the Acorn DFS SRAM utilities do (speculation; I haven't checked).
@@ -6894,7 +6900,8 @@ Tmp = TransientZP + 6
     RTS
 }
 
-; SQUASH: Dead code
+IF IBOS_VERSION < 126
+; Dead code
 {
     LDA prvOswordBlockCopy + 13
     BPL LA904
@@ -6911,6 +6918,7 @@ Tmp = TransientZP + 6
 .LA904
     RTS
 }
+ENDIF
 
 ; SFTODO: the "in" in the next two exported labels is maybe confusing, "storeTo" might be better but even more longwinded - anyway, just a note for when I finally clean up all the label names
 {
