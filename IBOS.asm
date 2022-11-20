@@ -2613,7 +2613,7 @@ IF IBOS_VERSION >= 126
 .ParseDate
     PHA
     ; Skip the three letter day of the week and the following comma, or whatever else might be
-    ; there. The day of the week is at best redundant and at worse inconsistent, so we just
+    ; there. The day of the week is at best redundant and at worst inconsistent, so we just
     ; ignore it (as does OS 3.20) and calculate the correct day of week ourselves in
     ; ParseAndValidateDate.
     INY:INY:INY:INY
