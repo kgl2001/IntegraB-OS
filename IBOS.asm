@@ -2580,6 +2580,63 @@ IF IBOS_VERSION < 126
 }
 ENDIF
 
+IF IBOS_VERSION >= 126
+;OSWORD &0F (15) Write real time clock
+; YX?0 is the function code, the string starts at YX+1:
+;  8 - Set time to value in format "HH:MM:SS"
+; 15 - Set date to value in format "Day,DD Mon Year"
+; 24 - Set time and date to value in format "Day,DD Mon Year.HH:MM:SS"
+;
+; Parsing in here is relatively free-and-easy, but that seems to be how OS 3.20 does it as well.
+; I haven't tried to emulate the behaviour of OS 3.20 when given invalid strings; all I really
+; care about is that we handle valid strings correctly and invalid strings without crashing.
+;
+; We claim the call even if the function code is unrecognised or we fail to parse the provided
+; string. I'm not completely clear what the "correct" behaviour is here, but in practice this
+; should be fine.
+; TODO: THIS IS WIP!
+.osword0f
+{
+    JSR SaveTransientZP
+    PRVEN
+    ; We aren't using the oswordsv/oswordrs style from other OSWORDs, in part because
+    ; prvOswordBlockCopySize is only 16, which isn't large enough for OSWORD &0F.
+    LDA oswdbtX:STA transientCmdPtr
+    LDA oswdbtY:STA transientCmdPtr + 1
+    JSR CopyRtcDateTimeToPrv
+    LDY #0
+    LDA (transientCmdPtr),Y
+    INY ; skip function code so (transientCmdPtr),Y accesses first byte of string
+    CMP #8:BEQ ParseTime
+    CMP #15:BEQ ParseDate
+    CMP #24:BNE Done ; branch if invalid function code
+.ParseDate
+    PHA
+    ; Skip the three letter day of the week and the following comma, or whatever else might be
+    ; there. The day of the week is at best redundant and at worse inconsistent, so we just
+    ; ignore it (as does OS 3.20) and calculate the correct day of week ourselves in
+    ; ParseAndValidateDate.
+    INY:INY:INY:INY
+    JSR ParseAndValidateDate
+    PLA
+    BCS Done ; branch if unable to parse
+    CMP #15:BEQ ParsedOK
+    INY ; skip the "." (or whatever) between the date and time
+.ParseTime
+    JSR ParseAndValidateTime:BCS Done ; branch if unable to parse
+.ParsedOK
+    ; TODO: Is there any risk that we set the time to 23:59:59, it rolls over to 00:00:00 and
+    ; then we set the date, effectively setting the time just under one day earlier than the
+    ; user wanted? This may not be possible depending on whether setting the time resets the
+    ; "sub-second" count to zero and things like that.
+    JSR CopyPrvTimeToRtc
+    JSR CopyPrvDateToRtc
+.Done
+    PRVDIS
+    JMP RestoreTransientZPAndExitAndClaimServiceCall
+}
+ENDIF
+
 ; Unrecognised OSWORD call - Service call &08
 ;
 ; ENHANCE: We could implement OSWORD &0F to set the date/time, although this probably isn't all
@@ -2589,9 +2646,7 @@ ENDIF
 {
     LDA oswdbtA
 IF IBOS_VERSION >= 126
-    CMP #&0F:BNE service08e
-    JMP osword0f
-.service08e
+    CMP #&0F:BEQ osword0f
 ENDIF
     CMP #&0E:BNE service08a
     JMP osword0e
@@ -8830,59 +8885,6 @@ ENDIF
     JMP RestoreTransientZPAndExitAndClaimServiceCall
 }
 
-IF IBOS_VERSION >= 126
-;OSWORD &0F (15) Write real time clock
-; YX?0 is the function code, the string starts at YX+1:
-;  8 - Set time to value in format "HH:MM:SS"
-; 15 - Set date to value in format "Day,DD Mon Year"
-; 24 - Set time and date to value in format "Day,DD Mon Year.HH:MM:SS"
-;
-; Parsing in here is relatively free-and-easy, but that seems to be how OS 3.20 does it as well.
-; I haven't tried to emulate the behaviour of OS 3.20 when given invalid strings; all I really
-; care about is that we handle valid strings correctly and invalid strings without crashing.
-;
-; We claim the call even if the function code is unrecognised or we fail to parse the provided
-; string. I'm not completely clear what the "correct" behaviour is here, but in practice this
-; should be fine.
-; TODO: THIS IS WIP!
-.osword0f
-{
-    JSR SaveTransientZP
-    PRVEN
-    ; We aren't using the oswordsv/oswordrs style from other OSWORDs, in part because
-    ; prvOswordBlockCopySize is only 16, which isn't large enough for OSWORD &0F.
-    LDA oswdbtX:STA transientCmdPtr
-    LDA oswdbtY:STA transientCmdPtr + 1
-    JSR CopyRtcDateTimeToPrv
-    LDY #0
-    LDA (transientCmdPtr),Y
-    INY ; skip function code so (transientCmdPtr),Y accesses first byte of string
-    CMP #8:BEQ ParseTime
-    CMP #15:BEQ ParseDate
-    CMP #24:BNE Done ; branch if invalid function code
-.ParseDate
-    PHA
-    INY:INY:INY:INY ; skip the three letter day of week and comma (or whatever)
-    JSR ParseAndValidateDate
-    PLA
-    BCS Done ; branch if unable to parse
-    CMP #15:BEQ ParsedOK
-    INY ; skip the "." (or whatever) between the date and time
-.ParseTime
-    JSR ParseAndValidateTime:BCS Done ; branch if unable to parse
-.ParsedOK
-    ; TODO: Is there any risk that we set the time to 23:59:59, it rolls over to 00:00:00 and
-    ; then we set the date, effectively setting the time just under one day earlier than the
-    ; user wanted? This may not be possible depending on whether setting the time resets the
-    ; "sub-second" count to zero and things like that.
-    JSR CopyPrvTimeToRtc
-    JSR CopyPrvDateToRtc
-.Done
-    PRVDIS
-    JMP RestoreTransientZPAndExitAndClaimServiceCall
-}
-ENDIF
-			
 ;OSWORD &49 (73) - Integra-B calls
 {
 .^osword49
