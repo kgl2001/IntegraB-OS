@@ -8808,10 +8808,13 @@ ENDIF
     BCS osword0ea
     JSR oswordrs
 .osword0ea
-    ; Restore original A/X/Y. SQUASH: Do we need to do this? Did we modify them?
+IF IBOS_VERSION < 126
+    ; Restore oswdbt[AXY]. This isn't necessary, as we haven't modified them, and we might
+    ; actually be allowed to corrupt them anyway given we're claiming the call.
     LDA prvOswordBlockOrigAddr:STA oswdbtX
     LDA prvOswordBlockOrigAddr + 1:STA oswdbtY
     LDA #&0E:STA oswdbtA
+ENDIF
     PRVDIS
     JMP RestoreTransientZPAndExitAndClaimServiceCall
 }
@@ -8881,10 +8884,13 @@ ENDIF
     BCS Success
     JSR oswordrs ; restore the OSWORD block if we failed
 .Success
-    ; Restore A/X/Y. SQUASH: Will we have modified X/Y?
+IF IBOS_VERSION < 126
+    ; Restore oswdbt[AXY]. This isn't necessary, as we haven't modified them, and we might
+    ; actually be allowed to corrupt them anyway given we're claiming the call.
     LDA prvOswordBlockOrigAddr:STA oswdbtX
     LDA prvOswordBlockOrigAddr + 1:STA oswdbtY
     LDA #&49:STA oswdbtA
+ENDIF
     PRVDIS
 .^RestoreTransientZPAndExitAndClaimServiceCall
     JSR RestoreTransientZP
