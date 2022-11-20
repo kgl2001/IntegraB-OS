@@ -8841,7 +8841,6 @@ IF IBOS_VERSION >= 126
     LDA oswdbtY:STA transientCmdPtr + 1
     JSR CopyRtcDateTimeToPrv
     LDY #0
-    ; TODO: I suspect the function code for set date is 15 not 16...
     LDA (transientCmdPtr),Y
     INY ; skip function code so (transientCmdPtr),Y accesses first byte of string
     CMP #8:BEQ ParseTime
@@ -8849,7 +8848,7 @@ IF IBOS_VERSION >= 126
     CMP #24:BNE Done ; branch if invalid function code
 .ParseDate
     PHA
-    INY:INY:INY:INY ; skip the three letter date and comma (or whatever)
+    INY:INY:INY:INY ; skip the three letter day of week and comma (or whatever)
     JSR ParseAndValidateDate
     PLA
     BCS Done ; branch if unable to parse
