@@ -8322,22 +8322,19 @@ EndIndex = transientDateSFTODO2 ; exclusive
     RTS
 }
 
-; Parse a date from the command line, populating PrvDate* and returning with C clear iff parsing succeeds.
-; SQUASH: This has only one caller
+; Parse a date from the command line, populating PrvDate* and returning with C clear iff
+; parsing succeeds. From v1.26 Y is updated to point to the next character after successful
+; parsing; it is corrupted in earlier versions.
 .ParseAndValidateDate
 {
     XASSERT_USE_PRV1
     LDA #0:STA prvDateDayOfWeek
     JSR ConvertIntegerDefaultDecimal:BCS ParseError:STA prvDateDayOfMonth
+IF IBOS_VERSION < 126
     LDA (transientCmdPtr),Y:INY
-    CMP #'/'
-IF IBOS_VERSION <126
-    BNE ParseError
+    CMP #'/':BNE ParseError
 ELSE
-    BEQ SlashBetweenDayAndMonth
-    CMP #' '
-    BNE ParseError
-.SlashBetweenDayAndMonth
+    JSR ParseSlashOrSpace:BNE ParseError
 ENDIF
     JSR ConvertIntegerDefaultDecimal
 IF IBOS_VERSION < 126
@@ -8370,18 +8367,16 @@ charsToMatch = transientCmdPtr + 4
 .MonthInA
 ENDIF
     STA prvDateMonth
+IF IBOS_VERSION < 126
     LDA (transientCmdPtr),Y:INY
-    CMP #'/'
-IF IBOS_VERSION <126
-    BNE ParseError
+    CMP #'/':BNE ParseError
 ELSE
-    BEQ SlashBetweenMonthAndYear
-    CMP #' '
-    BNE ParseError
-.SlashBetweenMonthAndYear
+    JSR ParseSlashOrSpace:BNE ParseError
 ENDIF
     JSR ConvertIntegerDefaultDecimal:BCS ParseError
 IF IBOS_VERSION >= 126
+    ; We use this for parsing OSWORD &0F date strings, so we need to preserve Y so parsing can
+    ; continue after the date.
     STY savedY
 ENDIF
     JSR InterpretParsedYear
@@ -8397,6 +8392,15 @@ ENDIF
 IF IBOS_VERSION < 126
 .ParseError
     SEC
+    RTS
+ENDIF
+
+IF IBOS_VERSION >= 126
+.ParseSlashOrSpace
+    LDA (transientCmdPtr),Y:INY
+    CMP #'/':BEQ Rts
+    CMP #' '
+.Rts
     RTS
 ENDIF
 }
