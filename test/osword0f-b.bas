@@ -26,6 +26,8 @@ REM We read the current time so we can check it hasn't been modified by the date
 initial_time_date$=FNcurrent_time_date
 initial_offset%=FNcurrent_offset(initial_time_date$)
 set_time$="Mon,"+FNpad(day%)+" "+month$(month%)+" "+STR$(year%)
+REM The Master accepts leading zeroes or spaces on day numbers, so exercise both here.
+IF day%<10 AND (day% MOD 3)=0 THEN PRINT set_time$:set_time$=LEFT$(set_time$,4)+" "+MID$(set_time$,6):PRINT set_time$
 REM Set the date...
 block%?0=15
 $(block%+1)=set_time$

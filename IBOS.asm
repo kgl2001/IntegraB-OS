@@ -8831,7 +8831,6 @@ IF IBOS_VERSION >= 126
 ; string. I'm not completely clear what the "correct" behaviour is here, but in practice this
 ; should be fine.
 ; TODO: THIS IS WIP!
-; TODO: DOES THE DATE SET ACCOMMODATE DAY NUMBERS OF FORM " 2" OR JUST "02"? MASTER ACCEPTS EITHER
 .osword0f
 {
     JSR SaveTransientZP
