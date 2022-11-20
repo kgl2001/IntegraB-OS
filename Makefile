@@ -51,4 +51,4 @@ IBOS-125.rom: IBOS-125.asm IBOS.asm Makefile
 # TODO: Add IBOS-126.rom
 
 clean:
-	/bin/rm -f IBOS-120.lst IBOS-120.rom IBOS-120-variant.rom IBOS-120-b-em.lst IBOS-120-b-em.rom IBOS-120-b-em-variant.rom IBOS-121.lst IBOS-121.rom IBOS-121-variant.rom IBOS-122.lst IBOS-122.rom IBOS-123.rom IBOS-123.lst IBOS-124.rom IBOS-124.lst IBOS-125.rom IBOS-125.lsttags TAGS
+	/bin/rm -f IBOS-120.lst IBOS-120.rom IBOS-120-variant.rom IBOS-120-b-em.lst IBOS-120-b-em.rom IBOS-120-b-em-variant.rom IBOS-121.lst IBOS-121.rom IBOS-121-variant.rom IBOS-122.lst IBOS-122.rom IBOS-123.rom IBOS-123.lst IBOS-124.rom IBOS-124.lst IBOS-125.rom IBOS-125.lst tags TAGS
