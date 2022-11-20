@@ -2613,8 +2613,8 @@ IF IBOS_VERSION >= 126
     PHA
     ; Skip the three letter day of the week and the following comma, or whatever else might be
     ; there. The day of the week is at best redundant and at worst inconsistent, so we just
-    ; ignore it and calculate the correct day of week ourselves in ParseAndValidateDate. (OS
-    ; 3.20 trusts the user to supply the day of the week correctly, but it would take extra
+    ; ignore it and calculate the correct day of the week ourselves in ParseAndValidateDate.
+    ; (OS 3.20 trusts the user to supply the day of the week correctly, but it would take extra
     ; code to parse it and it would only open up the possibility of it being set incorrectly.)
     INY:INY:INY:INY
     JSR ParseAndValidateDate
