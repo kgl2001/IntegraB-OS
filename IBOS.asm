@@ -8820,7 +8820,7 @@ IF IBOS_VERSION >= 126
 ;OSWORD &0F (15) Write real time clock
 ; YX?0 is the function code, the string starts at YX+1:
 ;  8 - Set time to value in format "HH:MM:SS"
-; 16 - Set date to value in format "Day,DD Mon Year"
+; 15 - Set date to value in format "Day,DD Mon Year"
 ; 24 - Set time and date to value in format "Day,DD Mon Year.HH:MM:SS"
 ;
 ; Parsing in here is relatively free-and-easy, but that seems to be how OS 3.20 does it as well.
@@ -8843,20 +8843,22 @@ IF IBOS_VERSION >= 126
     JSR CopyRtcDateTimeToPrv
     LDY #0
     ; TODO: I suspect the function code for set date is 15 not 16...
-    LDA (transientCmdPtr),Y:BEQ Done:AND_NOT 8+16:BNE Done ; check function code is 8, 16 or 24
-    LDA (transientCmdPtr),Y:PHA
+    LDA (transientCmdPtr),Y
     INY ; skip function code so (transientCmdPtr),Y accesses first byte of string
-    CMP #8:BEQ NoDate
-    INY:INY:INY:INY ; skip the three letter date and comma (or whatever)
-    JSR ParseAndValidateDate:PLA:BCS Done ; branch if unable to parse
+    CMP #8:BEQ ParseTime
+    CMP #15:BEQ ParseDate
+    CMP #24:BNE Done ; branch if invalid function code
+.ParseDate
     PHA
-.NoDate
-    PLA:CMP #24:BNE NoDateTimeSeparator
+    INY:INY:INY:INY ; skip the three letter date and comma (or whatever)
+    JSR ParseAndValidateDate
+    PLA
+    BCS Done ; branch if unable to parse
+    CMP #15:BEQ ParsedOK
     INY ; skip the "." (or whatever) between the date and time
-.NoDateTimeSeparator
-    CMP #16:BEQ NoTime
+.ParseTime
     JSR ParseAndValidateTime:BCS Done ; branch if unable to parse
-.NoTime
+.ParsedOK
     ; TODO: Is there any risk that we set the time to 23:59:59, it rolls over to 00:00:00 and
     ; then we set the date, effectively setting the time just under one day earlier than the
     ; user wanted? This may not be possible depending on whether setting the time resets the
