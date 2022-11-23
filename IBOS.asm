@@ -2625,10 +2625,13 @@ IF IBOS_VERSION >= 126
 .ParseTime
     JSR ParseAndValidateTime:BCS Done ; branch if unable to parse
 .ParsedOK
-    ; TODO: Is there any risk that we set the time to 23:59:59, it rolls over to 00:00:00 and
-    ; then we set the date, effectively setting the time just under one day earlier than the
-    ; user wanted? This may not be possible depending on whether setting the time resets the
-    ; "sub-second" count to zero and things like that.
+    ; We set the time and date separately so in principle there's a risk the user asks to set
+    ; the time to "Sat,05 Nov 2022.23:59:59", we set the time first and then the clock rolls
+    ; over at midnight and the date advances, then we overwrite the date with the
+    ; user-specified value, so we end up at "Sat,05 Nov 2022.00:00:10" a few seconds later.
+    ; tests/osword0f-d.bas explicitly tests for this and it doesn't seem to happen in practice;
+    ; setting the time probably resets the sub-second count inside the RTC and we always get
+    ; the date set before the time can roll over at midnight.
     JSR CopyPrvTimeToRtc
     JSR CopyPrvDateToRtc
 .Done
