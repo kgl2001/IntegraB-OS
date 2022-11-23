@@ -1,6 +1,6 @@
 REM Test using OSWORD &0F to set the date.
 REM
-REM TODO: NOT CHECKED YET This passes on a Master 128 running MOS 3.23 in b-em.
+REM This passes on a Master 128 running MOS 3.23 in b-em.
 
 DIM day_of_week$(6)
 FOR I%=0 TO 6:READ day_of_week$(I%):NEXT
@@ -18,7 +18,7 @@ DIM block% 256
 
 REM TODO: If we ignored the century when testing the value read back, we'd probably pass OK on Master OS 3.20 and 3.23.
 day_of_week%=6:REM Saturday
-FOR year%=2000 TO 2099
+FOR year%=2000 TO 2079:REM This date range works on OS 3.23
 FOR month%=1 TO 12
 IF month%=2 AND (year% MOD 4)=0 AND year%<>1900 THEN days_in_month%=29 ELSE days_in_month%=month_length%(month%)
 FOR day%=1 TO days_in_month%
