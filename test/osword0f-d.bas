@@ -1,7 +1,7 @@
 REM Test using OSWORD &0F to set the time and date just before midnight doesn't
 REM fail.
 REM
-REM TODO: NOT CHECKED YET This passes on a Master 128 running MOS 3.23 in b-em.
+REM This passes on a Master 128 running MOS 3.23 in b-em.
 
 DIM block% 256
 
