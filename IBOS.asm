@@ -918,7 +918,7 @@ ENDMACRO
 start = &8000
 end = &C000
 ORG start
-; TODO TCO GUARD end
+GUARD end
 
 .RomHeader
     JMP language
