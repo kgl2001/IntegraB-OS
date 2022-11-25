@@ -4061,7 +4061,7 @@ configuredLangTmp = TransientZP ; TODO: OK? PROBABLY
 .NotSoftReset2
     LDX #userRegLangFile:JSR ReadUserReg:JSR LsrA4 ; get *CONFIGURE LANG value
 IF IBOS_VERSION < 126
-    JMP EnterLangA
+    JMP EnterLangA ; SQUASH: BPL always
 ELSE
     ; SFTODO: VERY EXPERIMENTAL - MAY WANT TO MAKE THIS 1.27 NOT 1.26?
     BIT tubePresenceFlag:BMI EnterLangA ; branch if tube is present
@@ -4074,20 +4074,11 @@ ELSE
     JSR OsRdRmFromConfiguredLangTmp ; get copyright offset in A
     STA osRdRmPtr
 .FindRelocationAddressLoop
-IF FALSE
-    INCWORD osRdRmPtr
-ELSE
-    INC osRdRmPtr ; assume we never wrap past the first page of the ROM
-ENDIF
-    JSR OsRdRmFromConfiguredLangTmp
-    TAX:BNE FindRelocationAddressLoop
+    JSR OsRdRmFromConfiguredLangTmpWithPreInc
+    ; On OS 1.20 we know the flags after calling OSRDRM reflect the value in A.
+    BNE FindRelocationAddressLoop
     ; osRdRmPtr now points to the NUL at the end of the copyright string. Advance it by two so we can check the high byte of the relocation address.
-IF FALSE
-    CLC:LDA osRdRmPtr:ADC #2:STA osRdRmPtr:INCCS osRdRmPtr
-ELSE
-    INC osRdRmPtr ; assume we never wrap past the first page of the ROM
-ENDIF
-    JSR OsRdRmFromConfiguredLangTmp
+    JSR OsRdRmFromConfiguredLangTmpWithPreInc
     LDX configuredLangTmp
     CMP #&80:BEQ EnterLangX ; branch if this language will run without tube
     ; TODO: 14 HERE ASSUMES IBOS IS IN BANK 15 (WE CAN'T LET THE OS SEARCH FROM 15 DOWN AS IT WILL ENTER IBOS WHEN IT'S IN SLOT 15) - THIS IS PROBABLY AN OK ASSUMPTION AND IT'S A BYTE SHORTER THAN LDX &F4:DEX, WHICH IS STILL NOT PERFECT AS IT WILL IGNORE ROMS ABOVE IBOS
@@ -4110,6 +4101,8 @@ IF IBOS_VERSION < 126
 ELSE
     JMP &DBD3 ; TODO PROPER LABEL AND COMMENT
 
+.OsRdRmFromConfiguredLangTmpWithPreInc
+    INC osRdRmPtr ; assume we never wrap past the first page of the ROM
 .OsRdRmFromConfiguredLangTmp
     LDY configuredLangTmp:JMP OSRDRM
 ENDIF
