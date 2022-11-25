@@ -3,6 +3,7 @@
 ## Table of contents
 - [Overview](#overview)
 - [Building](#building)
+- [Getting help](#getting-help)
 - [Changelog](#changelog)
 
 ## Overview
@@ -19,21 +20,25 @@ This will create an IBOS-120.rom file, which is the IBOS ROM image. The `-w` opt
 
 All the top level files simply define some constants and include the main source file [IBOS.asm](IBOS.asm).
 
-There is a [Makefile](Makefile) which will build all the versions and verify their md5sum to check they have built correctly. It will also create tags files suitable for use with vim or emacs to help with navigating the source.
+There is a [Makefile](Makefile) which will build all the versions and verify their md5sums to check they have built correctly. It will also create tags files suitable for use with vim or emacs to help with navigating the source.
+
+## Getting help
+
+If you have problems or suggestions for improvement, please post in the [IBOS thread](https://stardot.org.uk/forums/viewtopic.php?f=2&t=25898) on [stardot](https://stardot.org.uk) forums. This is preferred to raising issues in github, but if you want to browse or submit a github issue, please make sure you are using the main repo [here](https://github.com/kgl2001/IntegraB-OS/issues).
 
 ## Changelog
 
 * v1.20 (1989):
   * Last official release by Computech.
 
-* v1.20-b-em:
-  * This is a patched version of v1.20 distributed with the [b-em](https://github.com/stardot/b-em) BBC Micro emulator. It identifies itself as v1.20 so can only be distinguished by examining the ROM or checking for the following changes.
+* v1.20-em:
+  * This is a patched version of v1.20 distributed with the [b-em](https://github.com/stardot/b-em) and [BeebEm](https://github.com/stardot/beebem-windows) BBC Micro emulators. It identifies itself as v1.20 so can only be distinguished by its filename within the emulator installation (integra12p.rom in b-em, IBOS12P.ROM in BeebEm), examining the ROM or checking for the following changes.
   * Set current date to Saturday 1st January 2000 on full reset; previously the date was set to Monday 1st January 1900.
   * Set configured FDRIVE to 0 on full reset; previously this was set to 3.
   * On full reset, set DFS as the default filing system when DNFS is the configured default filing system ROM; previously this was set to NFS.
 
 * v1.21 (2019):
-  * (These changes are described as if v1.20-b-em is the previous version.)
+  * (These changes are described as if v1.20-em is the previous version.)
   * Copyright string and startup banner text changed from "Computech" to "BBC Micro"
   * Set configured LANG to &E and FILE to &C on full reset; previously these were both defaulted to the bank containing IBOS (typically &F).
   * Set configured TV to 255,0 on full reset; previously this was set to 0,1.
@@ -56,3 +61,4 @@ There is a [Makefile](Makefile) which will build all the versions and verify the
   * Support OSWORD &0F (write real time clock).
   * Accept spaces as well as slashes to separate date components in *DATE= arguments.
   * Accept three letter English month abbreviations as well as numeric months in *DATE= arguments.
+  * Set configured TV to 0,1 on full reset, reverting the change in v1.21.
