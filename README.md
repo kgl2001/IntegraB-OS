@@ -11,7 +11,7 @@ This repository holds source code for the IBOS ROM used with the Integra-B expan
 
 ## Building
 
-You will need a copy of [beebasm](https://github.com/stardot/beebasm) 1.09 or later in order to build the sources. Each version has a separate toplevel file, e.g. [IBOS-120.asm] for v1.20. To build any particular version, execute beebasm using a command like:
+You will need a copy of [beebasm](https://github.com/stardot/beebasm) 1.09 or later in order to build the sources. Each version has a separate top level file, e.g. [IBOS-120.asm](IBOS-120.asm) for v1.20. To build any particular version, execute beebasm using a command like:
 ```
 beebasm -w -i IBOS-120.asm
 ```
