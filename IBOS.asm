@@ -2318,7 +2318,7 @@ ptr = &00 ; 2 bytes
 .UserRegDefaultTable
     EQUB userRegBankInsertStatus + 0, &FF     	; default to no banks unplugged
     EQUB userRegBankInsertStatus + 1, &FF 	; default to no banks unplugged
-IF IBOS_VERSION == 120
+IF IBOS_VERSION == 120 OR IBOS_VERSION >= 126
     EQUB userRegModeShadowTV, &17
 ELSE
     EQUB userRegModeShadowTV, &E7
