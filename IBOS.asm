@@ -4359,6 +4359,9 @@ RamPresenceFlags = TransientZP
     ; (it controls locking up the machine on certain types of !BOOT error).
     LDA #osbyteReadWriteEnableDisableStartupMessage:LDX #0:LDY #0:JSR OSBYTE
 
+    ; SQUASH: Would it be shorter to just use "(C)2022" as the copyright string and have a single
+    ; loop here which prints "BBC Micro INTEGRA-B" from ReverseBanner?
+
     ; Print "Computech".
     LDX #ComputechStart - RomHeader
 .BannerLoop1
