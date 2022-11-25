@@ -15,7 +15,7 @@ You will need a copy of [beebasm](https://github.com/stardot/beebasm) 1.09 or la
 ```
 beebasm -w -i IBOS-120.asm
 ```
-This will create an IBOS-120.rom file, which is the IBOS ROM image.
+This will create an IBOS-120.rom file, which is the IBOS ROM image. The `-w` option is important as the source code uses macro names which start with 6502 mnemonics and these will not assemble correctly otherwise.
 
 All the top level files simply define some constants and include the main source file [IBOS.asm].
 
