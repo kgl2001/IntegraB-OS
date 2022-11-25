@@ -1234,15 +1234,9 @@ MinimumAbbreviationLength = 3 ; including the "." which indicates an abbreviatio
     ; Set transientTblPtr=YX[KeywordTableOffset], i.e. make transientTblPtr point to the
     ; keyword sub-table.
     STX transientTblPtr:STY transientTblPtr + 1
-    LDY #KeywordTableOffset:LDA (transientTblPtr),Y
-IF IBOS_VERSION < 126
-    TAX
+    LDY #KeywordTableOffset:LDA (transientTblPtr),Y:TAX
     INY:LDA (transientTblPtr),Y
     STX transientTblPtr
-ELSE
-    STA transientTblPtr
-    INY:LDA (transientTblPtr),Y
-ENDIF
     STA transientTblPtr + 1
     ; Decrement transientCmdPtr by 1 to compensate for using 1-based Y in the following loop.
 IF IBOS_VERSION < 126
@@ -1323,15 +1317,9 @@ LastEntry = &A9
 
     ; Set transientTblPtr = transientTblPtr[CmdTblPtrOffset].
     JSR ibosRef:STX transientTblPtr:STY transientTblPtr + 1
-    LDY #CmdTblPtrOffset:LDA (transientTblPtr),Y
-IF IBOS_VERSION < 126
-    TAX
+    LDY #CmdTblPtrOffset:LDA (transientTblPtr),Y:TAX
     INY:LDA (transientTblPtr),Y:STA transientTblPtr + 1
     STX transientTblPtr
-ELSE
-    STA transientTblPtr
-    INY:LDA (transientTblPtr),Y:STA transientTblPtr + 1
-ENDIF
 
     ; Copy the the four bytes starting at ibosHelpTable+4*A-on-entry into transientTblPtr and
     ; FirstEntry/LastEntry.
@@ -1590,7 +1578,9 @@ TabColumn = 12
 ; spaces.
 .^FindNextCharAfterSpaceSkippingComma
     JSR FindNextCharAfterSpace:BCS SecRts
+IF IBOS_VERSION < 126
     LDA (transientCmdPtr),Y
+ENDIF
     CMP #',':BNE ClcRts
     INY
 .ClcRts
