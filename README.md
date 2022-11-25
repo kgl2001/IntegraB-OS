@@ -28,17 +28,17 @@ There is a [Makefile](Makefile) which will build all the versions and verify the
 
 * v1.20-b-em:
   * This is a patched version of v1.20 distributed with the [b-em](https://github.com/stardot/b-em) BBC Micro emulator. It identifies itself as v1.20 so can only be distinguished by examining the ROM or checking for the following changes.
-  * Set current date to Saturday 1st January 2000 instead of Monday 1st January 1900 on full reset.
-  * Set configured FDRIVE to 0 on full reset (as opposed to 3 in v1.20).
-  * On full reset, set DFS as default filing system when DNFS is the configured default filing system ROM (as opposed to NFS in v1.20).
+  * Set current date to Saturday 1st January 2000 on full reset; previously the date was set to Monday 1st January 1900.
+  * Set configured FDRIVE to 0 on full reset; previously this was set to 3.
+  * On full reset, set DFS as the default filing system when DNFS is the configured default filing system ROM; previously this was set to NFS.
 
 * v1.21 (2019):
-  * Copyright string changed from "Computech" to "BBC Micro"
+  * Copyright string and startup banner text changed from "Computech" to "BBC Micro"
   * Set current date to Saturday 1st January 2000 instead of Monday 1st January 1900 on full reset. (This is the same as v1.20-b-em, but different from the original v1.20.)
   * Set configured LANG to &E and FILE to &C on full reset; previously these were both defaulted to the bank containing IBOS (typically &F).
   * Set configured TV to 255,0 on full reset; previously this was set to 0,1.
   * Set configured FDRIVE to 0 on full reset (as in v1.20-b-em, but a change from v1.20).
-  * On full reset, set DFS as default filing system when DNFS is the configured default filing system ROM (as in v1.20, but a change from v1.20-b-em).
+  * On full reset, set DFS as the default filing system when DNFS is the configured default filing system ROM (as in v1.20, but a change from v1.20-b-em).
 
 * v1.22 (2021):
   * Fix ANFS 4.18 incompatibility, notably a lock up caused by ANFS 4.18 re-issuing service call 1 during reset which caused IBOS to claim vectors twice and end up in an infinite loop as a result.
