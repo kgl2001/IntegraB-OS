@@ -17,9 +17,9 @@ beebasm -w -i IBOS-120.asm
 ```
 This will create an IBOS-120.rom file, which is the IBOS ROM image. The `-w` option is important as the source code uses macro names which start with 6502 mnemonics and these will not assemble correctly otherwise.
 
-All the top level files simply define some constants and include the main source file [IBOS.asm](IBOS.asm).
+All the top level files simply define some constants and include the main source file [IBOS.asm](IBOS.asm)t.
 
-There is a [Makefile] which will build all the versions and verify their md5sum to check they have built correctly. It will also create tags files suitable for use with vim or emacs to help with navigating the source.
+There is a [Makefile](Makefile) which will build all the versions and verify their md5sum to check they have built correctly. It will also create tags files suitable for use with vim or emacs to help with navigating the source.
 
 ## Changelog
 
