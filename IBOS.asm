@@ -943,24 +943,26 @@ ELIF IBOS_VERSION == 124
 ELIF IBOS_VERSION == 125
     EQUS "1.25" ; version string
 ELIF IBOS_VERSION == 126
-    EQUS "1.2X" ; version string TODO SHOULD BE 1.26
+    EQUS "1.26" ; version string
 ENDIF
 .Copyright
-    EQUS 0, "(C) "
-.ComputechStart
+    EQUS 0, "(C)"
+ComputechStart = P% + 1
 IF IBOS_VERSION == 120
-    EQUS "Computech"
+    EQUS " Computech"
 .ComputechEnd
     EQUS " 1989", 0
 ELSE
-    EQUS "BBC Micro"
-.ComputechEnd
+IF IBOS_VERSION < 126
+    EQUS " BBC Micro "
+ENDIF
+ComputechEnd = P% - 1
 IF IBOS_VERSION == 121
-    EQUS " 2019", 0
+    EQUS "2019", 0
 ELIF IBOS_VERSION == 122
-    EQUS " 2021", 0
+    EQUS "2021", 0
 ELSE
-    EQUS " 2022", 0
+    EQUS "2022", 0
 ENDIF
 ENDIF
 
@@ -1232,14 +1234,27 @@ MinimumAbbreviationLength = 3 ; including the "." which indicates an abbreviatio
     ; Set transientTblPtr=YX[KeywordTableOffset], i.e. make transientTblPtr point to the
     ; keyword sub-table.
     STX transientTblPtr:STY transientTblPtr + 1
-    LDY #KeywordTableOffset:LDA (transientTblPtr),Y:TAX
+    LDY #KeywordTableOffset:LDA (transientTblPtr),Y
+IF IBOS_VERSION < 126
+    TAX
     INY:LDA (transientTblPtr),Y
-    STX transientTblPtr ; SQUASH: could just have stored A above instead of TAX
+    STX transientTblPtr
+ELSE
+    STA transientTblPtr
+    INY:LDA (transientTblPtr),Y
+ENDIF
     STA transientTblPtr + 1
     ; Decrement transientCmdPtr by 1 to compensate for using 1-based Y in the following loop.
-    ; SQUASH: Use decrement-by-one technique from http://www.obelisk.me.uk/6502/algorithms.html
+IF IBOS_VERSION < 126
     SEC:LDA transientCmdPtr:SBC #1:STA transientCmdPtr
     DECCC transientCmdPtr + 1
+ELSE
+    ; Decrement by one technique from http://www.obelisk.me.uk/6502/algorithms.html
+    LDA transientCmdPtr:BNE NoBorrow
+    DEC transientCmdPtr + 1
+.NoBorrow
+    DEC transientCmdPtr
+ENDIF
     ; Loop over the keyword sub-table comparing each entry with the word on the command line.
     LDX #0 ; index of current keyword in keyword sub-table
     LDY #0 ; index of current character in command line
@@ -4396,14 +4411,13 @@ RamPresenceFlags = TransientZP
     ; (it controls locking up the machine on certain types of !BOOT error).
     LDA #osbyteReadWriteEnableDisableStartupMessage:LDX #0:LDY #0:JSR OSBYTE
 
-    ; SQUASH: Would it be shorter to just use "(C)2022" as the copyright string and have a single
-    ; loop here which prints "BBC Micro INTEGRA-B" from ReverseBanner?
-
+IF IBOS_VERSION < 126
     ; Print "Computech".
     LDX #ComputechStart - RomHeader
 .BannerLoop1
     LDA RomHeader,X:JSR OSWRCH
     INX:CPX #(ComputechEnd + 1) - RomHeader:BNE BannerLoop1
+ENDIF
 
     ; Print " INTEGRA-B".
     LDX #(ReverseBannerEnd - 1) - ReverseBanner
@@ -4446,6 +4460,9 @@ RamPresenceFlags = TransientZP
 
 .ReverseBanner
     EQUS " B-ARGETNI" ; "INTEGRA-B " reversed
+IF IBOS_VERSION >= 126
+    EQUS " orciM CBB" ; "BBC Micro " reversed
+ENDIF
 .ReverseBannerEnd
 }
 
