@@ -4097,6 +4097,7 @@ ELSE
     ; On OS 1.20 we know the flags after calling OSRDRM reflect the value in A.
     BNE FindRelocationAddressLoop
     ; osRdRmPtr now points to the NUL at the end of the copyright string. Advance it by two so we can check the high byte of the relocation address.
+    INC osRdRmPtr ; assume we never wrap past the first page of the ROM
     JSR OsRdRmFromConfiguredLangTmpWithPreInc
     LDX configuredLangTmp
     CMP #&80:BEQ EnterLangX ; branch if this language will run without tube
@@ -4130,7 +4131,11 @@ ENDIF
 ; SFTODO: This has only one caller
 .PassServiceCallToROMsLessEqualX
     TXA:PHA
+IF IBOS_VERSION < 126
     TSX:LDA L0104,X:TAY ; get Y from the service call SQUASH: Just use LDY L0104,X to load directly?
+ELSE
+    TSX:LDY L0104,X ; get Y from the service call
+ENDIF
     PLA:TAX
     LDA romselCopy:PHA
     LDA #3 ; this service call number
