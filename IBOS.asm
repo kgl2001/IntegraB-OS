@@ -2318,6 +2318,7 @@ ptr = &00 ; 2 bytes
 .UserRegDefaultTable
     EQUB userRegBankInsertStatus + 0, &FF     	; default to no banks unplugged
     EQUB userRegBankInsertStatus + 1, &FF 	; default to no banks unplugged
+; TODO: This could probably be cleaned up to avoid mixing userRegModeShadowTV and userRegDriveCaps changes together, so it's clearer what changed when.
 IF IBOS_VERSION == 120
     EQUB userRegModeShadowTV, &17
 IF IBOS120_VARIANT == 0
