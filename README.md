@@ -2,8 +2,8 @@
 
 ## Table of contents
 - [Overview](#overview)
-- [Changelog](#changelog)
 - [Building](#building)
+- [Changelog](#changelog)
 
 ## Overview
 
