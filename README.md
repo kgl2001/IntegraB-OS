@@ -27,13 +27,13 @@ There is a [Makefile](Makefile) which will build all the versions and verify the
   * Last official release by Computech.
 
 * v1.20-b-em:
-  * This is a patched version of v1.20 distributed with the [b-em](https://github.com/stardot/b-em) BBC Micro emulator. It identifies itself as v1.20 so can only be distinguished by examining the ROM or checking for the following changes.
+  This is a patched version of v1.20 distributed with the [b-em](https://github.com/stardot/b-em) BBC Micro emulator. It identifies itself as v1.20 so can only be distinguished by examining the ROM or checking for the following changes.
   * Set current date to Saturday 1st January 2000 on full reset; previously the date was set to Monday 1st January 1900.
   * Set configured FDRIVE to 0 on full reset; previously this was set to 3.
   * On full reset, set DFS as the default filing system when DNFS is the configured default filing system ROM; previously this was set to NFS.
 
 * v1.21 (2019):
-  * (These changes are described as if v1.20-b-em is the previous version.)
+  (These changes are described as if v1.20-b-em is the previous version.)
   * Copyright string and startup banner text changed from "Computech" to "BBC Micro"
   * Set configured LANG to &E and FILE to &C on full reset; previously these were both defaulted to the bank containing IBOS (typically &F).
   * Set configured TV to 255,0 on full reset; previously this was set to 0,1.
