@@ -24,7 +24,7 @@ There is a [Makefile](Makefile) which will build all the versions and verify the
 
 ## Getting help
 
-If you have problems or suggestions for improvement, please post in the [IBOS thread](https://stardot.org.uk/forums/viewtopic.php?f=2&t=25898) on [stardot](https://stardot.org.uk) forums. This is preferred to raising issues in github, but if you want to browse or submit a github issue, please make sure you are using the main repo [here](https://github.com/kgl2001/IntegraB-OS/issues).
+If you have problems or suggestions for improvement, please post in the [IBOS thread](https://stardot.org.uk/forums/viewtopic.php?f=2&t=25898) on the [stardot](https://stardot.org.uk) forums. This is preferred to raising issues in github, but if you want to browse or submit a github issue, please make sure you are using the main repo [here](https://github.com/kgl2001/IntegraB-OS/issues).
 
 ## Changelog
 
