@@ -4105,6 +4105,7 @@ ELSE
     LDX #14:JMP &DBC8+2 ; TODO: PROPER LABEL, OS 1.20 findBestLanguageROM+2 (in TL disassembly)
 ENDIF
 
+; SFTODO: Is some (not specifically this) of the corner-case code in language selection in IBOS unnecessary? Need to think it through, but there may be code size and complexity savings from removing some of it. Bear in mind that we *are* a language (i.e. we have our NLE), so it's impossible for there to be no language, unlike a "standard" BBC B.
 .NoLanguageEntryAndNoTube
     LDA romselCopy ; enter IBOS as the current language
 .EnterLangA
