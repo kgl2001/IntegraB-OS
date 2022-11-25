@@ -1323,9 +1323,15 @@ LastEntry = &A9
 
     ; Set transientTblPtr = transientTblPtr[CmdTblPtrOffset].
     JSR ibosRef:STX transientTblPtr:STY transientTblPtr + 1
-    LDY #CmdTblPtrOffset:LDA (transientTblPtr),Y:TAX
+    LDY #CmdTblPtrOffset:LDA (transientTblPtr),Y
+IF IBOS_VERSION < 126
+    TAX
     INY:LDA (transientTblPtr),Y:STA transientTblPtr + 1
-    STX transientTblPtr ; SQUASH: Just STA in place of TAX above
+    STX transientTblPtr
+ELSE
+    STA transientTblPtr
+    INY:LDA (transientTblPtr),Y:STA transientTblPtr + 1
+ENDIF
 
     ; Copy the the four bytes starting at ibosHelpTable+4*A-on-entry into transientTblPtr and
     ; FirstEntry/LastEntry.
