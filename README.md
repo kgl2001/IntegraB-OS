@@ -39,7 +39,7 @@ There is a [Makefile](Makefile) which will build all the versions and verify the
   * Set configured TV to 255,0 on full reset; previously this was set to 0,1.
 
 * v1.22 (2021):
-  * Fix ANFS 4.18 incompatibility, notably a lock up caused by ANFS 4.18 re-issuing service call 1 during reset which caused IBOS to claim vectors twice and end up in an infinite loop as a result.
+  * Fix lock up with ANFS 4.18. This was a result of ANFS 4.18 re-issuing service call 1 during reset, which caused IBOS to claim vectors twice and end up in an infinite loop as a result.
 
 * v1.23 (2022):
   * Make IBOS's REMV handler return the character in both A and Y when operating on the printer buffer whether the caller is trying to examine or remove characters. This fixes problems when printing to a network printer. Earlier versions returned the character in Y for examine calls and in A for remove calls, which is the wrong way round but conveniently works correctly most of the time due to quirks in OS 1.20. Returning the character in both registers all the time is safe and maximally compatible.
@@ -49,7 +49,7 @@ There is a [Makefile](Makefile) which will build all the versions and verify the
   * Apply the configured PRINTER option later during the reset (break) sequence; this fixes problems when the configured PRINTER option is a network printer.
 
 * v1.25 (2022):
-  * Include the command argument specification in the error message generated when a * command's arguments are incorrect. (Earlier versions behaved inconsistently and sometimes did this and sometimes didn't.)
+  * Include the command argument specification in the error message generated when a * command's arguments are incorrect. Earlier versions behaved inconsistently and sometimes did this and sometimes didn't.
   * Don't beep when parsing an integer from the command line fails.
 
 * v1.26 (2022):
