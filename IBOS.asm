@@ -1445,7 +1445,11 @@ Tmp = &AC
 .AdvanceLoop
     CPX Tmp:BEQ AdvanceLoopDone
     CLC:LDA (TableEntryPtr),Y:ADC TableEntryPtr:STA TableEntryPtr
-    LDA TableEntryPtr + 1:ADC #0:STA TableEntryPtr + 1 ; SQUASH: INCCS TableEntryPtr + 1
+IF IBOS_VERSION < 126
+    LDA TableEntryPtr + 1:ADC #0:STA TableEntryPtr + 1
+ELSE
+    INCCS TableEntryPtr + 1
+ENDIF
     INX:BNE AdvanceLoop ; always branch
 .AdvanceLoopDone
 
@@ -1499,8 +1503,12 @@ Tmp = &AC
     TYA:JMP SaveA
 
 .GenerateToScreen
-    ; SQUASH: V hasn't changed since we entered this routine, so BIT is redundant.
-    BIT transientDynamicSyntaxState:BVS NoLeadingSpaces
+IF IBOS_VERSION < 126
+    BIT transientDynamicSyntaxState
+ELSE
+    ; V hasn't been modified since we entered this routine.
+ENDIF
+    BVS NoLeadingSpaces
     JSR printSpace:JSR printSpace
 .NoLeadingSpaces
     LDA #2
