@@ -4130,6 +4130,7 @@ IF IBOS_VERSION < 126
     LDX #userRegLangFile
 ELSE
     LDX #userRegFile ; TODO!?
+    ; SQUASH: We could potentially omit the AND #&0F in the following line now.
 ENDIF
     JSR ReadUserReg:AND #&0F:TAX ; get *CONFIGURE FILE value
     ; SFTODO: If the selected filing system is >= our bank, start one bank lower?! This seems odd, although *if* we know we're bank 15, this really just means "start below us" (presumably to avoid infinite recursion)
