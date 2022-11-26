@@ -2971,7 +2971,11 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 .ShowBankLoop
     LDA prvPrintBufferBankList,Y:BMI AllBanksShown
     SEC:JSR PrintADecimal
+IF IBOS_VERSION < 126
     LDA #',':JSR OSWRCH
+ELSE
+    JSR CommaOSWRCH
+ENDIF
     INY:CPY #MaxPrintBufferSwrBanks:BNE ShowBankLoop
 .AllBanksShown
     LDA #vduDel:JSR OSWRCH ; delete the last ',' that was just printed
@@ -3886,7 +3890,7 @@ Tmp = TransientZP + 7 ; ConfRefDynamicSyntaxGenerationForTransientCmdIdx uses +6
     JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
     PLA:AND #%00001111:JSR PrintADecimalNoPad
     CMP Tmp:BEQ OSNEWLIndirect ; just print one bank if both the same
-    LDA #',':JSR OSWRCH ; SQUASH: factor out?
+    JSR CommaOSWRCH
     LDA Tmp:JMP PrintADecimalNoPadNewline ; SQUASH: arrange to fall through?
 
 .ConfLangWrite
@@ -4015,7 +4019,11 @@ Tmp = TransientZP + 6
     ORA #%11111000
 .Positive
     JSR PrintADecimalNoPad
+IF IBOS_VERSION < 126
     LDA #',':JSR OSWRCH
+ELSE
+    JSR CommaOSWRCH
+ENDIF
     PLA:AND #1:JMP PrintADecimalNoPadNewline
 
 .ConfTVWrite
@@ -4052,6 +4060,9 @@ IF IBOS_VERSION < 126
     STA L00AE
     RTS
 }
+ELSE
+.CommaOSWRCH
+    LDA #',':JMP OSWRCH
 ENDIF
 			
 ; Autoboot - Service call &03
@@ -4821,8 +4832,12 @@ ENDIF
             JSR PrintADecimal								;Convert binary number to numeric characters and write characters to screen
 .bankShown  CPY #&03								;Check for 4th bank
             BEQ osnewlPrvDisexitSc							;Yes? Then end
+IF IBOS_VERSION < 126
             LDA #','
             JSR OSWRCH								;Write to screen
+ELSE
+	  JSR CommaOSWRCH
+ENDIF
             JSR printSpace								;write ' ' to screen
             INY									;Next
             BNE ShowLoop								;Loop for 'X', 'Y' & 'Z'
