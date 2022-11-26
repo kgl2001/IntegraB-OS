@@ -2313,7 +2313,7 @@ ELSE
     ; to be entered so the user can enter *CONFIGURE commands, and with the new language entry
     ; code we will enter a valid language or NLE even if IBOS isn't in bank 15. This allows us
     ; to save a few bytes by not setting LANG/FILE to IBOS's actual bank.
-    CPX #userRegFile:BEQ IsLangFile
+    CPX #userRegLang:BEQ IsLangFile
     CPX #userRegFile:BNE NotLangFile
 .IsLangFile
     LDA #&FF
