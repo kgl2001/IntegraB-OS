@@ -162,8 +162,8 @@ rtcUserBase = &0E
 IF IBOS_VERSION < 126
 userRegLangFile = &05 ; b0-3: FILE, b4-7: LANG
 ELSE
-userRegLang = &05 ; TODO: DOCUMENT ORDER OF BITS, ONE WILL BE TUBE, ONE WILL BE NON-TUBE
-userRegFile = &11; TODO: DOCUMENT FORMAT, I THINK THIS IS FREE BUT WE'LL FIND OUT, WON'T WE? :-)
+userRegLang = &05 ; b0-3: LANG for no tube present, b4-7: LANG for tube present
+userRegFile = &11; b0-3: FILE, b4-7: spare
 ENDIF
 userRegBankInsertStatus = &06 ; 2 bytes, 1 bit per bank, bit number == bank number
 userRegModeShadowTV = &0A ; 0-2: MODE / 3: SHADOW / 4: TV interlace / 5-7: TV screen shift
@@ -2309,9 +2309,10 @@ ELSE
     LDA romselCopy:ASL A:ASL A:ASL A:ASL A:LDA #&EC
 ENDIF
 ELSE
-    ; We default both of these to &FF. This will probably (if IBOS is in bank 15) cause the NLE to be
-    ; entered so the user can enter *CONFIGURE commands, and with the new language entry code we will
-    ; enter a valid language or NLE even if IBOS isn't in bank 15.
+    ; We default both of these to &FF. This will probably (if IBOS is in bank 15) cause the NLE
+    ; to be entered so the user can enter *CONFIGURE commands, and with the new language entry
+    ; code we will enter a valid language or NLE even if IBOS isn't in bank 15. This allows us
+    ; to save a few bytes by not setting LANG/FILE to IBOS's actual bank.
     CPX #userRegFile:BEQ IsLangFile
     CPX #userRegFile:BNE NotLangFile
 .IsLangFile
@@ -3633,8 +3634,8 @@ IF IBOS_VERSION < 126
 		EQUB userRegLangFile,&00,&04						;FILE ->	  &05 Bits 0..3
 		EQUB userRegLangFile,&04,&04						;LANG ->	  &05 Bits 4..7
 ELSE
-		EQUB userRegFile,&00,&04						;FILE ->	  &05 Bits 0..3 TODO UPDATE COMMENT, NOT SURE WHAT PARAMETERS (IF ANY) WE ACTUALLY WANT FOR THIS NOW
-		EQUB userRegLang,&00,&08						;LANG ->	  &05 Bits 4..7 TODO UPDATE COMMENT, NOT SURE WHAT PARAMETERS (IF ANY) WE ACTUALLY WANT FOR THIS NOW
+		EQUB userRegFile,&00,&04						;FILE ->	  &05 Bits 0..3
+		EQUB userRegLang,&00,&08						;LANG ->	  &05 Bits 4..7 tube language, bits 0..3 non-tube language
 ENDIF
 		EQUB userRegTubeBaudPrinter,&02,&03					;BAUD ->	  &0F Bits 2..4
 		EQUB userRegDiscNetBootData,&05,&03					;DATA ->	  &10 Bits 5..7
@@ -4174,7 +4175,7 @@ IF IBOS_VERSION < 126
 ELSE
     ; Get the *CONFIGURE FILE value. SQUASH: For now it has a whole byte to itself so we could
     ; almost get away without AND #maxBank, *but* doing that would mean it has to be set to a
-    ; value of the form &0x, which would take extra code in FullReset.
+    ; value of the form &0x in FullReset, which would take extra code.
     LDX #userRegFile:JSR ReadUserReg:AND #maxBank:TAX
 ENDIF
     ; SFTODO: If the selected filing system is >= our bank, start one bank lower?! This seems odd, although *if* we know we're bank 15, this really just means "start below us" (presumably to avoid infinite recursion)
@@ -4214,17 +4215,16 @@ IF IBOS_VERSION < 126
 ELSE
     ; SFTODO: VERY EXPERIMENTAL - MAY WANT TO MAKE THIS 1.27 NOT 1.26?
     LDX #userRegLang:JSR ReadUserReg
-    ; A is now &tn where t is the language bank if tube is active, n if tube is not active.
+    ; A is now &tn where t is the language bank if tube is present, n if tube is not present.
     BIT tubePresenceFlag:BMI EnterLangALsr4 ; branch if tube is present to enter bank &t
-    ; Tube is not active, so we want to enter bank &n. However, if that bank has a relocation
+    ; Tube is not present, so we want to enter bank &n. However, if that bank has a relocation
     ; address other than &8000, we can't enter it without hanging, so we check that first. If
     ; we can't enter it safely, we'll fall back to the IBOS NLE.
     AND #maxBank
     TAX:LDA RomTypeTable,X:AND #%00100000:BEQ EnterLangX ; branch if relocation bit not set
     JSR SetOsRdRmPtrToCopyrightOffset
     STX configuredLangTmp
-    JSR OsRdRmFromConfiguredLangTmp ; get copyright offset in A
-    STA osRdRmPtr
+    JSR OsRdRmFromConfiguredLangTmp:STA osRdRmPtr ; set osRdRmPtr to copyright string
 .FindRelocationAddressLoop
     JSR OsRdRmFromConfiguredLangTmpWithPreInc
     ; On OS 1.20 we know the flags after calling OSRDRM reflect the value in A.
@@ -4242,7 +4242,7 @@ ELSE
     JSR LsrA4
     TAX
 .EnterLangX
-    ; Before trying to enter the bank as a language, we check it has a language entry. If it
+    ; Before trying to enter bank X as a language, we check it has a language entry. If it
     ; doesn't, we'll fall back to the IBOS NLE.
     LDA RomTypeTable,X:ROL A:BMI HasLanguageEntry
 .NoLanguageEntry
