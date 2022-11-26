@@ -3879,33 +3879,33 @@ ENDIF
     JMP SetConfigValueA ; SQUASH: move Conf1 block so we can fall through?
 }
 
+; SQUASH: If we moved this to just before PrintADecimal we could fall through into it
+.PrintADecimalNoPad
+    SEC:JMP PrintADecimal
+
 IF IBOS_VERSION >= 126
 .ConfLang
 {
 Tmp = TransientZP + 7 ; ConfRefDynamicSyntaxGenerationForTransientCmdIdx uses +6
 
-    BCS ConfLangWrite
-    JSR GetConfigValue:PHA
-    JSR LsrA4:STA Tmp
-    JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
-    PLA:AND #%00001111:JSR PrintADecimalNoPad
-    CMP Tmp:BEQ OSNEWLIndirect ; just print one bank if both the same
-    JSR CommaOSWRCH
-    LDA Tmp:JMP PrintADecimalNoPadNewline ; SQUASH: arrange to fall through?
-
-.ConfLangWrite
+    BCC ConfLangRead
     JSR ConvertIntegerDefaultDecimalChecked:AND #maxBank:STA Tmp:PHA
     JSR FindNextCharAfterSpaceSkippingComma:BCS NoSecondArgument
     PLA ; discard duplicate of first argument
     JSR ConvertIntegerDefaultDecimalChecked:PHA ; no need for AND #maxBank as we are going to ASL A*4
 .NoSecondArgument
     PLA:ASL A:ASL A:ASL A:ASL A:ORA Tmp:JMP SetConfigValueA
+
+.ConfLangRead
+    JSR GetConfigValue:PHA
+    JSR LsrA4:STA Tmp
+    JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
+    PLA:AND #%00001111:JSR PrintADecimalNoPad
+    CMP Tmp:BEQ OSNEWLIndirect ; just print one bank if both the same
+    JSR CommaOSWRCH
+    LDA Tmp:FALLTHROUGH_TO PrintADecimalNoPadNewline
 }
 ENDIF
-			
-; SQUASH: If we moved this to just before PrintADecimal we could fall through into it
-.PrintADecimalNoPad
-    SEC:JMP PrintADecimal
 
 .PrintADecimalNoPadNewline
     JSR PrintADecimalNoPad
