@@ -1674,6 +1674,8 @@ ENDIF
 }
 
 ;*HELP Service Call
+; ENHANCE: IBOS doesn't print everything in response to "*HELP ."
+; ENHANCE: IBOS doesn't print in response to things like "*HELP DFS RTC"
 .service09
 {
     JSR SetTransientCmdPtr
