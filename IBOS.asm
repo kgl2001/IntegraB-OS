@@ -4163,7 +4163,7 @@ ELSE
     ; Get the *CONFIGURE FILE value. SQUASH: For now it has a whole byte to itself so we could
     ; almost get away without AND #maxBank, *but* doing that would mean it has to be set to a
     ; value of the form &0x, which would take extra code in FullReset.
-    LDX #userRegFile:AND #maxBank:JSR ReadUserReg:TAX
+    LDX #userRegFile:JSR ReadUserReg:AND #maxBank:TAX
 ENDIF
     ; SFTODO: If the selected filing system is >= our bank, start one bank lower?! This seems odd, although *if* we know we're bank 15, this really just means "start below us" (presumably to avoid infinite recursion)
     CPX romselCopy:BCC SelectFirstFilingSystemROMLessEqualXAndLanguage
