@@ -776,9 +776,9 @@ prvLastScreenMode = prv83 + &3F
 
 ; We take advantage of some unofficial OS 1.20 entry points; since IBOS only needs to run on
 ; the Model B this is fine. SQUASH: Any prospect of taking this further? Tastefully of course!
-LDBE6       = &DBE6
 LDC16       = &DC16
 osStxRomselAndCopyAndRts = &DC16 ; STX romselCopy:STX romsel:RTS in OS 1.20
+osEntryClcOsbyteEnterLanguage = &DBE6 ; CLC then enter OSBYTE 142 in OS 1.20
 osEntryOsbyteIssueServiceRequest = &F168 ; start of OSBYTE 143 in OS 1.20
 osReturnFromRom = &FF89
 LF16E       = &F16E
@@ -4139,17 +4139,42 @@ ENDIF
 .^SelectFirstFilingSystemROMLessEqualXAndLanguage
     JSR PassServiceCallToROMsLessEqualX
     LDA lastBreakType:BNE NotSoftReset2
+IF IBOS_VERSION < 126
     LDA currentLanguageRom:BPL EnterLangA ; SFTODO: Do we expect this to always branch? Not at all sure.
+ELSE
+    LDX currentLanguageRom:BPL EnterLangX ; SFTODO: Do we expect this to always branch? Not at all sure.
+ENDIF
 .NotSoftReset2
 IF IBOS_VERSION < 126
     LDX #userRegLangFile:JSR ReadUserReg:JSR LsrA4 ; get *CONFIGURE LANG value
     JMP EnterLangA ; SQUASH: BPL always
+
+.NoLanguageEntryAndNoTube
+    LDA romselCopy ; enter IBOS as the current language
+.EnterLangA
+    TAX
+.EnterLangX
+    LDA RomTypeTable,X:ROL A:BPL NoLanguageEntry
+    JMP osEntryClcOsbyteEnterLanguage
+
+.NoLanguageEntry
+    ; I don't think this case adds any value compared to just entering IBOS as the current
+    ; language. The tube probably isn't going to do anything exciting when told no language was
+    ; found at break, and I don't think it can be important to trigger this case because on a
+    ; BBC B without IBOS 99.9% of the time there *will* be a language (6502 BBC BASIC) whatever
+    ; co-pro is connected.
+    BIT tubePresenceFlag:BPL NoLanguageEntryAndNoTube
+    ; Inform tube no language was found at break.
+    LDA #0:CLC:JMP L0400
 ELSE
-    LDA #14 ; SFTODO TEMP HACK SO I CAN WORK ON *CONFIGURE/*STATUS
     ; SFTODO: VERY EXPERIMENTAL - MAY WANT TO MAKE THIS 1.27 NOT 1.26?
-    BIT tubePresenceFlag:BMI EnterLangA ; branch if tube is present
-    ; No tube is present, so check the ROM type byte of the configure language and see if it has the relocation bit set. If it does, it will only run on the tube and is no use to us, so fall back to the default OS behaviour of selecting the highest priority language. This could also be a tube-only language, but at least we've tried. More importantly, this opens up the prospect of having non-HI BASIC as the highest priority language, HIBASIC in a lower priority bank and using *CONFIGURE LANG to select HIBASIC as the default, which would in practice mean you get HIBASIC if the tube is enabled and non-HI BASIC otherwise. Note that we don't make any attempt to check the type of second processor so this isn't perfect, but it's no worse than not doing any of this. SFTODO: TRUE?
-    ; TODO: THAT'S NOT QUITE RIGHT - THE RELOCATION BIT IS SET ON NORMAL BASIC TOO, WE NEED TO CHECK THE RELOCATION ADDRESWS AS WELL...
+    LDX #userRegLang:JSR ReadUserReg
+    ; A is now &tn where t is the language bank if tube is active, n if tube is not active.
+    BIT tubePresenceFlag:BMI EnterLangALsr4 ; branch if tube is present to enter bank &t
+    ; No tube is present, so we want to enter bank &n. However, if that bank has a relocation
+    ; address other than &8000, we can't enter it without hanging, so we check that first. If
+    ; we can't enter it safely, we'll fall back to the IBOS NLE.
+    AND #maxBank
     TAX:LDA RomTypeTable,X:AND #%00100000:BEQ EnterLangX ; branch if relocation bit not set
     LDA #lo(CopyrightOffset):STA osRdRmPtr
     LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
@@ -4160,32 +4185,26 @@ ELSE
     JSR OsRdRmFromConfiguredLangTmpWithPreInc
     ; On OS 1.20 we know the flags after calling OSRDRM reflect the value in A.
     BNE FindRelocationAddressLoop
-    ; osRdRmPtr now points to the NUL at the end of the copyright string. Advance it by two so we can check the high byte of the relocation address.
+    ; osRdRmPtr now points to the NUL at the end of the copyright string. Advance it by two so
+    ; we can check the high byte of the relocation address. Ideally we'd check the low byte of
+    ; the relocation address is 0, but I don't think it's critical and it saves code to just
+    ; check the high byte.
     INC osRdRmPtr ; assume we never wrap past the first page of the ROM
     JSR OsRdRmFromConfiguredLangTmpWithPreInc
     LDX configuredLangTmp
-    CMP #&80:BEQ EnterLangX ; branch if this language will run without tube
-    ; TODO: 14 HERE ASSUMES IBOS IS IN BANK 15 (WE CAN'T LET THE OS SEARCH FROM 15 DOWN AS IT WILL ENTER IBOS WHEN IT'S IN SLOT 15) - THIS IS PROBABLY AN OK ASSUMPTION AND IT'S A BYTE SHORTER THAN LDX &F4:DEX, WHICH IS STILL NOT PERFECT AS IT WILL IGNORE ROMS ABOVE IBOS
-    LDX #14:JMP &DBC8+2 ; TODO: PROPER LABEL, OS 1.20 findBestLanguageROM+2 (in TL disassembly)
-ENDIF
-
-; SFTODO: Is some (not specifically this) of the corner-case code in language selection in IBOS unnecessary? Need to think it through, but there may be code size and complexity savings from removing some of it. Bear in mind that we *are* a language (i.e. we have our NLE), so it's impossible for there to be no language, unlike a "standard" BBC B.
-.NoLanguageEntryAndNoTube
-    LDA romselCopy ; enter IBOS as the current language
-.EnterLangA
+    CMP #&80:BEQ EnterLangX ; branch if this language has a relocation address &80xx
+    BMI NoLanguageEntry ; always branch
+.EnterLangALsr4
+    JSR LsrA4
     TAX
 .EnterLangX
-    LDA RomTypeTable,X:ROL A:BPL NoLanguageEntry
-    JMP LDBE6 ;OSBYTE 142 - ENTER LANGUAGE ROM AT &8000 (http://mdfs.net/Docs/Comp/BBC/OS1-20/D940) - we enter one byte early so carry is clear, which might indicate "initialisation" (this based on that mdfs.net page; I can't find anything about this in a quick look at other documentation)
-
+    ; Before trying to enter the bank as a language, we check it has a language entry. If it
+    ; doesn't well fall back to the IBOS NLE.
+    LDA RomTypeTable,X:ROL A:BMI HasLanguageEntry
 .NoLanguageEntry
-    ; SFTODO: Is there any reason to do this, rather than just always enter ourselves as the current language? Or does "informing the tube" there is no language do something special? I find this hard to believe, because 99.9% of the time in a standard BBC B, BASIC is present in ROM regardless of what copro you have fitted, and so the OS_equivalent code to this is not going to execute. I suspect on a standard BBC B this is slightly useful because (perhaps with a Z80 copro, for example) it allows CP/M to boot even if you don't want to waste a ROM socket on 6502 BASIC, but I am guessing. But we *do* always have a language and so I am not sure this case is useful.
-    BIT tubePresenceFlag:BPL NoLanguageEntryAndNoTube
-IF IBOS_VERSION < 126
-    ; Inform tube no language was found at break.
-    LDA #0:CLC:JMP L0400
-ELSE
-    JMP &DBD3 ; TODO PROPER LABEL AND COMMENT
+    LDX romselCopy ; enter IBOS as the current language; we know it has a language entry!
+.HasLanguageEntry
+    JMP osEntryClcOsbyteEnterLanguage
 
 .OsRdRmFromConfiguredLangTmpWithPreInc
     INC osRdRmPtr ; assume we never wrap past the first page of the ROM
