@@ -125,23 +125,27 @@ rtcRegC = &0C
 
 rtcUserBase = &0E
 ;RTC User Registers (add &0E to get real RTC user register - registers &00-&0D are for RTC clock registers)
+;The hex values shown after the register numbers are the defaults, where these are simple
+;enough to include. Defaults may vary with IBOS version and the full details can be seen in the
+;code at UserRegDefaultTable.
 ;Register &00
 ;Register &01
 ;Register &02
 ;Register &03
 ;Register &04
-;Register &05
+;Register &05 -               <v1.26: 0-3: FILE, 4-7: LANG / >=v1.26: 0-3: non-tube-LANG, 4-7: tube-LANG
 ;Register &06 - &FF:	*INSERT status for ROMS &0F to &08. Default: &FF (All 8 ROMS enabled)
 ;Register &07 - &FF:	*INSERT status for ROMS &07 to &00. Default: &FF (All 8 ROMS enabled)
 ;Register &08
 ;Register &09
-;Register &0A - &17:	0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift
+;Register &0A - &17/&E7:	0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift
 ;Register &0B - &23:	0-2: FDRIVE / 3-5: CAPS
 ;Register &0C - &19:	0-7: Keyboard Delay
 ;Register &0D - &05:	0-7: Keyboard Repeat
 ;Register &0E - &0A:	0-7: Printer Ignore
 ;Register &0F - &2D:	0: Tube / 2-4: BAUD / 5-7: Printer
 ;Register &10 - &A0:	0: File system disc/net flag / 4: Boot / 5-7: Data
+;Register &11 - &FF:          <v1.26: unused / >=v1.26: 0-3: FILE, 4-7: spare
 
 
 ; These registers are held in private RAM at &83B2-&83FF; this is battery-backed
@@ -3634,7 +3638,7 @@ IF IBOS_VERSION < 126
 		EQUB userRegLangFile,&00,&04						;FILE ->	  &05 Bits 0..3
 		EQUB userRegLangFile,&04,&04						;LANG ->	  &05 Bits 4..7
 ELSE
-		EQUB userRegFile,&00,&04						;FILE ->	  &05 Bits 0..3
+		EQUB userRegFile,&00,&04						;FILE ->	  &11 Bits 0..3
 		EQUB userRegLang,&00,&08						;LANG ->	  &05 Bits 4..7 tube language, bits 0..3 non-tube language
 ENDIF
 		EQUB userRegTubeBaudPrinter,&02,&03					;BAUD ->	  &0F Bits 2..4
@@ -3658,7 +3662,7 @@ ENDIF
 IF IBOS_VERSION < 126
 		EQUW Conf1-1							;LANG <0-15>		Type 1: Number starting 0
 ELSE
-		EQUW ConfLang-1							;LANG <0-15>		Type 1: Number starting 0 TODO UPDATE COMMENT
+		EQUW ConfLang-1							;LANG <0-15>(,<0-15)	Language: pair of ROM bank numbers
 ENDIF
 		EQUW Conf2-1							;BAUD <1-8>		Type 2:
 		EQUW Conf1-1							;DATA <0-7>		Type 1: Number starting 0
