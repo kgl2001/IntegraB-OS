@@ -1151,8 +1151,13 @@ ENDIF
 .ConfParTbl
 t = &80
     ;     n, char 1, 2, ..., n-1 	   i  ConfTbl entry		fully expanded text
+IF IBOS_VERSION < 126
     EQUB  7, t+1, "(D/N)"		;  0  FILE		"<0-15>(D/N)"
     EQUB  5, t+19, "15>"		;  1  LANG		"<0-15>"
+ELSE
+    EQUB  7, t+20, "(D/N)"		;  0  FILE		"<0-15>(D/N)"
+    EQUB  6, t+20, "(,", t+20, ")"      ;  1  LANG		"<0-15>(,<0-15>)"
+ENDIF
     EQUB  6, "<1-8>"		;  2  BAUD          	"<1-8>"
     EQUB  4, t+19, "7>"		;  3  DATA		"<0-7>"
     EQUB  2, t+3			;  4  FDRIVE		"<0-7>"
@@ -1171,6 +1176,9 @@ t = &80
     EQUB  4, "/NO"			; 17  -			"/NO"
     EQUB  5, "CAPS"			; 18  -			"CAPS"
     EQUB  4, "<0-"			; 19  -			"<0-"
+IF IBOS_VERSION >= 126
+    EQUB  5, t+19, "15>"                ; 20  -                       "<0-15>"
+ENDIF
     EQUB  0
 }
 
