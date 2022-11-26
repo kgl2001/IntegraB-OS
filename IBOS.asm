@@ -2285,7 +2285,6 @@ ELSE
     ; SQUASH: All but the last LDA instruction are redundant.
     LDA romselCopy:ASL A:ASL A:ASL A:ASL A:LDA #&EC
 ENDIF
-.NotLangFile
 ELSE
     ; We default both of these to &FF. This will probably (if IBOS is in bank 15) cause the NLE to be
     ; entered so the user can enter *CONFIGURE commands, and with the new language entry code we will
@@ -2294,8 +2293,8 @@ ELSE
     CPX #userRegFile:BNE NotLangFile
 .IsLangFile
     LDA #&FF
-.NotLangFile
 ENDIF
+.NotLangFile
     JSR WriteUserReg
     DEX:BPL ZeroUserRegLoop
 
@@ -4179,13 +4178,12 @@ ELSE
     LDX #userRegLang:JSR ReadUserReg
     ; A is now &tn where t is the language bank if tube is active, n if tube is not active.
     BIT tubePresenceFlag:BMI EnterLangALsr4 ; branch if tube is present to enter bank &t
-    ; No tube is present, so we want to enter bank &n. However, if that bank has a relocation
+    ; Tube is not active, so we want to enter bank &n. However, if that bank has a relocation
     ; address other than &8000, we can't enter it without hanging, so we check that first. If
     ; we can't enter it safely, we'll fall back to the IBOS NLE.
     AND #maxBank
     TAX:LDA RomTypeTable,X:AND #%00100000:BEQ EnterLangX ; branch if relocation bit not set
-    LDA #lo(CopyrightOffset):STA osRdRmPtr
-    LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
+    JSR SetOsRdRmPtrToCopyrightOffset
     STX configuredLangTmp
     JSR OsRdRmFromConfiguredLangTmp ; get copyright offset in A
     STA osRdRmPtr
@@ -6398,7 +6396,7 @@ SFTODOTMP2 = L00AB
     LDA #')':JSR OSWRCH
     JSR printSpace
     ; Print the ROM title and version.
-    LDA #lo(CopyrightOffset):STA osRdRmPtr:LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
+    JSR SetOsRdRmPtrToCopyrightOffset
     LDY SFTODOTMP:JSR OSRDRM:STA SFTODOTMP2
     LDA #lo(Title):STA osRdRmPtr:ASSERT hi(Title) == hi(CopyrightOffset)
 .TitleAndVersionLoop
@@ -6409,6 +6407,9 @@ SFTODOTMP2 = L00AB
     INC osRdRmPtr ; advance osRdRmPtr; we know the high byte isn't going to change
     LDA osRdRmPtr:CMP SFTODOTMP2:BCC TitleAndVersionLoop
     JMP OSNEWL
+.^SetOsRdRmPtrToCopyrightOffset
+    LDA #lo(CopyrightOffset):STA osRdRmPtr:LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
+    RTS
 }
 
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be
