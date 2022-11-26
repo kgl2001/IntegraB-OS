@@ -3877,17 +3877,18 @@ ENDIF
 IF IBOS_VERSION >= 126
 .ConfLang
 {
-Tmp = TransientZP + 6
+Tmp = TransientZP + 7 ; ConfRefDynamicSyntaxGenerationForTransientCmdIdx uses +6
 
     BCS ConfLangWrite
     ; TODO: ADD COMMENTS AS NECESSARY - JUST HACKING FOR THE MOMENT
     ; TODO: Should we only show a single value if both are the same?
-    JSR GetConfigValue
-    PHA:JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx:PLA ; SQUASH: worth factoring out?
-    PHA
-    AND #%00001111:JSR PrintADecimalNoPad
+    JSR GetConfigValue:PHA
+    JSR LsrA4:STA Tmp
+    JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
+    PLA:AND #%00001111:JSR PrintADecimalNoPad
+    CMP Tmp:BEQ OSNEWLIndirect ; just print one bank if both the same
     LDA #',':JSR OSWRCH ; SQUASH: factor out?
-    PLA:JSR LsrA4:JMP PrintADecimalNoPadNewline
+    LDA Tmp:JMP PrintADecimalNoPadNewline
 
 .ConfLangWrite
     JSR ConvertIntegerDefaultDecimalChecked:AND #maxBank:STA Tmp:PHA
@@ -3905,6 +3906,7 @@ ENDIF
 
 .PrintADecimalNoPadNewline
     JSR PrintADecimalNoPad
+.OSNEWLIndirect
     JMP OSNEWL
 
 .ConvertIntegerDefaultDecimalChecked
