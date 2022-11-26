@@ -321,11 +321,13 @@ oswdbtY = &F1
 ; SFTODO: These may need renaming, or they may not be as general as I am assuming
 KeywordTableOffset = 6
 ParameterTableOffset = 8
+IF IBOS_VERSION < 126
 ; SQUASH: I am not sure CmdTblPtrOffset is actually useful - every "table" holds a different
 ; data structure in the thing pointed to by CmdTblPtrOffset so there's no generic code which
 ; uses this pointer - we can just hard-code the relevant address where we need it and not lose
 ; any real generality.
 CmdTblPtrOffset = 10
+ENDIF
 
 ; This is a byte of unused CFS/RFS workspace which IBOS repurposes to track
 ; state during mode changes. This is probably done because it's quicker than
@@ -982,8 +984,10 @@ ENDIF
 		EQUW CmdTbl							;Start of * command table
 		ASSERT P% = CmdRef + ParameterTableOffset
 		EQUW CmdParTbl							;Start of * command parameter table
+IF IBOS_VERSION < 126
 		ASSERT P% = CmdRef + CmdTblPtrOffset
 		EQUW CmdExTbl							;Start of * command execute address table
+ENDIF
 
 ;* commands
 .CmdTbl		EQUS &06, "ALARM"
@@ -1077,7 +1081,7 @@ ENDIF
 		EQUS &04, &AE, "4>"							;Parameter &AF:			'(<0-4>'
 
 ;lookup table for start address of recognised * commands
-.CmdExTbl		EQUW alarm-1							;address of *ALARM command
+.^CmdExTbl		EQUW alarm-1							;address of *ALARM command
 		EQUW calend-1							;address of *CALENDAR command
 		EQUW date-1							;address of *DATE command
 		EQUW time-1							;address of *TIME command
@@ -1193,10 +1197,12 @@ ENDIF
     EQUW ibosTbl							;Start of IBOS options lookup table
     ASSERT P% = ibosRef + ParameterTableOffset
     EQUW ibosParTbl							;Start of IBOS options parameters lookup table (there are no parameters!)
+IF IBOS_VERSION < 126
     ; SQUASH: I am not sure we actually need the next pointer, if we make the suggested SQUASH:
     ; change in DynamicSyntaxGenerationForIbosHelpTableA.
     ASSERT P% = ibosRef + CmdTblPtrOffset
     EQUW ibosHelpTable							;Start of IBOS sub option reference lookup table
+ENDIF
 
 .ibosTbl
     EQUS 4, "RTC"
@@ -1633,6 +1639,7 @@ TmpCommandIndex = &AC
     JMP commandS
 			
 .RunCommand
+if IBOS_VERSION < 126
     ; Transfer control to CmdRef[CmdTblPtrOffset][X], preserving Y (the index into the next
     ; byte of the command tail after the * command).
     STY TmpCommandTailOffset
@@ -1653,6 +1660,15 @@ TmpCommandIndex = &AC
     ; this here direectly. SQUASH: If we just used a different address instead of
     ; transientTblPtr in this subroutine we could probably avoid this.)
     LDX TmpCommandIndex:STX transientCommandIndex
+ELSE
+    ; Transfer control to CmdExTbl[X], preserving Y (the index into the next byte of the command
+    ; tail after the * command).
+    STY TmpCommandTailOffset
+    STX transientCommandIndex ; used later when generating a syntax error if necessary
+    TXA:ASL A:TAY
+    LDA CmdExTbl+1,Y:PHA
+    LDA CmdExTbl  ,Y:PHA
+ENDIF
     LDY TmpCommandTailOffset
     RTS ; transfer control to the command
 }
