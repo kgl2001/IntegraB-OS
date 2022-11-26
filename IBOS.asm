@@ -3885,7 +3885,6 @@ IF IBOS_VERSION >= 126
 Tmp = TransientZP + 7 ; ConfRefDynamicSyntaxGenerationForTransientCmdIdx uses +6
 
     BCS ConfLangWrite
-    ; TODO: ADD COMMENTS AS NECESSARY - JUST HACKING FOR THE MOMENT
     JSR GetConfigValue:PHA
     JSR LsrA4:STA Tmp
     JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
