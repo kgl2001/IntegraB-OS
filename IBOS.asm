@@ -4394,7 +4394,6 @@ IF IBOS_VERSION >= 124
     LSR A
 ENDIF
 
-; SQUASH: LsrA4 has only one caller (but there are places where it should be used and isn't).
 .LsrA4
     LSR A
 ; SQUASH: Use of JSR LsrA3 or JSR LsrA2 is silly - the former is neutral on space and slower,
@@ -7677,8 +7676,11 @@ Options = transientDateSFTODO1
 ; 1. Optionally emit the day of the week, optionally truncated and/or capitalised, and optionally followed by some punctuation. prvDataSFTODO2's high nybble controls most of those options, although prvDataSFTODO3=0 will prevent punctuation and cause an early return.
     {
 	  LDA prvDateSFTODO2
-	  ; SQUASH: Use LsrA4
+IF IBOS_VERSION < 126
       LSR A:LSR A:LSR A:LSR A
+ELSE
+      JSR LsrA4
+ENDIF
       STA transientDateSFTODO1
       BEQ SFTODOSTEP2
       AND #1
@@ -8346,7 +8348,11 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     JSR ValidateDateTimeAssumingLeapYear ; SFTODO: *just possibly* it would be better to validate *respecting* leap year *iff* prvDateYear/prvDateCentury are not &FF (i.e. we have a specific year) - but I could very easily be missing some subtlety here - note that in LAFF9 we redo the validation respecting leap year after filling in the blanks, so this is probably *not* a helpful tweak here - OK, LAFF9 will *sometimes* redo the validation, so just maybe (it's all very unclear right now) this tweak would add a tiny bit of value
     ; Stash the date validation result (shifted into the low nybble) on the stack.
     LDA prvDateSFTODOQ
-    LSR A:LSR A:LSR A:LSR A ; SQUASH: JSR LsrA4
+IF IBOS_VERSION < 126
+    LSR A:LSR A:LSR A:LSR A
+ELSE
+    JSR LsrA4
+ENDIF
     PHA
     ; SFTODO: I believe the use of prvDateSFTODO0 (==prvDateSFTODOQ) here is entirely local to this subroutine - once we call LAFF9 we will not use the value left in there, and will overwrite it most of the time.
     ; Set prvDateSFTODO0 so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is &FF (open).
