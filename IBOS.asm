@@ -1213,8 +1213,8 @@ ENDIF
     EQUB 1 ; SRAM
     EQUB 0
 
-.ibosHelpTable
 }
+.ibosHelpTable
     ; Elements 0-3 of ibosHelpTable table correspond to the four entries at ibosTbl.
     ibosHelpTableHelpNoArgument = 4
     ibosHelpTableConfigureList = 5
@@ -1319,14 +1319,10 @@ LastEntry = &A9
 
     PHA
 
-    ; SQUASH: The following seems needlessly long-winded; it is probably a legacy of an earlier
-    ; version where this didn't just operate on ibosRef (note that some callers redundantly
-    ; call "JSR ibosRef" before calling this subroutine). We could rewrite it as:
-    ;     ASL A:ASL A:TAY
-    ;     LDA ibosHelpTable    ,Y:STA transientTblPtr
-    ;     LDA ibosHelpTable + 1,Y:STA transientTblPtr + 1
-    ;     LDA ibosHelpTable + 2,Y:STA FirstEntry
-    ;     LDA ibosHelpTable + 3,Y:STA LastEntry
+IF IBOS_VERSION < 126
+    ; This code is needlessly complicated; it is probably a legacy of an earlier version where
+    ; this didn't just operate on ibosRef - note that some callers redundantly call "JSR
+    ; ibosRef" before calling this subroutine.
 
     ; Set transientTblPtr = transientTblPtr[CmdTblPtrOffset].
     JSR ibosRef:STX transientTblPtr:STY transientTblPtr + 1
@@ -1343,6 +1339,13 @@ LastEntry = &A9
     INY:LDA (transientTblPtr),Y:STA LastEntry
     PLA:STA transientTblPtr + 1
     PLA:STA transientTblPtr
+ELSE
+    ASL A:ASL A:TAY
+    LDA ibosHelpTable    ,Y:STA transientTblPtr
+    LDA ibosHelpTable + 1,Y:STA transientTblPtr + 1
+    LDA ibosHelpTable + 2,Y:STA FirstEntry
+    LDA ibosHelpTable + 3,Y:STA LastEntry
+ENDIF
 
     ; Call DynamicSyntaxGenerationForAUsingYX on the table and for the range of entries
     ; FirstEntry (inclusive) to LastEntry (exclusive). SFTODO: Except the upper bound actually
@@ -1676,7 +1679,9 @@ TmpCommandIndex = &AC
     JSR OSNEWL
     ; Now show the selected ibosRefSubTblA entry.
     PLA
-    JSR ibosRef ; SQUASH: Redundant; DynamicSyntaxGenerationForIbosHelpTableA does this itself
+IF IBOS_VERSION < 126
+    JSR ibosRef
+ENDIF
     JSR DynamicSyntaxGenerationForIbosHelpTableA
     JMP ExitServiceCallIndirect
 
@@ -3759,7 +3764,9 @@ ENDIF
     PLP:BCC StatusAll
     ; This is *CONFIGURE with no option, so show the supported options.
     LDA #ibosHelpTableConfigureList
-    JSR ibosRef ; SQUASH: Redundant - DynamicSyntaxGenerationForIbosHelpTableA does JSR ibosRef itself...
+IF IBOS_VERSION < 126
+    JSR ibosRef
+ENDIF
     JSR DynamicSyntaxGenerationForIbosHelpTableA
     JMP ExitServiceCall
 			
