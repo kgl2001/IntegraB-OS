@@ -3593,7 +3593,7 @@ IF IBOS_VERSION < 126
 		EQUB userRegLangFile,&04,&04						;LANG ->	  &05 Bits 4..7
 ELSE
 		EQUB userRegFile,&00,&04						;FILE ->	  &05 Bits 0..3 TODO UPDATE COMMENT, NOT SURE WHAT PARAMETERS (IF ANY) WE ACTUALLY WANT FOR THIS NOW
-		EQUB userRegLang,&04,&04						;LANG ->	  &05 Bits 4..7 TODO UPDATE COMMENT, NOT SURE WHAT PARAMETERS (IF ANY) WE ACTUALLY WANT FOR THIS NOW
+		EQUB userRegLang,&00,&08						;LANG ->	  &05 Bits 4..7 TODO UPDATE COMMENT, NOT SURE WHAT PARAMETERS (IF ANY) WE ACTUALLY WANT FOR THIS NOW
 ENDIF
 		EQUB userRegTubeBaudPrinter,&02,&03					;BAUD ->	  &0F Bits 2..4
 		EQUB userRegDiscNetBootData,&05,&03					;DATA ->	  &10 Bits 5..7
@@ -3613,7 +3613,11 @@ ENDIF
 
 ;*CONFIGURE / *STATUS Options
 .ConfTypTbl	EQUW Conf0-1							;FILE <0-15>(D/N)		Type 0:
+IF IBOS_VERSION < 126
 		EQUW Conf1-1							;LANG <0-15>		Type 1: Number starting 0
+ELSE
+		EQUW ConfLang-1							;LANG <0-15>		Type 1: Number starting 0 TODO UPDATE COMMENT
+ENDIF
 		EQUW Conf2-1							;BAUD <1-8>		Type 2:
 		EQUW Conf1-1							;DATA <0-7>		Type 1: Number starting 0
 		EQUW Conf1-1							;FDRIVE <0-7>		Type 1: Number starting 0
@@ -3640,6 +3644,9 @@ ENDIF
     EQUB %00011111
     EQUB %00111111
     EQUB %01111111
+IF IBOS_VERSION >= 126
+    EQUB %11111111 ; TODO: may be better to rewrite to avoid needing this, but let's do this for now
+ENDIF
 
 
 .ShiftALeftByX
@@ -3827,6 +3834,31 @@ ENDIF
     JSR ConvertIntegerDefaultDecimalChecked
     JMP SetConfigValueA ; SQUASH: move Conf1 block so we can fall through?
 }
+
+IF IBOS_VERSION >= 126
+.ConfLang
+{
+Tmp = TransientZP + 6
+
+    BCS ConfLangWrite
+    ; TODO: ADD COMMENTS AS NECESSARY - JUST HACKING FOR THE MOMENT
+    ; TODO: Should we only show a single value if both are the same?
+    JSR GetConfigValue
+    PHA:JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx:PLA ; SQUASH: worth factoring out?
+    PHA
+    AND #%00001111:JSR PrintADecimalNoPad
+    LDA #',':JSR OSWRCH ; SQUASH: factor out?
+    PLA:JSR LsrA4:JMP PrintADecimalNoPadNewline
+
+.ConfLangWrite
+    JSR ConvertIntegerDefaultDecimalChecked:AND #maxBank:STA Tmp:PHA
+    JSR FindNextCharAfterSpaceSkippingComma:BCS NoSecondArgument
+    PLA ; discard duplicate of first argument
+    JSR ConvertIntegerDefaultDecimalChecked:PHA ; no need for AND #maxBank as we are going to ASL A*4
+.NoSecondArgument
+    PLA:ASL A:ASL A:ASL A:ASL A:ORA Tmp:JMP SetConfigValueA
+}
+ENDIF
 			
 ; SQUASH: If we moved this to just before PrintADecimal we could fall through into it
 .PrintADecimalNoPad
