@@ -2274,9 +2274,6 @@ InputBufSize = 256
     LDA #0
 IF IBOS_VERSION < 126
     CPX #userRegLangFile
-ELSE
-    CPX #userRegLang ; TODO: TEMP HACK JUST FOR NOW
-ENDIF
     BNE NotLangFile
 IF IBOS_VERSION == 120 OR IBOS_VERSION >= 124
     ; We default LANG and FILE to IBOS (i.e. the current bank); this isn't all that useful for FILE but
@@ -2289,6 +2286,16 @@ ELSE
     LDA romselCopy:ASL A:ASL A:ASL A:ASL A:LDA #&EC
 ENDIF
 .NotLangFile
+ELSE
+    ; We default both of these to &FF. This will probably (if IBOS is in bank 15) cause the NLE to be
+    ; entered so the user can enter *CONFIGURE commands, and with the new language entry code we will
+    ; enter a valid language or NLE even if IBOS isn't in bank 15.
+    CPX #userRegFile:BEQ IsLangFile
+    CPX #userRegFile:BNE NotLangFile
+.IsLangFile
+    LDA #&FF
+.NotLangFile
+ENDIF
     JSR WriteUserReg
     DEX:BPL ZeroUserRegLoop
 
@@ -4127,10 +4134,12 @@ ENDIF
 configuredLangTmp = TransientZP ; TODO: OK? PROBABLY
 
 IF IBOS_VERSION < 126
-    LDX #userRegLangFile:JSR ReadUserReg:AND #&0F:TAX ; get *CONFIGURE FILE value
+    LDX #userRegLangFile:JSR ReadUserReg:AND #maxBank:TAX ; get *CONFIGURE FILE value
 ELSE
-    ; Get the *CONFIGURE FILE value; for now it has a whole byte to itself so we don't need to AND #&0F.
-    LDX #userRegFile:JSR ReadUserReg:TAX
+    ; Get the *CONFIGURE FILE value. SQUASH: For now it has a whole byte to itself so we could
+    ; almost get away without AND #maxBank, *but* doing that would mean it has to be set to a
+    ; value of the form &0x, which would take extra code in FullReset.
+    LDX #userRegFile:AND #maxBank:JSR ReadUserReg:TAX
 ENDIF
     ; SFTODO: If the selected filing system is >= our bank, start one bank lower?! This seems odd, although *if* we know we're bank 15, this really just means "start below us" (presumably to avoid infinite recursion)
     CPX romselCopy:BCC SelectFirstFilingSystemROMLessEqualXAndLanguage
