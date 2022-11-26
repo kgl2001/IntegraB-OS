@@ -159,7 +159,12 @@ rtcUserBase = &0E
 ; implementation detail (and an offset of rtcUserBase needs to be applied when
 ; accessing them, which will be handled automatically by
 ; ReadUserReg/WriteUserReg if necessary).
+IF IBOS_VERSION < 126
 userRegLangFile = &05 ; b0-3: FILE, b4-7: LANG
+ELSE
+userRegLang = &05 ; TODO: DOCUMENT ORDER OF BITS, ONE WILL BE TUBE, ONE WILL BE NON-TUBE
+userRegFile = &11; TODO: DOCUMENT FORMAT, I THINK THIS IS FREE BUT WE'LL FIND OUT, WON'T WE? :-)
+ENDIF
 userRegBankInsertStatus = &06 ; 2 bytes, 1 bit per bank, bit number == bank number
 userRegModeShadowTV = &0A ; 0-2: MODE / 3: SHADOW / 4: TV interlace / 5-7: TV screen shift
 userRegFdriveCaps = &0B ; 0-2: FDRIVE / 3-5: CAPS
@@ -2258,7 +2263,13 @@ InputBufSize = 256
     ; Zero user registers &00-&32 inclusive, except userRegLangFile which is treated as a special case.
     LDX #&32
 .ZeroUserRegLoop
-    LDA #0:CPX #userRegLangFile:BNE NotLangFile
+    LDA #0
+IF IBOS_VERSION < 126
+    CPX #userRegLangFile
+ELSE
+    CPX #userRegLang ; TODO: TEMP HACK JUST FOR NOW
+ENDIF
+    BNE NotLangFile
 IF IBOS_VERSION == 120 OR IBOS_VERSION >= 124
     ; We default LANG and FILE to IBOS (i.e. the current bank); this isn't all that useful for FILE but
     ; it will give consistent results, and with IBOS as the current language we will enter the NLE so
@@ -3576,8 +3587,14 @@ OriginalOutputDeviceStatus = TransientZP + 1
 ConfParBitUserRegOffset = 0
 ConfParBitStartBitOffset = 1
 ConfParBitBitCountOffset = 2
-.ConfParBit	EQUB userRegLangFile,&00,&04						;FILE ->	  &05 Bits 0..3
+.ConfParBit
+IF IBOS_VERSION < 126
+		EQUB userRegLangFile,&00,&04						;FILE ->	  &05 Bits 0..3
 		EQUB userRegLangFile,&04,&04						;LANG ->	  &05 Bits 4..7
+ELSE
+		EQUB userRegFile,&00,&04						;FILE ->	  &05 Bits 0..3 TODO UPDATE COMMENT, NOT SURE WHAT PARAMETERS (IF ANY) WE ACTUALLY WANT FOR THIS NOW
+		EQUB userRegLang,&04,&04						;LANG ->	  &05 Bits 4..7 TODO UPDATE COMMENT, NOT SURE WHAT PARAMETERS (IF ANY) WE ACTUALLY WANT FOR THIS NOW
+ENDIF
 		EQUB userRegTubeBaudPrinter,&02,&03					;BAUD ->	  &0F Bits 2..4
 		EQUB userRegDiscNetBootData,&05,&03					;DATA ->	  &10 Bits 5..7
 		EQUB userRegFdriveCaps,&00,&03					;FDRIVE ->  &0B Bits 0..2
@@ -4069,7 +4086,12 @@ ENDIF
 {
 configuredLangTmp = TransientZP ; TODO: OK? PROBABLY
 
-    LDX #userRegLangFile:JSR ReadUserReg:AND #&0F:TAX ; get *CONFIGURE FILE value
+IF IBOS_VERSION < 126
+    LDX #userRegLangFile
+ELSE
+    LDX #userRegFile ; TODO!?
+ENDIF
+    JSR ReadUserReg:AND #&0F:TAX ; get *CONFIGURE FILE value
     ; SFTODO: If the selected filing system is >= our bank, start one bank lower?! This seems odd, although *if* we know we're bank 15, this really just means "start below us" (presumably to avoid infinite recursion)
     CPX romselCopy:BCC SelectFirstFilingSystemROMLessEqualXAndLanguage
     DEX
@@ -4078,10 +4100,11 @@ configuredLangTmp = TransientZP ; TODO: OK? PROBABLY
     LDA lastBreakType:BNE NotSoftReset2
     LDA currentLanguageRom:BPL EnterLangA ; SFTODO: Do we expect this to always branch? Not at all sure.
 .NotSoftReset2
-    LDX #userRegLangFile:JSR ReadUserReg:JSR LsrA4 ; get *CONFIGURE LANG value
 IF IBOS_VERSION < 126
+    LDX #userRegLangFile:JSR ReadUserReg:JSR LsrA4 ; get *CONFIGURE LANG value
     JMP EnterLangA ; SQUASH: BPL always
 ELSE
+    LDA #14 ; SFTODO TEMP HACK SO I CAN WORK ON *CONFIGURE/*STATUS
     ; SFTODO: VERY EXPERIMENTAL - MAY WANT TO MAKE THIS 1.27 NOT 1.26?
     BIT tubePresenceFlag:BMI EnterLangA ; branch if tube is present
     ; No tube is present, so check the ROM type byte of the configure language and see if it has the relocation bit set. If it does, it will only run on the tube and is no use to us, so fall back to the default OS behaviour of selecting the highest priority language. This could also be a tube-only language, but at least we've tried. More importantly, this opens up the prospect of having non-HI BASIC as the highest priority language, HIBASIC in a lower priority bank and using *CONFIGURE LANG to select HIBASIC as the default, which would in practice mean you get HIBASIC if the tube is enabled and non-HI BASIC otherwise. Note that we don't make any attempt to check the type of second processor so this isn't perfect, but it's no worse than not doing any of this. SFTODO: TRUE?
