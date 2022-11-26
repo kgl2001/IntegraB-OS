@@ -6396,7 +6396,11 @@ SFTODOTMP2 = L00AB
     LDA #')':JSR OSWRCH
     JSR printSpace
     ; Print the ROM title and version.
+IF IBOS_VERSION < 126
+    LDA #lo(CopyrightOffset):STA osRdRmPtr:LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
+ELSE
     JSR SetOsRdRmPtrToCopyrightOffset
+ENDIF
     LDY SFTODOTMP:JSR OSRDRM:STA SFTODOTMP2
     LDA #lo(Title):STA osRdRmPtr:ASSERT hi(Title) == hi(CopyrightOffset)
 .TitleAndVersionLoop
@@ -6407,9 +6411,11 @@ SFTODOTMP2 = L00AB
     INC osRdRmPtr ; advance osRdRmPtr; we know the high byte isn't going to change
     LDA osRdRmPtr:CMP SFTODOTMP2:BCC TitleAndVersionLoop
     JMP OSNEWL
+IF IBOS_VERSION >= 126
 .^SetOsRdRmPtrToCopyrightOffset
     LDA #lo(CopyrightOffset):STA osRdRmPtr:LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
     RTS
+ENDIF
 }
 
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be
