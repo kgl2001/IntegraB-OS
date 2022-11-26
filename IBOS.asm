@@ -4193,7 +4193,7 @@ ELSE
     JSR OsRdRmFromConfiguredLangTmpWithPreInc
     LDX configuredLangTmp
     CMP #&80:BEQ EnterLangX ; branch if this language has a relocation address &80xx
-    BMI NoLanguageEntry ; always branch
+    BNE NoLanguageEntry ; always branch
 .EnterLangALsr4
     JSR LsrA4
     TAX
