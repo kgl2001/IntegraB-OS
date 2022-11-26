@@ -4205,7 +4205,7 @@ ELSE
     TAX
 .EnterLangX
     ; Before trying to enter the bank as a language, we check it has a language entry. If it
-    ; doesn't well fall back to the IBOS NLE.
+    ; doesn't, we'll fall back to the IBOS NLE.
     LDA RomTypeTable,X:ROL A:BMI HasLanguageEntry
 .NoLanguageEntry
     LDX romselCopy ; enter IBOS as the current language; we know it has a language entry!
