@@ -4224,7 +4224,7 @@ ENDIF
 .PassServiceCallToROMsLessEqualX
     TXA:PHA
 IF IBOS_VERSION < 126
-    TSX:LDA L0104,X:TAY ; get Y from the service call SQUASH: Just use LDY L0104,X to load directly?
+    TSX:LDA L0104,X:TAY ; get Y from the service call
 ELSE
     TSX:LDY L0104,X ; get Y from the service call
 ENDIF
