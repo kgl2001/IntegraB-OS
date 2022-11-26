@@ -4115,6 +4115,7 @@ ENDIF
     JMP LDBE6 ;OSBYTE 142 - ENTER LANGUAGE ROM AT &8000 (http://mdfs.net/Docs/Comp/BBC/OS1-20/D940) - we enter one byte early so carry is clear, which might indicate "initialisation" (this based on that mdfs.net page; I can't find anything about this in a quick look at other documentation)
 
 .NoLanguageEntry
+    ; SFTODO: Is there any reason to do this, rather than just always enter ourselves as the current language? Or does "informing the tube" there is no language do something special? I find this hard to believe, because 99.9% of the time in a standard BBC B, BASIC is present in ROM regardless of what copro you have fitted, and so the OS_equivalent code to this is not going to execute. I suspect on a standard BBC B this is slightly useful because (perhaps with a Z80 copro, for example) it allows CP/M to boot even if you don't want to waste a ROM socket on 6502 BASIC, but I am guessing. But we *do* always have a language and so I am not sure this case is useful.
     BIT tubePresenceFlag:BPL NoLanguageEntryAndNoTube
 IF IBOS_VERSION < 126
     ; Inform tube no language was found at break.
