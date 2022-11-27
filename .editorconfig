@@ -1,5 +1,6 @@
 root = true
 
+; SFTODO: Change this to space/4 once all code converted to new style
 [*.asm]
 indent_style = tab
 indent_size = 10
