@@ -52,7 +52,7 @@ IBOS-126.rom: IBOS-126.asm IBOS.asm Makefile
 	beebasm -w -v -i IBOS-126.asm > IBOS-126.lst
 	@# We rename the output if it's not identical so that doing a subsequent
 	@# make doesn't (correctly, but unhelpfully) say there's nothing to do.
-	@md5sum IBOS-126.rom | grep -q b5361a7576dbd2b48a003908d8e423f5 || (echo "New IBOS 1.26 ROM is not identical to original"; mv IBOS-126.rom IBOS-126-variant.rom; exit 1)
+	@md5sum IBOS-126.rom | grep -q 1b57c2ba920a00d5b4ef89be68aedc43 || (echo "New IBOS 1.26 ROM is not identical to original"; mv IBOS-126.rom IBOS-126-variant.rom; exit 1)
 
 clean:
 	/bin/rm -f IBOS-120.lst IBOS-120.rom IBOS-120-variant.rom IBOS-120-b-em.lst IBOS-120-b-em.rom IBOS-120-b-em-variant.rom IBOS-121.lst IBOS-121.rom IBOS-121-variant.rom IBOS-122.lst IBOS-122.rom IBOS-123.rom IBOS-123.lst IBOS-124.rom IBOS-124.lst IBOS-125.rom IBOS-125.lst IBOS-126.rom IBOS-126.lst tags TAGS
