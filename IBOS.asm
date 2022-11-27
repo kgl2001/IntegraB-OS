@@ -4194,7 +4194,6 @@ ELSE
 ENDIF
 .NotSoftReset2
 IF IBOS_VERSION < 126
-; TODO: Temporary note - at the time I write this comment, the code for dual LANG overflows the ROM by 51 bytes and the code has been reviewed and is not obviously squashable. The "single LANG with hunt" prototype (on the tubelang branch) fit exactly, so we can probably say the dual LANG approach uses up an extra 51 bytes of space. Probably well worth it, but also worth noting. I am confident I can squash things to get things to fit, but of course that's 51 bytes we don't have for other enhancements.
     LDX #userRegLangFile:JSR ReadUserReg:JSR LsrA4 ; get *CONFIGURE LANG value
     JMP EnterLangA ; SQUASH: BPL always
 
