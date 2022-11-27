@@ -4171,7 +4171,7 @@ ENDIF
 
 .SelectConfiguredFilingSystemAndLanguage
 {
-configuredLangTmp = TransientZP ; TODO: OK? PROBABLY
+configuredLangTmp = TransientZP
 
 IF IBOS_VERSION < 126
     LDX #userRegLangFile:JSR ReadUserReg:AND #maxBank:TAX ; get *CONFIGURE FILE value
