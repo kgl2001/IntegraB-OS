@@ -17,6 +17,17 @@
 ;
 ; ENHANCE: An idea for a possible enhancement in a future version of IBOS.
 
+IF IBOS_VERSION != 120
+    IBOS120_VARIANT = 0
+ENDIF
+
+; This code uses macro names which start with 6502 mnemonics, which beebasm only allows if the
+; -w option is used. Deliberately generate an error ASAP if this is the case with a comment
+; on the problematic line to tell the user how to fix the problem.
+MACRO INCTEST
+ENDMACRO
+INCTEST ; if this fails to assemble, please give beebasm the "-w" option
+
 ; SFTODO: The following constants and associated comments are a bit randomly ordered, this should be tidied up eventually.
 ; For example, it might help to move the comments about RTC register use nearer to the private memory allocations, as
 ; some of those are copies of each other.
@@ -62,7 +73,7 @@
 ;&18..&1B - Used to store the RAM banks that are assigned to *BUFFER. Up to 4 RAM banks can be assigned. Set to &FF if nothing assigned. 
 ;&2C..&3B - Private RAM Copy of ROM Type
 ;3C - OSMODE ?
-
+;49 - prvSetPrinterTypePending
 
 ;RTC Clock Registers
 ;The RTC is a Harris CDP6818; the datasheet can be downloaded from https://datasheetspdf.com/pdf-file/546796/HarrisSemiconductor/CDP6818/1
@@ -114,23 +125,27 @@ rtcRegC = &0C
 
 rtcUserBase = &0E
 ;RTC User Registers (add &0E to get real RTC user register - registers &00-&0D are for RTC clock registers)
+;The hex values shown after the register numbers are the defaults, where these are simple
+;enough to include. Defaults may vary with IBOS version and the full details can be seen in the
+;code at UserRegDefaultTable.
 ;Register &00
 ;Register &01
 ;Register &02
 ;Register &03
 ;Register &04
-;Register &05
+;Register &05 -               <v1.26: 0-3: FILE, 4-7: LANG / >=v1.26: 0-3: non-tube-LANG, 4-7: tube-LANG
 ;Register &06 - &FF:	*INSERT status for ROMS &0F to &08. Default: &FF (All 8 ROMS enabled)
 ;Register &07 - &FF:	*INSERT status for ROMS &07 to &00. Default: &FF (All 8 ROMS enabled)
 ;Register &08
 ;Register &09
-;Register &0A - &17:	0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift
+;Register &0A - &17/&E7:	0-2: MODE / 3: SHADOW / 4: TV Interlace / 5-7: TV screen shift
 ;Register &0B - &23:	0-2: FDRIVE / 3-5: CAPS
 ;Register &0C - &19:	0-7: Keyboard Delay
 ;Register &0D - &05:	0-7: Keyboard Repeat
 ;Register &0E - &0A:	0-7: Printer Ignore
 ;Register &0F - &2D:	0: Tube / 2-4: BAUD / 5-7: Printer
 ;Register &10 - &A0:	0: File system disc/net flag / 4: Boot / 5-7: Data
+;Register &11 - &FF:          <v1.26: unused / >=v1.26: 0-3: FILE, 4-7: spare
 
 
 ; These registers are held in private RAM at &83B2-&83FF; this is battery-backed
@@ -148,7 +163,12 @@ rtcUserBase = &0E
 ; implementation detail (and an offset of rtcUserBase needs to be applied when
 ; accessing them, which will be handled automatically by
 ; ReadUserReg/WriteUserReg if necessary).
+IF IBOS_VERSION < 126
 userRegLangFile = &05 ; b0-3: FILE, b4-7: LANG
+ELSE
+userRegLang = &05 ; b0-3: LANG for no tube present, b4-7: LANG for tube present
+userRegFile = &11; b0-3: FILE, b4-7: spare
+ENDIF
 userRegBankInsertStatus = &06 ; 2 bytes, 1 bit per bank, bit number == bank number
 userRegModeShadowTV = &0A ; 0-2: MODE / 3: SHADOW / 4: TV interlace / 5-7: TV screen shift
 userRegFdriveCaps = &0B ; 0-2: FDRIVE / 3-5: CAPS
@@ -305,11 +325,13 @@ oswdbtY = &F1
 ; SFTODO: These may need renaming, or they may not be as general as I am assuming
 KeywordTableOffset = 6
 ParameterTableOffset = 8
+IF IBOS_VERSION < 126
 ; SQUASH: I am not sure CmdTblPtrOffset is actually useful - every "table" holds a different
 ; data structure in the thing pointed to by CmdTblPtrOffset so there's no generic code which
 ; uses this pointer - we can just hard-code the relevant address where we need it and not lose
 ; any real generality.
 CmdTblPtrOffset = 10
+ENDIF
 
 ; This is a byte of unused CFS/RFS workspace which IBOS repurposes to track
 ; state during mode changes. This is probably done because it's quicker than
@@ -361,6 +383,18 @@ serviceStatus = &29
 serviceAboutToEnterLanguage = &2A
 serviceUpdateEnded = &49 ; New IBOS service call to tell sideways ROMs about RTC update cycles
 serviceTubePostInitialisation = &FE
+
+; The following constants define stack addresses for values which are on the stack inside
+; VectorEntry; see the comment there for more details. These are typically used in code of the
+; form "TSX:LDA VectorEntryStackedFoo+n,X", where n is a small constant offset to allow for
+; additional values pushed onto the stack between VectorEntry and the point at which the LDA is
+; executing.
+; SFTODO: It might be worth doing this for other stack accesses too, e.g. the service call
+; handler stacked A/X/Y/flags.
+VectorEntryStackedY     = &101
+VectorEntryStackedX     = &102
+VectorEntryStackedFlags = &106
+VectorEntryStackedA     = &107
 
 INSVH       = &022B
 INSVL       = &022A
@@ -526,7 +560,7 @@ L0406       = &0406
 L0700       = &0700
 L0880       = &0880
 ; The OS printer buffer is stolen for use by our code stub; we take over printer
-; buffering responsibilities using our private RAM so the OS won't touch this
+; buffering responsibilities using our private RAM so the OS won't touch this
 ; memory.
 osPrintBuf  = &0880 ; &0880
 osPrintBufSize = &40
@@ -690,8 +724,10 @@ prv2DateMonth = prv82 + &45
 prv2DateDayOfMonth = prv82 + &46
 prv2DateDayOfWeek = prv82 + &47
 prvTmp6 = prv82 + &48
+; SFTODO: It might be a good idea to move all the "pseudo-registers" up one and start with B, then we don't have a clash with the CPU's A register and thinking/talking about things gets a little easier. (C still clashes with carry, but that's not a massive problem, ditto D. We could start at E just to be completely unambiguous though.)
 prvA = prv82 + &4A ; SFTODO: tweak name!
 prvB = prv82 + &4B ; SFTODO: tweak name!
+prvBA = prvA ; SFTODO: prvA and prvB together treated as a 16-bit value with high byte in prvB
 prvC = prv82 + &4C ; SFTODO: tweak name!
 prvD = prv82 + &4D ; SFTODO: tweak name!
 prvDC = prvC ; SFTODO: prvC and prvD together treated as a 16-bit value with high byte in prvD
@@ -731,6 +767,8 @@ prvRtcUpdateEndedOptions = prv83 + &44
 	prvRtcUpdateEndedOptionsGenerateUserEvent = 1<<0
 	prvRtcUpdateEndedOptionsGenerateServiceCall = 1<<1
 
+prvSetPrinterTypePending = prv83 + &49 ; Flag used to ensure *FX5 is only set on power up or hard break.
+
 prvIbosBankNumber = prv83 + &00 ; SFTODO: not sure about this, but service01 seems to set this
 prvPseudoBankNumbers = prv83 + &08 ; 4 bytes, absolute RAM bank number for the Pseudo RAM banks W, X, Y, Z; SFTODO: may be &FF indicating "no such bank" if SRSET is used?
 prvSFTODOFOURBANKS = prv83 + &0C ; 4 bytes, SFTODO: something to do with the pseudo RAM banks I think
@@ -744,9 +782,9 @@ prvLastScreenMode = prv83 + &3F
 
 ; We take advantage of some unofficial OS 1.20 entry points; since IBOS only needs to run on
 ; the Model B this is fine. SQUASH: Any prospect of taking this further? Tastefully of course!
-LDBE6       = &DBE6
 LDC16       = &DC16
 osStxRomselAndCopyAndRts = &DC16 ; STX romselCopy:STX romsel:RTS in OS 1.20
+osEntryClcOsbyteEnterLanguage = &DBE6 ; CLC then enter OSBYTE 142 in OS 1.20
 osEntryOsbyteIssueServiceRequest = &F168 ; start of OSBYTE 143 in OS 1.20
 osReturnFromRom = &FF89
 LF16E       = &F16E
@@ -891,7 +929,7 @@ ENDMACRO
 start = &8000
 end = &C000
 ORG start
-GUARD end
+; SFTODO TEMP DISABLED GUARD end
 
 .RomHeader
     JMP language
@@ -903,13 +941,41 @@ GUARD end
     EQUB &FF ; binary version number
 .Title
     EQUS "IBOS", 0
+IF IBOS_VERSION == 120
     EQUS "1.20" ; version string
+ELIF IBOS_VERSION == 121
+    EQUS "1.21" ; version string
+ELIF IBOS_VERSION == 122
+    EQUS "1.22" ; version string
+ELIF IBOS_VERSION == 123
+    EQUS "1.23" ; version string
+ELIF IBOS_VERSION == 124
+    EQUS "1.24" ; version string
+ELIF IBOS_VERSION == 125
+    EQUS "1.25" ; version string
+ELIF IBOS_VERSION == 126
+    EQUS "1.26" ; version string
+ENDIF
 .Copyright
-    EQUS 0, "(C) "
-.ComputechStart
-    EQUS "Computech"
+    EQUS 0, "(C)"
+ComputechStart = P% + 1
+IF IBOS_VERSION == 120
+    EQUS " Computech"
 .ComputechEnd
     EQUS " 1989", 0
+ELSE
+IF IBOS_VERSION < 126
+    EQUS " BBC Micro "
+ENDIF
+ComputechEnd = P% - 1
+IF IBOS_VERSION == 121
+    EQUS "2019", 0
+ELIF IBOS_VERSION == 122
+    EQUS "2021", 0
+ELSE
+    EQUS "2022", 0
+ENDIF
+ENDIF
 
 ;Store *Command reference table pointer address in X & Y
 .CmdRef
@@ -922,8 +988,10 @@ GUARD end
 		EQUW CmdTbl							;Start of * command table
 		ASSERT P% = CmdRef + ParameterTableOffset
 		EQUW CmdParTbl							;Start of * command parameter table
+IF IBOS_VERSION < 126
 		ASSERT P% = CmdRef + CmdTblPtrOffset
 		EQUW CmdExTbl							;Start of * command execute address table
+ENDIF
 
 ;* commands
 .CmdTbl		EQUS &06, "ALARM"
@@ -1017,7 +1085,7 @@ GUARD end
 		EQUS &04, &AE, "4>"							;Parameter &AF:			'(<0-4>'
 
 ;lookup table for start address of recognised * commands
-.CmdExTbl		EQUW alarm-1							;address of *ALARM command
+.^CmdExTbl		EQUW alarm-1							;address of *ALARM command
 		EQUW calend-1							;address of *CALENDAR command
 		EQUW date-1							;address of *DATE command
 		EQUW time-1							;address of *TIME command
@@ -1091,8 +1159,13 @@ GUARD end
 .ConfParTbl
 t = &80
     ;     n, char 1, 2, ..., n-1 	   i  ConfTbl entry		fully expanded text
+IF IBOS_VERSION < 126
     EQUB  7, t+1, "(D/N)"		;  0  FILE		"<0-15>(D/N)"
     EQUB  5, t+19, "15>"		;  1  LANG		"<0-15>"
+ELSE
+    EQUB  7, t+20, "(D/N)"		;  0  FILE		"<0-15>(D/N)"
+    EQUB  6, t+20, "(,", t+20, ")"      ;  1  LANG		"<0-15>(,<0-15>)"
+ENDIF
     EQUB  6, "<1-8>"		;  2  BAUD          	"<1-8>"
     EQUB  4, t+19, "7>"		;  3  DATA		"<0-7>"
     EQUB  2, t+3			;  4  FDRIVE		"<0-7>"
@@ -1111,6 +1184,9 @@ t = &80
     EQUB  4, "/NO"			; 17  -			"/NO"
     EQUB  5, "CAPS"			; 18  -			"CAPS"
     EQUB  4, "<0-"			; 19  -			"<0-"
+IF IBOS_VERSION >= 126
+    EQUB  5, t+19, "15>"                ; 20  -                       "<0-15>"
+ENDIF
     EQUB  0
 }
 
@@ -1125,10 +1201,12 @@ t = &80
     EQUW ibosTbl							;Start of IBOS options lookup table
     ASSERT P% = ibosRef + ParameterTableOffset
     EQUW ibosParTbl							;Start of IBOS options parameters lookup table (there are no parameters!)
+IF IBOS_VERSION < 126
     ; SQUASH: I am not sure we actually need the next pointer, if we make the suggested SQUASH:
     ; change in DynamicSyntaxGenerationForIbosHelpTableA.
     ASSERT P% = ibosRef + CmdTblPtrOffset
     EQUW ibosHelpTable							;Start of IBOS sub option reference lookup table
+ENDIF
 
 .ibosTbl
     EQUS 4, "RTC"
@@ -1145,8 +1223,8 @@ t = &80
     EQUB 1 ; SRAM
     EQUB 0
 
-.ibosHelpTable
 }
+.ibosHelpTable
     ; Elements 0-3 of ibosHelpTable table correspond to the four entries at ibosTbl.
     ibosHelpTableHelpNoArgument = 4
     ibosHelpTableConfigureList = 5
@@ -1181,12 +1259,19 @@ MinimumAbbreviationLength = 3 ; including the "." which indicates an abbreviatio
     STX transientTblPtr:STY transientTblPtr + 1
     LDY #KeywordTableOffset:LDA (transientTblPtr),Y:TAX
     INY:LDA (transientTblPtr),Y
-    STX transientTblPtr ; SQUASH: could just have stored A above instead of TAX
+    STX transientTblPtr
     STA transientTblPtr + 1
     ; Decrement transientCmdPtr by 1 to compensate for using 1-based Y in the following loop.
-    ; SQUASH: Use decrement-by-one technique from http://www.obelisk.me.uk/6502/algorithms.html
+IF IBOS_VERSION < 126
     SEC:LDA transientCmdPtr:SBC #1:STA transientCmdPtr
     DECCC transientCmdPtr + 1
+ELSE
+    ; Decrement by one technique from http://www.obelisk.me.uk/6502/algorithms.html
+    LDA transientCmdPtr:BNE NoBorrow
+    DEC transientCmdPtr + 1
+.NoBorrow
+    DEC transientCmdPtr
+ENDIF
     ; Loop over the keyword sub-table comparing each entry with the word on the command line.
     LDX #0 ; index of current keyword in keyword sub-table
     LDY #0 ; index of current character in command line
@@ -1244,20 +1329,16 @@ LastEntry = &A9
 
     PHA
 
-    ; SQUASH: The following seems needlessly long-winded; it is probably a legacy of an earlier
-    ; version where this didn't just operate on ibosRef (note that some callers redundantly
-    ; call "JSR ibosRef" before calling this subroutine). We could rewrite it as:
-    ;     ASL A:ASL A:TAY
-    ;     LDA ibosHelpTable    ,Y:STA transientTblPtr
-    ;     LDA ibosHelpTable + 1,Y:STA transientTblPtr + 1
-    ;     LDA ibosHelpTable + 2,Y:STA FirstEntry
-    ;     LDA ibosHelpTable + 3,Y:STA LastEntry
+IF IBOS_VERSION < 126
+    ; This code is needlessly complicated; it is probably a legacy of an earlier version where
+    ; this didn't just operate on ibosRef - note that some callers redundantly call "JSR
+    ; ibosRef" before calling this subroutine.
 
     ; Set transientTblPtr = transientTblPtr[CmdTblPtrOffset].
     JSR ibosRef:STX transientTblPtr:STY transientTblPtr + 1
     LDY #CmdTblPtrOffset:LDA (transientTblPtr),Y:TAX
     INY:LDA (transientTblPtr),Y:STA transientTblPtr + 1
-    STX transientTblPtr ; SQUASH: Just STA in place of TAX above
+    STX transientTblPtr
 
     ; Copy the the four bytes starting at ibosHelpTable+4*A-on-entry into transientTblPtr and
     ; FirstEntry/LastEntry.
@@ -1268,6 +1349,13 @@ LastEntry = &A9
     INY:LDA (transientTblPtr),Y:STA LastEntry
     PLA:STA transientTblPtr + 1
     PLA:STA transientTblPtr
+ELSE
+    ASL A:ASL A:TAY
+    LDA ibosHelpTable    ,Y:STA transientTblPtr
+    LDA ibosHelpTable + 1,Y:STA transientTblPtr + 1
+    LDA ibosHelpTable + 2,Y:STA FirstEntry
+    LDA ibosHelpTable + 3,Y:STA LastEntry
+ENDIF
 
     ; Call DynamicSyntaxGenerationForAUsingYX on the table and for the range of entries
     ; FirstEntry (inclusive) to LastEntry (exclusive). SFTODO: Except the upper bound actually
@@ -1304,8 +1392,8 @@ LastEntry = &A9
 ;     C clear => write output to screen (vduTab jumps to a fixed column for alignment)
 ;                V clear => prefix with two leading spaces
 ;                V set => no leading spaces
-;     V set => don't emit parameters
-;     V clear => emit parameters
+;     V set => don't emit parameters or carriage return
+;     V clear => emit parameters then carriage return
 .DynamicSyntaxGenerationForAUsingYX
 {
     PHA
@@ -1330,7 +1418,6 @@ LastEntry = &A9
     PLA
     JSR EmitEntryAFromTableYX
     LDA #vduCr:JSR EmitDynamicSyntaxCharacter
-
 .DontEmitParameters
     PLA:STA transientTblPtr:PLA:STA transientTblPtr + 1
     PLA
@@ -1372,7 +1459,11 @@ Tmp = &AC
 .AdvanceLoop
     CPX Tmp:BEQ AdvanceLoopDone
     CLC:LDA (TableEntryPtr),Y:ADC TableEntryPtr:STA TableEntryPtr
-    LDA TableEntryPtr + 1:ADC #0:STA TableEntryPtr + 1 ; SQUASH: INCCS TableEntryPtr + 1
+IF IBOS_VERSION < 126
+    LDA TableEntryPtr + 1:ADC #0:STA TableEntryPtr + 1
+ELSE
+    INCCS TableEntryPtr + 1
+ENDIF
     INX:BNE AdvanceLoop ; always branch
 .AdvanceLoopDone
 
@@ -1426,8 +1517,12 @@ Tmp = &AC
     TYA:JMP SaveA
 
 .GenerateToScreen
-    ; SQUASH: V hasn't changed since we entered this routine, so BIT is redundant.
-    BIT transientDynamicSyntaxState:BVS NoLeadingSpaces
+IF IBOS_VERSION < 126
+    BIT transientDynamicSyntaxState
+ELSE
+    ; V hasn't been modified since we entered this routine.
+ENDIF
+    BVS NoLeadingSpaces
     JSR printSpace:JSR printSpace
 .NoLeadingSpaces
     LDA #2
@@ -1509,7 +1604,9 @@ TabColumn = 12
 ; spaces.
 .^FindNextCharAfterSpaceSkippingComma
     JSR FindNextCharAfterSpace:BCS SecRts
+IF IBOS_VERSION < 126
     LDA (transientCmdPtr),Y
+ENDIF
     CMP #',':BNE ClcRts
     INY
 .ClcRts
@@ -1546,6 +1643,7 @@ TmpCommandIndex = &AC
     JMP commandS
 			
 .RunCommand
+if IBOS_VERSION < 126
     ; Transfer control to CmdRef[CmdTblPtrOffset][X], preserving Y (the index into the next
     ; byte of the command tail after the * command).
     STY TmpCommandTailOffset
@@ -1566,11 +1664,22 @@ TmpCommandIndex = &AC
     ; this here direectly. SQUASH: If we just used a different address instead of
     ; transientTblPtr in this subroutine we could probably avoid this.)
     LDX TmpCommandIndex:STX transientCommandIndex
+ELSE
+    ; Transfer control to CmdExTbl[X], preserving Y (the index into the next byte of the command
+    ; tail after the * command).
+    STY TmpCommandTailOffset
+    STX transientCommandIndex ; used later when generating a syntax error if necessary
+    TXA:ASL A:TAY
+    LDA CmdExTbl+1,Y:PHA
+    LDA CmdExTbl  ,Y:PHA
+ENDIF
     LDY TmpCommandTailOffset
     RTS ; transfer control to the command
 }
 
 ;*HELP Service Call
+; ENHANCE: IBOS doesn't print everything in response to "*HELP ."
+; ENHANCE: IBOS doesn't print in response to things like "*HELP DFS RTC"
 .service09
 {
     JSR SetTransientCmdPtr
@@ -1592,7 +1701,9 @@ TmpCommandIndex = &AC
     JSR OSNEWL
     ; Now show the selected ibosRefSubTblA entry.
     PLA
-    JSR ibosRef ; SQUASH: Redundant; DynamicSyntaxGenerationForIbosHelpTableA does this itself
+IF IBOS_VERSION < 126
+    JSR ibosRef
+ENDIF
     JSR DynamicSyntaxGenerationForIbosHelpTableA
     JMP ExitServiceCallIndirect
 
@@ -1615,6 +1726,12 @@ TmpCommandIndex = &AC
     LDA transientCommandIndex
     JSR CmdRef
     SEC
+IF IBOS_VERSION >= 125
+    ; Earlier versions of IBOS just used whatever happened to be in V - often the result of
+    ; ConvertIntegerDefaultDecimal or similar - which meant that whether the parameters were
+    ; included in the error message was a bit arbitrary. We always want to show them.
+    CLV
+ENDIF
     JMP DynamicSyntaxGenerationForAUsingYX
 
 ;service entry point
@@ -1648,6 +1765,9 @@ TmpCommandIndex = &AC
     JMP ExitServiceCall ; SQUASH: BEQ ; always branch
 
 .CallHandlerX
+    ; SQUASH: If we split the handler table into low and high tables we could
+    ; possibly save three bytes by no longer needing to double X. This assumes
+    ; none of the handler subroutines use the value in X on entry.
     TXA:ASL A:TAX ; double X as we have 16-bit entries at HandlerTable
     ; Push the handler address - 1 onto the stack and transfer control using RTS.
     LDA HandlerTable+1,X:PHA
@@ -1814,10 +1934,9 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
 ;     0 0 => integer parsed, result in ConvertIntegerResult, low byte in A and flags reflect A
 ;     0 1 => not possible
 ;     1 0 => input was empty, nothing to parse
-;     1 1 => input not empty but nothing was parsed (we will have beeped)
+;     1 1 => input not empty but nothing was parsed (v1.24 and earlier will have beeped)
 ;            ConvertIntegerResult and A will be 0 but flags will not reflect A
 ;
-; ENHANCE: Beeping when we fail to parse seems a little unconventional, disable this?
 ; SQUASH: Could we use some loops to do the four byte arithmetic?
 {
 Tmp = FilingSystemWorkspace + 4 ; 4 bytes
@@ -1921,7 +2040,11 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
     LDA ConvertIntegerResult
     RTS
 .NothingParsed
+IF IBOS_VERSION <= 124
+    ; Beeping here is a bit odd (* command parsing errors don't normally beep), and as
+    ; bugs/quirks in the error generation are fixed in 1.25 we don't really need it any more.
     LDA #vduBell:JSR OSWRCH
+ENDIF
     LDA #0
     LDY OriginalCmdPtrY
     SEC
@@ -2000,7 +2123,7 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
     PHA ; SQUASH: move this into SwitchOutPrivateRAM
     JMP SwitchOutPrivateRAM
 
-; Page in private RAM temporarily and do LDA prv83,X. A, X and Y are preserved, flags reflect A
+; Page in private RAM temporarily and do LDA prv83,X. X and Y are preserved, flags reflect A
 ; on exit.
 .^ReadPrivateRam8300X
     PHP:SEI
@@ -2165,7 +2288,7 @@ InputBufSize = 256
     RTS
 
 .AcknowledgeEscapeAndGenerateErrorIndirect
-.L89BF      JMP AcknowledgeEscapeAndGenerateError
+    JMP AcknowledgeEscapeAndGenerateError
 }
 
 ;Start of full reset
@@ -2175,11 +2298,30 @@ InputBufSize = 256
     ; Zero user registers &00-&32 inclusive, except userRegLangFile which is treated as a special case.
     LDX #&32
 .ZeroUserRegLoop
-    LDA #0:CPX #userRegLangFile:BNE NotLangFile
-    ; We default LANG and FILE to IBOS (i.e. the current bank); this isn't all that useful, but
-    ; it will at least give consistent results and offer a * prompt where the user can change
-    ; this. In IBOS 1.21, default LANG to &E and FILE to &C: LDA #&EC
+    LDA #0
+IF IBOS_VERSION < 126
+    CPX #userRegLangFile
+    BNE NotLangFile
+IF IBOS_VERSION == 120 OR IBOS_VERSION >= 124
+    ; We default LANG and FILE to IBOS (i.e. the current bank); this isn't all that useful for FILE but
+    ; it will give consistent results, and with IBOS as the current language we will enter the NLE so
+    ; the user can issue *CONFIGURE commands.
     LDA romselCopy:ASL A:ASL A:ASL A:ASL A:ORA romselCopy
+ELSE
+    ; Default LANG to &E and FILE to &C.
+    ; SQUASH: All but the last LDA instruction are redundant.
+    LDA romselCopy:ASL A:ASL A:ASL A:ASL A:LDA #&EC
+ENDIF
+ELSE
+    ; We default both of these to &FF. This will probably (if IBOS is in bank 15) cause the NLE
+    ; to be entered so the user can enter *CONFIGURE commands, and with the new language entry
+    ; code we will enter a valid language or NLE even if IBOS isn't in bank 15. This allows us
+    ; to save a few bytes by not setting LANG/FILE to IBOS's actual bank.
+    CPX #userRegLang:BEQ IsLangFile
+    CPX #userRegFile:BNE NotLangFile
+.IsLangFile
+    LDA #&FF
+ENDIF
 .NotLangFile
     JSR WriteUserReg
     DEX:BPL ZeroUserRegLoop
@@ -2248,15 +2390,31 @@ ptr = &00 ; 2 bytes
 .UserRegDefaultTable
     EQUB userRegBankInsertStatus + 0, &FF     	; default to no banks unplugged
     EQUB userRegBankInsertStatus + 1, &FF 	; default to no banks unplugged
-    EQUB userRegModeShadowTV, &17 		; IBOS 1.21 defaults to &E7
-    EQUB userRegFdriveCaps, &23 		; IBOS 1.21 defaults to &20
+IF IBOS_VERSION == 120 OR IBOS_VERSION >= 126
+    EQUB userRegModeShadowTV, &17
+ELSE
+    EQUB userRegModeShadowTV, &E7
+ENDIF
+IF IBOS_VERSION == 120 AND IBOS120_VARIANT == 0
+    EQUB userRegFdriveCaps, &23
+ELSE
+    EQUB userRegFdriveCaps, &20
+ENDIF
     EQUB userRegKeyboardDelay, &19
     EQUB userRegKeyboardRepeat, &05
     EQUB userRegPrinterIgnore, &0A
     EQUB userRegTubeBaudPrinter, &2D
-    EQUB userRegDiscNetBootData, &A0		; IBOS 1.21 defaults to &A1
+IF IBOS_VERSION == 120 AND IBOS120_VARIANT == 0
+    EQUB userRegDiscNetBootData, &A0
+ELSE
+    EQUB userRegDiscNetBootData, &A1
+ENDIF
     EQUB userRegOsModeShx, &04
-    EQUB userRegCentury, 19			; IBOS 1.21 defaults to 20
+IF IBOS_VERSION == 120 AND IBOS120_VARIANT == 0
+    EQUB userRegCentury, 19
+ELSE
+    EQUB userRegCentury, 20
+ENDIF
     EQUB userRegBankWriteProtectStatus + 0, &FF
     EQUB userRegBankWriteProtectStatus + 1, &FF
     EQUB userRegPrvPrintBufferStart, &90
@@ -2476,7 +2634,8 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JMP ExitAndClaimServiceCall
 }
 
-; SQUASH: Dead code
+IF IBOS_VERSION < 126
+; Dead code
 {
     LDA vduStatus
     AND #&EF
@@ -2490,15 +2649,75 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     STA vduStatus
     RTS
 }
+ENDIF
+
+IF IBOS_VERSION >= 126
+; OSWORD &0F (15) Write real time clock
+; YX?0 is the function code, the string starts at YX+1:
+;  8 - Set time to value in format "HH:MM:SS"
+; 15 - Set date to value in format "Day,DD Mon Year"
+; 24 - Set time and date to value in format "Day,DD Mon Year.HH:MM:SS"
+;
+; Parsing in here is relatively free-and-easy, but that seems to be how OS 3.20 does it as well.
+; I haven't tried to emulate the behaviour of OS 3.20 when given invalid strings; all I really
+; care about is that we handle valid strings correctly and invalid strings without crashing.
+;
+; We claim the call even if the function code is unrecognised or we fail to parse the provided
+; string. I'm not completely clear what the "correct" behaviour is here, but in practice this
+; should be fine.
+.osword0f
+{
+    JSR SaveTransientZP
+    PRVEN
+    ; We aren't using the oswordsv/oswordrs style from other OSWORDs, in part because
+    ; prvOswordBlockCopySize is only 16, which isn't large enough for OSWORD &0F.
+    LDA oswdbtX:STA transientCmdPtr
+    LDA oswdbtY:STA transientCmdPtr + 1
+    JSR CopyRtcDateTimeToPrv
+    LDY #0
+    LDA (transientCmdPtr),Y
+    INY ; skip function code so (transientCmdPtr),Y accesses first byte of string
+    CMP #8:BEQ ParseTime
+    CMP #15:BEQ ParseDate
+    CMP #24:BNE Done ; branch if invalid function code
+.ParseDate
+    PHA
+    ; Skip the three letter day of the week and the following comma, or whatever else might be
+    ; there. The day of the week is at best redundant and at worst inconsistent, so we just
+    ; ignore it and calculate the correct day of the week ourselves in ParseAndValidateDate.
+    ; (OS 3.20 trusts the user to supply the day of the week correctly, but it would take extra
+    ; code to parse it and it would only open up the possibility of it being set incorrectly.)
+    INY:INY:INY:INY
+    JSR ParseAndValidateDate
+    PLA
+    BCS Done ; branch if unable to parse
+    CMP #15:BEQ ParsedOK
+    INY ; skip the "." (or whatever) between the date and time
+.ParseTime
+    JSR ParseAndValidateTime:BCS Done ; branch if unable to parse
+.ParsedOK
+    ; We set the time and date separately so in principle there's a risk the user asks to set
+    ; the time to "Sat,05 Nov 2022.23:59:59", we set the time first and then the clock rolls
+    ; over at midnight and the date advances, then we overwrite the date with the
+    ; user-specified value, so we end up at "Sat,05 Nov 2022.00:00:10" a few seconds later.
+    ; tests/osword0f-d.bas explicitly tests for this and it doesn't seem to happen in practice;
+    ; setting the time probably resets the sub-second count inside the RTC and we always get
+    ; the date set before the time can roll over at midnight.
+    JSR CopyPrvTimeToRtc
+    JSR CopyPrvDateToRtc
+.Done
+    PRVDIS
+    JMP RestoreTransientZPAndExitAndClaimServiceCall
+}
+ENDIF
 
 ; Unrecognised OSWORD call - Service call &08
-;
-; ENHANCE: We could implement OSWORD &0F to set the date/time, although this probably isn't all
-; that big an omission. (Don't get carried away; "function 5" to set from centiseconds since
-; 1900 isn't implemented on the Master.)
 .service08
 {
     LDA oswdbtA
+IF IBOS_VERSION >= 126
+    CMP #&0F:BEQ osword0f
+ENDIF
     CMP #&0E:BNE service08a
     JMP osword0e
 .service08a
@@ -2757,7 +2976,11 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 .ShowBankLoop
     LDA prvPrintBufferBankList,Y:BMI AllBanksShown
     SEC:JSR PrintADecimal
+IF IBOS_VERSION < 126
     LDA #',':JSR OSWRCH
+ELSE
+    JSR CommaOSWRCH
+ENDIF
     INY:CPY #MaxPrintBufferSwrBanks:BNE ShowBankLoop
 .AllBanksShown
     LDA #vduDel:JSR OSWRCH ; delete the last ',' that was just printed
@@ -3410,8 +3633,14 @@ OriginalOutputDeviceStatus = TransientZP + 1
 ConfParBitUserRegOffset = 0
 ConfParBitStartBitOffset = 1
 ConfParBitBitCountOffset = 2
-.ConfParBit	EQUB userRegLangFile,&00,&04						;FILE ->	  &05 Bits 0..3
+.ConfParBit
+IF IBOS_VERSION < 126
+		EQUB userRegLangFile,&00,&04						;FILE ->	  &05 Bits 0..3
 		EQUB userRegLangFile,&04,&04						;LANG ->	  &05 Bits 4..7
+ELSE
+		EQUB userRegFile,&00,&04						;FILE ->	  &11 Bits 0..3
+		EQUB userRegLang,&00,&08						;LANG ->	  &05 Bits 4..7 tube language, bits 0..3 non-tube language
+ENDIF
 		EQUB userRegTubeBaudPrinter,&02,&03					;BAUD ->	  &0F Bits 2..4
 		EQUB userRegDiscNetBootData,&05,&03					;DATA ->	  &10 Bits 5..7
 		EQUB userRegFdriveCaps,&00,&03					;FDRIVE ->  &0B Bits 0..2
@@ -3430,7 +3659,11 @@ ConfParBitBitCountOffset = 2
 
 ;*CONFIGURE / *STATUS Options
 .ConfTypTbl	EQUW Conf0-1							;FILE <0-15>(D/N)		Type 0:
+IF IBOS_VERSION < 126
 		EQUW Conf1-1							;LANG <0-15>		Type 1: Number starting 0
+ELSE
+		EQUW ConfLang-1							;LANG <0-15>(,<0-15)	Language: pair of ROM bank numbers
+ENDIF
 		EQUW Conf2-1							;BAUD <1-8>		Type 2:
 		EQUW Conf1-1							;DATA <0-7>		Type 1: Number starting 0
 		EQUW Conf1-1							;FDRIVE <0-7>		Type 1: Number starting 0
@@ -3457,6 +3690,9 @@ ConfParBitBitCountOffset = 2
     EQUB %00011111
     EQUB %00111111
     EQUB %01111111
+IF IBOS_VERSION >= 126
+    EQUB %11111111 ; TODO: may be better to rewrite to avoid needing this, but let's do this for now
+ENDIF
 
 
 .ShiftALeftByX
@@ -3555,7 +3791,9 @@ ENDIF
     PLP:BCC StatusAll
     ; This is *CONFIGURE with no option, so show the supported options.
     LDA #ibosHelpTableConfigureList
-    JSR ibosRef ; SQUASH: Redundant - DynamicSyntaxGenerationForIbosHelpTableA does JSR ibosRef itself...
+IF IBOS_VERSION < 126
+    JSR ibosRef
+ENDIF
     JSR DynamicSyntaxGenerationForIbosHelpTableA
     JMP ExitServiceCall
 			
@@ -3644,13 +3882,38 @@ ENDIF
     JSR ConvertIntegerDefaultDecimalChecked
     JMP SetConfigValueA ; SQUASH: move Conf1 block so we can fall through?
 }
-			
+
 ; SQUASH: If we moved this to just before PrintADecimal we could fall through into it
 .PrintADecimalNoPad
     SEC:JMP PrintADecimal
 
+IF IBOS_VERSION >= 126
+.ConfLang
+{
+Tmp = TransientZP + 7 ; ConfRefDynamicSyntaxGenerationForTransientCmdIdx uses +6
+
+    BCC ConfLangRead
+    JSR ConvertIntegerDefaultDecimalChecked:AND #maxBank:STA Tmp:PHA
+    JSR FindNextCharAfterSpaceSkippingComma:BCS NoSecondArgument
+    PLA ; discard duplicate of first argument
+    JSR ConvertIntegerDefaultDecimalChecked:PHA ; no need for AND #maxBank as we are going to ASL A*4
+.NoSecondArgument
+    PLA:ASL A:ASL A:ASL A:ASL A:ORA Tmp:JMP SetConfigValueA
+
+.ConfLangRead
+    JSR GetConfigValue:PHA
+    JSR LsrA4:STA Tmp
+    JSR ConfRefDynamicSyntaxGenerationForTransientCmdIdx
+    PLA:AND #%00001111:JSR PrintADecimalNoPad
+    CMP Tmp:BEQ OSNEWLIndirect ; just print one bank if both the same
+    JSR CommaOSWRCH
+    LDA Tmp:FALLTHROUGH_TO PrintADecimalNoPadNewline
+}
+ENDIF
+
 .PrintADecimalNoPadNewline
     JSR PrintADecimalNoPad
+.OSNEWLIndirect
     JMP OSNEWL
 
 .ConvertIntegerDefaultDecimalChecked
@@ -3760,7 +4023,11 @@ Tmp = TransientZP + 6
     ORA #%11111000
 .Positive
     JSR PrintADecimalNoPad
+IF IBOS_VERSION < 126
     LDA #',':JSR OSWRCH
+ELSE
+    JSR CommaOSWRCH
+ENDIF
     PLA:AND #1:JMP PrintADecimalNoPadNewline
 
 .ConfTVWrite
@@ -3770,7 +4037,8 @@ Tmp = TransientZP + 6
     PLA:ORA Tmp:JMP SetConfigValueA
 }
 
-; SFTODO: This entire block is dead code
+IF IBOS_VERSION < 126
+; Dead code
 {
 .L95BF
     LDA #&00
@@ -3796,6 +4064,10 @@ Tmp = TransientZP + 6
     STA L00AE
     RTS
 }
+ELSE
+.CommaOSWRCH
+    LDA #',':JMP OSWRCH
+ENDIF
 			
 ; Autoboot - Service call &03
 ; Note that we are expecting to be in bank 15, so nothing else can intercept this call before
@@ -3821,6 +4093,15 @@ Tmp = TransientZP + 6
     CMP #'G':BNE NoGenie
     LDA XKEYVBank:ORA #romselMemsel:STA XKEYVBank
 .NoGenie
+
+IF IBOS_VERSION >= 124
+    ; This code is to set *FX5 based off the values stored in Private RAM.
+     LDX #prvSetPrinterTypePending - prv83:JSR ReadPrivateRam8300X:BEQ LeavePrinterTypeAlone
+     LDA #prvOff:JSR WritePrivateRam8300X
+     LDX #userRegTubeBaudPrinter:JSR ReadUserReg
+     JSR LsrA5:TAX:LDA #osbyteSetPrinterType:JSR OSBYTE
+.LeavePrinterTypeAlone
+ENDIF
 
     ; SFTODO: Why set SQWE here? Is this meaningful? Is there some hardware mechanism which
     ; will force SQWE *off* on reset which thus allows it to be abused here as a "has service
@@ -3889,34 +4170,103 @@ Tmp = TransientZP + 6
     RTS
 
 .SelectConfiguredFilingSystemAndLanguage
-    LDX #userRegLangFile:JSR ReadUserReg:AND #&0F:TAX ; get *CONFIGURE FILE value
+{
+configuredLangTmp = TransientZP
+
+IF IBOS_VERSION < 126
+    LDX #userRegLangFile:JSR ReadUserReg:AND #maxBank:TAX ; get *CONFIGURE FILE value
+ELSE
+    ; Get the *CONFIGURE FILE value. SQUASH: For now it has a whole byte to itself so we could
+    ; almost get away without AND #maxBank, *but* doing that would mean it has to be set to a
+    ; value of the form &0x in FullReset, which would take extra code.
+    LDX #userRegFile:JSR ReadUserReg:AND #maxBank:TAX
+ENDIF
     ; SFTODO: If the selected filing system is >= our bank, start one bank lower?! This seems odd, although *if* we know we're bank 15, this really just means "start below us" (presumably to avoid infinite recursion)
     CPX romselCopy:BCC SelectFirstFilingSystemROMLessEqualXAndLanguage
     DEX
-.SelectFirstFilingSystemROMLessEqualXAndLanguage
+.^SelectFirstFilingSystemROMLessEqualXAndLanguage
     JSR PassServiceCallToROMsLessEqualX
     LDA lastBreakType:BNE NotSoftReset2
+IF IBOS_VERSION < 126
     LDA currentLanguageRom:BPL EnterLangA ; SFTODO: Do we expect this to always branch? Not at all sure.
+ELSE
+    LDX currentLanguageRom:BPL EnterLangX ; SFTODO: Do we expect this to always branch? Not at all sure.
+ENDIF
 .NotSoftReset2
+IF IBOS_VERSION < 126
     LDX #userRegLangFile:JSR ReadUserReg:JSR LsrA4 ; get *CONFIGURE LANG value
-    JMP EnterLangA ; SQUASH: BPL ; branch always
-			
+    JMP EnterLangA ; SQUASH: BPL always
+
 .NoLanguageEntryAndNoTube
     LDA romselCopy ; enter IBOS as the current language
 .EnterLangA
     TAX
+.EnterLangX
     LDA RomTypeTable,X:ROL A:BPL NoLanguageEntry
-    JMP LDBE6 ;OSBYTE 142 - ENTER LANGUAGE ROM AT &8000 (http://mdfs.net/Docs/Comp/BBC/OS1-20/D940) - we enter one byte early so carry is clear, which might indicate "initialisation" (this based on that mdfs.net page; I can't find anything about this in a quick look at other documentation)
+    JMP osEntryClcOsbyteEnterLanguage
 
 .NoLanguageEntry
+    ; I don't think this case adds any value compared to just entering IBOS as the current
+    ; language. The tube probably isn't going to do anything exciting when told no language was
+    ; found at break, and I don't think it can be important to trigger this case because on a
+    ; BBC B without IBOS 99.9% of the time there *will* be a language (6502 BBC BASIC) whatever
+    ; co-pro is connected.
     BIT tubePresenceFlag:BPL NoLanguageEntryAndNoTube
     ; Inform tube no language was found at break.
     LDA #0:CLC:JMP L0400
+ELSE
+    ; SFTODO: VERY EXPERIMENTAL - MAY WANT TO MAKE THIS 1.27 NOT 1.26?
+    LDX #userRegLang:JSR ReadUserReg
+    ; A is now &tn where t is the language bank if tube is present, n if tube is not present.
+    BIT tubePresenceFlag:BMI EnterLangALsr4 ; branch if tube is present to enter bank &t
+    ; Tube is not present, so we want to enter bank &n. However, if that bank has a relocation
+    ; address other than &8000, we can't enter it without hanging, so we check that first. If
+    ; we can't enter it safely, we'll fall back to the IBOS NLE.
+    AND #maxBank
+    TAX:LDA RomTypeTable,X:AND #%00100000:BEQ EnterLangX ; branch if relocation bit not set
+    JSR SetOsRdRmPtrToCopyrightOffset
+    STX configuredLangTmp
+    JSR OsRdRmFromConfiguredLangTmp:STA osRdRmPtr ; set osRdRmPtr to copyright string
+.FindRelocationAddressLoop
+    JSR OsRdRmFromConfiguredLangTmpWithPreInc
+    ; On OS 1.20 we know the flags after calling OSRDRM reflect the value in A.
+    BNE FindRelocationAddressLoop
+    ; osRdRmPtr now points to the NUL at the end of the copyright string. Advance it by two so
+    ; we can check the high byte of the relocation address. Ideally we'd check the low byte of
+    ; the relocation address is 0, but I don't think it's critical and it saves code to just
+    ; check the high byte.
+    INC osRdRmPtr ; assume we never wrap past the first page of the ROM
+    JSR OsRdRmFromConfiguredLangTmpWithPreInc
+    LDX configuredLangTmp
+    CMP #&80:BEQ EnterLangX ; branch if this language has a relocation address &80xx
+    BNE NoLanguageEntry ; always branch
+.EnterLangALsr4
+    JSR LsrA4
+    TAX
+.EnterLangX
+    ; Before trying to enter bank X as a language, we check it has a language entry. If it
+    ; doesn't, we'll fall back to the IBOS NLE.
+    LDA RomTypeTable,X:ROL A:BMI HasLanguageEntry
+.NoLanguageEntry
+    LDX romselCopy ; enter IBOS as the current language; we know it has a language entry!
+.HasLanguageEntry
+    JMP osEntryClcOsbyteEnterLanguage
+
+.OsRdRmFromConfiguredLangTmpWithPreInc
+    INC osRdRmPtr ; assume we never wrap past the first page of the ROM
+.OsRdRmFromConfiguredLangTmp
+    LDY configuredLangTmp:JMP OSRDRM
+ENDIF
+}
 
 ; SFTODO: This has only one caller
 .PassServiceCallToROMsLessEqualX
     TXA:PHA
-    TSX:LDA L0104,X:TAY ; get Y from the service call SQUASH: Just use LDY L0104,X to load directly?
+IF IBOS_VERSION < 126
+    TSX:LDA L0104,X:TAY ; get Y from the service call
+ELSE
+    TSX:LDY L0104,X ; get Y from the service call
+ENDIF
     PLA:TAX
     LDA romselCopy:PHA
     LDA #3 ; this service call number
@@ -3930,6 +4280,19 @@ Tmp = TransientZP + 6
 .service01
 {
 tmp = &A8
+
+IF IBOS_VERSION >= 122
+    ; ANFS 4.18 issues service call 1 a second time during reset. This causes various problems,
+    ; most noticeably a lock up where IbosSetup can claim the vectors a second time and the
+    ; parent vector handlers point back into IBOS, causing an infinite loop when we try to
+    ; chain to the parent. We check right away to see if we've already claimed the vectors
+    ; (just checking BYTEV is enough) and ignore this service call if we have.
+    LDA BYTEVL:CMP #lo(osPrintBuf):BNE VectorsNotAlreadyClaimed
+    LDA BYTEVH:CMP #hi(osPrintBuf):BEQ VectorsAlreadyClaimed
+.VectorsNotAlreadyClaimed
+ENDIF
+
+    ; SFTODO: What are prv83+[1-7] here? We are setting them to &FF.
     ; SQUASH: I think this code is high enough in the IBOS ROM we don't need to be indirecting
     ; via WritePrivateRam8300X and could just set PRV1 and access directly?
     LDA #0:STA ramselCopy:STA ramsel ; shadow off SFTODO?
@@ -3942,11 +4305,18 @@ tmp = &A8
     ; If we're in the middle of a full reset, the contents of RTC registers/private RAM might
     ; be gibberish so don't carry out any logic depending on them.
     BIT FullResetFlag:BPL NotFullReset ; SQUASH: BMI and get rid of following JMP?
+.VectorsAlreadyClaimed
     JMP ExitServiceCallIndirect
 .NotFullReset
     LDX #userRegPrvPrintBufferStart:JSR ReadUserReg
     LDX #prvPrvPrintBufferStart-prv83:JSR WritePrivateRam8300X
     LDX lastBreakType:BEQ SoftReset
+
+IF IBOS_VERSION >= 124
+    ASSERT prvSetPrinterTypePending - prv83 <> 0
+    LDX #prvSetPrinterTypePending - prv83:TXA:JSR WritePrivateRam8300X
+ENDIF
+
     LDX #userRegOsModeShx:JSR ReadUserReg
     PHA
     AND #7:LDX #prvOsMode - prv83:JSR WritePrivateRam8300X
@@ -4006,7 +4376,11 @@ tmp = &A8
     AND #&07:CLC:ADC #1 ; mask off baud rate bits and add 1 to convert to 1-8 range
     PHA:TAX:LDA #osbyteSetSerialReceiveRate:JSR OSBYTE
     PLA:TAX:LDA #osbyteSetSerialTransmitRate:JSR OSBYTE
-    PLA:JSR LsrA3:TAX:LDA #osbyteSetPrinterType:JSR OSBYTE
+    PLA
+    
+IF IBOS_VERSION < 124
+    JSR LsrA3:TAX:LDA #osbyteSetPrinterType:JSR OSBYTE
+ENDIF
 
     LDX #userRegFdriveCaps:JSR ReadUserReg:PHA
 
@@ -4054,7 +4428,11 @@ tmp = &A8
     JMP ExitServiceCall
 }
 
-; SQUASH: LsrA4 has only one caller (but there are places where it should be used and isn't).
+IF IBOS_VERSION >= 124
+.LsrA5
+    LSR A
+ENDIF
+
 .LsrA4
     LSR A
 ; SQUASH: Use of JSR LsrA3 or JSR LsrA2 is silly - the former is neutral on space and slower,
@@ -4172,11 +4550,13 @@ RamPresenceFlags = TransientZP
     ; (it controls locking up the machine on certain types of !BOOT error).
     LDA #osbyteReadWriteEnableDisableStartupMessage:LDX #0:LDY #0:JSR OSBYTE
 
+IF IBOS_VERSION < 126
     ; Print "Computech".
     LDX #ComputechStart - RomHeader
 .BannerLoop1
     LDA RomHeader,X:JSR OSWRCH
     INX:CPX #(ComputechEnd + 1) - RomHeader:BNE BannerLoop1
+ENDIF
 
     ; Print " INTEGRA-B".
     LDX #(ReverseBannerEnd - 1) - ReverseBanner
@@ -4219,6 +4599,9 @@ RamPresenceFlags = TransientZP
 
 .ReverseBanner
     EQUS " B-ARGETNI" ; "INTEGRA-B " reversed
+IF IBOS_VERSION >= 126
+    EQUS " orciM CBB" ; "BBC Micro " reversed
+ENDIF
 .ReverseBannerEnd
 }
 
@@ -4306,10 +4689,12 @@ RamPresenceFlags = TransientZP
     RTS
 }
 
-; SQUASH: Dead data
+IF IBOS_VERSION < 126
+; Dead data
 {
     EQUS "RAM","ROM"
 }
+ENDIF
 
 ; SQUASH: This has only one caller
 ; A=0 on entry means the header should say "RAM", otherwise it will say "ROM". A is also copied into the (unused) second byte of the bank's service entry; SFTODO: I don't know why specifically, but maybe this is just done because that's what the Acorn DFS SRAM utilities do (speculation; I haven't checked).
@@ -4449,8 +4834,12 @@ RamPresenceFlags = TransientZP
             JSR PrintADecimal								;Convert binary number to numeric characters and write characters to screen
 .bankShown  CPY #&03								;Check for 4th bank
             BEQ osnewlPrvDisexitSc							;Yes? Then end
+IF IBOS_VERSION < 126
             LDA #','
             JSR OSWRCH								;Write to screen
+ELSE
+	  JSR CommaOSWRCH
+ENDIF
             JSR printSpace								;write ' ' to screen
             INY									;Next
             BNE ShowLoop								;Loop for 'X', 'Y' & 'Z'
@@ -6050,7 +6439,11 @@ SFTODOTMP2 = L00AB
     LDA #')':JSR OSWRCH
     JSR printSpace
     ; Print the ROM title and version.
+IF IBOS_VERSION < 126
     LDA #lo(CopyrightOffset):STA osRdRmPtr:LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
+ELSE
+    JSR SetOsRdRmPtrToCopyrightOffset
+ENDIF
     LDY SFTODOTMP:JSR OSRDRM:STA SFTODOTMP2
     LDA #lo(Title):STA osRdRmPtr:ASSERT hi(Title) == hi(CopyrightOffset)
 .TitleAndVersionLoop
@@ -6061,6 +6454,11 @@ SFTODOTMP2 = L00AB
     INC osRdRmPtr ; advance osRdRmPtr; we know the high byte isn't going to change
     LDA osRdRmPtr:CMP SFTODOTMP2:BCC TitleAndVersionLoop
     JMP OSNEWL
+IF IBOS_VERSION >= 126
+.^SetOsRdRmPtrToCopyrightOffset
+    LDA #lo(CopyrightOffset):STA osRdRmPtr:LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
+    RTS
+ENDIF
 }
 
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be
@@ -6226,6 +6624,7 @@ SFTODOTMP2 = L00AB
     JMP PrvDis
 }
 
+; SQUASH: These commands may not actually be useful and could potentially be removed.
 {
 ; SFTODO: This little fragment of code is only called once via JMP, can't it just be moved to avoid the JMP (and improve readability)?
 .^LA4FE
@@ -6327,6 +6726,7 @@ SFTODOTMP2 = L00AB
     LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeAt:BNE SoftReset ; SFTODO: Rename label given use here?
     ; The last break wasn't a soft reset and the "@" key is held down, which will trigger a
     ; full reset.
+    ; SQUASH: If we use X instead of A here, we could replace "LDA #&FF" with DEX to save a byte.
     LDA #0:STA breakInterceptJmp ; cancel any break intercept which might have been set up
     LDA #&FF:STA FullResetFlag ; record that a full reset is in progress
     ; SFTODO: Seems superficially weird we do this ROM type manipulation in response to this particular service call
@@ -6396,21 +6796,28 @@ SFTODOTMP2 = L00AB
     RTS
 }
 
-; SFTODO: Ignoring the setup, the loop looks very much to me like division of prvA=prvD by prvC, with the result in prvD and the remainder in A. But the setup code says that if prvB (which is otherwise unused)>=prvC, we return with prvD=result=prvA and "remainder" prvB
-.SFTODOPSEUDODIV
+; Divide 16-bit value at prvBA by the 8-bit value at prvC, returning the result in prvD and the
+; remainder in A. *Except* that if prvB>=prvC on entry, we return with prvD set to prvA and A
+; set to prvB.
+; SFTODO: I am not really sure about this prvB>=prvC condition; I think this might be detecting
+; the case where the result won't fit in 8 bits, but even if it is, I don't see why those
+; return values are helpful. As it happens I don't believe any div168 caller can
+; actually trigger this behaviour and SQUASH: if that's true, the check could be removed.
+; SQUASH: Several callers do "LDA #0:STA prvBA + 1" before calling this; we could have an
+; alternate entry point div88 which does that before falling through into div168 to avoid
+; duplicating that common code.
+.div168
 {
     XASSERT_USE_PRV1
     LDX #8 ; 8-bit division
     ; If prvB>=prvC, return with prvD=prvA, A=prvB.
-    LDA prvA:STA prvD
-    LDA prvB
+    LDA prvBA:STA prvD
+    LDA prvBA + 1
     CMP prvC:BCS Rts ; SFTODO: branch if prvB>=prvC
     ; SFTODO: Set prvD=prvA DIV prvC, A=prvA MOD prvC
 .Loop
-    ROL prvD
-    ROL A
-    CMP prvC
-    BCC NeedBorrow
+    ROL prvD:ROL A
+    CMP prvC:BCC NeedBorrow
     SBC prvC
 .NeedBorrow
     DEX:BNE Loop
@@ -6547,12 +6954,14 @@ SFTODOTMP2 = L00AB
     JSR CopyRtcDateToPrv
     JMP CopyRtcTimeToPrv ; SQUASH: move and fall through?
 
-; SQUASH: Dead code
+IF IBOS_VERSION < 126
+; Dead code
 {
 .CopyPrvDateTimeToRtc
     JSR CopyPrvTimeToRtc
     JMP CopyPrvDateToRtc
 }
+ENDIF
 
 ; Wait until any RTC update in progress	is complete.
 .WaitOutRTCUpdate
@@ -6574,10 +6983,14 @@ SFTODOTMP2 = L00AB
     EQUB 0  ; rtcRegAlarmMinutes
     EQUB 0  ; rtcRegHours
     EQUB 0  ; rtcRegAlarmHours
-    EQUB 2  ; rtcRegDayOfWeek: Monday SFTODO: This will be 7 (Saturday) for IBOS 1.21, where we presumably default to 2000 not 1900
+IF IBOS_VERSION == 120 AND IBOS120_VARIANT == 0
+    EQUB 2  ; rtcRegDayOfWeek: Monday
+ELSE
+    EQUB 7  ; rtcRegDayOfWeek: Saturday
+ENDIF
     EQUB 1  ; rtcRegDayOfMonth: 1st
     EQUB 1  ; rtcRegMonth: January
-    EQUB 0  ; rtcRegYear: 1900 SFTODO: presumably 2000 in IBOS 1.21 as a result of changes elsewhere?
+    EQUB 0  ; rtcRegYear: 1900 SFTODO: presumably this means 2000 in IBOS 1.21? does any other code need to change?
     ASSERT P% - InitialRtcTimeValues == (rtcRegYear - rtcRegSeconds) + 1
 
 ; SFTODO: Is this responsible for forcing reg B DSE bit off? This *would* matter if we wanted to use DSE.
@@ -6749,7 +7162,8 @@ Tmp = TransientZP + 6
     RTS
 }
 
-; SQUASH: Dead code
+IF IBOS_VERSION < 126
+; Dead code
 {
     LDA prvOswordBlockCopy + 13
     BPL LA904
@@ -6766,78 +7180,120 @@ Tmp = TransientZP + 6
 .LA904
     RTS
 }
+ENDIF
 
 ; SFTODO: the "in" in the next two exported labels is maybe confusing, "storeTo" might be better but even more longwinded - anyway, just a note for when I finally clean up all the label names
 {
+TmpMonth = prvTmp4
 TmpYear = prvTmp3
 TmpCentury = prvTmp2
 
-; As CalculateDayOfWeekInA, except we also update prvDateDayOfWeek with the calculated day of the week, and set SFTODO:PROBABLY b3 of prvDateSFTODOQ if this changes prvDateDayOfWeek from its previous value.
+; As CalculateDayOfWeekInA, except we also update prvDateDayOfWeek with the calculated day of
+; the week, and set SFTODO:PROBABLY b3 of prvDateSFTODOQ if this changes prvDateDayOfWeek from
+; its previous value.
 .^CalculateDayOfWeekInPrvDateDayOfWeek
-    CLC:BCC Common ; always branch
-; SFTODO: Use a magic formula to calculate the day of the week for prvDate{Century,Year,Month,DayOfMonth}; I don't know how this works, but presumably it does.
-; We return with the calculated day of the week in A.
+    CLC:BCC Common ; always branch SQUASH: "BCC Common"->"LDA #" opcode to skip the following SEC?
+; Calculate the day of the week for the date in prvDate* and return with it in A.
 .^CalculateDayOfWeekInA
     SEC
 .Common
     XASSERT_USE_PRV1
-    PHP
+    PHP ; save C on entry for later use
+    ; SFTODO: I don't claim to fully understand the algorithm used here so I've added comments
+    ; which document the calculations the code is carrying out to make it easier to see what's
+    ; going on but without pretending they fully explain why it works. I can sort of see how
+    ; it works though:
+    ; - We simplify leap year handling by pretending the year starts in March, so leap days
+    ; - occur at the end of the year, not part way through it.
+    ; - We "accumulate" a value in prvA and only ultimately care about prvA mod 7, but as long as
+    ;   we don't overflow we can add things which cause prvA mod 7 to move appropriately. Except
+    ;   for leap years, any given date is one day of the week later each year, so we can add the
+    ;   year number in to take this into account, for example.
+
+    ; Convert the supplied date into one where the year starts in March; TmpMonth is the month
+    ; number in this adjusted calendar, with 1=March and 12=February, and the year/century are
+    ; in Tmp{Year,Century}.
     LDA prvDateYear:STA TmpYear
     LDA prvDateCentury:STA TmpCentury
-    ; SFTODO: We seem to be decrementing the date by one month here, there is a general "if this goes negative, borrow from the next highest unit" quality. I'm not entirely clear why we start off with SBC #2, maybe we are decrementing by two months, or maybe we are switching to some kind of start-in-March system, complete guesswork in that respect.
-    SEC:LDA prvDateMonth:SBC #2:STA prvTmp4
-    BMI JanuaryOrFebruary ; branch is prvDateMonth is January
-    CMP #1:BCS DecrementDone ; branch if March or later
+    SEC:LDA prvDateMonth:SBC #2:STA TmpMonth
+    BMI JanuaryOrFebruary ; branch if prvDateMonth is January
+    CMP #1:BCS DateAdjustedForMarchBasedYear ; branch if March or later
 .JanuaryOrFebruary
-    CLC:ADC #12:STA prvTmp4 ; prvTmp4 = prvDateMonth + 10
-    DEC TmpYear:BPL DecrementDone ; branch if wasn't year 0
-    CLC:LDA TmpYear:ADC #100:STA TmpYear ; SQUASH: Just do "LDA #99"?
+    CLC:ADC #12:STA TmpMonth ; TmpMonth = prvDateMonth + 10
+    DEC TmpYear:BPL DateAdjustedForMarchBasedYear ; branch if wasn't year 0
+    CLC:LDA TmpYear:ADC #100:STA TmpYear ; SQUASH: Just do "LDA #99:STA TmpYear"?
     ; SQUASH: Is the following branch always taken? Don't we really only support 19xx/20xx dates?
-    DEC TmpCentury:BPL DecrementDone
+    DEC TmpCentury:BPL DateAdjustedForMarchBasedYear
     CLC:LDA TmpCentury:ADC #100:STA TmpCentury
-.DecrementDone ; SFTODO: rename to "noBorrow"?
-    LDA prvTmp4:STA prvA
+.DateAdjustedForMarchBasedYear
+
+    ; Set prvA = (TmpMonth*130*2-19) DIV 100. It just so happens that prvA MOD 7 is then the day
+    ; of the week (with some fixed offset needed for any particular year) which TmpMonth starts on.
+    ; - For March 2022 we have TmpMonth=1 so prvA=2. March 2022 starts on a Tuesday.
+    ; - For December 2022 we have TmpMonth=10 so prvA=25=4 (mod 7). December 2022 starts on a
+    ;   Thursday, which is two days later than Tuesday, and note that the prvA mod 7 value is
+    ;   two larger the value calculated for March 2022.
+    ; - For February 2023 we have TmpMonth=12 so prvA=31=3 (mod 7). Given the above, we'd expect
+    ;   February 2023 to start on a Wednesday, and it does.
+    ; I have checked this for all 12 months against the 2022-23 calendar and the formula gives the
+    ; right result for each one. I don't know where the formula comes from, presumably someone
+    ; sat down and played around until they found something that happened to work.
+    LDA TmpMonth:STA prvA
     LDA #130:STA prvB
     JSR mul8 ; DC=A*B
     ASL prvDC:ROL prvDC + 1
     SEC
-    LDA prvDC:SBC #19:STA prvA
-    LDA prvDC + 1:SBC #0:STA prvB
-; SFTODO: So BA=prvTmp4*130-19??
-    LDA #100:STA prvDC
-    JSR SFTODOPSEUDODIV ; SFTODO: Don't really know what's going on here yet, but I think this *could* invoke the weird prvB>=prvC condition in SFTODOPSEUDODIV.
-    CLC
-    LDA prvDC + 1
-    ADC prvDateDayOfMonth
-    ADC TmpYear
-.LA97E
-    STA prvA
+    LDA prvDC    :SBC #lo(19):STA prvBA
+    LDA prvDC + 1:SBC #hi(19):STA prvBA + 1
+    ; We have BA = TmpMonth*130*2-19.
+    LDA #100:STA prvC
+    ; This div168 call can't invoke the strange "prvB >= prvC" case, because TmpMonth<=12 so
+    ; prvB<=hi(12*130*2-19)<=12.
+    JSR div168
+    ; The result is in prvD and we know prvD <= (12*130*2-19)/100 == 31.
+
+    ; Adjust prvA based on prvDateDayOfMonth, TmpYear and TmpCentury. I don't pretend to
+    ; understand the precise logic here, but this is effectively shifting the day of week value
+    ; we just calculated so that it uses a "standard" day numbering. It's important we don't
+    ; overflow our 8-bit range here (because 256 is not a multiple of 7); the comments in
+    ; brackets show the worst case to demonstrate that we won't overflow.
+
+    ; prvA = prvD + prvDateDayOfMonth + TmpYear (wc: 31+31+99=161)
+    CLC:LDA prvD:ADC prvDateDayOfMonth:ADC TmpYear:STA prvA
+    ; prvA += TmpYear/4 (wc: 161+99/4=185)
     LDA TmpYear:LSR A:LSR A:CLC:ADC prvA:STA prvA
-    LDA TmpCentury:LSR A:LSR A
-    CLC:ADC prvA:ASL TmpCentury
-    SEC:SBC TmpCentury
+    ; A = prvA + (TmpCentury/4) (wc: 185+99/4=209)
+    LDA TmpCentury:LSR A:LSR A:CLC:ADC prvA
+    ; A -= TmpCentury*2
+    ASL TmpCentury:SEC:SBC TmpCentury
+    ; That subtraction might have underflowed, so do some fix up if it did.
     PHP
-    BCS LA9A5
-    SEC:SBC #1:EOR #&FF
-.LA9A5
-    STA prvA
-    LDA #0:STA prvB
-    LDA #7:STA prvC
-    JSR SFTODOPSEUDODIV ; SFTODO: HERE WE WILL DIVIDE WITHOUT ANY WEIRDNESS
+    BCS NoUnderflow1
+    SEC:SBC #1:EOR #&FF ; negate A SQUASH: we know C is clear, so omit SEC and do SBC #0?
+.NoUnderflow1
+
+    ; Set A = A MOD 7.
+    STA prvBA
+    LDA #0:STA prvBA + 1
+    LDA #daysPerWeek:STA prvC
+    JSR div168 ; prvB == 0, prvC == 7, so the "prvB >= prvC" case can't occur
+
     PLP
-    BCS LA9C0
-    SEC:SBC #1:EOR #&FF
-    CLC:ADC #7 ; SFTODO: DAYSPERWEEK?
-.LA9C0
-    CMP #7 ; SFTODO: DAYSPERWEEK?
-    BCC LA9C6
-    SBC #7 ; SFTODO: DAYSPERWEEK?
-.LA9C6
-    ; SQUASH: Do we need to update prvA here? Shorter to do "SEC:SBC #1". We could BEQ to "STA
-    ; prvDateDayOfWeek", skipping "LDA prvA".
-    STA prvA
-    INC prvA
-    LDA prvA
+    BCS NoUnderflow2
+    SEC:SBC #1:EOR #&FF ; negate A SQUASH: as above
+    CLC:ADC #daysPerWeek
+.NoUnderflow2
+    CMP #daysPerWeek
+    BCC InRange
+    SBC #daysPerWeek
+.InRange
+
+    ; Bump A by 1; this is probably to convert from the 0-based day-of-week numbering which is
+    ; natural when working mod 7 to 1-based day-of-week numbering elsewhere in the code.
+    ; SQUASH: Do we need to update prvA here? Shorter to do "SEC:SBC #1" if we can make it
+    ; work. Or maybe we could PHA here and then PLA later. This isn't utterly trivial.
+    STA prvA:INC prvA:LDA prvA
+
     PLP:BCS Rts ; test stacked flags from entry; C set => return result in A
     ; Return result in A and at prvDateDayOfWeek; test to see if the existing value was correct
     ; and update prvDateSFTODOQ if it wasn't. SFTODO: I think that comment is a touch glib. I'm
@@ -6851,8 +7307,7 @@ TmpCentury = prvTmp2
     ; SFTODO: I think it's right to be using the SFTODOQ labels here but not sure yet
     LDA #prvDateSFTODOQDayOfWeek:ORA prvDateSFTODOQ:STA prvDateSFTODOQ
 .LA9DF
-    LDA prvA
-    STA prvDateDayOfWeek
+    LDA prvA:STA prvDateDayOfWeek
 .Rts
     RTS
 }
@@ -6890,19 +7345,15 @@ daysInMonth = transientDateSFTODO2
     RTS
 .notDone
     ADC prvDateDayOfWeek
-    SEC:SBC #2:STA prvA
-    LDA #0:STA prvB
+    SEC:SBC #2:STA prvBA
+    LDA #0:STA prvBA + 1
     LDA #7:STA prvC
-    JSR SFTODOPSEUDODIV ; SFTODO: WILL ALWAYS DIVIDE WITH NO WEIRDNESS
-    STA prvA ; SFTODO: Ignoring SFTODOPSEUDODIV quirk with prvB, we are setting A = (prvDateDayOfWeek + 2) MOD 7 - though remember we adjusted prvDateDayOfWeek above for currently unclear reasons (I suspect they're something to do with blanks in the first column of dates, ish)
+    JSR div168 ; strange "prvB >= prvC" case can't occur
+    STA prvA ; SFTODO: we are setting A = (prvDateDayOfWeek + 2) MOD 7 - though remember we adjusted prvDateDayOfWeek above for currently unclear reasons (I suspect they're something to do with blanks in the first column of dates, ish)
     LDA #6:STA prvB
-    LDA prvD ; SFTODO: stash result of pseudo-division as mul8 will corrupt prvD
-    PHA
+    LDA prvD:PHA ; SFTODO: stash result of division as mul8 will corrupt prvD
     JSR mul8 ; SFTODO: prvDC = 6 * the A we calculated above
-    PLA
-    CLC
-    ADC prvC ; SFTODO: add the stashed pseudo-division result to the low byte of the multiplication we just did (we *probably* know the high byte in prvD is zero and can be ignored)
-    TAY
+    PLA:CLC:ADC prvC:TAY ; SFTODO: add the stashed pseudo-division result to the low byte of the multiplication we just did (we *probably* know the high byte in prvD is zero and can be ignored)
     LDA prvDateDayOfMonth:STA (transientDateSFTODO1),Y
     INC prvDateDayOfMonth
     JMP DayOfMonthLoop ; SQUASH: BPL always?
@@ -6962,6 +7413,9 @@ daysInMonth = transientDateSFTODO2
     EQUB Thursday  - DayMonthNames
     EQUB Friday    - DayMonthNames
     EQUB Saturday  - DayMonthNames
+IF IBOS_VERSION >= 126
+.^MonthNameOffsetTable
+ENDIF
     EQUB January   - DayMonthNames
     EQUB February  - DayMonthNames
     EQUB March     - DayMonthNames
@@ -7001,7 +7455,7 @@ MaxOutputLength = prvTmp4 ; SFTODO: rename this, I think it's "max chars to prin
 .UseLowerCase
     LDY #&FF:STY LocalCapitaliseMask
 .LocalCapitaliseMaskSet
-    ; Set X and EndCalOffset so the string to print is at DayMonthNames+[X, EndCaloffset).
+    ; Set X and EndCalOffset so the string to print is at DayMonthNames+[X, EndCalOffset).
     TAX
     INX:LDA DayMonthNameOffsetTable,X:STA EndCalOffset ; SQUASH: Use DayMonthNameOffsetTable+1 to avoid INX/DEX
     DEX:LDA DayMonthNameOffsetTable,X:TAX
@@ -7038,7 +7492,7 @@ UnitsChar = prvTmp3
     CPX #1:BEQ SkipLeadingZero ; SQUASH: DEX:BEQ?
     LDA #' ':STA TensChar
     LDA UnitsChar:CMP #'0':BNE PrintTensChar
-    CPX #3:BNE PrintTensChar ; SQUASH: DEX:BEQ?
+    CPX #3:BNE PrintTensChar ; SQUASH: #3 needs changing if use DEX above
     LDA #' ':STA UnitsChar
 .PrintTensChar
     LDA TensChar:STA (transientDateBufferPtr),Y:INY
@@ -7091,7 +7545,7 @@ UnitsChar = prvTmp3
 
 {
 .AmPmSuffixes
-	  EQUS "am", "pm"
+    EQUS "am", "pm"
 
 ; Emit "am" or "pm" time suffix for hour A (<=23) into transientDateBuffer.
 ; SFTODO: This only has one caller, could it just be inlined?
@@ -7105,7 +7559,8 @@ UnitsChar = prvTmp3
 }
 
 IF FALSE
-; SQUASH: EmitAmPmForHourA is a bit more complex than necessary - here's a shorter alternative implementation, not tested!
+; SQUASH: EmitAmPmForHourA is a bit more complex than necessary - here's a shorter alternative
+; implementation, not tested!
 .EmitAmPmForHourA
 {
     LDX #'a'
@@ -7270,8 +7725,11 @@ Options = transientDateSFTODO1
 ; 1. Optionally emit the day of the week, optionally truncated and/or capitalised, and optionally followed by some punctuation. prvDataSFTODO2's high nybble controls most of those options, although prvDataSFTODO3=0 will prevent punctuation and cause an early return.
     {
 	  LDA prvDateSFTODO2
-	  ; SQUASH: Use LsrA4
+IF IBOS_VERSION < 126
       LSR A:LSR A:LSR A:LSR A
+ELSE
+      JSR LsrA4
+ENDIF
       STA transientDateSFTODO1
       BEQ SFTODOSTEP2
       AND #1
@@ -7798,10 +8256,10 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     RTS
 			
 .LB086
-    STA prvA
-    LDA #0:STA prvB
+    STA prvBA
+    LDA #0:STA prvBA + 1
     LDA #7:STA prvC
-    JSR SFTODOPSEUDODIV ; SFTODO: WILL ALWAYS DIVIDE WITH NO WEIRDNESS
+    JSR div168 ; SFTODO: WILL ALWAYS DIVIDE WITH NO WEIRDNESS
     TAX
     INX
     STX prvDateDayOfWeek
@@ -7939,7 +8397,11 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     JSR ValidateDateTimeAssumingLeapYear ; SFTODO: *just possibly* it would be better to validate *respecting* leap year *iff* prvDateYear/prvDateCentury are not &FF (i.e. we have a specific year) - but I could very easily be missing some subtlety here - note that in LAFF9 we redo the validation respecting leap year after filling in the blanks, so this is probably *not* a helpful tweak here - OK, LAFF9 will *sometimes* redo the validation, so just maybe (it's all very unclear right now) this tweak would add a tiny bit of value
     ; Stash the date validation result (shifted into the low nybble) on the stack.
     LDA prvDateSFTODOQ
-    LSR A:LSR A:LSR A:LSR A ; SQUASH: JSR LsrA4
+IF IBOS_VERSION < 126
+    LSR A:LSR A:LSR A:LSR A
+ELSE
+    JSR LsrA4
+ENDIF
     PHA
     ; SFTODO: I believe the use of prvDateSFTODO0 (==prvDateSFTODOQ) here is entirely local to this subroutine - once we call LAFF9 we will not use the value left in there, and will overwrite it most of the time.
     ; Set prvDateSFTODO0 so b3-0 are set iff prvDate{Century,Year,Month,DayOfMonth} is &FF (open).
@@ -7970,10 +8432,10 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
 .InterpretParsedYear
 {
     XASSERT_USE_PRV1
-    LDA ConvertIntegerResult:STA prvA
-    LDA ConvertIntegerResult + 1:STA prvB
+    LDA ConvertIntegerResult    :STA prvBA
+    LDA ConvertIntegerResult + 1:STA prvBA + 1
     LDA #100:STA prvC
-    JSR SFTODOPSEUDODIV ; SFTODO: IN PRACTICE THIS WILL ALWAYS DO DIVISION WITH NO WEIRDNESS (9999 WOULD GIVE PRVB=39<100)
+    JSR div168 ; SFTODO: IN PRACTICE THIS WILL ALWAYS DO DIVISION WITH NO WEIRDNESS (9999 WOULD GIVE PRVB=39<100)
     STA prvDateYear
     LDA prvD:BNE CenturyInA
 .^GetUserRegCentury
@@ -8129,28 +8591,87 @@ EndIndex = transientDateSFTODO2 ; exclusive
     RTS
 }
 
-; Parse a date from the command line, populating PrvDate* and returning with C clear iff parsing succeeds.
-; SQUASH: This has only one caller
+; Parse a date from the command line, populating PrvDate* and returning with C clear iff
+; parsing succeeds. From v1.26 Y is updated to point to the next character after successful
+; parsing; it is corrupted in earlier versions.
 .ParseAndValidateDate
 {
     XASSERT_USE_PRV1
     LDA #0:STA prvDateDayOfWeek
     JSR ConvertIntegerDefaultDecimal:BCS ParseError:STA prvDateDayOfMonth
+IF IBOS_VERSION < 126
     LDA (transientCmdPtr),Y:INY
     CMP #'/':BNE ParseError
-    JSR ConvertIntegerDefaultDecimal:BCS ParseError:STA prvDateMonth
-    LDA (transientCmdPtr),Y:INY
-    CMP #'/':BNE ParseError
-    JSR ConvertIntegerDefaultDecimal:BCS ParseError:JSR InterpretParsedYear
-    JSR ValidateDateTimeAssumingLeapYear
-    LDA prvDateSFTODOQ:AND #prvDateSFTODOQCenturyYearMonthDayOfMonth:BNE ParseError
-    JSR CalculateDayOfWeekInPrvDateDayOfWeek
-    CLC
-    RTS
-			
+ELSE
+    JSR ParseSlashOrSpace:BNE ParseError
+ENDIF
+    JSR ConvertIntegerDefaultDecimal
+IF IBOS_VERSION < 126
+    BCS ParseError
+ELSE
+currentMonth = transientCmdPtr + 2
+savedY = transientCmdPtr + 3
+charsToMatch = transientCmdPtr + 4
+    BCC MonthInA
+    ; We couldn't parse the month as an integer, but it may be a three character month name. We
+    ; implement this for the benefit of OSWORD &0F, but this also means *DATE= will accept it,
+    ; which seems like a reasonable bonus rather than a problem. As the main motivation for
+    ; this is OSWORD &0F, we don't attempt to accept longer versions of the month name.
+    LDA #MonthsPerYear:STA currentMonth
+    STY savedY
+.MonthLoop
+    ; -1 in the next line as currentMonth is 1-based but MonthNameOffset is 0-based.
+    LDY currentMonth:LDX MonthNameOffsetTable-1,Y
+    LDY savedY
+    LDA #3:STA charsToMatch
+.MonthCharLoop
+    LDA (transientCmdPtr),Y:ORA #LowerCaseMask:CMP DayMonthNames,X:BNE NoMatch
+    INY:INX:DEC charsToMatch:BNE MonthCharLoop
+    LDA currentMonth:BNE MonthInA ; always branch
+.NoMatch
+    DEC currentMonth:BNE MonthLoop
 .ParseError
     SEC
     RTS
+.MonthInA
+ENDIF
+    STA prvDateMonth
+IF IBOS_VERSION < 126
+    LDA (transientCmdPtr),Y:INY
+    CMP #'/':BNE ParseError
+ELSE
+    JSR ParseSlashOrSpace:BNE ParseError
+ENDIF
+    JSR ConvertIntegerDefaultDecimal:BCS ParseError
+IF IBOS_VERSION >= 126
+    ; We use this for parsing OSWORD &0F date strings, so we need to preserve Y so parsing can
+    ; continue after the date.
+    STY savedY
+ENDIF
+    JSR InterpretParsedYear
+    JSR ValidateDateTimeAssumingLeapYear
+    LDA prvDateSFTODOQ:AND #prvDateSFTODOQCenturyYearMonthDayOfMonth:BNE ParseError
+    JSR CalculateDayOfWeekInPrvDateDayOfWeek
+IF IBOS_VERSION >= 126
+    LDY savedY
+ENDIF
+    CLC
+    RTS
+
+IF IBOS_VERSION < 126
+.ParseError
+    SEC
+    RTS
+ENDIF
+
+IF IBOS_VERSION >= 126
+.ParseSlashOrSpace
+    LDA (transientCmdPtr),Y:INY
+    CMP #'/':BEQ Rts
+    CMP #' '
+.Rts
+    RTS
+ENDIF
 }
 
 ; Alarm interrupt handler code.
@@ -8418,7 +8939,7 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     JSR CopyPrvDateToRtc
     JMP PrvDisExitAndClaimServiceCall
 }
-			
+
 ;Start of CALENDAR * Command
 .calend
 {
@@ -8558,38 +9079,47 @@ Column = prvC
 {
     JSR SaveTransientZP
     PRVEN
-    ; SQUASH: Could we share some of the repetitions of the next two lines?
+IF IBOS_VERSION < 126
     LDA oswdbtX:STA prvOswordBlockOrigAddr
     LDA oswdbtY:STA prvOswordBlockOrigAddr + 1
+ENDIF
     JSR oswordsv
     JSR oswd0e_1
     BCS osword0ea
     JSR oswordrs
 .osword0ea
-    ; Restore original A/X/Y. SQUASH: Do we need to do this? Did we modify them?
+IF IBOS_VERSION < 126
+    ; Restore oswdbt[AXY]. This isn't necessary, as we haven't modified them, and we might
+    ; actually be allowed to corrupt them anyway given we're claiming the call.
     LDA prvOswordBlockOrigAddr:STA oswdbtX
     LDA prvOswordBlockOrigAddr + 1:STA oswdbtY
     LDA #&0E:STA oswdbtA
+ENDIF
     PRVDIS
     JMP RestoreTransientZPAndExitAndClaimServiceCall
 }
-			
+
 ;OSWORD &49 (73) - Integra-B calls
 {
 .^osword49
     JSR SaveTransientZP
     PRVEN
+IF IBOS_VERSION < 126
     LDA oswdbtX:STA prvOswordBlockOrigAddr
     LDA oswdbtY:STA prvOswordBlockOrigAddr + 1
+ENDIF
     JSR oswordsv ; save the OSWORD block
     JSR oswd49_1 ; execute the OSWORD call
     BCS Success
     JSR oswordrs ; restore the OSWORD block if we failed
 .Success
-    ; Restore A/X/Y. SQUASH: Will we have modified X/Y?
+IF IBOS_VERSION < 126
+    ; Restore oswdbt[AXY]. This isn't necessary, as we haven't modified them, and we might
+    ; actually be allowed to corrupt them anyway given we're claiming the call.
     LDA prvOswordBlockOrigAddr:STA oswdbtX
     LDA prvOswordBlockOrigAddr + 1:STA oswdbtY
     LDA #&49:STA oswdbtA
+ENDIF
     PRVDIS
 .^RestoreTransientZPAndExitAndClaimServiceCall
     JSR RestoreTransientZP
@@ -8598,10 +9128,11 @@ Column = prvC
 			
 ;Save OSWORD XY entry table
 {
-Ptr = &AE
 
 .^oswordsv ; SFTODO: rename
     XASSERT_USE_PRV1
+IF IBOS_VERSION < 126
+Ptr = &AE
     LDA prvOswordBlockOrigAddr:STA Ptr
     LDA prvOswordBlockOrigAddr + 1:STA Ptr + 1
     LDY #prvOswordBlockCopySize - 1
@@ -8609,6 +9140,15 @@ Ptr = &AE
     LDA (Ptr),Y:STA prvOswordBlockCopy,Y
     DEY:BPL Loop
     RTS
+ELSE
+    LDA oswdbtX:STA prvOswordBlockOrigAddr
+    LDA oswdbtY:STA prvOswordBlockOrigAddr + 1
+    LDY #prvOswordBlockCopySize - 1
+.Loop
+    LDA (oswdbtX),Y:STA prvOswordBlockCopy,Y
+    DEY:BPL Loop
+    RTS
+ENDIF
 }
 			
 ;Restore OSWORD XY entry table
@@ -8642,6 +9182,8 @@ Ptr = &AE
 {
     XASSERT_USE_PRV1
     ; Transfer control to the handler at oswd0elu[prvOswordBlockCopy] using RTS.
+    ; ENHANCE: I think this will crash if we see an unsupported function code; we could check
+    ; it's <=2 and make this a no-op in that case.
     LDA prvOswordBlockCopy:ASL A:TAY
     LDA oswd0elu+1,Y:PHA
     LDA oswd0elu,Y:PHA
@@ -9079,11 +9621,14 @@ ASSERT parentVectorTbl2End <= osPrintBuf + osPrintBufSize
 .RestoreOrigVectorRegs
 {
     TSX
-    LDA L0108,X:PHA ; get original flags
-    LDA L0109,X:PHA ; get original A
-    LDA L0104,X:PHA ; get original X
-    ; SQUASH: We could save a byte here by doing LDY L0103,X directly.
-    LDA L0103,X:TAY ; get original Y
+    LDA VectorEntryStackedFlags+2,X:PHA
+    LDA VectorEntryStackedA+2,X:PHA
+    LDA VectorEntryStackedX+2,X:PHA
+IF IBOS_VERSION < 126
+    LDA VectorEntryStackedY+2,X:TAY
+ELSE
+    LDY VectorEntryStackedY+2,X
+ENDIF
     PLA:TAX
     PLA
     PLP
@@ -9103,10 +9648,10 @@ ASSERT parentVectorTbl2End <= osPrintBuf + osPrintBufSize
     ; So at this point the stack is as described in the big comment in VectorEntry but with
     ; everything moved up five bytes (X=S-5, if S is the value of the stack pointer in that
     ; comment).
-    TYA:TSX:STA L0106,X ; overwrite original stacked Y
-    PLA:STA L0107,X ; overwrite original stacked X
-    PLA:STA L010C,X ; overwrite original stacked A
-    PLA:STA L010B,X ; overwrite original stacked flags
+    TYA:TSX:STA VectorEntryStackedY+5,X
+    PLA:STA VectorEntryStackedX+5,X
+    PLA:STA VectorEntryStackedA+5,X
+    PLA:STA VectorEntryStackedFlags+5,X
     RTS
 }
 
@@ -9157,12 +9702,13 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     ;   &108,S  return address from "JSR ramCodeStubCallIBOS" (low)
     ;   &109,S  return address from "JSR ramCodeStubCallIBOS" (high)
     ;   &10A,S  xxx (caller's data; nothing to do with us)
+    ; The VectorEntryStacked* constants correspond to these addresses.
     ;
     ; The low byte of the return address at &108,S will be the address of the JSR
     ; ramCodeStubCallIBOS plus 2. We mask off the low bits (which are sufficient to distinguish
     ; the 7 different callers) and use them to transfer control to the handler for the relevant
     ; vector.
-    TSX:LDA L0108,X:AND #&3F:TAX
+    TSX:LDA L0108,X:AND #&3F:TAX ; SFTODO: add a VectorEntryStacked* constant? prob not if only one use...
     LDA vectorHandlerTbl-1,X:PHA
     LDA vectorHandlerTbl-2,X:PHA
     RTS
@@ -9214,8 +9760,8 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     ; control via RTS, which will add 1. We overwrite the return address from "JSR
     ; ramCodeStubCallIBOS" on the stack.
     SEC
-    LDA parentVectorTbl,Y:SBC #1:STA L0108,X
-    LDA parentVectorTbl+1,Y:SBC #0:STA L0109,X
+    LDA parentVectorTbl,Y:SBC #1:STA L0108,X ; SFTODO: L0108->name+n?
+    LDA parentVectorTbl+1,Y:SBC #0:STA L0109,X ; SFTODO: L0109->name+n?
     PLA:TAY
     PLA:TAX
     RTS
@@ -9278,10 +9824,33 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     JMP returnViaParentBYTEV
 
 ; Examine buffer status (http://beebwiki.mdfs.net/OSBYTE_%2698)
-; SFTODO: What's going on here? Why do we need to override the OS implementation of this at
-; all? See the ENHANCE: comment above PrintBufferNotEmpty, but I'm not sure that's relevant -
-; note that we are accessing the OS 1.20 buffer via OS pointer &FA, which will *only* work if
-; the buffer is the standard OS one not something else (such as our own printer buffer).
+
+; OSBYTE &98 has different behaviour in OS 1.20 and OS 2.00 onwards, so we have to implement
+; the OS 2.00 behaviour if we're in OSMODE>=2.
+;
+; In OS 1.20, for non-empty buffers, OSBYTE &98 returns with Y set so "LDA (&FA),Y" will
+; retrieve the next character from the buffer.
+;
+; In OS 2.00, for non-empty buffers, OSBYTE &98 returns with Y containing the next character
+; from the buffer.
+;
+; ENHANCE: It's important to bear in mind when reading the following that OSBYTE &98 can be
+; used for any buffer, not just the printer buffer. That said, when it is called for the
+; printer buffer, I suspect the code here is buggy. Note that we steal the RAM used by the OS
+; printer buffer for ramCodeStub except in OSMODE 0, so forwarding the call on to the parent
+; BYTEV is unlikely to give a correct result, and nor is accessing anything via the pointer at
+; L00FA. A correct implementation would probably handle the printer buffer as a special case,
+; using CheckPrintBufferEmpty and LdaPrintBufferReadPtr.
+;
+; In OSMODE 1, we'd probably need to store the next character in a spare byte of main RAM, set
+; &FA to point to that spare byte and return with Y=0 in order for the caller to be able to see
+; the character. (The real buffer is in private RAM and won't be visible to the caller whatever
+; we set &FA and Y to.) The AUG says interrupts should be disabled when calling OSBYTE &98 and
+; retrieving the character so we would probably get away with this.
+;
+; In practice OSBYTE &98 is probably not used to query the state of the printer buffer very
+; much, and I believe this code will work correctly and emulate the appropriate OS behaviour in
+; all OSMODEs for all buffers other than the printer buffer.
 .osbyte98Handler
     JSR jmpParentBYTEV:BCS returnFromBYTEV ; branch if buffer empty
     ; SFTODO: Why is this taking more care than usual (PRVEN or ReadPrivateRam8300X) to
@@ -9549,6 +10118,7 @@ ScreenStart = &3000
     ; If we're in OSMODE 0, don't install vector handlers, set up the print buffer or enable
     ; shadow RAM.
     LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X:BEQ OsMode0
+
     JSR installOSPrintBufStub
 
     ; Save the parent values of BYTEV, WORDV, WRCHV and RDCHV at parentVectorTbl1 and install
@@ -9566,7 +10136,8 @@ ScreenStart = &3000
     CPX #8:BNE Loop
     PLP
 
-    JSR InitPrintBuffer
+    JSR InitPrintBuffer ; claims additional vectors
+
     LDA lastBreakType:BNE DisableShadow ; branch if not soft reset
     LDX #prvLastScreenMode - prv83:JSR ReadPrivateRam8300X:BPL DisableShadow
     ; Enable shadow RAM.
@@ -9628,7 +10199,7 @@ ScreenStart = &3000
 
 .InsvHandler
 {
-    TSX:LDA L0102,X ; get original X=buffer number
+    TSX:LDA VectorEntryStackedX,X ; get original X=buffer number
     CMP #bufNumPrinter:BEQ IsPrinterBuffer
     LDA #ibosINSVIndex:JMP forwardToParentVectorTblEntry
 
@@ -9638,16 +10209,16 @@ ScreenStart = &3000
     TSX
     JSR CheckPrintBufferFull:BCC PrintBufferNotFull
     ; Return to caller with carry set to indicate insertion failed.
-    LDA L0107,X:ORA #flagC:STA L0107,X ; modify stacked flags so C is set
+    LDA VectorEntryStackedFlags+1,X:ORA #flagC:STA VectorEntryStackedFlags+1,X
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
 
 .PrintBufferNotFull
-    LDA L0108,X ; get original A=character to insert
+    LDA VectorEntryStackedA+1,X ; get original A=character to insert
     JSR StaPrintBufferWritePtr
     JSR AdvancePrintBufferWritePtr
     JSR DecrementPrintBufferFree
     ; Return to caller with carry clear to indicate insertion succeeded.
-    TSX:LDA L0107,X:AND_NOT flagC:STA L0107,X ; modify stacked flags so C is clear
+    TSX:LDA VectorEntryStackedFlags+1,X:AND_NOT flagC:STA VectorEntryStackedFlags+1,X
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
 }
 
@@ -9655,7 +10226,7 @@ ScreenStart = &3000
 ; InsvHandler/RemvHandler/CnpvHandler to save space?
 .RemvHandler
 {
-    TSX:LDA L0102,X ; get original X=buffernumber
+    TSX:LDA VectorEntryStackedX,X ; get original X=buffernumber
     CMP #bufNumPrinter:BEQ IsPrinterBuffer
     LDA #ibosREMVIndex:JMP forwardToParentVectorTblEntry
 			
@@ -9665,31 +10236,40 @@ ScreenStart = &3000
     TSX
     JSR CheckPrintBufferEmpty:BCC PrintBufferNotEmpty
     ; SQUASH: Some similarity with InsvHandler here, could we factor out common code?
-    LDA L0107,X:ORA #flagC:STA L0107,X ; modify stacked flags so C is set
+    LDA VectorEntryStackedFlags+1,X:ORA #flagC:STA VectorEntryStackedFlags+1,X
     JMP RestoreRamselClearPrvenReturnFromVectorHandler ; SQUASH: BNE ; always branch
 
-; ENHANCE: The following code returns the character in Y for examine and A for remove, which is
+; IBOS versions before 1.23 return the character in Y for examine and A for remove, which is
 ; the wrong way round. This works in practice for the all-important case of the OS removing
 ; characters from the printer buffer to send to the printer because OS 1.20 expects the
-; character to be in A for remove. It's pretty unlikely any non-OS code is ever going to call
-; REMV on the printer buffer, but ideally we would return the character in both A and Y for
-; both examine and remove. See https://stardot.org.uk/forums/viewtopic.php?f=54&p=319880.
+; character to be in A for remove. See
+; https://stardot.org.uk/forums/viewtopic.php?f=54&p=319880 for discussion on this.
+;
+; The pre-1.23 behaviour did cause some problems in practice, as discussed here:
+; https://stardot.org.uk/forums/viewtopic.php?f=3&t=22868&start=990
+; 1.23+ returns the character in A and Y for both examine and remove to be safe.
 
 .PrintBufferNotEmpty
-    LDA L0107,X:AND_NOT flagC:STA L0107,X ; modify stacked flags so C is clear
+    LDA VectorEntryStackedFlags+1,X:AND_NOT flagC:STA VectorEntryStackedFlags+1,X
     JSR LdaPrintBufferReadPtr
     TSX
-    PHA ; note this doesn't affect X so our L01xx,X references stay the same
-    LDA L0107,X:AND #flagV:BNE ExamineBuffer ; test V in stacked flags from caller
+    PHA ; note this doesn't affect X so our stack,X references stay the same
+    LDA VectorEntryStackedFlags+1,X:AND #flagV:BNE ExamineBuffer
     ; V was cleared by the caller, so we're removing a character from the buffer.
-    PLA:STA L0108,X ; overwrite stacked A with character read from our buffer
+    PLA:STA VectorEntryStackedA+1,X ; overwrite stacked A with character read from our buffer
+IF IBOS_VERSION >= 123
+    STA VectorEntryStackedY+1,X ; overwrite stacked Y with character read from our buffer
+ENDIF
     JSR AdvancePrintBufferReadPtr
     JSR IncrementPrintBufferFree
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
 
 .ExamineBuffer
     ; V was set by the caller, so we're just examining the buffer without removing anything.
-    PLA:STA L0102,X ; overwrite stacked Y with character peeked from our buffer
+    PLA:STA VectorEntryStackedY+1,X ; overwrite stacked Y with character peeked from our buffer
+IF IBOS_VERSION >= 123
+    STA VectorEntryStackedA+1,X ; overwrite stacked A with character peeked from our buffer
+ENDIF
     FALLTHROUGH_TO RestoreRamselClearPrvenReturnFromVectorHandler
 }
 
@@ -9705,14 +10285,14 @@ ScreenStart = &3000
 
 .CnpvHandler
 {
-    TSX:LDA L0102,X ; get original X=buffer number
+    TSX:LDA VectorEntryStackedX,X ; get original X=buffer number
     CMP #bufNumPrinter:BEQ IsPrinterBuffer
     LDA #ibosCNPVIndex:JMP forwardToParentVectorTblEntry
 
 .IsPrinterBuffer
     LDA ramselCopy:PHA
     PRVEN
-    TSX:LDA L0107,X:AND #flagV:BEQ Count ; test V in stacked flags from caller
+    TSX:LDA VectorEntryStackedFlags+1,X:AND #flagV:BEQ Count
     ; We're purging the buffer.
     LDX #prvPrintBufferPurgeOption - prv83:JSR ReadPrivateRam8300X:BEQ PurgeOff
     JSR PurgePrintBuffer
@@ -9720,11 +10300,11 @@ ScreenStart = &3000
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
 
 .Count
-    LDA L0107,X:AND #flagC:BNE CountSpaceLeft ; test C in stacked flags from caller
+    LDA VectorEntryStackedFlags+1,X:AND #flagC:BNE CountSpaceLeft
     ; We're counting the entries in the buffer; return them as 16-bit value YX.
     JSR GetPrintBufferUsed
-    TXA:TSX:STA L0103,X ; overwrite stacked X, so we return A to caller in X
-    TYA:STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
+    TXA:TSX:STA VectorEntryStackedX+1,X ; overwrite stacked X, so we return A to caller in X
+    TYA:STA VectorEntryStackedY+1,X ; overwrite stacked Y, so we return A to caller in Y
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
 
 .CountSpaceLeft
@@ -9732,8 +10312,8 @@ ScreenStart = &3000
     JSR GetPrintBufferFree
     ; SQUASH: Following code is identical to fragment just above, we could JMP to it to avoid
     ; this duplication.
-    TXA:TSX:STA L0103,X ; overwrite stacked X, so we return A to caller in X
-    TYA:STA L0102,X ; overwrite stacked Y, so we return A to caller in Y
+    TXA:TSX:STA VectorEntryStackedX+1,X ; overwrite stacked X, so we return A to caller in X
+    TYA:STA VectorEntryStackedY+1,X ; overwrite stacked Y, so we return A to caller in Y
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
 }
 
@@ -9972,7 +10552,27 @@ MaxPrintBufferStart = prv8End - 1024 ; print buffer must be at least 1K
 }
 
 PRINT end - P%, "bytes free"
-SAVE "IBOS-01.rom", start, end
+IF IBOS_VERSION == 120
+IF IBOS120_VARIANT == 0
+    SAVE "IBOS-120.rom", start, end
+ELSE
+    SAVE "IBOS-120-b-em.rom", start, end
+ENDIF
+ELIF IBOS_VERSION == 121
+    SAVE "IBOS-121.rom", start, end
+ELIF IBOS_VERSION == 122
+    SAVE "IBOS-122.rom", start, end
+ELIF IBOS_VERSION == 123
+    SAVE "IBOS-123.rom", start, end
+ELIF IBOS_VERSION == 124
+    SAVE "IBOS-124.rom", start, end
+ELIF IBOS_VERSION == 125
+    SAVE "IBOS-125.rom", start, end
+ELIF IBOS_VERSION == 126
+    SAVE "IBOS-126.rom", start, end
+ELSE
+    ERROR "Unknown IBOS_VERSION"
+ENDIF
 
 ; SFTODO: Would it be possible to save space by factoring out "LDX #prvOsMode:JSR
 ; ReadPrivateRam8300X" into a subroutine?
@@ -10009,3 +10609,5 @@ SAVE "IBOS-01.rom", start, end
 ;; Local Variables:
 ;; fill-column: 95
 ;; End:
+
+; SFTODO: Look at the integrap ROM packaged with b-em and see if we can build that too.

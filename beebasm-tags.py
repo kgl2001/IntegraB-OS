@@ -130,7 +130,7 @@ def process_file(filename):
                 line_number += 1 # switch from 0 to 1 based
                 if line[-1] == '\n':
                     line = line[0:-1]
-                if line[-1] == '\r':
+                if len(line) > 0 and line[-1] == '\r':
                     line = line[0:-1]
                 tokens = tokenise(line)
                 for statement in tokens:
