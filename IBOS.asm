@@ -938,6 +938,10 @@ GUARD end
     EQUB RomTypeService OR RomTypeLanguage OR RomType6502
 .CopyrightOffset
     EQUB Copyright - RomHeader
+; TODO: It would be good to give a meaningful binary version number; since all known versions
+; of IBOS use &FF, we could start at 0 for 1.27 and bump it by one each time. (This would make
+; it easier for user programs to query the precise IBOS version, if they need a particular
+; fix.) Or we could use 127 for 1.27 and so on, but that would give us less headroom.
     EQUB &FF ; binary version number
 .Title
     EQUS "IBOS", 0
