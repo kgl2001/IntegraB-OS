@@ -929,7 +929,7 @@ ENDMACRO
 start = &8000
 end = &C000
 ORG start
-; SFTODO TEMP DISABLED GUARD end
+GUARD end
 
 .RomHeader
     JMP language
