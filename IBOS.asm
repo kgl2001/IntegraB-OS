@@ -3253,6 +3253,7 @@ ENDIF
 ; to manage paging private RAM in/out.
 .^PrvEn
     PHA
+    ; SFTODO: Should we be doing AND_NOT ramselPrvs1 in the next line? Or maybe AND_NOT (ramselShen OR ramselPrvs1)?
     LDA ramselCopy:ORA #ramselPrvs1:STA ramselCopy:STA ramsel
     LDA romselCopy:ORA #romselPrvEn:STA romselCopy:STA romsel
     PLA
@@ -10615,3 +10616,18 @@ ENDIF
 ;; End:
 
 ; SFTODO: Look at the integrap ROM packaged with b-em and see if we can build that too.
+
+; SFTODO: If a user application is using the private RAM (except the 1K allocated to IBOS), is
+; there a danger that things like pressing Escape will trigger the printer buffer to be flushed
+; and corrupt data in the private RAM? Or will this leave the "other" 11K of the private RAM
+; alone as long as there's no data in the buffer? I am assuming the printer buffer is the only
+; thing in IBOS that uses the "other" 11K, but if anything else does that might be a concern
+; too. *If necessary*, it might be nice to provide some kind of call (OSWORD/OSBYTE) which a
+; user application can use to tell IBOS "I want the other 11K, keep your hands off it". There
+; is a bit of a corner case here as IBOS steals the OS printer buffer, which is OK as long as
+; it is providing its own printer buffer (at the moment you cannot turn it off), but this means
+; you cannot currently use the 11K private RAM for yourself *and* print. Maybe this is OK, but
+; ideally it would be possible to do both (but not with a big buffer, of course). (We could say
+; "allocate a SWR bank for the buffer if you're using the 11K and want to print", but in that
+; case the application might just as well use the SWR bank itself and leave the private RAM to
+; IBOS.)
