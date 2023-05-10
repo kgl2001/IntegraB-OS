@@ -10630,4 +10630,4 @@ ENDIF
 ; ideally it would be possible to do both (but not with a big buffer, of course). (We could say
 ; "allocate a SWR bank for the buffer if you're using the 11K and want to print", but in that
 ; case the application might just as well use the SWR bank itself and leave the private RAM to
-; IBOS.)
+; IBOS.) Maybe an application using the 11K should be expected to do *FX5,0 first???
