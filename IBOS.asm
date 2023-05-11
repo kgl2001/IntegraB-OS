@@ -10608,12 +10608,8 @@ ENDIF
 ; https://github.com/ZornsLemma/GXR.
 
 ; It would be nice if "*CO." could be used as an abbreviation for *CONFIGURE, as on the Master,
-; but OS 1.20 interprets this as an abbreviate for "*CODE" and IBOS never gets a chance to see
-; it. Short of installing a USERV handler, there isn't much we can do about this.
-
-;; Local Variables:
-;; fill-column: 95
-;; End:
+; but OS 1.20 interprets this as an abbreviation for "*CODE" and IBOS never gets a chance to
+; see it. Short of installing a USERV handler, there isn't much we can do about this.
 
 ; SFTODO: Look at the integrap ROM packaged with b-em and see if we can build that too.
 
@@ -10631,3 +10627,7 @@ ENDIF
 ; "allocate a SWR bank for the buffer if you're using the 11K and want to print", but in that
 ; case the application might just as well use the SWR bank itself and leave the private RAM to
 ; IBOS.) Maybe an application using the 11K should be expected to do *FX5,0 first???
+
+;; Local Variables:
+;; fill-column: 95
+;; End:
