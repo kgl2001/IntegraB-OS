@@ -6904,6 +6904,7 @@ ENDIF
     JMP ExitAndClaimServiceCall
 }
 
+IF IBOS_VERSION < 127
 ; SFTODO: What's going on here? This seems to be writing to RTC register %1xxxxxxx and
 ; %x1xxxxxx, which I'm not even sure exist. The use of userRegBankWriteProtectStatus is
 ; obviously a clue, but the code doesn't seem to be doing anything obviously sensible with
@@ -6927,6 +6928,7 @@ ENDIF
     PLP
     RTS
 }
+ENDIF
 
 ;SPOOL/EXEC file closure warning - Service call 10 SFTODO: I *suspect* we are using this as a "part way through reset" service call rather than for its nominal purpose - have a look at OS 1.2 disassembly and see when this is actually generated. Do filing systems or anything issue it during "normal" operation? (e.g. if you do "*EXEC" with no argument.)
 .service10
@@ -6946,7 +6948,9 @@ ENDIF
 
     PRVEN
 
+IF IBOS_VERSION < 127
     JSR SFTODOWRITEPROTECTISH
+ENDIF
 
     ; Copy the OS ROM type table into private RAM so we know the original contents before we modified it.
     LDX #maxBank
