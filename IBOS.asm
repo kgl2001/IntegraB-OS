@@ -4638,7 +4638,9 @@ ENDIF
 ; "mode 7 owl" as well as/instead of simple text.
 .DisplayBannerIfRequired
 {
+IF IBOS_VERSION < 127
 RamPresenceFlags = TransientZP
+ENDIF
 
     ; We just use the default banner if we're in OSMODE 0. SQUASH: CMP #0 is redundant
     LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X:CMP #0:BEQ Rts
