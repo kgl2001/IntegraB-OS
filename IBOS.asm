@@ -4744,10 +4744,10 @@ ELSE
 ; Count 16K chunks of RAM in kilobytes and print the result.
     LDY #4 ; number of 16K RAM chunks - initial 4 are 32K main RAM, 20K shadow and 12K private
     LDX #userRegRamPresenceFlags0_7:JSR sumRAM
-    LDX #userRegRamPresenceFlags8_F:JSR sumRAM ; SFTODONOW: WE CAN PROB DO DEX WITH AN ASSERT TO SAVE A BYTE IF SUMRAM PRESERVES X
+    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
+    INX:JSR sumRAM
     STA transientBin+1 ; we know A is zero after sumRAM
     ; Y <= 20 here - we started at 4 and can have added a maximum of 16 sideways RAM banks
-    STY &70 ; TEMP DEBUG HACK
     TYA
     ASL A ; result <= 40, no carry
     ASL A ; result <= 80, no carry
@@ -4762,8 +4762,10 @@ ELSE
     BIT tubePresenceFlag:BMI Rts ; branch if tube present
     JMP OSNEWL
     ; SF: 43 BYTES
+
+; Increment Y by the number of bits set in user register A. Preserves X, returns with A=0.
 .sumRAM
-    JSR ReadUserReg ; preserves Y
+    JSR ReadUserReg ; preserves X and Y
 .sumRAMLoop
     LSR A
     PHP
