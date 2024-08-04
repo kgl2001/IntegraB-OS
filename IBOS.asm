@@ -4704,43 +4704,6 @@ IF IBOS_VERSION < 127
 .Rts
     RTS
 ELSE
-IF FALSE ; SFTODONOW
-; Count 16K chunks of RAM in kilobytes and print the result.
-    LDA #&40:STA transientBin	; Base memory is 64k - 32k RAM + 20k Shadow + 12k Private
-    LDA #&00:STA transientBin+1
-    LDX #userRegRamPresenceFlags0_7:JSR sumRAM
-    LDX #userRegRamPresenceFlags8_F:JSR sumRAM
-    SEC
-    JSR PrintAbcd16Decimal
-    LDA #'K':JSR OSWRCH
-    ; SF: 27 BYTES TO HERE
-.SoftReset
-    JSR OSNEWL
-    BIT tubePresenceFlag:BMI Rts ; branch if tube present
-    JMP OSNEWL
-    ; SF: 38 BYTES TO HERE
-.sumRAM
-    JSR ReadUserReg
-    STA transientSum
-    LDA transientBin
-    LDX #&07
-    ; SF: 47 BYTES
-.sumRAMloop
-    LSR transientSum
-    BCC sumRAMNoAdd
-    ADC #&0F
-    BCC sumRAMNoAdd
-    INC transientBin+1
-    ; SF: 57 BYTES
-.sumRAMNoAdd
-    DEX
-    BPL sumRAMloop
-    STA transientBin
-.Rts
-    RTS
-    ; SF: 63 BYTES
-ELSE
-; SFTODO EXPERIMENTAL
 ; Count 16K chunks of RAM in kilobytes and print the result.
     LDY #4 ; number of 16K RAM chunks - initial 4 are 32K main RAM, 20K shadow and 12K private
     LDX #userRegRamPresenceFlags0_7:JSR sumRAM
@@ -4756,12 +4719,10 @@ ELSE
     SEC
     JSR PrintAbcd16Decimal
     LDA #'K':JSR OSWRCH
-    ; SF: 32 ByTES
 .SoftReset
     JSR OSNEWL
     BIT tubePresenceFlag:BMI Rts ; branch if tube present
     JMP OSNEWL
-    ; SF: 43 BYTES
 
 ; Increment Y by the number of bits set in user register A. Preserves X, returns with A=0.
 .sumRAM
@@ -4771,14 +4732,11 @@ ELSE
     PHP
     BCC sumRAMNoAdd
     INY
-    ; SF: 51 BYTES
 .sumRAMNoAdd
     PLP
     BNE sumRAMLoop
 .Rts
     RTS
-    ; SF: 55 BYTES
-ENDIF
 ENDIF
 
 .ReverseBanner
