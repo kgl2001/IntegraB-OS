@@ -236,7 +236,7 @@ transientDateSFTODO2 = &AA ; SFTODO: prob just temp storage
 transientDateSFTODO1 = &AB ; SFTODO!? 2 bytes?
 
 IF IBOS_VERSION >= 127
-transientBin = &A8	;2 bits added by KL for IBOS1.27
+transientBin = &AE	;2 bits added by KL for IBOS1.27
 transientBCD = &AC	;2 bits added by KL for IBOS1.27
 ENDIF
 
@@ -3460,14 +3460,12 @@ ENDIF
 			
 ;*APPEND Command
 .append
-
-; KL 3/8/24: Temporarily dropped this code, to free up space for IBOS127 Memory Bank Calculations.
-IF IBOS_VERSION < 127
 {
 ; SFTODO: Express these as transientWorkspace + n, to document what area of memory they live in?
 LineLengthIncludingCr = &A9
 LineNumber = &AA
 OswordInputLineBlockCopy = &AB ; 5 bytes
+
     LDA #osfindOpenUpdate:JSR ParseFilenameAndOpen
     LDA #0:STA LineNumber
     PRVEN
@@ -3530,11 +3528,6 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 .^printSpace
     LDA #' ':JMP OSWRCH
 }
-ELSE
-    JMP OSNEWLPrvDisExitAndClaimServiceCall
-.printSpace
-    LDA #' ':JMP OSWRCH
-ENDIF
 
 ; *PRINT command
 ; Note that this sends the file to the printer, *unlike* the Master *PRINT command which is
@@ -6505,8 +6498,8 @@ CurrentBank = TransientZP + 2
 BankCopyrightOffset = TransientZP + 3
 IF IBOS_VERSION >= 127
 ; PrintADecimal uses transientBin and transientBCD so we must fit round those.
-RamPresenceCopyLow = TransientZP + 6
-RamPresenceCopyHigh = TransientZP + 7
+RamPresenceCopyLow = TransientZP + 0
+RamPresenceCopyHigh = TransientZP + 1
 ENDIF
 
 IF IBOS_VERSION < 127
