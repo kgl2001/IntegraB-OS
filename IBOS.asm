@@ -1059,6 +1059,7 @@ ENDIF
 		EQUB &00
 
 ;Lookup table for recognised * command parameters
+IF IBOS_VERSION < 127
 .CmdParTbl	EQUS &09, "(", &A6, "(R))/", &A1					;Parameter &80 for *ALARM:		'((=<TIME>(R))/ON/OFF/?)'
 		EQUS &04, "(" ,&A7, ")"						;Parameter &81 for *CALENDAR:		'(<DATE>)'
 		EQUS &07, "((=)", &A7, ")"						;Parameter &82 for *DATE:		'((=)<DATE>)'
@@ -1107,6 +1108,58 @@ ENDIF
 		EQUS &05, ")..."							;Parameter &AD:			')...'
 		EQUS &05, "(<0-"							;Parameter &AE:			'(<0-'
 		EQUS &04, &AE, "4>"							;Parameter &AF:			'(<0-4>'
+ELSE
+.CmdParTbl	EQUS &09, "(", &A8, "(R))/", &A3					;Parameter &80 for *ALARM:		'((=<TIME>(R))/ON/OFF/?)'
+		EQUS &04, "(" ,&A9, ")"						;Parameter &81 for *CALENDAR:		'(<DATE>)'
+		EQUS &07, "((=)", &A9, ")"						;Parameter &82 for *DATE:		'((=)<DATE>)'
+		EQUS &03, &A8, ")"							;Parameter &83 for *TIME:		'(=<TIME>)'
+		EQUS &06, &85, "(,", &AA,&AF						;Parameter &84 for *CONFIGURE:	'(<par>)(,<par>)...'
+		EQUS &04, "(", &AA, ")"						;Parameter &85 for *STATUS:		'(<par>)'
+		EQUS &02, &94							;Parameter &86 for *CSAVE:		'<fsp>'
+		EQUS &02, &94							;Parameter &87 for *CLOAD:		'<fsp>'
+		EQUS &08, "(<cmd>", &A2						;Parameter &88 for *BOOT:		'(<cmd>/?)'
+		EQUS &06, &AF, "/#" , &98, &A2					;Parameter &89 for *BUFFER:		'(<0-4>/#<id>(,<id>).../?)'
+		EQUS &03, "(", &A4							;Parameter &8A for *PURGE:		'(ON/OFF/?)'
+		EQUS &03, &98,&A4							;Parameter &8B for *INSERT:		'<id>(,<id>)...(I)'
+		EQUS &03, &98,&A4							;Parameter &8C for *UNPLUG:		'<id>(,<id>)...(I)'
+		EQUS &01								;Parameter &8D for *ROMS:
+		EQUS &03, &B1,&A2							;Parameter &8E for *OSMODE:		'(<0-4>/?)'
+		EQUS &07, "(", &B0, "1>", &A2, ")"					;Parameter &8F for *SHADOW:		'((<0-1>/?))'
+		EQUS &03, "(", &A3							;Parameter &90 for *SHX:		'(ON/OFF/?)'
+		EQUS &03, "(", &A3							;Parameter &91 for *TUBE:		'(ON/OFF/?)'
+		EQUS &03, "<", &AC							;Parameter &92 for *GOIO:		'<addr>'
+		EQUS &01								;Parameter &93 for *NLE:
+		EQUS &06, "<fsp>"							;Parameter &94: 			'<fsp>'
+		EQUS &04, &94, " ", &AE						;Parameter &95: 			'<fsp> <len>'
+		EQUS &02, &94							;Parameter &96:			'<fsp>'
+		EQUS &02, &94							;Parameter &97:			'<fsp>'
+		EQUS &06, &A7, "(,", &A7, &AF						;Parameter &98:			'<id>(,<id>)...'
+		EQUS &02, &98							;Parameter &99:			'<id>(,<id>)...'
+		EQUS &02, &98							;Parameter &9A:			'<id>(,<id>)...'
+		EQUS &04, "(", &98, &A2						;Parameter &9B:			'(<id>(,<id>).../?)'
+		EQUS &05, &94, &AD, &A5, &A4						;Parameter &9C:			'<fsp> <sraddr> (<id>) (Q)(I)'
+		EQUS &05, &94, &AD, &AB, &A5						;Parameter &9D:			'<fsp> (<end>/+<len>) (<id>) (Q)'
+		EQUS &06, "<", &AC, &AB, &AD, &A6					;Parameter &9E:			'<addr> (<end>/+<len>) <sraddr> (<id>)'
+		EQUS &02, &9E							;Parameter &9F:			'<addr> (<end>/+<len>) <sraddr> (<id>)'
+		EQUS &02, &98							;Parameter &A0:			'<id>(,<id>)...'
+		EQUS &02, &98							;Parameter &A1:			'<id>(,<id>)...'
+		EQUS &04, "/?)"							;Parameter &A2:			'/?)'
+		EQUS &08, "ON/OFF", &A2						;Parameter &A3:			'ON/OFF/?)'
+		EQUS &04, "(I)"							;Parameter &A4:			'(I)'
+		EQUS &06, &A6," (Q)"						;Parameter &A5:			' (<id>) (Q)'
+		EQUS &05, " (", &A7, ")"						;Parameter &A6:			' (<id>)'
+		EQUS &05, "<id>"							;Parameter &A7:			'<id>'
+		EQUS &09, "(=<time>"						;Parameter &A8:			'(=<time>'
+		EQUS &07, "<date>"							;Parameter &A9:			'<date>'
+		EQUS &06, "<par>"							;Parameter &AA:			'<par>'
+		EQUS &0C, " (<end>/+", &AE, ")"					;Parameter &AB:			' (<end>/+<len>)'
+		EQUS &06, "addr>"							;Parameter &AC:			'addr>'
+		EQUS &06, " <sr", &AC						;Parameter &AD:			' <sraddr>'
+		EQUS &06, "<len>"							;Parameter &AE:			'<len>'
+		EQUS &05, ")..."							;Parameter &AF:			')...'
+		EQUS &05, "(<0-"							;Parameter &B0:			'(<0-'
+		EQUS &04, &B0, "4>"							;Parameter &B1:			'(<0-4>'
+ENDIF
 
 ;lookup table for start address of recognised * commands
 .^CmdExTbl	EQUW alarm-1							;address of *ALARM command
