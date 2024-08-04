@@ -1003,7 +1003,11 @@ ENDIF
     LDX #lo(CmdRef):LDY #hi(CmdRef)
     RTS
 		
+IF IBOS_VERSION < 126
 		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used SFTODO: I'm not sure this is entirely true - the code at SearchKeywordTable seems to use the 0 byte at the end of CmdTbl to know when to stop, and if I type "*SRWE" on an emulated IBOS 1.20 machine I get a "Bad id" error, suggesting the command is recognised (if not necessarily useful). It is possible some *other* code does use this, I'm *guessing* the *HELP display code uses this in order to keep SRWE and SRWP "secret" (but I haven't looked yet).
+ELSE
+		EQUS &22
+ENDIF
 		ASSERT P% = CmdRef + KeywordTableOffset
 		EQUW CmdTbl							;Start of * command table
 		ASSERT P% = CmdRef + ParameterTableOffset
@@ -1105,7 +1109,7 @@ ENDIF
 		EQUS &04, &AE, "4>"							;Parameter &AF:			'(<0-4>'
 
 ;lookup table for start address of recognised * commands
-.^CmdExTbl		EQUW alarm-1							;address of *ALARM command
+.^CmdExTbl	EQUW alarm-1							;address of *ALARM command
 		EQUW calend-1							;address of *CALENDAR command
 		EQUW date-1							;address of *DATE command
 		EQUW time-1							;address of *TIME command
@@ -1251,7 +1255,11 @@ ENDIF
     EQUW CmdRef:EQUB &00,&03							;&04 x IBOS/RTC Sub options - from offset &00
     EQUW CmdRef:EQUB &04,&13							;&10 x IBOS/SYS Sub options - from offset &04
     EQUW CmdRef:EQUB &14,&17							;&04 x IBOS/FSX Sub options - from offset &14
+IF IBOS_VERSION < 126
     EQUW CmdRef:EQUB &18,&1F							;&08 x IBOS/SRAM Sub options - from offset &18
+ELSE
+    EQUW CmdRef:EQUB &18,&21							;&0A x IBOS/SRAM Sub options - from offset &18
+ENDIF
     EQUW ibosRef:EQUB &00,&03							;&04 x IBOS Options - from offset &00
     EQUW ConfRef:EQUB &00,&10							;&11 x CONFIGURE Parameters - from offset &00
 
@@ -6800,24 +6808,39 @@ ENDIF
     JMP badId
 			
 .LA513
+IF IBOS_VERSION < 126
     LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
+ELSE
+    LDA &FE3A
+ENDIF
     ORA L00AE
     PLP
     PHP
     BCC LA520
     EOR L00AE
 .LA520
+IF IBOS_VERSION < 126
     JSR WriteUserReg
     INX
     JSR ReadUserReg
+ELSE
+    STA &FE3A
+    LDA &FE3B
+ENDIF
     ORA L00AF
     PLP
     BCC LA52E
     EOR L00AF
 .LA52E
+IF IBOS_VERSION < 126
     JSR WriteUserReg
+ELSE
+    STA &FE3B
+ENDIF
+IF IBOS_VERSION < 126
     PRVEN
     JSR SFTODOWRITEPROTECTISH
+ENDIF
 .^PrvDisExitAndClaimServiceCall2
     PRVDIS
     JMP ExitAndClaimServiceCall
