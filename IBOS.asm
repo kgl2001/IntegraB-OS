@@ -203,9 +203,12 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 ; some code to change the behaviour in this area.
 ;
 ; KL 3/8/24: userRegRamPresenceFlags0_7 & userRegRamPresenceFlags8_F used in IBOS1.27 and above.
+IF IBOS_VERSION < 127
+userRegRamPresenceFlags = &7F
+ELSE
 userRegRamPresenceFlags0_7 = &7E
 userRegRamPresenceFlags8_F = &7F
-userRegRamPresenceFlags = &7F
+ENDIF
 
 ; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
 TransientZP = &A8
@@ -232,11 +235,10 @@ transientDateBufferIndex = &AA ; SFTODO!?
 transientDateSFTODO2 = &AA ; SFTODO: prob just temp storage
 transientDateSFTODO1 = &AB ; SFTODO!? 2 bytes?
 
-transientBin = &A8	;2 bits added by KL for IBOS1.27
+IF IBOS_VERSION >= 127
+transientBin = &AE	;2 bits added by KL for IBOS1.27
 transientBCD = &AC	;2 bits added by KL for IBOS1.27
-transientSum = &AE	;1 bit added by KL for IBOS1.27
-
-
+ENDIF
 
 FilingSystemWorkspace = &B0; IBOS repurposes this, which feels a bit risky but presumably works in practice
 ConvertIntegerResult = FilingSystemWorkspace ; 4 bytes
@@ -939,7 +941,7 @@ ENDMACRO
 start = &8000
 end = &C000
 ORG start
-; SFTODO TEMP DISABLED GUARD end
+GUARD end
 
 .RomHeader
     JMP language
@@ -948,6 +950,10 @@ ORG start
     EQUB RomTypeService OR RomTypeLanguage OR RomType6502
 .CopyrightOffset
     EQUB Copyright - RomHeader
+; TODO: It would be good to give a meaningful binary version number; since all known versions
+; of IBOS use &FF, we could start at 0 for 1.27 and bump it by one each time. (This would make
+; it easier for user programs to query the precise IBOS version, if they need a particular
+; fix.) Or we could use 127 for 1.27 and so on, but that would give us less headroom.
     EQUB &FF ; binary version number
 .Title
     EQUS "IBOS", 0
@@ -3051,7 +3057,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     ; Divide high and mid bytes of prvPrintBufferSize by 4 to get kilobytes.
     LDA prvPrintBufferSizeHigh:LSR A
     LDA prvPrintBufferSizeMid:ROR A:ROR A
-    SEC:JSR PrintADecimal
+    SEC:JSR PrintADecimal ; SQUASH: PrintADecimalNoPad?
     LDA prvPrintBufferBankList:AND #&F0:CMP #&40:BNE BufferInSwr2 ; SFTODO: magic constants
     LDX #0:JSR PrintKInPrivateOrSidewaysRAM ; write 'k in Private RAM'
     JMP OSNEWLPrvDisExitAndClaimServiceCall
@@ -3061,7 +3067,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDY #0
 .ShowBankLoop
     LDA prvPrintBufferBankList,Y:BMI AllBanksShown
-    SEC:JSR PrintADecimal
+    SEC:JSR PrintADecimal ; SQUASH: PrintADecimalNoPad?
 IF IBOS_VERSION < 126
     LDA #',':JSR OSWRCH
 ELSE
@@ -3169,7 +3175,7 @@ ENDIF
     JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
     LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X
 .^SecPrintADecimalOSNEWLPrvDisExitAndClaimServiceCall
-    SEC:JSR PrintADecimal
+    SEC:JSR PrintADecimal ; SQUASH: PrintADecimalNoPad?
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 }
 
@@ -3335,6 +3341,7 @@ ENDIF
 ; to manage paging private RAM in/out.
 .^PrvEn
     PHA
+    ; SFTODO: Should we be doing AND_NOT ramselPrvs1 in the next line? Or maybe AND_NOT (ramselShen OR ramselPrvs1)?
     LDA ramselCopy:ORA #ramselPrvs1:STA ramselCopy:STA ramsel
     LDA romselCopy:ORA #romselPrvEn:STA romselCopy:STA romsel
     PLA
@@ -3451,14 +3458,12 @@ ENDIF
 			
 ;*APPEND Command
 .append
-
-; KL 3/8/24: Temporarily dropped this code, to free up space for IBOS127 Memory Bank Calculations.
-IF IBOS_VERSION < 127
 {
 ; SFTODO: Express these as transientWorkspace + n, to document what area of memory they live in?
 LineLengthIncludingCr = &A9
 LineNumber = &AA
 OswordInputLineBlockCopy = &AB ; 5 bytes
+
     LDA #osfindOpenUpdate:JSR ParseFilenameAndOpen
     LDA #0:STA LineNumber
     PRVEN
@@ -3521,11 +3526,6 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 .^printSpace
     LDA #' ':JMP OSWRCH
 }
-ELSE
-    JMP OSNEWLPrvDisExitAndClaimServiceCall
-.printSpace
-    LDA #' ':JMP OSWRCH
-ENDIF
 
 ; *PRINT command
 ; Note that this sends the file to the printer, *unlike* the Master *PRINT command which is
@@ -4628,7 +4628,9 @@ ENDIF
 ; "mode 7 owl" as well as/instead of simple text.
 .DisplayBannerIfRequired
 {
+IF IBOS_VERSION < 127
 RamPresenceFlags = TransientZP
+ENDIF
 
     ; We just use the default banner if we're in OSMODE 0. SQUASH: CMP #0 is redundant
     LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X:CMP #0:BEQ Rts
@@ -4693,10 +4695,17 @@ IF IBOS_VERSION < 127
     RTS
 ELSE
 ; Count 16K chunks of RAM in kilobytes and print the result.
-    LDA #&40:STA transientBin	; Base memory is 64k - 32k RAM + 20k Shadow + 12k Private
-    LDA #&00:STA transientBin+1
+    LDY #4 ; number of 16K RAM chunks - initial 4 are 32K main RAM, 20K shadow and 12K private
     LDX #userRegRamPresenceFlags0_7:JSR sumRAM
-    LDX #userRegRamPresenceFlags8_F:JSR sumRAM
+    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
+    INX:JSR sumRAM
+    STA transientBin+1 ; we know A is zero after sumRAM
+    ; Y <= 20 here - we started at 4 and can have added a maximum of 16 sideways RAM banks
+    TYA
+    ASL A ; result <= 40, no carry
+    ASL A ; result <= 80, no carry
+    ASL A ; result <= 160, no carry
+    ASL A:STA transientBin:ROL transientBin+1 ; result <= 320, so may have carry
     SEC
     JSR PrintAbcd16Decimal
     LDA #'K':JSR OSWRCH
@@ -4704,21 +4713,18 @@ ELSE
     JSR OSNEWL
     BIT tubePresenceFlag:BMI Rts ; branch if tube present
     JMP OSNEWL
+
+; Increment Y by the number of bits set in user register A. Preserves X, returns with A=0.
 .sumRAM
-    JSR ReadUserReg
-    STA transientSum
-    LDA transientBin
-    LDX #&07
-.sumRAMloop
-    LSR transientSum
+    JSR ReadUserReg ; preserves X and Y
+.sumRAMLoop
+    LSR A
+    PHP
     BCC sumRAMNoAdd
-    ADC #&0F
-    BCC sumRAMNoAdd
-    INC transientBin+1
+    INY
 .sumRAMNoAdd
-    DEX
-    BPL sumRAMloop
-    STA transientBin
+    PLP
+    BNE sumRAMLoop
 .Rts
     RTS
 ENDIF
@@ -4956,7 +4962,7 @@ ENDIF
             JSR OSWRCH								;Write to screen
             JMP bankShown
 .showAssignedBank
-            SEC
+            SEC ; SQUASH: PrintADecimalNoPad?
             JSR PrintADecimal								;Convert binary number to numeric characters and write characters to screen
 .bankShown  CPY #&03								;Check for 4th bank
             BEQ osnewlPrvDisexitSc							;Yes? Then end
@@ -6486,8 +6492,13 @@ osfileBlock = L02EE
 }
 
 {
-SFTODOTMP = L00AA
-SFTODOTMP2 = L00AB
+CurrentBank = TransientZP + 2
+BankCopyrightOffset = TransientZP + 3
+IF IBOS_VERSION >= 127
+; PrintADecimal uses transientBin and transientBCD so we must fit round those.
+RamPresenceCopyLow = TransientZP + 0
+RamPresenceCopyHigh = TransientZP + 1
+ENDIF
 
 IF IBOS_VERSION < 127
 .LA34A
@@ -6505,52 +6516,48 @@ ENDIF
 
 ;*ROMS Command
 .^roms
-    LDA #maxBank:STA SFTODOTMP
+    LDA #maxBank:STA CurrentBank
 IF IBOS_VERSION <127
 .BankLoop
     JSR ShowRom
-    DEC SFTODOTMP:BPL BankLoop
+    DEC CurrentBank:BPL BankLoop
     JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
 			
 ; SQUASH: This has only one caller
 .ShowRom
-    LDA SFTODOTMP:CLC:JSR PrintADecimal ; show bank number right-aligned
+    LDA CurrentBank:CLC:JSR PrintADecimal ; show bank number right-aligned
     JSR printSpace
     LDA #'(':JSR OSWRCH
-    LDA SFTODOTMP:LSR A:TAY
+    LDA CurrentBank:LSR A:TAY
     ; Note that at least in IBOS 1.20, the low two bits of userRegRamPresenceFlags don't
     ; reflect sideways RAM, but the main 32K of RAM and the 32K of shadow/private RAM. This
     ; doesn't matter here because we mask it off using the table at LA34A.
     LDX #userRegRamPresenceFlags:JSR ReadUserReg
-    AND LA34A,Y:BNE LA380 ; branch if this is a sideways RAM bank
+    AND LA34A,Y:BNE IsSidewaysRamBank ; branch if this is a sideways RAM bank
 ELSE
-    LDX #userRegRamPresenceFlags8_F
-.romsloop2
-    JSR ReadUserReg
-.romsloop1
+    LDX #userRegRamPresenceFlags0_7:JSR ReadUserReg:STA RamPresenceCopyLow
+    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
+    INX:JSR ReadUserReg:STA RamPresenceCopyHigh
+.ShowRomLoop
     JSR ShowRom
-    DEC SFTODOTMP:BPL romsContinue
+    DEC CurrentBank:BPL ShowRomLoop
     JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
-.romsContinue
-    LDX SFTODOTMP:CPX #7:BNE romsloop1
-    LDX #userRegRamPresenceFlags0_7:JMP romsloop2
 .ShowRom
-    PHA
-    LDA SFTODOTMP:CLC:JSR PrintADecimal ; show bank number right-aligned
+    LDA CurrentBank:CLC:JSR PrintADecimal ; show bank number right-aligned
     JSR printSpace
     LDA #'(':JSR OSWRCH
-    PLA:ASL A:PHA:BCS LA380
+    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCS IsSidewaysRamBank
 ENDIF
-    LDA #' ':BNE LA38D ; always branch
-.LA380
-    LDX SFTODOTMP:JSR TestRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
+    LDA #' ':BNE BankTypeCharacterInA ; always branch
+.IsSidewaysRamBank
+    LDX CurrentBank:JSR TestRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
     LDA #'E' ; write-Enabled
-    PLP:BEQ LA38D
+    PLP:BEQ BankTypeCharacterInA
     LDA #'P' ; Protected
-.LA38D
+.BankTypeCharacterInA
     JSR OSWRCH
     PRVEN
-    LDX SFTODOTMP:LDA RomTypeTable,X
+    LDX CurrentBank:LDA RomTypeTable,X
     LDY #' ' ; not unplugged
     AND #&FE ; bit 0 of ROM type is undefined, so mask out
     ; SFTODO: If we take this branch, will we ever do PRVDIS?
@@ -6567,13 +6574,7 @@ ENDIF
     JSR printSpace ; ' ' in place of 'S'
     JSR printSpace ; ' ' in place of 'L'
     LDA #')':JSR OSWRCH
-IF IBOS_VERSION < 127
     JMP OSNEWL
-ELSE
-    JSR OSNEWL
-    PLA
-    RTS
-ENDIF
 ; Entered with Y=' ' or 'U' and rom type byte in A.
 .ShowRomHeader
     PHA
@@ -6596,22 +6597,16 @@ IF IBOS_VERSION < 126
 ELSE
     JSR SetOsRdRmPtrToCopyrightOffset
 ENDIF
-    LDY SFTODOTMP:JSR OSRDRM:STA SFTODOTMP2
+    LDY CurrentBank:JSR OSRDRM:STA BankCopyrightOffset
     LDA #lo(Title):STA osRdRmPtr:ASSERT hi(Title) == hi(CopyrightOffset)
 .TitleAndVersionLoop
-    LDY SFTODOTMP:JSR OSRDRM:BNE NotNul ; read byte and convert NUL at end of title to space
+    LDY CurrentBank:JSR OSRDRM:BNE NotNul ; read byte and convert NUL at end of title to space
     LDA #' '
 .NotNul
     JSR OSWRCH
     INC osRdRmPtr ; advance osRdRmPtr; we know the high byte isn't going to change
-    LDA osRdRmPtr:CMP SFTODOTMP2:BCC TitleAndVersionLoop
-If IBOS_VERSION < 127
+    LDA osRdRmPtr:CMP BankCopyrightOffset:BCC TitleAndVersionLoop
     JMP OSNEWL
-ELSE
-    JSR OSNEWL
-    PLA
-    RTS
-ENDIF
 IF IBOS_VERSION >= 126
 .^SetOsRdRmPtrToCopyrightOffset
     LDA #lo(CopyrightOffset):STA osRdRmPtr:LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
@@ -10763,11 +10758,26 @@ ENDIF
 ; https://github.com/ZornsLemma/GXR.
 
 ; It would be nice if "*CO." could be used as an abbreviation for *CONFIGURE, as on the Master,
-; but OS 1.20 interprets this as an abbreviate for "*CODE" and IBOS never gets a chance to see
-; it. Short of installing a USERV handler, there isn't much we can do about this.
+; but OS 1.20 interprets this as an abbreviation for "*CODE" and IBOS never gets a chance to
+; see it. Short of installing a USERV handler, there isn't much we can do about this.
+
+; SFTODO: Look at the integrap ROM packaged with b-em and see if we can build that too.
+
+; SFTODO: If a user application is using the private RAM (except the 1K allocated to IBOS), is
+; there a danger that things like pressing Escape will trigger the printer buffer to be flushed
+; and corrupt data in the private RAM? Or will this leave the "other" 11K of the private RAM
+; alone as long as there's no data in the buffer? I am assuming the printer buffer is the only
+; thing in IBOS that uses the "other" 11K, but if anything else does that might be a concern
+; too. *If necessary*, it might be nice to provide some kind of call (OSWORD/OSBYTE) which a
+; user application can use to tell IBOS "I want the other 11K, keep your hands off it". There
+; is a bit of a corner case here as IBOS steals the OS printer buffer, which is OK as long as
+; it is providing its own printer buffer (at the moment you cannot turn it off), but this means
+; you cannot currently use the 11K private RAM for yourself *and* print. Maybe this is OK, but
+; ideally it would be possible to do both (but not with a big buffer, of course). (We could say
+; "allocate a SWR bank for the buffer if you're using the 11K and want to print", but in that
+; case the application might just as well use the SWR bank itself and leave the private RAM to
+; IBOS.) Maybe an application using the 11K should be expected to do *FX5,0 first???
 
 ;; Local Variables:
 ;; fill-column: 95
 ;; End:
-
-; SFTODO: Look at the integrap ROM packaged with b-em and see if we can build that too.
