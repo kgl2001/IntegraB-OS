@@ -203,9 +203,12 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 ; some code to change the behaviour in this area.
 ;
 ; KL 3/8/24: userRegRamPresenceFlags0_7 & userRegRamPresenceFlags8_F used in IBOS1.27 and above.
+IF IBOS_VERSION < 127
+userRegRamPresenceFlags = &7F
+ELSE
 userRegRamPresenceFlags0_7 = &7E
 userRegRamPresenceFlags8_F = &7F
-userRegRamPresenceFlags = &7F
+ENDIF
 
 ; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
 TransientZP = &A8
