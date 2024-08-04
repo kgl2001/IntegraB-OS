@@ -3057,7 +3057,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     ; Divide high and mid bytes of prvPrintBufferSize by 4 to get kilobytes.
     LDA prvPrintBufferSizeHigh:LSR A
     LDA prvPrintBufferSizeMid:ROR A:ROR A
-    SEC:JSR PrintADecimal
+    SEC:JSR PrintADecimal ; SQUASH: PrintADecimalNoPad?
     LDA prvPrintBufferBankList:AND #&F0:CMP #&40:BNE BufferInSwr2 ; SFTODO: magic constants
     LDX #0:JSR PrintKInPrivateOrSidewaysRAM ; write 'k in Private RAM'
     JMP OSNEWLPrvDisExitAndClaimServiceCall
@@ -3067,7 +3067,7 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDY #0
 .ShowBankLoop
     LDA prvPrintBufferBankList,Y:BMI AllBanksShown
-    SEC:JSR PrintADecimal
+    SEC:JSR PrintADecimal ; SQUASH: PrintADecimalNoPad?
 IF IBOS_VERSION < 126
     LDA #',':JSR OSWRCH
 ELSE
@@ -3175,7 +3175,7 @@ ENDIF
     JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
     LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X
 .^SecPrintADecimalOSNEWLPrvDisExitAndClaimServiceCall
-    SEC:JSR PrintADecimal
+    SEC:JSR PrintADecimal ; SQUASH: PrintADecimalNoPad?
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 }
 
@@ -4962,7 +4962,7 @@ ENDIF
             JSR OSWRCH								;Write to screen
             JMP bankShown
 .showAssignedBank
-            SEC
+            SEC ; SQUASH: PrintADecimalNoPad?
             JSR PrintADecimal								;Convert binary number to numeric characters and write characters to screen
 .bankShown  CPY #&03								;Check for 4th bank
             BEQ osnewlPrvDisexitSc							;Yes? Then end
