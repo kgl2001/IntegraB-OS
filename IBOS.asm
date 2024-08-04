@@ -238,7 +238,6 @@ transientDateSFTODO1 = &AB ; SFTODO!? 2 bytes?
 IF IBOS_VERSION >= 127
 transientBin = &A8	;2 bits added by KL for IBOS1.27
 transientBCD = &AC	;2 bits added by KL for IBOS1.27
-transientSum = &AE	;1 bit added by KL for IBOS1.27
 ENDIF
 
 
@@ -6502,8 +6501,13 @@ osfileBlock = L02EE
 }
 
 {
-SFTODOTMP = L00AA
-SFTODOTMP2 = L00AB
+CurrentBank = TransientZP + 2
+BankCopyrightOffset = TransientZP + 3
+IF IBOS_VERSION >= 127
+; PrintADecimal uses transientBin and transientBCD so we must fit round those.
+RamPresenceCopyLow = TransientZP + 6
+RamPresenceCopyHigh = TransientZP + 7
+ENDIF
 
 IF IBOS_VERSION < 127
 .LA34A
@@ -6521,52 +6525,48 @@ ENDIF
 
 ;*ROMS Command
 .^roms
-    LDA #maxBank:STA SFTODOTMP
+    LDA #maxBank:STA CurrentBank
 IF IBOS_VERSION <127
 .BankLoop
     JSR ShowRom
-    DEC SFTODOTMP:BPL BankLoop
+    DEC CurrentBank:BPL BankLoop
     JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
 			
 ; SQUASH: This has only one caller
 .ShowRom
-    LDA SFTODOTMP:CLC:JSR PrintADecimal ; show bank number right-aligned
+    LDA CurrentBank:CLC:JSR PrintADecimal ; show bank number right-aligned
     JSR printSpace
     LDA #'(':JSR OSWRCH
-    LDA SFTODOTMP:LSR A:TAY
+    LDA CurrentBank:LSR A:TAY
     ; Note that at least in IBOS 1.20, the low two bits of userRegRamPresenceFlags don't
     ; reflect sideways RAM, but the main 32K of RAM and the 32K of shadow/private RAM. This
     ; doesn't matter here because we mask it off using the table at LA34A.
     LDX #userRegRamPresenceFlags:JSR ReadUserReg
     AND LA34A,Y:BNE IsSidewaysRamBank ; branch if this is a sideways RAM bank
 ELSE
-    LDX #userRegRamPresenceFlags8_F
-.romsloop2
-    JSR ReadUserReg ; SFTODONOW: CAN WE STA IN SOME TRANSIENT ZP LOCATION AND AVOID A LOT PF PHA/PLA FAFF?
-.romsloop1
+    LDX #userRegRamPresenceFlags0_7:JSR ReadUserReg:STA RamPresenceCopyLow
+    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
+    INX:JSR ReadUserReg:STA RamPresenceCopyHigh
+.ShowRomLoop
     JSR ShowRom
-    DEC SFTODOTMP:BPL romsContinue
+    DEC CurrentBank:BPL ShowRomLoop
     JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
-.romsContinue
-    LDX SFTODOTMP:CPX #7:BNE romsloop1 ; SFTODONOW: CAN WE IMPROVE THE LOOPING HERE?
-    LDX #userRegRamPresenceFlags0_7:JMP romsloop2
 .ShowRom
-    PHA
-    LDA SFTODOTMP:CLC:JSR PrintADecimal ; show bank number right-aligned
+    LDA CurrentBank:CLC:JSR PrintADecimal ; show bank number right-aligned
     JSR printSpace
     LDA #'(':JSR OSWRCH
-    PLA:ASL A:PHA:BCS IsSidewaysRamBank
+    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCS IsSidewaysRamBank
 ENDIF
     LDA #' ':BNE BankTypeCharacterInA ; always branch
 .IsSidewaysRamBank
-    LDX SFTODOTMP:JSR TestRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
+    LDX CurrentBank:JSR TestRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
     LDA #'E' ; write-Enabled
     PLP:BEQ BankTypeCharacterInA
     LDA #'P' ; Protected
 .BankTypeCharacterInA
     JSR OSWRCH
     PRVEN
-    LDX SFTODOTMP:LDA RomTypeTable,X
+    LDX CurrentBank:LDA RomTypeTable,X
     LDY #' ' ; not unplugged
     AND #&FE ; bit 0 of ROM type is undefined, so mask out
     ; SFTODO: If we take this branch, will we ever do PRVDIS?
@@ -6583,13 +6583,7 @@ ENDIF
     JSR printSpace ; ' ' in place of 'S'
     JSR printSpace ; ' ' in place of 'L'
     LDA #')':JSR OSWRCH
-IF IBOS_VERSION < 127
     JMP OSNEWL
-ELSE
-    JSR OSNEWL
-    PLA
-    RTS
-ENDIF
 ; Entered with Y=' ' or 'U' and rom type byte in A.
 .ShowRomHeader
     PHA
@@ -6612,22 +6606,16 @@ IF IBOS_VERSION < 126
 ELSE
     JSR SetOsRdRmPtrToCopyrightOffset
 ENDIF
-    LDY SFTODOTMP:JSR OSRDRM:STA SFTODOTMP2
+    LDY CurrentBank:JSR OSRDRM:STA BankCopyrightOffset
     LDA #lo(Title):STA osRdRmPtr:ASSERT hi(Title) == hi(CopyrightOffset)
 .TitleAndVersionLoop
-    LDY SFTODOTMP:JSR OSRDRM:BNE NotNul ; read byte and convert NUL at end of title to space
+    LDY CurrentBank:JSR OSRDRM:BNE NotNul ; read byte and convert NUL at end of title to space
     LDA #' '
 .NotNul
     JSR OSWRCH
     INC osRdRmPtr ; advance osRdRmPtr; we know the high byte isn't going to change
-    LDA osRdRmPtr:CMP SFTODOTMP2:BCC TitleAndVersionLoop
-If IBOS_VERSION < 127
+    LDA osRdRmPtr:CMP BankCopyrightOffset:BCC TitleAndVersionLoop
     JMP OSNEWL
-ELSE
-    JSR OSNEWL
-    PLA
-    RTS
-ENDIF
 IF IBOS_VERSION >= 126
 .^SetOsRdRmPtrToCopyrightOffset
     LDA #lo(CopyrightOffset):STA osRdRmPtr:LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
