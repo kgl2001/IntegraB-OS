@@ -201,6 +201,10 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 ; Maybe stop treating banks 0-3 as a special case and just add 64K (for the main and
 ; shadow/private RAM) to the sideways RAM count when displaying the banner? Ken already has
 ; some code to change the behaviour in this area.
+;
+; KL 3/8/24: userRegRamPresenceFlags0_7 & userRegRamPresenceFlags8_F used in IBOS1.27 and above.
+userRegRamPresenceFlags0_7 = &7E
+userRegRamPresenceFlags8_F = &7F
 userRegRamPresenceFlags = &7F
 
 ; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
@@ -227,6 +231,12 @@ transientDateBufferPtr = &A8 ; SFTODO!?
 transientDateBufferIndex = &AA ; SFTODO!?
 transientDateSFTODO2 = &AA ; SFTODO: prob just temp storage
 transientDateSFTODO1 = &AB ; SFTODO!? 2 bytes?
+
+transientBin = &A8	;2 bits added by KL for IBOS1.27
+transientBCD = &AC	;2 bits added by KL for IBOS1.27
+transientSum = &AE	;1 bit added by KL for IBOS1.27
+
+
 
 FilingSystemWorkspace = &B0; IBOS repurposes this, which feels a bit risky but presumably works in practice
 ConvertIntegerResult = FilingSystemWorkspace ; 4 bytes
@@ -959,6 +969,8 @@ ELIF IBOS_VERSION == 125
     EQUS "1.25" ; version string
 ELIF IBOS_VERSION == 126
     EQUS "1.26" ; version string
+ELIF IBOS_VERSION == 127
+    EQUS "1.27" ; version string
 ENDIF
 .Copyright
     EQUS 0, "(C)"
@@ -976,8 +988,10 @@ IF IBOS_VERSION == 121
     EQUS "2019", 0
 ELIF IBOS_VERSION == 122
     EQUS "2021", 0
-ELSE
+ELIF IBOS_VERSION < 127
     EQUS "2022", 0
+ELSE
+    EQUS "2024", 0
 ENDIF
 ENDIF
 
@@ -1865,6 +1879,7 @@ ENDIF
     LDA #'F':JSR OSWRCH:JMP OSWRCH
 }
 			
+IF IBOS_VERSION < 127 
 ; Print A in decimal. C set on entry means no padding, C clear means right align with spaces in
 ; a three character field. A is preserved.
 .PrintADecimal
@@ -1920,7 +1935,73 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
     PLA
     RTS
 }
-			
+
+ELSE
+
+.PrintADecimal
+{
+Pad = &B0		;character output in place of leading zeros
+PadFlag = &B1	;b7 clear iff "0" should be converted into "Pad"
+
+    LDX #&00		;Entry point for 8 bit binary conversion
+    STX transientBin+1
+
+.^PrintAbcd16Decimal
+    PHA		;Entry point for 16 bit binary conversion
+    STA transientBin+0
+    LDA #&00
+    STA transientBCD+0
+    STA transientBCD+1
+
+    STA PadFlag		;When &B1 is set to 0, any printable zeros should be considered leading and should be replaced with either a padding space or nothing (defined by contents of &B0)
+    BCS NoPadding		;If carry set, don't pad in place of leading zero (print chr$0)
+    LDA #' '		;Otherwise add padding space in place of leading zeros(print chr$32)
+.NoPadding
+    STA Pad		;Padding space ascii value stored at &B0
+
+    SED			;Switch to decimal mode
+    LDX #&10		;The number of source bits
+.cnvbit
+    ASL transientBin+0	;Shift out one bit
+    ROL transientBin+1
+    LDA transientBCD+0	;And add into result
+    ADC transientBCD+0
+    STA transientBCD+0
+    LDA transientBCD+1	;propagating any carry
+    ADC transientBCD+1
+    STA transientBCD+1
+    DEX			;And repeat for next bit
+    BNE cnvbit
+    CLD			;Back to binary
+
+    JSR PrintDigit		;Print 100s
+    LDA transientBCD
+    LSR A
+    LSR A
+    LSR A
+    LSR A
+    JSR PrintDigit		;Print 10s
+    DEC PadFlag		;Do not pad units if value is 0
+    LDA transientBCD
+    AND #&0F
+    JSR PrintDigit		;Print 1s
+    PLA
+    RTS
+
+.PrintDigit
+    TAX ; SQUASH: optimisable?
+    LDA Pad
+    CPX #0 ; SQUASH: Could get rid of this if LDA moved before DEX
+    BNE NotZero
+    BIT PadFlag:BPL PrintPad
+.NotZero
+    DEC PadFlag
+    TXA:ORA #'0'
+.PrintPad
+    JMP OSWRCH
+}
+ENDIF
+		
 ; Parse a 32-bit integer from (transientCmdPtr),Y. The following prefixes are
 ; recognised:
 ;     "-"  negative decimal
@@ -2422,7 +2503,12 @@ ENDIF
     EQUB userRegBankWriteProtectStatus + 0, &FF
     EQUB userRegBankWriteProtectStatus + 1, &FF
     EQUB userRegPrvPrintBufferStart, &90
+IF IBOS_VERSION < 127
     EQUB userRegRamPresenceFlags, &0F		; 64K non-SWR and 64K SWR in banks 4-7
+ELSE
+    EQUB userRegRamPresenceFlags0_7, &F0	; ROMs in Banks 0-3. 16K RAM in each of banks 4-7
+    EQUB userRegRamPresenceFlags8_F, &00	; ROMs in Banks 8-15
+ENDIF
 .UserRegDefaultTableEnd
 
     ; SFTODO: USE RELOCATE
@@ -3370,12 +3456,14 @@ ENDIF
 			
 ;*APPEND Command
 .append
+
+; KL 3/8/24: Temporarily dropped this code, to free up space for IBOS127 Memory Bank Calculations.
+IF IBOS_VERSION < 127
 {
 ; SFTODO: Express these as transientWorkspace + n, to document what area of memory they live in?
 LineLengthIncludingCr = &A9
 LineNumber = &AA
 OswordInputLineBlockCopy = &AB ; 5 bytes
-
     LDA #osfindOpenUpdate:JSR ParseFilenameAndOpen
     LDA #0:STA LineNumber
     PRVEN
@@ -3438,7 +3526,12 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 .^printSpace
     LDA #' ':JMP OSWRCH
 }
-			
+ELSE
+    JMP OSNEWLPrvDisExitAndClaimServiceCall
+.printSpace
+    LDA #' ':JMP OSWRCH
+ENDIF
+
 ; *PRINT command
 ; Note that this sends the file to the printer, *unlike* the Master *PRINT command which is
 ; like *TYPE but without control code pretty-printing.
@@ -4573,7 +4666,9 @@ ENDIF
 
     LDA #vduBell:JSR OSWRCH
 
-    ; Count 32K chunks of RAM in kilobytes and print the result.
+ 
+IF IBOS_VERSION < 127
+ ; Count 32K chunks of RAM in kilobytes and print the result.
     LDX #userRegRamPresenceFlags:JSR ReadUserReg:STA RamPresenceFlags
     LDX #7
     LDA #0
@@ -4601,6 +4696,37 @@ ENDIF
     ; save a byte?
 .Rts
     RTS
+ELSE
+; Count 16K chunks of RAM in kilobytes and print the result.
+    LDA #&40:STA transientBin	; Base memory is 64k - 32k RAM + 20k Shadow + 12k Private
+    LDA #&00:STA transientBin+1
+    LDX #userRegRamPresenceFlags0_7:JSR sumRAM
+    LDX #userRegRamPresenceFlags8_F:JSR sumRAM
+    SEC
+    JSR PrintAbcd16Decimal
+    LDA #'K':JSR OSWRCH
+.SoftReset
+    JSR OSNEWL
+    BIT tubePresenceFlag:BMI Rts ; branch if tube present
+    JMP OSNEWL
+.sumRAM
+    JSR ReadUserReg
+    STA transientSum
+    LDA transientBin
+    LDX #&07
+.sumRAMloop
+    LSR transientSum
+    BCC sumRAMNoAdd
+    ADC #&0F
+    BCC sumRAMNoAdd
+    INC transientBin+1
+.sumRAMNoAdd
+    DEX
+    BPL sumRAMloop
+    STA transientBin
+.Rts
+    RTS
+ENDIF
 
 .ReverseBanner
     EQUS " B-ARGETNI" ; "INTEGRA-B " reversed
@@ -6368,6 +6494,7 @@ osfileBlock = L02EE
 SFTODOTMP = L00AA
 SFTODOTMP2 = L00AB
 
+IF IBOS_VERSION < 127
 .LA34A
     ; ENHANCE: We could go and test all the individual banks to see if they're RAM, rather than
     ; using this table and userRegRamPresenceFlags.
@@ -6379,10 +6506,12 @@ SFTODOTMP2 = L00AB
     EQUB &20								;Check for RAM at Banks A & B
     EQUB &40								;Check for RAM at Banks C & D
     EQUB &80								;Check for RAM at Banks E & F
+ENDIF
 
 ;*ROMS Command
 .^roms
     LDA #maxBank:STA SFTODOTMP
+IF IBOS_VERSION <127
 .BankLoop
     JSR ShowRom
     DEC SFTODOTMP:BPL BankLoop
@@ -6399,6 +6528,24 @@ SFTODOTMP2 = L00AB
     ; doesn't matter here because we mask it off using the table at LA34A.
     LDX #userRegRamPresenceFlags:JSR ReadUserReg
     AND LA34A,Y:BNE LA380 ; branch if this is a sideways RAM bank
+ELSE
+    LDX #userRegRamPresenceFlags8_F
+.romsloop2
+    JSR ReadUserReg
+.romsloop1
+    JSR ShowRom
+    DEC SFTODOTMP:BPL romsContinue
+    JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
+.romsContinue
+    LDX SFTODOTMP:CPX #7:BNE romsloop1
+    LDX #userRegRamPresenceFlags0_7:JMP romsloop2
+.ShowRom
+    PHA
+    LDA SFTODOTMP:CLC:JSR PrintADecimal ; show bank number right-aligned
+    JSR printSpace
+    LDA #'(':JSR OSWRCH
+    PLA:ASL A:PHA:BCS LA380
+ENDIF
     LDA #' ':BNE LA38D ; always branch
 .LA380
     LDX SFTODOTMP:JSR TestRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
@@ -6425,8 +6572,13 @@ SFTODOTMP2 = L00AB
     JSR printSpace ; ' ' in place of 'S'
     JSR printSpace ; ' ' in place of 'L'
     LDA #')':JSR OSWRCH
+IF IBOS_VERSION < 127
     JMP OSNEWL
-
+ELSE
+    JSR OSNEWL
+    PLA
+    RTS
+ENDIF
 ; Entered with Y=' ' or 'U' and rom type byte in A.
 .ShowRomHeader
     PHA
@@ -6458,7 +6610,13 @@ ENDIF
     JSR OSWRCH
     INC osRdRmPtr ; advance osRdRmPtr; we know the high byte isn't going to change
     LDA osRdRmPtr:CMP SFTODOTMP2:BCC TitleAndVersionLoop
+If IBOS_VERSION < 127
     JMP OSNEWL
+ELSE
+    JSR OSNEWL
+    PLA
+    RTS
+ENDIF
 IF IBOS_VERSION >= 126
 .^SetOsRdRmPtrToCopyrightOffset
     LDA #lo(CopyrightOffset):STA osRdRmPtr:LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
@@ -10575,6 +10733,8 @@ ELIF IBOS_VERSION == 125
     SAVE "IBOS-125.rom", start, end
 ELIF IBOS_VERSION == 126
     SAVE "IBOS-126.rom", start, end
+ELIF IBOS_VERSION == 127
+    SAVE "IBOS-127.rom", start, end
 ELSE
     ERROR "Unknown IBOS_VERSION"
 ENDIF
