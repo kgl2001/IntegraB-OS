@@ -451,6 +451,11 @@ ramselCopy = &037F ; unused VDU variable workspace repurposed by IBOS
 rtcAddress = SHEILA + &38
 rtcData = SHEILA + &3C
 
+IF IBOS_VERSION >= 127
+cpldRamWriteProtectFlags0_7 = SHEILA + &3A
+cpldRamWriteProtectFlags8_F = SHEILA + &3B
+ENDIF
+
 tubeEntry = &0406
 tubeEntryMultibyteHostToParasite = &01
 tubeEntryClaim = &C0 ; plus claim ID
@@ -6861,10 +6866,10 @@ ENDIF
     JMP badId
 			
 .LA513
-IF IBOS_VERSION < 126
+IF IBOS_VERSION < 127
     LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
 ELSE
-    LDA &FE3A
+    LDA cpldRamWriteProtectFlags0_7
 ENDIF
     ORA L00AE
     PLP
@@ -6872,30 +6877,30 @@ ENDIF
     BCC LA520
     EOR L00AE
 .LA520
-IF IBOS_VERSION < 126
+IF IBOS_VERSION < 127
     JSR WriteUserReg
     INX
     JSR ReadUserReg
 ELSE
-    STA &FE3A
-    LDA &FE3B
+    STA cpldRamWriteProtectFlags0_7
+    LDA cpldRamWriteProtectFlags8_F
 ENDIF
     ORA L00AF
     PLP
     BCC LA52E
     EOR L00AF
 .LA52E
-IF IBOS_VERSION < 126
+IF IBOS_VERSION < 127
     JSR WriteUserReg
 ELSE
-    STA &FE3B
+    STA cpldRamWriteProtectFlags8_F
 ENDIF
-IF IBOS_VERSION < 126
+IF IBOS_VERSION < 127
     PRVEN
     JSR SFTODOWRITEPROTECTISH
-ENDIF
 .^PrvDisExitAndClaimServiceCall2
     PRVDIS
+ENDIF
     JMP ExitAndClaimServiceCall
 }
 
@@ -9127,6 +9132,9 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     JSR InitDateBufferAndEmitTimeAndDate
     JSR PrintDateBuffer
 .PrvDisExitAndClaimServiceCall
+IF IBOS_VERSION >= 127
+.^PrvDisExitAndClaimServiceCall2
+ENDIF
     PRVDIS
     JMP ExitAndClaimServiceCall
 
