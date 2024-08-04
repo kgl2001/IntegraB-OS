@@ -240,8 +240,6 @@ transientBin = &AE	;2 bits added by KL for IBOS1.27
 transientBCD = &AC	;2 bits added by KL for IBOS1.27
 ENDIF
 
-
-
 FilingSystemWorkspace = &B0; IBOS repurposes this, which feels a bit risky but presumably works in practice
 ConvertIntegerResult = FilingSystemWorkspace ; 4 bytes
 
