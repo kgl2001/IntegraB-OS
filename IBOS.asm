@@ -235,9 +235,11 @@ transientDateBufferIndex = &AA ; SFTODO!?
 transientDateSFTODO2 = &AA ; SFTODO: prob just temp storage
 transientDateSFTODO1 = &AB ; SFTODO!? 2 bytes?
 
+IF IBOS_VERSION >= 127
 transientBin = &A8	;2 bits added by KL for IBOS1.27
 transientBCD = &AC	;2 bits added by KL for IBOS1.27
 transientSum = &AE	;1 bit added by KL for IBOS1.27
+ENDIF
 
 
 
