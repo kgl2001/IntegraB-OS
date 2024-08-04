@@ -202,8 +202,9 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 ; shadow/private RAM) to the sideways RAM count when displaying the banner? Ken already has
 ; some code to change the behaviour in this area.
 ;
-; KL 3/8/24: UserRegRamPresenceFlags1 used in IBOS1.27 and above.
-userRegRamPresenceFlags1 = &7E
+; KL 3/8/24: userRegRamPresenceFlags0_7 & userRegRamPresenceFlags8_F used in IBOS1.27 and above.
+userRegRamPresenceFlags0_7 = &7E
+userRegRamPresenceFlags8_F = &7F
 userRegRamPresenceFlags = &7F
 
 ; SFTODO: Very temporary variable names, this transient workspace will have several different uses on different code paths. These are for osword 42, the names are short for my convenience in typing as I introduce them gradually but they should be tidied up later.
@@ -2501,8 +2502,8 @@ ENDIF
 IF IBOS_VERSION < 127
     EQUB userRegRamPresenceFlags, &0F		; 64K non-SWR and 64K SWR in banks 4-7
 ELSE
-    EQUB userRegRamPresenceFlags, &F0		; ROMs in Banks 0-3. 16K RAM in each of banks 4-7
-    EQUB userRegRamPresenceFlags1, &00		; ROMs in Banks 8-15
+    EQUB userRegRamPresenceFlags0_7, &F0	; ROMs in Banks 0-3. 16K RAM in each of banks 4-7
+    EQUB userRegRamPresenceFlags8_F, &00	; ROMs in Banks 8-15
 ENDIF
 .UserRegDefaultTableEnd
 
@@ -4692,23 +4693,17 @@ IF IBOS_VERSION < 127
     RTS
 ELSE
 ; Count 16K chunks of RAM in kilobytes and print the result.
-    LDA #&40			;Base memory is 64k - 32k RAM + 20k Shadow + 12k Private
-    STA transientBin
-    LDA #&00
-    STA transientBin+1
-    LDX #userRegRamPresenceFlags1	;This should read RTC register &7E (LDX &7E)
-    JSR sumRAM
-    LDX #userRegRamPresenceFlags	;This should read RTC register &7F (LDX &7F)
-    JSR sumRAM
+    LDA #&40:STA transientBin	; Base memory is 64k - 32k RAM + 20k Shadow + 12k Private
+    LDA #&00:STA transientBin+1
+    LDX #userRegRamPresenceFlags0_7:JSR sumRAM
+    LDX #userRegRamPresenceFlags8_F:JSR sumRAM
     SEC
     JSR PrintAbcd16Decimal
-    LDA #'K'
-    JSR OSWRCH
+    LDA #'K':JSR OSWRCH
 .SoftReset
     JSR OSNEWL
     BIT tubePresenceFlag:BMI Rts ; branch if tube present
     JMP OSNEWL
-
 .sumRAM
     JSR ReadUserReg
     STA transientSum
@@ -6529,17 +6524,16 @@ IF IBOS_VERSION <127
     LDX #userRegRamPresenceFlags:JSR ReadUserReg
     AND LA34A,Y:BNE LA380 ; branch if this is a sideways RAM bank
 ELSE
-    LDX #userRegRamPresenceFlags
+    LDX #userRegRamPresenceFlags8_F
 .romsloop2
     JSR ReadUserReg
 .romsloop1
     JSR ShowRom
-    DEC SFTODOTMP
-    BPL romsContinue
+    DEC SFTODOTMP:BPL romsContinue
     JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
 .romsContinue
     LDX SFTODOTMP:CPX #7:BNE romsloop1
-    LDX #userRegRamPresenceFlags1:JMP romsloop2
+    LDX #userRegRamPresenceFlags0_7:JMP romsloop2
 .ShowRom
     PHA
     LDA SFTODOTMP:CLC:JSR PrintADecimal ; show bank number right-aligned
