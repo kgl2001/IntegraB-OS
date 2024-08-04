@@ -1008,7 +1008,7 @@ ENDIF
     LDX #lo(CmdRef):LDY #hi(CmdRef)
     RTS
 		
-IF IBOS_VERSION < 126
+IF IBOS_VERSION < 127
 		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used SFTODO: I'm not sure this is entirely true - the code at SearchKeywordTable seems to use the 0 byte at the end of CmdTbl to know when to stop, and if I type "*SRWE" on an emulated IBOS 1.20 machine I get a "Bad id" error, suggesting the command is recognised (if not necessarily useful). It is possible some *other* code does use this, I'm *guessing* the *HELP display code uses this in order to keep SRWE and SRWP "secret" (but I haven't looked yet).
 ELSE
 		EQUS &22
@@ -1313,7 +1313,7 @@ ENDIF
     EQUW CmdRef:EQUB &00,&03							;&04 x IBOS/RTC Sub options - from offset &00
     EQUW CmdRef:EQUB &04,&13							;&10 x IBOS/SYS Sub options - from offset &04
     EQUW CmdRef:EQUB &14,&17							;&04 x IBOS/FSX Sub options - from offset &14
-IF IBOS_VERSION < 126
+IF IBOS_VERSION < 127
     EQUW CmdRef:EQUB &18,&1F							;&08 x IBOS/SRAM Sub options - from offset &18
 ELSE
     EQUW CmdRef:EQUB &18,&21							;&0A x IBOS/SRAM Sub options - from offset &18
@@ -6892,14 +6892,12 @@ ENDIF
 .LA52E
 IF IBOS_VERSION < 127
     JSR WriteUserReg
-ELSE
-    STA cpldRamWriteProtectFlags8_F
-ENDIF
-IF IBOS_VERSION < 127
     PRVEN
     JSR SFTODOWRITEPROTECTISH
 .^PrvDisExitAndClaimServiceCall2
     PRVDIS
+ELSE
+    STA cpldRamWriteProtectFlags8_F
 ENDIF
     JMP ExitAndClaimServiceCall
 }
