@@ -4704,6 +4704,7 @@ IF IBOS_VERSION < 127
 .Rts
     RTS
 ELSE
+IF FALSE ; SFTODONOW
 ; Count 16K chunks of RAM in kilobytes and print the result.
     LDA #&40:STA transientBin	; Base memory is 64k - 32k RAM + 20k Shadow + 12k Private
     LDA #&00:STA transientBin+1
@@ -4712,27 +4713,70 @@ ELSE
     SEC
     JSR PrintAbcd16Decimal
     LDA #'K':JSR OSWRCH
+    ; SF: 27 BYTES TO HERE
 .SoftReset
     JSR OSNEWL
     BIT tubePresenceFlag:BMI Rts ; branch if tube present
     JMP OSNEWL
+    ; SF: 38 BYTES TO HERE
 .sumRAM
     JSR ReadUserReg
     STA transientSum
     LDA transientBin
     LDX #&07
+    ; SF: 47 BYTES
 .sumRAMloop
     LSR transientSum
     BCC sumRAMNoAdd
     ADC #&0F
     BCC sumRAMNoAdd
     INC transientBin+1
+    ; SF: 57 BYTES
 .sumRAMNoAdd
     DEX
     BPL sumRAMloop
     STA transientBin
 .Rts
     RTS
+    ; SF: 63 BYTES
+ELSE
+; SFTODO EXPERIMENTAL
+; Count 16K chunks of RAM in kilobytes and print the result.
+    LDY #4 ; number of 16K RAM chunks - initial 4 are 32K main RAM, 20K shadow and 12K private
+    LDX #userRegRamPresenceFlags0_7:JSR sumRAM
+    LDX #userRegRamPresenceFlags8_F:JSR sumRAM ; SFTODONOW: WE CAN PROB DO DEX WITH AN ASSERT TO SAVE A BYTE IF SUMRAM PRESERVES X
+    STA transientBin+1 ; we know A is zero after sumRAM
+    ; Y <= 20 here - we started at 4 and can have added a maximum of 16 sideways RAM banks
+    STY &70 ; TEMP DEBUG HACK
+    TYA
+    ASL A ; result <= 40, no carry
+    ASL A ; result <= 80, no carry
+    ASL A ; result <= 160, no carry
+    ASL A:STA transientBin:ROL transientBin+1 ; result <= 320, so may have carry
+    SEC
+    JSR PrintAbcd16Decimal
+    LDA #'K':JSR OSWRCH
+    ; SF: 32 ByTES
+.SoftReset
+    JSR OSNEWL
+    BIT tubePresenceFlag:BMI Rts ; branch if tube present
+    JMP OSNEWL
+    ; SF: 43 BYTES
+.sumRAM
+    JSR ReadUserReg ; preserves Y
+.sumRAMLoop
+    LSR A
+    PHP
+    BCC sumRAMNoAdd
+    INY
+    ; SF: 51 BYTES
+.sumRAMNoAdd
+    PLP
+    BNE sumRAMLoop
+.Rts
+    RTS
+    ; SF: 55 BYTES
+ENDIF
 ENDIF
 
 .ReverseBanner
@@ -6534,32 +6578,32 @@ IF IBOS_VERSION <127
     ; reflect sideways RAM, but the main 32K of RAM and the 32K of shadow/private RAM. This
     ; doesn't matter here because we mask it off using the table at LA34A.
     LDX #userRegRamPresenceFlags:JSR ReadUserReg
-    AND LA34A,Y:BNE LA380 ; branch if this is a sideways RAM bank
+    AND LA34A,Y:BNE IsSidewaysRamBank ; branch if this is a sideways RAM bank
 ELSE
     LDX #userRegRamPresenceFlags8_F
 .romsloop2
-    JSR ReadUserReg
+    JSR ReadUserReg ; SFTODONOW: CAN WE STA IN SOME TRANSIENT ZP LOCATION AND AVOID A LOT PF PHA/PLA FAFF?
 .romsloop1
     JSR ShowRom
     DEC SFTODOTMP:BPL romsContinue
     JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
 .romsContinue
-    LDX SFTODOTMP:CPX #7:BNE romsloop1
+    LDX SFTODOTMP:CPX #7:BNE romsloop1 ; SFTODONOW: CAN WE IMPROVE THE LOOPING HERE?
     LDX #userRegRamPresenceFlags0_7:JMP romsloop2
 .ShowRom
     PHA
     LDA SFTODOTMP:CLC:JSR PrintADecimal ; show bank number right-aligned
     JSR printSpace
     LDA #'(':JSR OSWRCH
-    PLA:ASL A:PHA:BCS LA380
+    PLA:ASL A:PHA:BCS IsSidewaysRamBank
 ENDIF
-    LDA #' ':BNE LA38D ; always branch
-.LA380
+    LDA #' ':BNE BankTypeCharacterInA ; always branch
+.IsSidewaysRamBank
     LDX SFTODOTMP:JSR TestRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
     LDA #'E' ; write-Enabled
-    PLP:BEQ LA38D
+    PLP:BEQ BankTypeCharacterInA
     LDA #'P' ; Protected
-.LA38D
+.BankTypeCharacterInA
     JSR OSWRCH
     PRVEN
     LDX SFTODOTMP:LDA RomTypeTable,X
