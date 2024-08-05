@@ -452,10 +452,11 @@ rtcAddress = SHEILA + &38
 rtcData = SHEILA + &3C
 
 IF IBOS_VERSION >= 127
-cpldRAMROMSelectionFlags0_3_V2Status = SHEILA + &38
-cpldRAMROMSelectionFlags8_F = SHEILA + &39
-cpldRamWriteProtectFlags0_7 = SHEILA + &3A
-cpldRamWriteProtectFlags8_F = SHEILA + &3B
+cpldRAMROMSelectionFlags0_3_V2Status = SHEILA + &38 ; read
+cpldRAMROMSelectionFlags8_F = SHEILA + &39 ; read
+cpldExtendedFunctionFlags = SHEILA + &39 ; write
+cpldRamWriteProtectFlags0_7 = SHEILA + &3A ; read / write
+cpldRamWriteProtectFlags8_F = SHEILA + &3B ; read / write
 ENDIF
 
 tubeEntry = &0406
@@ -4649,6 +4650,9 @@ ENDIF
     PLA
     STA ramselCopy
     STA ramsel
+IF IBOS_VERSION > 126
+.^altRTS
+ENDIF
     RTS
 }
 
@@ -4701,8 +4705,12 @@ RamPresenceFlags = TransientZP
 ENDIF
 
     ; We just use the default banner if we're in OSMODE 0. SQUASH: CMP #0 is redundant
-    LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X:CMP #0:BEQ Rts
-
+    LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X:CMP #0
+IF IBOS_VERSION < 127    
+    BEQ Rts
+ELSE
+    BEQ altRTS
+ENDIF
     ; If we're in the "ignore OS startup message" state (b7 clear), do nothing. I suspect this
     ; occurs if an earlier ROM has managed to get in before us and probably can't occur in
     ; practice if we're in bank 15.
@@ -4767,7 +4775,9 @@ ELSE
 ; RAM / ROM flags from CPLD, and store in private RAM.
 ; Otherwise, if using V1 hardware the private RAM should be updated
 ; with *FX162,126,x & *FX162,127,x to reflect the amount of on board RAM.
-    LDA cpldRAMROMSelectionFlags0_3_V2Status:TAX:AND #&E0:BEQ noFlagsCopy
+    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:CMP#&60:BNE noFlagsCopy ; On Break, cpldRAMROMSelectionFlags0_3_V2Status[7:5] = 3'b011
+    LDY #3:STY cpldExtendedFunctionFlags
+    LDA cpldRAMROMSelectionFlags0_3_V2Status:TAX:AND #&E0:BNE noFlagsCopy
     TXA:ORA #&F0:LDX #userRegRamPresenceFlags0_7:JSR WriteUserReg
     ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
     INX:LDA cpldRAMROMSelectionFlags8_F:JSR WriteUserReg
