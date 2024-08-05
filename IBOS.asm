@@ -4763,7 +4763,15 @@ IF IBOS_VERSION < 127
     RTS
 ELSE
 ; Count 16K chunks of RAM in kilobytes and print the result.
-    JSR readV2RAMROMflags
+; Firstly, check if IBOS is running on V2 hardware, and if it is then read
+; RAM / ROM flags from CPLD, and store in private RAM.
+; Otherwise, if using V1 hardware the private RAM should be updated
+; with *FX162,126,x & *FX162,127,x to reflect the amount of on board RAM.
+    LDA cpldRAMROMSelectionFlags0_3_V2Status:TAX:AND #&E0:BEQ noFlagsCopy
+    TXA:ORA #&F0:LDX #userRegRamPresenceFlags0_7:JSR WriteUserReg
+    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
+    INX:LDA cpldRAMROMSelectionFlags8_F:JSR WriteUserReg
+.noFlagsCopy
     LDY #4 ; number of 16K RAM chunks - initial 4 are 32K main RAM, 20K shadow and 12K private
     LDX #userRegRamPresenceFlags0_7:JSR sumRAM
     ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
@@ -6583,16 +6591,6 @@ IF IBOS_VERSION < 127
     EQUB &80								;Check for RAM at Banks E & F
 ENDIF
 
-IF IBOS_VERSION > 126
-.^readV2RAMROMflags
-    LDA cpldRAMROMSelectionFlags0_3_V2Status:TAX:AND #&E0:BEQ noFlagsCopy
-    TXA:ORA #&F0:LDX #userRegRamPresenceFlags0_7:JSR WriteUserReg
-    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
-    INX:LDA cpldRAMROMSelectionFlags8_F:JSR WriteUserReg
-.noFlagsCopy
-    RTS
-ENDIF
-
 ;*ROMS Command
 .^roms
     LDA #maxBank:STA CurrentBank
@@ -6614,7 +6612,7 @@ IF IBOS_VERSION <127
     LDX #userRegRamPresenceFlags:JSR ReadUserReg
     AND LA34A,Y:BNE IsSidewaysRamBank ; branch if this is a sideways RAM bank
 ELSE
-    JSR readV2RAMROMflags
+;    JSR readV2RAMROMflags
     LDX #userRegRamPresenceFlags0_7:JSR ReadUserReg:STA RamPresenceCopyLow
     ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
     INX:JSR ReadUserReg:STA RamPresenceCopyHigh
