@@ -6612,7 +6612,6 @@ IF IBOS_VERSION <127
     LDX #userRegRamPresenceFlags:JSR ReadUserReg
     AND LA34A,Y:BNE IsSidewaysRamBank ; branch if this is a sideways RAM bank
 ELSE
-;    JSR readV2RAMROMflags
     LDX #userRegRamPresenceFlags0_7:JSR ReadUserReg:STA RamPresenceCopyLow
     ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
     INX:JSR ReadUserReg:STA RamPresenceCopyHigh
