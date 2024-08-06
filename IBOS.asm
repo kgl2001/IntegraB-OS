@@ -1757,7 +1757,7 @@ if IBOS_VERSION < 126
     DEY:LDA (transientTblPtr),Y:PHA
     ; Record the relevant index at transientCommandIndex for use in generating a syntax error
     ; later if necessary. (transientCommandIndex == transientTblPtr so we couldn't just store
-    ; this here direectly. SQUASH: If we just used a different address instead of
+    ; this here directly. SQUASH: If we just used a different address instead of
     ; transientTblPtr in this subroutine we could probably avoid this.)
     LDX TmpCommandIndex:STX transientCommandIndex
 ELSE
@@ -1858,8 +1858,11 @@ ENDIF
 .^ExitAndClaimServiceCall
     ; SQUASH: Wouldn't "PLA:TAY:PLA:TAX:PLA:LDA #0:RTS" be a byte shorter?
     TSX:LDA #0:STA L0103,X ; set stacked A to 0 to claim the call
+IF IBOS_VERSION < 127
     JMP ExitServiceCall ; SQUASH: BEQ ; always branch
-
+ELSE
+    BEQ ExitServiceCall
+ENDIF
 .CallHandlerX
     ; SQUASH: If we split the handler table into low and high tables we could
     ; possibly save three bytes by no longer needing to double X. This assumes
