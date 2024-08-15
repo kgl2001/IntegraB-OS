@@ -1013,7 +1013,7 @@ ENDIF
     RTS
 		
 IF IBOS_VERSION < 127
-		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used SFTODO: I'm not sure this is entirely true - the code at SearchKeywordTable seems to use the 0 byte at the end of CmdTbl to know when to stop, and if I type "*SRWE" on an emulated IBOS 1.20 machine I get a "Bad id" error, suggesting the command is recognised (if not necessarily useful). It is possible some *other* code does use this, I'm *guessing* the *HELP display code uses this in order to keep SRWE and SRWP "secret" (but I haven't looked yet).
+		EQUS &20								;Number of * commands.
 ELSE
 		EQUS &22
 ENDIF
@@ -1379,9 +1379,9 @@ ENDIF
     CMP (transientTblPtr),Y:BNE NotSimpleMatch
     INY:CPY KeywordLength:BEQ Match
 IF IBOS_VERSION < 127
-    JMP CharacterMatchLoop ; SQUASH: Use "BNE ; always branch"
+    JMP CharacterMatchLoop
 ELSE
-    BNE CharacterMatchLoop
+    BNE CharacterMatchLoop ; always branch
 ENDIF
 .NotSimpleMatch ; but it might be an abbreviation
     CMP #'.':BNE NotMatch
@@ -1677,8 +1677,6 @@ TabColumn = 12
 {
 .SkipSpace
     INY
-; SQUASH: In some places we do "LDA (transientCmdPtr),Y" after calling FindNextCharAfterSpace;
-; this is redundant.
 ; ENHANCE: It's probably not a good idea, but we *could* make IBOS use GSINIT/GSREAD where
 ; appropriate - this would (I think) improve handling of quotes around filenames and allow
 ; standard control codes (e.g. "|M") to be used.
@@ -1723,7 +1721,7 @@ TmpCommandIndex = &AC
     TYA:JSR CmdRef:JSR SearchKeywordTable:BCC RunCommand
 .ExitServiceCallIndirect
 IF IBOS_VERSION < 127
-    LDA #4 ; SQUASH: redundant, ExitServiceCall will do PLA
+    LDA #4 ; redundant, ExitServiceCall will do PLA
 ENDIF
     JMP ExitServiceCall
 			
@@ -1859,9 +1857,9 @@ ENDIF
     ; SQUASH: Wouldn't "PLA:TAY:PLA:TAX:PLA:LDA #0:RTS" be a byte shorter?
     TSX:LDA #0:STA L0103,X ; set stacked A to 0 to claim the call
 IF IBOS_VERSION < 127
-    JMP ExitServiceCall ; SQUASH: BEQ ; always branch
+    JMP ExitServiceCall
 ELSE
-    BEQ ExitServiceCall
+    BEQ ExitServiceCall ; always branch
 ENDIF
 .CallHandlerX
     ; SQUASH: If we split the handler table into low and high tables we could
@@ -1929,7 +1927,7 @@ ENDIF
 {
     JSR FindNextCharAfterSpace
 IF IBOS_VERSION < 127
-    LDA (transientCmdPtr),Y
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
 ENDIF
     AND #CapitaliseMask:CMP #'O':BNE Invalid
     INY:LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'N':BNE NotOn
@@ -2482,7 +2480,7 @@ IF IBOS_VERSION == 120 OR IBOS_VERSION >= 124
     LDA romselCopy:ASL A:ASL A:ASL A:ASL A:ORA romselCopy
 ELSE
     ; Default LANG to &E and FILE to &C.
-    ; SQUASH: All but the last LDA instruction are redundant.
+    ; All but the last LDA instruction are redundant.
     LDA romselCopy:ASL A:ASL A:ASL A:ASL A:LDA #&EC
 ENDIF
 ELSE
@@ -2697,7 +2695,7 @@ IgnoredBits = %00111110
 ; returned to the caller.)
 .service07
     ; Skip OSBYTE &6C and &72 handling if we're in OSMODE 0.
-    ; SQUASH: CMP #0 is redundant.
+    ; CMP #0 is redundant.
     LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X
 IF IBOS_VERSION < 127
     CMP #0
@@ -2774,7 +2772,7 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JMP ExitServiceCall
 
 .osbyte49Internal
-    ; SQUASH: Could we use X instead of A here? Then we'd already have &49 in A and could avoid
+    ; Could we use X instead of A here? Then we'd already have &49 in A and could avoid
     ; LDA #&49.
 IF IBOS_VERSION < 127
     LDA oswdbtX:CMP #&FF:BNE XNeFF
@@ -2928,7 +2926,7 @@ ENDIF
 .service08c
     CMP #&49:BNE service08d
     ; Only OSWORD &49 calls with &60 <= XY?0 < &70 are claimed by IBOS.
-    ; SQUASH: No point preserving Y? ExitServiceCall restores it anyway.
+    ; No point preserving Y? ExitServiceCall restores it anyway.
  IF IBOS_VERSION < 127
     TYA:PHA:LDY #0:LDA (oswdbtX),Y:TAX:PLA:TAY:TXA ; LDA (oswdbtX) preserving Y
  ELSE
@@ -3709,7 +3707,7 @@ OriginalOutputDeviceStatus = TransientZP + 1
 .^ParseFilename
     JSR FindNextCharAfterSpace
 IF IBOS_VERSION < 127
-    LDA (transientCmdPtr),Y
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
 ENDIF
     CMP #vduCr:BNE HaveFilename
 .^GenerateSyntaxErrorForTransientCommandIndexIndirect
@@ -4067,7 +4065,7 @@ ENDIF
     PLA:TAY
     JSR FindNextCharAfterSpace
 IF IBOS_VERSION < 127
-    LDA (transientCmdPtr),Y
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
 ENDIF
     AND #CapitaliseMask
     ; SQUASH: Re-use another RTS here and fall through.
@@ -4517,7 +4515,6 @@ IF IBOS_VERSION >= 127
 ;    LDX #userRegRamPresenceFlags0_7:LDA cpldRAMROMSelectionFlags0_3_V2Status:ORA #&F0:JSR WriteUserReg
     ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
     INX:LDA cpldRAMROMSelectionFlags8_F:JSR WriteUserReg
-.noFlagsCopy
 ; Read default Write Protect flags from CPLD, and save to Private RAM. These will be used during IBOS Reset. 
     LDA cpldRamWriteProtectFlags0_7
     LDX #userDefaultRegBankWriteProtectStatus:JSR WriteUserReg
@@ -4528,6 +4525,7 @@ IF IBOS_VERSION >= 127
     STA cpldRamWriteProtectFlags0_7
     INX:JSR ReadUserReg
     STA cpldRamWriteProtectFlags8_F
+.noFlagsCopy
 ENDIF
 
     ; SFTODO: What are prv83+[1-7] here? We are setting them to &FF.
@@ -4780,13 +4778,13 @@ IF IBOS_VERSION < 127
 RamPresenceFlags = TransientZP
 ENDIF
 
-    ; We just use the default banner if we're in OSMODE 0. SQUASH: CMP #0 is redundant
+    ; We just use the default banner if we're in OSMODE 0.
     LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X
 IF IBOS_VERSION < 127    
-    CMP #0
+    CMP #0 ; redundant
     BEQ Rts
 ELSE
-    BEQ altRTS
+    BEQ altRTS ; Rts is too far away.
 ENDIF
     ; If we're in the "ignore OS startup message" state (b7 clear), do nothing. I suspect this
     ; occurs if an earlier ROM has managed to get in before us and probably can't occur in
@@ -5388,7 +5386,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             STA prvOswordBlockCopy + 7							;high byte of buffer length
 .L9BF1      JSR FindNextCharAfterSpace							;find next character. offset stored in Y
 IF IBOS_VERSION < 127
-            LDA (transientCmdPtr),Y
+            LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
 ENDIF
             CMP #vduCr
             BEQ rts  								;Yes? Then jump to end
@@ -5501,7 +5499,7 @@ ENDIF
     XASSERT_USE_PRV1
             JSR FindNextCharAfterSpace								;find next character. offset stored in Y
 IF IBOS_VERSION < 127
-            LDA (transientCmdPtr),Y
+            LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
 ENDIF
             CMP #'+'
             PHP
@@ -6632,7 +6630,7 @@ osfileBlock = L02EE
     JSR WriteUserReg
     JSR FindNextCharAfterSpace
 IF IBOS_VERSION < 127
-    LDA (transientCmdPtr),Y
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
 ENDIF
     AND #CapitaliseMask
     CMP #'I' ; check for 'I' (Immediate)
@@ -6843,7 +6841,7 @@ ENDIF
     ; not sure.
     JSR FindNextCharAfterSpace:BCS EndOfLine
 IF IBOS_VERSION < 127
-    LDA (transientCmdPtr),Y
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
 ENDIF
     CMP #',':BNE NotComma
     INY
@@ -6941,7 +6939,6 @@ ENDIF
     JMP PrvDis
 }
 
-; SQUASH: These commands may not actually be useful and could potentially be removed.
 {
 ; SFTODO: This little fragment of code is only called once via JMP, can't it just be moved to avoid the JMP (and improve readability)?
 .^LA4FE
@@ -8700,7 +8697,7 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     ; If there's nothing on the command line, the date is fully open and we're done parsing.
     JSR FindNextCharAfterSpace
 IF IBOS_VERSION < 127
-    LDA (transientCmdPtr),Y
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
 ENDIF
     CMP #vduCr:BEQ DateArgumentParsed
     ; Otherwise parse the command line and fill in prvDate* accordingly.
@@ -8710,7 +8707,7 @@ ENDIF
     ; the user-specified partial date.
     JSR FindNextCharAfterSpace
 IF IBOS_VERSION < 127
-    LDA (transientCmdPtr),Y
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
 ENDIF
     CMP #',':BNE DateArgumentParsed
     INY ; skip ','
@@ -8723,7 +8720,7 @@ ENDIF
     ; there's no '/' we have finished parsing the user-specified partial date.
     JSR FindNextCharAfterSpace
 IF IBOS_VERSION < 127
-    LDA (transientCmdPtr),Y
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
 ENDIF
     CMP #'/':BNE DateArgumentParsed
     INY ; skip '/'
@@ -8734,7 +8731,7 @@ ENDIF
     ; After the month there may be a '/' followed by a year component; if there's no '/' we have finished parsing the user-specified partial date.
     JSR FindNextCharAfterSpace
 IF IBOS_VERSION < 127
-    LDA (transientCmdPtr),Y
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
 ENDIF
     CMP #'/':BNE DateArgumentParsed
     INY ; skip '/'
@@ -8811,7 +8808,7 @@ OriginalY = prvTmp2
     LDA #0:STA SpecificDayOfWeekFlag
     JSR FindNextCharAfterSpace
 IF IBOS_VERSION < 127
-    LDA (transientCmdPtr),Y
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
 ENDIF
     CMP #'+':BEQ Plus
     CMP #'-':BNE NotPlusOrMinus
@@ -9385,7 +9382,7 @@ Column = prvC
     JSR CopyPrvAlarmToRtc
     JSR FindNextCharAfterSpace
 IF IBOS_VERSION < 127
-    LDA (transientCmdPtr),Y
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
 ENDIF
     AND #CapitaliseMask:CMP #'R'
     PHP:PLA:LSR A:LSR A:PHP:ASSERT flagZ = 1 << 1 ; get Z flag into C and save
