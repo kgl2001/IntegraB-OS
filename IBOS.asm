@@ -458,6 +458,7 @@ cpldRAMROMSelectionFlags8_F = SHEILA + &39 ; read
 cpldExtendedFunctionFlags = SHEILA + &39 ; write
 cpldRamWriteProtectFlags0_7 = SHEILA + &3A ; read / write
 cpldRamWriteProtectFlags8_F = SHEILA + &3B ; read / write
+cpldPALPROMSelectionFlags0_7 = SHEILA + &3F ; read
 ENDIF
 
 tubeEntry = &0406
@@ -3567,7 +3568,9 @@ ENDIF
 			
 ;*APPEND Command
 .append
-{
+
+; KL 27/8/24: Temporarily dropped this code, to free up space for IBOS127 *ROMS command changes.
+IF IBOS_VERSION < 127{
 ; SFTODO: Express these as transientWorkspace + n, to document what area of memory they live in?
 LineLengthIncludingCr = &A9
 LineNumber = &AA
@@ -3635,6 +3638,11 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 .^printSpace
     LDA #' ':JMP OSWRCH
 }
+ELSE
+    JMP OSNEWLPrvDisExitAndClaimServiceCall
+.printSpace
+    LDA #' ':JMP OSWRCH
+ENDIF
 
 ; *PRINT command
 ; Note that this sends the file to the printer, *unlike* the Master *PRINT command which is
@@ -6659,6 +6667,7 @@ RamPresenceCopyLow = TransientZP + 0
 RamPresenceCopyHigh = TransientZP + 1
 ENDIF
 
+
 IF IBOS_VERSION < 127
 .LA34A
     ; ENHANCE: We could go and test all the individual banks to see if they're RAM, rather than
@@ -6673,10 +6682,11 @@ IF IBOS_VERSION < 127
     EQUB &80								;Check for RAM at Banks E & F
 ENDIF
 
+
 ;*ROMS Command
+IF IBOS_VERSION < 127
 .^roms
     LDA #maxBank:STA CurrentBank
-IF IBOS_VERSION <127
 .BankLoop
     JSR ShowRom
     DEC CurrentBank:BPL BankLoop
@@ -6693,20 +6703,6 @@ IF IBOS_VERSION <127
     ; doesn't matter here because we mask it off using the table at LA34A.
     LDX #userRegRamPresenceFlags:JSR ReadUserReg
     AND LA34A,Y:BNE IsSidewaysRamBank ; branch if this is a sideways RAM bank
-ELSE
-    LDX #userRegRamPresenceFlags0_7:JSR ReadUserReg:STA RamPresenceCopyLow
-    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
-    INX:JSR ReadUserReg:STA RamPresenceCopyHigh
-.ShowRomLoop
-    JSR ShowRom
-    DEC CurrentBank:BPL ShowRomLoop
-    JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
-.ShowRom
-    LDA CurrentBank:CLC:JSR PrintADecimal ; show bank number right-aligned
-    JSR printSpace
-    LDA #'(':JSR OSWRCH
-    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCS IsSidewaysRamBank
-ENDIF
     LDA #' ':BNE BankTypeCharacterInA ; always branch
 .IsSidewaysRamBank
     LDX CurrentBank:JSR TestRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
@@ -6720,8 +6716,8 @@ ENDIF
     LDY #' ' ; not unplugged
     AND #&FE ; bit 0 of ROM type is undefined, so mask out
     ; SFTODO: If we take this branch, will we ever do PRVDIS?
-    BNE ShowRomHeader
-    ; The RomTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
+   BNE ShowRomHeader
+ ; The RomTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
     ; if our private copy of the ROM type byte is non-0 show those flags.
     LDY #'U' ; Unplugged
     PRVEN ; SFTODO: We already did this, why do we need to do it again?
@@ -6734,7 +6730,78 @@ ENDIF
     JSR printSpace ; ' ' in place of 'L'
     LDA #')':JSR OSWRCH
     JMP OSNEWL
-; Entered with Y=' ' or 'U' and rom type byte in A.
+
+ELSE
+.^roms
+    LDA #maxBank:STA CurrentBank
+
+    LDX #userRegRamPresenceFlags0_7:JSR ReadUserReg:STA RamPresenceCopyLow
+    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
+    INX:JSR ReadUserReg:STA RamPresenceCopyHigh
+
+.ShowRomLoop
+    JSR ShowRom
+    DEC CurrentBank:BPL ShowRomLoop
+    JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
+
+.ShowRom
+    LDA CurrentBank:CLC:JSR PrintADecimal ; show bank number right-aligned
+    JSR printSpace
+    LDA #'(':JSR OSWRCH
+
+; KL 27/08/24: The following 2 lines test for ROM/RAM presence, and use this as a mask for 'E' or 'P'.
+;              Mask temporarily removed, and will now always print 'E' or 'P' based on response from
+;              TestRamUsingVariableMainRamSubroutine
+;    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCS IsSidewaysRamBank
+;    LDA #' ':BNE BankTypeCharacterInA ; always branch
+
+.IsSidewaysRamBank
+    LDX CurrentBank:JSR TestRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
+    LDA #'E' ; write-Enabled
+    PLP:BEQ BankTypeCharacterInA
+    LDA #'P' ; Protected
+.BankTypeCharacterInA
+    JSR OSWRCH
+    PRVEN
+    LDX CurrentBank:LDA RomTypeTable,X
+    LDY #'R' ; not unplugged
+    AND #&FE ; bit 0 of ROM type is undefined, so mask out
+    ; SFTODO: If we take this branch, will we ever do PRVDIS?
+    BNE TestRrpFlags
+
+ ; The RomTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
+    ; if our private copy of the ROM type byte is non-0 show those flags.
+    LDY #'U' ; Unplugged
+    PRVEN ; SFTODO: We already did this, why do we need to do it again?
+    LDA prvRomTypeTableCopy,X
+    ; SFTODO: We don't AND #&FE here, is that wrong/inconsistent?
+    PRVDIS
+    BEQ TestRrpFlags2
+    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh ; Not used here, but need to rotate anyway.
+    JMP ShowRomHeader
+ 
+ .TestRrpFlags2
+    LDY #'R'
+    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCC printR
+    LDY #'r'
+    JSR TestforPALPROM
+
+.printR
+    TYA:JSR OSWRCH
+    JSR printSpace ; ' ' in place of 'S'
+    JSR printSpace ; ' ' in place of 'L'
+    LDA #')':JSR OSWRCH
+    JMP OSNEWL
+
+.TestRrpFlags
+    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCC ShowRomHeader
+    LDY #'r'
+    JSR TestforPALPROM
+
+ENDIF
+
+; Entered with Y=' ' or 'U' and rom type byte in A (IBOS < 127).
+; Entered with Y=' ', 'p', 'r', 'R' or 'U' and rom type byte in A (IBOS >= 127).
 .ShowRomHeader
     PHA
     TYA:JSR OSWRCH
@@ -6769,6 +6836,41 @@ ENDIF
 IF IBOS_VERSION >= 126
 .^SetOsRdRmPtrToCopyrightOffset
     LDA #lo(CopyrightOffset):STA osRdRmPtr:LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
+    RTS
+ENDIF
+
+IF IBOS_VERSION >= 127
+.TestforPALPROM
+; Firstly, test for V2 hardware...
+    PHA
+    LDA #0:STA cpldExtendedFunctionFlags
+    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:CMP#&60:BNE endpptest ; On Break, cpldRAMROMSelectionFlags0_3_V2Status[7:5] = 3'b011
+    LDA #3:STA cpldExtendedFunctionFlags
+    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:BNE endpptest
+
+    LDA cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
+    
+; PALPROM 2a (bank 8) is enabled when cpldPALPROMSelectionFlags0_7 bit 2 is set
+; PALPROM 2b (bank 9) is enabled when cpldPALPROMSelectionFlags0_7 bit 3 is set
+; PALPROM 4a (bank 10) is enabled when cpldPALPROMSelectionFlags0_7 bits 4 & 5 are both set
+; PALPROM 8a (bank 11) is enabled when cpldPALPROMSelectionFlags0_7 bit 6 is set
+
+; Then test if PALPROM in banks 8..11
+    CPX #11:BNE testpp4a
+    AND #&40:BNE loadywithp
+.testpp4a    
+    CPX #10:BNE testpp2b
+    AND #&30:BNE loadywithp
+.testpp2b    
+    CPX #9:BNE testpp2a
+    AND #&08:BNE loadywithp
+.testpp2a    
+    CPX #8:BNE endpptest
+    AND #&04:BEQ endpptest
+.loadywithp
+    LDY #'p'
+.endpptest
+    PLA
     RTS
 ENDIF
 }
