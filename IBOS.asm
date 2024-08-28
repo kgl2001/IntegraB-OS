@@ -10983,8 +10983,9 @@ ENDIF
     LDY #0
 .DontWrap2
     TYA:STA prvPrintBufferPtrBase + 2,X
-    ; SQUASH: Next line is redundant, INC prvPrintBufferPtrBase,X left this 0 above.
-    LDA #0:STA prvPrintBufferPtrBase,X
+IF IBOS_VERSION < 127
+    LDA #0:STA prvPrintBufferPtrBase,X ; redundant, as we did INC this:BNE Rts above
+ENDIF
     LDA prvPrintBufferBankStart:STA prvPrintBufferPtrBase + 1,X
 .Rts
     RTS
