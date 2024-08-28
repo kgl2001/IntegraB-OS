@@ -6144,15 +6144,25 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
 
 ;*SRSAVE Command
 .^srsave
-    PRVEN ; SQUASH: PRVEN preserves A, so move this to Common?
+IF IBOS_VERSION < 127
+    PRVEN
     LDA #&00 ; function "save absolute"
-    JMP Common ; SQUASH: BEQ always
-			
+    JMP Common
+ELSE
+    LDA #&00 ; function "save absolute"
+    BEQ Common ; always branch
+ENDIF
+
 ;*SRLOAD Command
 .^srload
+IF IBOS_VERSION < 127
     PRVEN
+ENDIF
     LDA #&80 ; function "load absolute"
 .Common
+IF IBOS_VERSION >= 127
+    PRVEN ; preserves A
+ENDIF
     STA prvOswordBlockCopy
     JSR getSrsaveLoadFilename
     JSR parseOsword4243BufferAddress
