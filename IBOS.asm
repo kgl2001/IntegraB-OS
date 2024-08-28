@@ -10991,6 +10991,8 @@ IF IBOS_VERSION < 127
     LDA prvPrintBufferFreeMid:SBC #0:STA prvPrintBufferFreeMid
     DECCC prvPrintBufferFreeHigh
 ELSE
+    ; This is a 24-bit extension of the 16-bit decrement described at
+    ; http://6502.org/users/obelisk/6502/algorithms.html.
     LDA prvPrintBufferFreeLow:BNE SkipMidHighDec
     LDA prvPrintBufferFreeMid:BNE SkipHighDec
     DEC prvPrintBufferFreeHigh
