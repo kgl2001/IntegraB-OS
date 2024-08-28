@@ -4687,7 +4687,13 @@ ENDIF
     LDX #userRegKeyboardRepeat:JSR ReadUserReg:TAX:LDA #osbyteSetAutoRepeatPeriod:JSR OSBYTE
     LDX #userRegPrinterIgnore:JSR ReadUserReg:TAX:LDA #osbyteSetPrinterIgnore:JSR OSBYTE
 
-    LDX #userRegTubeBaudPrinter:JSR ReadUserReg:JSR LsrA2:PHA
+    LDX #userRegTubeBaudPrinter:JSR ReadUserReg
+IF IBOS_VERSION < 127
+    JSR LsrA2
+ELSE
+    LSR A:LSR A
+ENDIF
+    PHA
     AND #&07:CLC:ADC #1 ; mask off baud rate bits and add 1 to convert to 1-8 range
     PHA:TAX:LDA #osbyteSetSerialReceiveRate:JSR OSBYTE
     PLA:TAX:LDA #osbyteSetSerialTransmitRate:JSR OSBYTE
@@ -4754,7 +4760,9 @@ ENDIF
 ; the latter is both larger and slower.
 .LsrA3
     LSR A
+IF IBOS_VERSION < 127
 .LsrA2
+ENDIF
     LSR A
     LSR A
     RTS
