@@ -2383,29 +2383,33 @@ ENDIF
 }
 						
 ; Language entry point.
-.language
 {
+IF IBOS_VERSION < 127
+.^language
     ; Check this is normal language start up, not (e.g.) Electron soft key expansion.
     CMP #1:BEQ NormalLanguageStartUp ; SQUASH: Move this so we can fall through and BNE to another RTS
     RTS
+ENDIF
 
 ;Set BRK Vector
 .^setBrkv
     LDA #lo(BrkvHandler):STA BRKVL
     LDA #hi(BrkvHandler):STA BRKVH
+.Rts
     RTS
 
 ; SFTODO: Start of this code is same as L8969 - could we save a few bytes by (e.g.) setting osErrorPtr to &8000 here and testing for that in BRKV handler and skipping the error printing code in that case?
+IF IBOS_VERSION < 127
 .NormalLanguageStartUp
     CLI
     CLD
     LDX #&FF:TXS
     JSR setBrkv
     LDA lastBreakType:BNE NotSoftReset
-    JMP CmdLoop ; SQUASH: "BEQ ; always branch", and then we can just fall through to NotSoftReset
+    JMP CmdLoop
 .NotSoftReset
     LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeAt:BEQ atPressed
-    JMP CmdLoop ; SQUASH: "BEQ ; always branch" and fall through to atPressed
+    JMP CmdLoop
 
     ; Implement IBOS reset when @ held down during (non-soft) reset.
 .atPressed
@@ -2415,6 +2419,7 @@ ENDIF
     LDA resetPrompt,X:BEQ promptDone
     JSR OSASCI
     INX:BNE promptLoop ; always branch
+ENDIF
 .promptDone
     ; Wait until @ is released, flush the keyboard buffer and read user response to prompt.
 .releaseAtLoop
@@ -2437,6 +2442,30 @@ ENDIF
 .yesStringEnd
 .resetPrompt
     EQUS "System Reset", vduCr, vduCr, "Go (Y/N) ? ", 0
+
+IF IBOS_VERSION >= 127
+.^language
+    ; Check this is normal language start up, not (e.g.) Electron soft key expansion.
+    CMP #1:BNE Rts
+
+.NormalLanguageStartUp
+    CLI
+    CLD
+    LDX #&FF:TXS
+    JSR setBrkv
+    LDA lastBreakType:BEQ CmdLoop ; branch if soft reset
+    LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeAt:BNE CmdLoop
+    FALLTHROUGH_TO atPressed
+
+    ; Implement IBOS reset when @ held down during (non-soft) reset.
+.atPressed
+    LDA #osbyteReadWriteBreakEscapeEffect:LDX #2:LDY #0:JSR OSBYTE ; Memory cleared on next reset, ESCAPE disabled
+    LDX #0
+.promptLoop
+    LDA resetPrompt,X:BEQ promptDone
+    JSR OSASCI
+    INX:BNE promptLoop ; always branch
+ENDIF
 
 ;BRK vector entry point
 .BrkvHandler
@@ -2461,7 +2490,7 @@ InputBufSize = 256
     JSR ReadLine
     LDX #lo(InputBuf):LDY #hi(InputBuf):JSR OSCLI
     JMP CmdLoop
-			
+
 .OswordInputLineBlock
 ;OSWORD A=&0, Read line from input - Parameter block
     EQUW InputBuf
