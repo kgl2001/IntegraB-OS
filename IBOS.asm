@@ -2423,7 +2423,12 @@ ENDIF
 .promptDone
     ; Wait until @ is released, flush the keyboard buffer and read user response to prompt.
 .releaseAtLoop
-    LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeAt:BEQ releaseAtLoop
+IF IBOS_VERSION < 127
+    LDA #osbyteKeyboardScanFrom10:JSR OSBYTE
+ELSE
+    JSR DoOsbyteKeyboardScanFrom10
+ENDIF
+    CPX #keycodeAt:BEQ releaseAtLoop
     LDA #osbyteFlushSelectedBuffer:LDX #bufNumKeyboard:JSR OSBYTE
     CLI
     JSR OSRDCH:PHA
@@ -2454,7 +2459,12 @@ IF IBOS_VERSION >= 127
     LDX #&FF:TXS
     JSR setBrkv
     LDA lastBreakType:BEQ CmdLoop ; branch if soft reset
-    LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeAt:BNE CmdLoop
+IF IBOS_VERSION < 127
+    LDA #osbyteKeyboardScanFrom10:JSR OSBYTE
+ELSE
+    JSR DoOsbyteKeyboardScanFrom10
+ENDIF
+    CPX #keycodeAt:BNE CmdLoop
     FALLTHROUGH_TO atPressed
 
     ; Implement IBOS reset when @ held down during (non-soft) reset.
@@ -4420,7 +4430,12 @@ ENDIF
 
     ; Now arrange for selection of the desired filing system. If a key is pressed we let the
     ; usual mechanism kick in and don't bring the *CONFIGURE FILE setting into play.
-    LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeNone:BEQ NoKeyPressed
+IF IBOS_VERSION < 127
+    LDA #osbyteKeyboardScanFrom10:JSR OSBYTE
+ELSE
+    JSR DoOsbyteKeyboardScanFrom10
+ENDIF
+    CPX #keycodeNone:BEQ NoKeyPressed
 .IgnorePrivateRam
     LDX romselCopy:DEX
     JMP SelectFirstFilingSystemROMLessEqualXAndLanguage
@@ -7214,6 +7229,11 @@ IF IBOS_VERSION < 127
 }
 ENDIF
 
+IF IBOS_VERSION >= 127
+.DoOsbyteKeyboardScanFrom10
+    LDA #osbyteKeyboardScanFrom10:JMP OSBYTE
+ENDIF
+
 ;SPOOL/EXEC file closure warning - Service call 10 SFTODO: I *suspect* we are using this as a "part way through reset" service call rather than for its nominal purpose - have a look at OS 1.2 disassembly and see when this is actually generated. Do filing systems or anything issue it during "normal" operation? (e.g. if you do "*EXEC" with no argument.)
 .service10
 {
@@ -7245,7 +7265,12 @@ ENDIF
     PRVDIS
 
     LDX lastBreakType:BEQ SoftReset
-    LDA #osbyteKeyboardScanFrom10:JSR OSBYTE:CPX #keycodeAt:BNE SoftReset ; SFTODO: Rename label given use here?
+IF IBOS_VERSION < 127
+    LDA #osbyteKeyboardScanFrom10:JSR OSBYTE
+ELSE
+    JSR DoOsbyteKeyboardScanFrom10
+ENDIF
+    CPX #keycodeAt:BNE SoftReset ; SFTODO: Rename label given use here?
     ; The last break wasn't a soft reset and the "@" key is held down, which will trigger a
     ; full reset.
     ; SQUASH: If we use X instead of A here, we could replace "LDA #&FF" with DEX to save a byte.
