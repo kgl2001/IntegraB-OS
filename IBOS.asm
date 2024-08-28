@@ -4852,16 +4852,39 @@ IF IBOS_VERSION < 127
 ELSE
 ; Count 16K chunks of RAM in kilobytes and print the result.
     LDY #4 ; number of 16K RAM chunks - initial 4 are 32K main RAM, 20K shadow and 12K private
+
+IF IBOS_VERSION >= 127
+; Firstly, test for V2 hardware...
+    JSR testV2hardware
+    BCC endppaddram
+; Check for PALPROM banks, and increment Y by the number of extra banks in use
+    LDX #3
+.palpromaddramloop
+    LDA cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
+    AND palprom_test_table,X:BEQ notpalprom
+    LDA palprom_banks_table,X ; number of extra PALPROM RAM banks
+    JSR sumRAMLoop
+.notpalprom
+    DEX
+    BPL palpromaddramloop
+.endppaddram
+ENDIF    
+
     LDX #userRegRamPresenceFlags0_7:JSR sumRAM
     ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
     INX:JSR sumRAM
     STA transientBin+1 ; we know A is zero after sumRAM
-    ; Y <= 20 here - we started at 4 and can have added a maximum of 16 sideways RAM banks
+    ; IBOS < 127:  Y <= 20 here - we started at 4 and can have added a maximum of 16 sideways RAM banks
+    ; IBOS >= 127: Y <= 32 here - we started at 4 and can have added a maximum of 16 sideways RAM banks and 12 extra PALPROM banks
     TYA
-    ASL A ; result <= 40, no carry
-    ASL A ; result <= 80, no carry
+    ASL A ; result <= 40, no carry for IBOS < 127 (<= 64, no carry for IBOS >=127)
+    ASL A ; result <= 80, no carry for IBOS < 127 (<= 128, no carry for IBOS >=127)
+IF IBOS_VERSION < 127
     ASL A ; result <= 160, no carry
-    ASL A:STA transientBin:ROL transientBin+1 ; result <= 320, so may have carry
+ELSE
+    ASL A:ROL transientBin+1 ; result <= 256, so may have carry
+ENDIF
+    ASL A:STA transientBin:ROL transientBin+1 ; <= 320, so may have carry for IBOS < 127 (<= 512, so may have carry for IBOS >=127)
     SEC
     JSR PrintAbcd16Decimal
     LDA #'K':JSR OSWRCH
@@ -4884,6 +4907,8 @@ ELSE
 .Rts
     RTS
 ENDIF
+
+
 
 .ReverseBanner
     EQUS " B-ARGETNI" ; "INTEGRA-B " reversed
@@ -6842,16 +6867,19 @@ IF IBOS_VERSION >= 127
 .endpptest
     pla
     rts
-.palprom_test_table
+.^palprom_test_table
     EQUB &04 ; bank 8 - PALPROM 2a is enabled when cpldPALPROMSelectionFlags0_7 bit 2 is set
     EQUB &08 ; bank 9 - PALPROM 2b is enabled when cpldPALPROMSelectionFlags0_7 bit 3 is set
     EQUB &30 ; bank 10 - PALPROM 4a is enabled when cpldPALPROMSelectionFlags0_7 bits 4 & 5 are both set
     EQUB &40 ; bank 11 - PALPROM 8a is enabled when cpldPALPROMSelectionFlags0_7 bit 6 is set
-ENDIF
-}
+.^palprom_banks_table
+    EQUB &01 ; bank 8 - PALPROM 2a has 1 extra bank
+    EQUB &01 ; bank 9 - PALPROM 2b has 1 extra bank
+    EQUB &07 ; bank 10 - PALPROM 4a has 3 extra banks
+    EQUB &7F ; bank 11 - PALPROM 8a has 7 extra banks
 
 ; Test for V2 hardware. Carry is set if V2 hardware detected, otherwise carry is cleared.
-.testV2hardware
+.^testV2hardware
     LDA #0:STA cpldExtendedFunctionFlags
     LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:CMP#&60:BNE endv2test ; On Break, cpldRAMROMSelectionFlags0_3_V2Status[7:5] = 3'b011
     LDA #3:STA cpldExtendedFunctionFlags
@@ -6861,6 +6889,8 @@ ENDIF
 .endv2test
     CLC
     RTS
+ENDIF
+} 
 
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be
 ; used to indicate "everything but the listed banks" SFTODO DEPENDING ON V ON ENTRY?. Return with C set iff at least one bit of
