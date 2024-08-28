@@ -816,6 +816,7 @@ bufNumPrinter = 3 ; OS buffer number for the printer buffer
 
 eventNumUser = 9
 
+opcodeBitAbsolute = &2C
 opcodeJmpAbsolute = &4C
 opcodeRts = &60
 opcodeJmpIndirect = &6C
@@ -6150,7 +6151,10 @@ IF IBOS_VERSION < 127
     JMP Common
 ELSE
     LDA #&00 ; function "save absolute"
-    BEQ Common ; always branch
+    ; Skip the next two bytes using BIT. This won't read from an I/O address as the high byte
+    ; of its operand is &80.
+    EQUB opcodeBitAbsolute
+    ASSERT Common == P% + 2
 ENDIF
 
 ;*SRLOAD Command
