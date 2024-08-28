@@ -11017,9 +11017,12 @@ ENDIF
     STY romsel
 .RomAccessSubroutineVariableInsn
     EQUB $00, $00, $80 ; <abs instruction> &8000; patched at runtime when copied into RAM
-	; SQUASH: We could replace next three instructions with JMP osStxRomselAndCopyAndRts.
+IF IBOS_VERSION < 127
     STX romselCopy:STX romsel
     RTS
+ELSE
+    JMP osStxRomselAndCopyAndRts
+ENDIF
 
     RELOCATE RomAccessSubroutine, RomAccessSubroutineTemplate
 .RomAccessSubroutineTemplateEnd
