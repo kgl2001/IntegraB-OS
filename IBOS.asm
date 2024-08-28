@@ -10982,13 +10982,23 @@ ENDIF
 }
 
 ; SQUASH: This has only a single caller
-; SQUASH: Use decrement-by-one technique from http://www.obelisk.me.uk/6502/algorithms.html
+; Subtract 1 from the 24-bit value in prvPrintBuffer{High,Mid,Low}.
 .DecrementPrintBufferFree
     XASSERT_USE_PRV1
+IF IBOS_VERSION < 127
     SEC
     LDA prvPrintBufferFreeLow:SBC #1:STA prvPrintBufferFreeLow
     LDA prvPrintBufferFreeMid:SBC #0:STA prvPrintBufferFreeMid
     DECCC prvPrintBufferFreeHigh
+ELSE
+    LDA prvPrintBufferFreeLow:BNE SkipMidHighDec
+    LDA prvPrintBufferFreeMid:BNE SkipHighDec
+    DEC prvPrintBufferFreeHigh
+.SkipHighDec
+    DEC prvPrintBufferFreeMid
+.SkipMidHighDec
+    DEC prvPrintBufferFreeLow
+ENDIF
     RTS
 
 ; A code template copied to RAM at RomAccessSubroutine which is patched at runtime to
