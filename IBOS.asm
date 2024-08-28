@@ -2119,14 +2119,18 @@ FirstDigitCmdPtrY = FilingSystemWorkspace + 11
 IF IBOS_VERSION < 127
     JMP ConvertIntegerDefaultBaseA
 ELSE
-    BNE ConvertIntegerDefaultBaseA ; always branch
+    ; Jump to ConvertIntegerDefaultBaseA using BIT absolute to skip the next two bytes. This
+    ; won't access I/O addresses as its operand high byte is &60.
+    EQUB opcodeBitAbsolute
+    ASSERT ConvertIntegerDefaultBaseA = P% + 2
 ENDIF
 
-; SQUASH: Could we share this fragment?
+IF IBOS_VERSION < 127
 .NothingToConvert
     ; Carry is already set
     CLV
     RTS
+ENDIF
 
 .^ConvertIntegerDefaultDecimal
     LDA #10
@@ -2158,6 +2162,14 @@ ENDIF
     STA Base
     INY:STY FirstDigitCmdPtrY
     JMP ParseDigit ; SQUASH: "BNE ; always branch"?
+
+IF IBOS_VERSION >= 127
+; SQUASH: Could we share this fragment?
+.NothingToConvert
+    ; Carry is already set
+    CLV
+    RTS
+ENDIF
 			
 .ValidDigitInA
     ; Set ConvertIntegerResult = ConvertIntegerResult * Base + digit.
