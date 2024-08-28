@@ -4952,6 +4952,7 @@ ELSE
     LDX #3
 .palpromaddramloop
 ; Check if PALPROM banks 8..11 are configured as RAM or ROM
+; SQUASH: Any prospect of shifting a temp copy of this value each time round the look instead of anding it with a table?
     LDA cpldRAMROMSelectionFlags8_F
     AND RegRamMaskTable,X:BEQ notpalprom
 ; If configured as RAM, check if PALPROM is enabled
