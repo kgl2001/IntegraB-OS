@@ -4487,7 +4487,7 @@ ENDIF
 .NotSoftReset2
 IF IBOS_VERSION < 126
     LDX #userRegLangFile:JSR ReadUserReg:JSR LsrA4 ; get *CONFIGURE LANG value
-    JMP EnterLangA ; SQUASH: BPL always
+    JMP EnterLangA
 
 .NoLanguageEntryAndNoTube
     LDA romselCopy ; enter IBOS as the current language
