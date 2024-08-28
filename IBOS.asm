@@ -4774,13 +4774,12 @@ ENDIF
     XASSERT_USE_PRV1
 IF IBOS_VERSION < 127
     JSR clearShenPrvEn
+    PHA
 ELSE
     LDA ramselCopy:PHA
     LDA #0:STA ramselCopy:STA ramsel
     PRVEN
-    PLA
 ENDIF
-    PHA
     BIT prvTubeOnOffInProgress:BMI L9836
     LDA lastBreakType:BEQ SoftReset
     ; If we're in the middle of a full reset, the contents of RTC registers/private RAM might
