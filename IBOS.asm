@@ -10905,11 +10905,16 @@ ENDIF
 .^CheckPrintBufferFull
     XASSERT_USE_PRV1
     LDA prvPrintBufferFreeLow:ORA prvPrintBufferFreeMid:ORA prvPrintBufferFreeHigh:BEQ SecRts
+IF IBOS_VERSION >= 127
+.ClcRts
+ENDIF
     CLC
     RTS
-.SecRts ; SQUASH: Re-use the SEC:RTS just below.
+IF IBOS_VERSION < 127
+.SecRts
     SEC
     RTS
+ENDIF
 
 ; Return with carry set if and only if the printer buffer is empty.
 ; SQUASH: This has only one caller
@@ -10919,11 +10924,16 @@ ENDIF
     LDA prvPrintBufferFreeMid:CMP prvPrintBufferSizeMid:BNE ClcRts
     ; ENHANCE: Next line is a duplicate of previous one, it should be checking High not Mid.
     LDA prvPrintBufferFreeMid:CMP prvPrintBufferSizeMid:BNE ClcRts
+IF IBOS_VERSION >= 127
+.SecRts
+ENDIF
     SEC
     RTS
-.ClcRts ; SQUASH: Re-use the CLC:RTS just above.
+IF IBOS_VERSION < 127
+.ClcRts
     CLC
     RTS
+ENDIF
 }
 
 ; SQUASH: This currently only has one caller, so could be inlined. Although maybe there's some
