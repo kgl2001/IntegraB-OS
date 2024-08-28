@@ -4772,7 +4772,15 @@ ENDIF
 .serviceFF
 {
     XASSERT_USE_PRV1
-    JSR clearShenPrvEn:PHA
+IF IBOS_VERSION < 127
+    JSR clearShenPrvEn
+ELSE
+    LDA ramselCopy:PHA
+    LDA #0:STA ramselCopy:STA ramsel
+    PRVEN
+    PLA
+ENDIF
+    PHA
     BIT prvTubeOnOffInProgress:BMI L9836
     LDA lastBreakType:BEQ SoftReset
     ; If we're in the middle of a full reset, the contents of RTC registers/private RAM might
@@ -4798,12 +4806,14 @@ ENDIF
     JMP osStxRomselAndCopyAndRts
 
 ; SQUASH: This only has one caller
+IF IBOS_VERSION < 127
 .clearShenPrvEn ; SFTODO: not super happy with this name
     LDA ramselCopy:PHA
     LDA #0:STA ramselCopy:STA ramsel
     PRVEN
     PLA
     RTS
+ENDIF
 
 .PRVDISStaRamsel
     PHA
