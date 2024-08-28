@@ -4951,6 +4951,10 @@ ELSE
 ; Check for PALPROM banks, and increment Y by the number of extra banks in use
     LDX #3
 .palpromaddramloop
+; Check if PALPROM banks 8..11 are configured as RAM or ROM
+    LDA cpldRAMROMSelectionFlags8_F
+    AND RegRamMaskTable,X:BEQ notpalprom
+; If configured as RAM, check if PALPROM is enabled
     LDA cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
     AND palprom_test_table,X:BEQ notpalprom
     LDA palprom_banks_table,X ; number of extra PALPROM RAM banks
@@ -6966,6 +6970,9 @@ IF IBOS_VERSION >= 127
 .endpptest
     pla
     rts
+.^RegRamMaskTable
+    EQUB &01 ; bank 8
+    EQUB &02 ; bank 9
 .^palprom_test_table
     EQUB &04 ; bank 8 - PALPROM 2a is enabled when cpldPALPROMSelectionFlags0_7 bit 2 is set
     EQUB &08 ; bank 9 - PALPROM 2b is enabled when cpldPALPROMSelectionFlags0_7 bit 3 is set
