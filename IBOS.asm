@@ -961,11 +961,17 @@ ORG start
     EQUB RomTypeService OR RomTypeLanguage OR RomType6502
 .CopyrightOffset
     EQUB Copyright - RomHeader
-; TODO: It would be good to give a meaningful binary version number; since all known versions
-; of IBOS use &FF, we could start at 0 for 1.27 and bump it by one each time. (This would make
-; it easier for user programs to query the precise IBOS version, if they need a particular
-; fix.) Or we could use 127 for 1.27 and so on, but that would give us less headroom.
+; All versions before 1.27 have a binary version number of &FF, so I suggest we start at 0 for
+; 1.27 and increment this by one each time. This gives us the maximum headroom for new versions
+; and may be useful to allow user programs to test the IBOS version with if they need a specific
+; feature or fix.
+IF IBOS_VERSION < 127
     EQUB &FF ; binary version number
+ELIF IBOS_VERSION == 127
+    EQUB 0 ; binary version number
+ELSE
+    ERROR "Need to specify binary version number explicitly"
+ENDIF
 .Title
     EQUS "IBOS", 0
 IF IBOS_VERSION == 120
