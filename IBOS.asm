@@ -2115,7 +2115,12 @@ OriginalCmdPtrY = FilingSystemWorkspace + 10
 FirstDigitCmdPtrY = FilingSystemWorkspace + 11
 
 .^ConvertIntegerDefaultHex
-    LDA #16:JMP ConvertIntegerDefaultBaseA ; SQUASH: "BNE ; always branch"
+    LDA #16
+IF IBOS_VERSION < 127
+    JMP ConvertIntegerDefaultBaseA
+ELSE
+    BNE ConvertIntegerDefaultBaseA ; always branch
+ENDIF
 
 ; SQUASH: Could we share this fragment?
 .NothingToConvert
