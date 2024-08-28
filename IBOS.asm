@@ -10893,6 +10893,7 @@ ENDIF
     LDA VectorEntryStackedFlags+1,X:AND #flagC:BNE CountSpaceLeft
     ; We're counting the entries in the buffer; return them as 16-bit value YX.
     JSR GetPrintBufferUsed
+.Common
     TXA:TSX:STA VectorEntryStackedX+1,X ; overwrite stacked X, so we return A to caller in X
     TYA:STA VectorEntryStackedY+1,X ; overwrite stacked Y, so we return A to caller in Y
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
@@ -10900,11 +10901,13 @@ ENDIF
 .CountSpaceLeft
     ; We're counting the space left in the buffer; return that as 16-bit value YX.
     JSR GetPrintBufferFree
-    ; SQUASH: Following code is identical to fragment just above, we could JMP to it to avoid
-    ; this duplication.
+IF IBOS_VERSION < 127
     TXA:TSX:STA VectorEntryStackedX+1,X ; overwrite stacked X, so we return A to caller in X
     TYA:STA VectorEntryStackedY+1,X ; overwrite stacked Y, so we return A to caller in Y
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
+ELSE
+    JMP Common
+ENDIF
 }
 
 ; SQUASH: This only has one caller and doesn't seem to return early.
