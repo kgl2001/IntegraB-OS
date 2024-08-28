@@ -10827,7 +10827,11 @@ ScreenStart = &3000
     JSR CheckPrintBufferEmpty:BCC PrintBufferNotEmpty
     ; SQUASH: Some similarity with InsvHandler here, could we factor out common code?
     LDA VectorEntryStackedFlags+1,X:ORA #flagC:STA VectorEntryStackedFlags+1,X
+IF IBOS_VERSION < 127
     JMP RestoreRamselClearPrvenReturnFromVectorHandler ; SQUASH: BNE ; always branch
+ELSE
+    BNE RestoreRamselClearPrvenReturnFromVectorHandler ; always branch
+ENDIF
 
 ; IBOS versions before 1.23 return the character in Y for examine and A for remove, which is
 ; the wrong way round. This works in practice for the all-important case of the OS removing
