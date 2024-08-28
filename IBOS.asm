@@ -970,6 +970,8 @@ IF IBOS_VERSION < 127
 ELIF IBOS_VERSION == 127
     EQUB 0 ; binary version number
 ELSE
+    ; We could do EQUB IBOS_VERSION-127 but it feels safest to be explicit, in case we end up
+    ; having IBOS 2.00 at some point with IBOS_VERSION == 200.
     ERROR "Need to specify binary version number explicitly"
 ENDIF
 .Title
