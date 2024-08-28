@@ -11060,6 +11060,7 @@ ENDIF
     LDA prvPrintBufferSizeLow:STA prvPrintBufferFreeLow
     LDA prvPrintBufferSizeMid:STA prvPrintBufferFreeMid
     LDA prvPrintBufferSizeHigh:STA prvPrintBufferFreeHigh
+.LdaPrintBufferReadPtrRts
     RTS
 
 ; If prvPrvPrintBufferStart isn't in the range &90-&AC, set it to &AC. We return with prvPrvPrintBufferStart in A.
@@ -11067,14 +11068,19 @@ ENDIF
 {
 MaxPrintBufferStart = prv8End - 1024 ; print buffer must be at least 1K
 
-    ; SQUASH: We could change "BCC Rts" below to use the RTS above and make the JSR:RTS a JMP.
     LDX #prvPrvPrintBufferStart - prv83:JSR ReadPrivateRam8300X
     CMP #hi(prv8Start):BCC UseAC
+IF IBOS_VERSION < 127
     CMP #hi(MaxPrintBufferStart):BCC Rts
 .UseAC
     LDA #hi(MaxPrintBufferStart):JSR WritePrivateRam8300X
 .Rts
     RTS
+ELSE
+    CMP #hi(MaxPrintBufferStart):BCC LdaPrintBufferReadPtrRts
+.UseAC
+    LDA #hi(MaxPrintBufferStart):JMP WritePrivateRam8300X
+ENDIF
 }
 
 PRINT end - P%, "bytes free"
