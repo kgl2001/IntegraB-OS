@@ -952,7 +952,7 @@ ENDMACRO
 start = &8000
 end = &C000
 ORG start
-GUARD end
+; SFTODO TCO GUARD end
 
 .RomHeader
     JMP language
@@ -3638,8 +3638,7 @@ ENDIF
 ;*APPEND Command
 .append
 
-; KL 27/8/24: Temporarily dropped this code, to free up space for IBOS127 *ROMS command changes.
-IF IBOS_VERSION < 127{
+{
 ; SFTODO: Express these as transientWorkspace + n, to document what area of memory they live in?
 LineLengthIncludingCr = &A9
 LineNumber = &AA
@@ -3707,11 +3706,6 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 .^printSpace
     LDA #' ':JMP OSWRCH
 }
-ELSE
-    JMP OSNEWLPrvDisExitAndClaimServiceCall
-.printSpace
-    LDA #' ':JMP OSWRCH
-ENDIF
 
 ; *PRINT command
 ; Note that this sends the file to the printer, *unlike* the Master *PRINT command which is
