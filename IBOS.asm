@@ -6850,9 +6850,11 @@ IF IBOS_VERSION >= 126
     LDA #lo(CopyrightOffset):STA osRdRmPtr:LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
     RTS
 ENDIF
+}
 
 IF IBOS_VERSION >= 127
 .TestforPALPROM
+{
     LDY #'r' ; onboard RAM
 ; Firstly, test for V2 hardware...
     PHA
@@ -6877,11 +6879,13 @@ IF IBOS_VERSION >= 127
     EQUB &01 ; bank 9 - PALPROM 2b has 1 extra bank
     EQUB &07 ; bank 10 - PALPROM 4a has 3 extra banks
     EQUB &7F ; bank 11 - PALPROM 8a has 7 extra banks
+}
 
 ; Test for V2 hardware. Carry is set if V2 hardware detected, otherwise carry is cleared.
-.^testV2hardware
+.testV2hardware
+{
     LDA #0:STA cpldExtendedFunctionFlags
-    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:CMP#&60:BNE endv2test ; On Break, cpldRAMROMSelectionFlags0_3_V2Status[7:5] = 3'b011
+    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:CMP #&60:BNE endv2test ; On Break, cpldRAMROMSelectionFlags0_3_V2Status[7:5] = 3'b011
     LDA #3:STA cpldExtendedFunctionFlags
     LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:BNE endv2test
     SEC
@@ -6889,8 +6893,8 @@ IF IBOS_VERSION >= 127
 .endv2test
     CLC
     RTS
+}
 ENDIF
-} 
 
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be
 ; used to indicate "everything but the listed banks" SFTODO DEPENDING ON V ON ENTRY?. Return with C set iff at least one bit of
