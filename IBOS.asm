@@ -10577,8 +10577,6 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     PHA
     LDA negativeVduQueueSize:BNE InLongerVduSequence
 IF IBOS_VERSION < 127
-    ; SQUASH: We know ModeChangeState is 0 here, so we could just do ASSERT ModeChangeStateNone
-    ; + 1 == ModeChangeStateSeenVduSetMode;INC ModeChangeState.
     LDA #ModeChangeStateSeenVduSetMode:STA ModeChangeState
 ELSE
     ; We know ModeChangeState is 0 here, because we didn't take the BNE at the start of
