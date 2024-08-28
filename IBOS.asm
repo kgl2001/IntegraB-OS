@@ -10848,7 +10848,7 @@ ENDIF
     ; SQUASH: Some similarity with InsvHandler here, could we factor out common code?
     LDA VectorEntryStackedFlags+1,X:ORA #flagC:STA VectorEntryStackedFlags+1,X
 IF IBOS_VERSION < 127
-    JMP RestoreRamselClearPrvenReturnFromVectorHandler ; SQUASH: BNE ; always branch
+    JMP RestoreRamselClearPrvenReturnFromVectorHandler
 ELSE
     BNE RestoreRamselClearPrvenReturnFromVectorHandler ; always branch
 ENDIF
