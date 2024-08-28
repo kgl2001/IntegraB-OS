@@ -816,6 +816,7 @@ bufNumPrinter = 3 ; OS buffer number for the printer buffer
 
 eventNumUser = 9
 
+opcodeBitAbsolute = &2C
 opcodeJmpAbsolute = &4C
 opcodeRts = &60
 opcodeJmpIndirect = &6C
@@ -2284,6 +2285,8 @@ ENDIF
 
 ; Page in private RAM temporarily and do STA prv83,X. A, X and Y are preserved, flags reflect A
 ; on exit.
+; SQUASH: As we don't currently fall through into this, we could move the most common LDA/LDX
+; instruction immediately before it and then share that instruction.
 .^WritePrivateRam8300X
     PHP:SEI
     JSR SwitchInPrivateRAM
@@ -6135,15 +6138,28 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
 
 ;*SRSAVE Command
 .^srsave
-    PRVEN ; SQUASH: PRVEN preserves A, so move this to Common?
+IF IBOS_VERSION < 127
+    PRVEN
     LDA #&00 ; function "save absolute"
-    JMP Common ; SQUASH: BEQ always
-			
+    JMP Common
+ELSE
+    LDA #&00 ; function "save absolute"
+    ; Skip the next two bytes using BIT. This won't read from an I/O address as the high byte
+    ; of its operand is &80.
+    EQUB opcodeBitAbsolute
+    ASSERT Common == P% + 2
+ENDIF
+
 ;*SRLOAD Command
 .^srload
+IF IBOS_VERSION < 127
     PRVEN
+ENDIF
     LDA #&80 ; function "load absolute"
 .Common
+IF IBOS_VERSION >= 127
+    PRVEN ; preserves A
+ENDIF
     STA prvOswordBlockCopy
     JSR getSrsaveLoadFilename
     JSR parseOsword4243BufferAddress
@@ -6841,9 +6857,11 @@ IF IBOS_VERSION >= 126
     LDA #lo(CopyrightOffset):STA osRdRmPtr:LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
     RTS
 ENDIF
+}
 
 IF IBOS_VERSION >= 127
 .TestforPALPROM
+{
     LDY #'r' ; onboard RAM
 ; Firstly, test for V2 hardware...
     PHA
@@ -6868,20 +6886,24 @@ IF IBOS_VERSION >= 127
     EQUB &01 ; bank 9 - PALPROM 2b has 1 extra bank
     EQUB &07 ; bank 10 - PALPROM 4a has 3 extra banks
     EQUB &7F ; bank 11 - PALPROM 8a has 7 extra banks
+}
 
 ; Test for V2 hardware. Carry is set if V2 hardware detected, otherwise carry is cleared.
-.^testV2hardware
-    LDA #0:STA cpldExtendedFunctionFlags
-    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:CMP#&60:BNE endv2test ; On Break, cpldRAMROMSelectionFlags0_3_V2Status[7:5] = 3'b011
-    LDA #3:STA cpldExtendedFunctionFlags
-    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:BNE endv2test
-    SEC
+.testV2hardware
+{
+    LDA #0:JSR Common:CMP #&60:BNE ClcRts ; On Break, cpldRAMROMSelectionFlags0_3_V2Status[7:5] = 3'b011
+    ; We didn't BNE, so we know A is &60, and since &60>=&60 we know the CMP set carry.
+    LDA #3:JSR Common:BNE ClcRts
+    ; Carry still set from CMP above.
     RTS
-.endv2test
-    CLC
+
+.Common
+    STA cpldExtendedFunctionFlags
+    LDA cpldRAMROMSelectionFlags0_3_V2Status
+    AND #&E0
     RTS
+}
 ENDIF
-} 
 
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be
 ; used to indicate "everything but the listed banks" SFTODO DEPENDING ON V ON ENTRY?. Return with C set iff at least one bit of
@@ -6901,6 +6923,7 @@ ENDIF
     JSR InvertTransientRomBankMask
 .NotStar
     LDA transientRomBankMask:ORA transientRomBankMask + 1:BEQ SecRts
+.^ClcRts
     CLC
     RTS
 
@@ -10875,11 +10898,16 @@ ENDIF
 .^CheckPrintBufferFull
     XASSERT_USE_PRV1
     LDA prvPrintBufferFreeLow:ORA prvPrintBufferFreeMid:ORA prvPrintBufferFreeHigh:BEQ SecRts
+IF IBOS_VERSION >= 127
+.ClcRts
+ENDIF
     CLC
     RTS
-.SecRts ; SQUASH: Re-use the SEC:RTS just below.
+IF IBOS_VERSION < 127
+.SecRts
     SEC
     RTS
+ENDIF
 
 ; Return with carry set if and only if the printer buffer is empty.
 ; SQUASH: This has only one caller
@@ -10889,11 +10917,16 @@ ENDIF
     LDA prvPrintBufferFreeMid:CMP prvPrintBufferSizeMid:BNE ClcRts
     ; ENHANCE: Next line is a duplicate of previous one, it should be checking High not Mid.
     LDA prvPrintBufferFreeMid:CMP prvPrintBufferSizeMid:BNE ClcRts
+IF IBOS_VERSION >= 127
+.SecRts
+ENDIF
     SEC
     RTS
-.ClcRts ; SQUASH: Re-use the CLC:RTS just above.
+IF IBOS_VERSION < 127
+.ClcRts
     CLC
     RTS
+ENDIF
 }
 
 ; SQUASH: This currently only has one caller, so could be inlined. Although maybe there's some
@@ -10942,13 +10975,25 @@ ENDIF
 }
 
 ; SQUASH: This has only a single caller
-; SQUASH: Use decrement-by-one technique from http://www.obelisk.me.uk/6502/algorithms.html
+; Subtract 1 from the 24-bit value in prvPrintBuffer{High,Mid,Low}.
 .DecrementPrintBufferFree
     XASSERT_USE_PRV1
+IF IBOS_VERSION < 127
     SEC
     LDA prvPrintBufferFreeLow:SBC #1:STA prvPrintBufferFreeLow
     LDA prvPrintBufferFreeMid:SBC #0:STA prvPrintBufferFreeMid
     DECCC prvPrintBufferFreeHigh
+ELSE
+    ; This is a 24-bit extension of the 16-bit decrement described at
+    ; http://6502.org/users/obelisk/6502/algorithms.html.
+    LDA prvPrintBufferFreeLow:BNE SkipMidHighDec
+    LDA prvPrintBufferFreeMid:BNE SkipHighDec
+    DEC prvPrintBufferFreeHigh
+.SkipHighDec
+    DEC prvPrintBufferFreeMid
+.SkipMidHighDec
+    DEC prvPrintBufferFreeLow
+ENDIF
     RTS
 
 ; A code template copied to RAM at RomAccessSubroutine which is patched at runtime to
@@ -10965,9 +11010,12 @@ ENDIF
     STY romsel
 .RomAccessSubroutineVariableInsn
     EQUB $00, $00, $80 ; <abs instruction> &8000; patched at runtime when copied into RAM
-	; SQUASH: We could replace next three instructions with JMP osStxRomselAndCopyAndRts.
+IF IBOS_VERSION < 127
     STX romselCopy:STX romsel
     RTS
+ELSE
+    JMP osStxRomselAndCopyAndRts
+ENDIF
 
     RELOCATE RomAccessSubroutine, RomAccessSubroutineTemplate
 .RomAccessSubroutineTemplateEnd
@@ -11003,6 +11051,7 @@ ENDIF
     LDA prvPrintBufferSizeLow:STA prvPrintBufferFreeLow
     LDA prvPrintBufferSizeMid:STA prvPrintBufferFreeMid
     LDA prvPrintBufferSizeHigh:STA prvPrintBufferFreeHigh
+.LdaPrintBufferReadPtrRts
     RTS
 
 ; If prvPrvPrintBufferStart isn't in the range &90-&AC, set it to &AC. We return with prvPrvPrintBufferStart in A.
@@ -11010,14 +11059,19 @@ ENDIF
 {
 MaxPrintBufferStart = prv8End - 1024 ; print buffer must be at least 1K
 
-    ; SQUASH: We could change "BCC Rts" below to use the RTS above and make the JSR:RTS a JMP.
     LDX #prvPrvPrintBufferStart - prv83:JSR ReadPrivateRam8300X
     CMP #hi(prv8Start):BCC UseAC
+IF IBOS_VERSION < 127
     CMP #hi(MaxPrintBufferStart):BCC Rts
 .UseAC
     LDA #hi(MaxPrintBufferStart):JSR WritePrivateRam8300X
 .Rts
     RTS
+ELSE
+    CMP #hi(MaxPrintBufferStart):BCC LdaPrintBufferReadPtrRts
+.UseAC
+    LDA #hi(MaxPrintBufferStart):JMP WritePrivateRam8300X
+ENDIF
 }
 
 PRINT end - P%, "bytes free"
