@@ -1979,7 +1979,7 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
     STA Pad
     PLA:PHA
 
-    LDX #0 ; SQUASH: change to LDX #&FF and get rid of DEX/INX stuff?
+    LDX #0
     SEC
 .HundredsLoop
     SBC #100
@@ -1988,7 +1988,7 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
     ADC #100
     JSR PrintDigit
 
-    LDX #0 ; SQUASH: change to LDX #&FF and get rid of DEX/INX stuff?
+    LDX #0
     SEC
 .TensLoop
     SBC #10
@@ -1998,7 +1998,7 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
     JSR PrintDigit
 
     TAX
-    INX ; SQUASH: optimisable?
+    INX
     DEC PadFlag
     JSR PrintDigit
     PLA
@@ -2006,9 +2006,9 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
 			
 .PrintDigit
     PHA
-    DEX ; SQUASH: optimisable?
+    DEX
     LDA Pad
-    CPX #0 ; SQUASH: Could get rid of this if LDA moved before DEX
+    CPX #0
     BNE NotZero
     BIT PadFlag:BPL PrintPad
 .NotZero
