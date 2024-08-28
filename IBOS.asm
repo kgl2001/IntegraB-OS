@@ -939,12 +939,6 @@ MACRO PRVS81EN ; SFTODO: Better name?
     JSR pageInPrvs81
 ENDMACRO
 
-MACRO JMPPRVS81EN ; SFTODO: Better name?
-    XASSERT_USE_PRV1
-    XASSERT_USE_PRV8
-    JMP pageInPrvs81
-ENDMACRO
-
 ; Helper macro for copying a block of code assembled in main RAM (at the address it will
 ; actually run at) into the ROM.
 MACRO RELOCATE From, To
@@ -10791,20 +10785,19 @@ ScreenStart = &3000
 .pageInPrvs81
     LDA romselCopy:ORA #romselPrvEn:STA romselCopy:STA romsel
     LDA ramselCopy:PHA:ORA #ramselPrvs81:STA ramselCopy:STA ramsel:PLA
+.pageInPrvs81Rts
     RTS
 
 IF IBOS_VERSION >= 127
 ; Y contains the vector index. Y is not corrupted here by IBOS versions <= 1.26, but it's fine,
-; because Y carries no useful information in to INSV or REMV and is preserved by our vector
-; handling framework on exit unless we specifically modify it.
-.InsvRemvHandlerCommon
+; because Y carries no useful information in to INSV, REMV or CNPV and is preserved by our
+; vector handling framework on exit unless we specifically modify it.
+.BufferVHandlerCommon
 {
     TSX:LDA VectorEntryStackedX+2,X ; get original X=buffer number, +2 to allow for JSR to us
-    CMP #bufNumPrinter:BEQ IsPrinterBuffer
+    CMP #bufNumPrinter:BEQ pageInPrvs81Rts
     PLA:PLA ; discard stacked return address
     TYA:JMP forwardToParentVectorTblEntry
-.IsPrinterBuffer
-    JMPPRVS81EN
 }
 ENDIF
 
@@ -10816,10 +10809,10 @@ IF IBOS_VERSION < 127
     LDA #ibosINSVIndex:JMP forwardToParentVectorTblEntry
 
 .IsPrinterBuffer
-    PRVS81EN
 ELSE
-    LDY #ibosINSVIndex:JSR InsvRemvHandlerCommon
+    LDY #ibosINSVIndex:JSR BufferVHandlerCommon
 ENDIF
+    PRVS81EN
     PHA
     TSX
     JSR CheckPrintBufferFull:BCC PrintBufferNotFull
@@ -10845,10 +10838,10 @@ IF IBOS_VERSION < 127
     LDA #ibosREMVIndex:JMP forwardToParentVectorTblEntry
 			
 .IsPrinterBuffer
-    PRVS81EN
 ELSE
-    LDY #ibosREMVIndex:JSR InsvRemvHandlerCommon
+    LDY #ibosREMVIndex:JSR BufferVHandlerCommon
 ENDIF
+    PRVS81EN
     PHA
     TSX
     JSR CheckPrintBufferEmpty:BCC PrintBufferNotEmpty
@@ -10906,11 +10899,15 @@ ENDIF
 
 .CnpvHandler
 {
+IF IBOS_VERSION < 127
     TSX:LDA VectorEntryStackedX,X ; get original X=buffer number
     CMP #bufNumPrinter:BEQ IsPrinterBuffer
     LDA #ibosCNPVIndex:JMP forwardToParentVectorTblEntry
 
 .IsPrinterBuffer
+ELSE
+    LDY #ibosCNPVIndex:JSR BufferVHandlerCommon ; SFTODO: ADD CNPV TO NAME
+ENDIF
     LDA ramselCopy:PHA
     PRVEN
     TSX:LDA VectorEntryStackedFlags+1,X:AND #flagV:BEQ Count
