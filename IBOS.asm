@@ -206,6 +206,7 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 IF IBOS_VERSION < 127
 userRegRamPresenceFlags = &7F
 ELSE
+userDefaultRegBankWriteProtectStatus = &30 ; 2 bytes
 userRegRamPresenceFlags0_7 = &7E
 userRegRamPresenceFlags8_F = &7F
 ENDIF
@@ -450,6 +451,15 @@ ramselCopy = &037F ; unused VDU variable workspace repurposed by IBOS
 
 rtcAddress = SHEILA + &38
 rtcData = SHEILA + &3C
+
+IF IBOS_VERSION >= 127
+cpldRAMROMSelectionFlags0_3_V2Status = SHEILA + &38 ; read
+cpldRAMROMSelectionFlags8_F = SHEILA + &39 ; read
+cpldExtendedFunctionFlags = SHEILA + &39 ; write
+cpldRamWriteProtectFlags0_7 = SHEILA + &3A ; read / write
+cpldRamWriteProtectFlags8_F = SHEILA + &3B ; read / write
+cpldPALPROMSelectionFlags0_7 = SHEILA + &3F ; read
+ENDIF
 
 tubeEntry = &0406
 tubeEntryMultibyteHostToParasite = &01
@@ -1003,7 +1013,11 @@ ENDIF
     LDX #lo(CmdRef):LDY #hi(CmdRef)
     RTS
 		
-		EQUS &20								;Number of * commands. Note SRWE & SRWP are not used SFTODO: I'm not sure this is entirely true - the code at SearchKeywordTable seems to use the 0 byte at the end of CmdTbl to know when to stop, and if I type "*SRWE" on an emulated IBOS 1.20 machine I get a "Bad id" error, suggesting the command is recognised (if not necessarily useful). It is possible some *other* code does use this, I'm *guessing* the *HELP display code uses this in order to keep SRWE and SRWP "secret" (but I haven't looked yet).
+IF IBOS_VERSION < 127
+		EQUS &20								;Number of * commands.
+ELSE
+		EQUS &22
+ENDIF
 		ASSERT P% = CmdRef + KeywordTableOffset
 		EQUW CmdTbl							;Start of * command table
 		ASSERT P% = CmdRef + ParameterTableOffset
@@ -1055,6 +1069,7 @@ ENDIF
 		EQUB &00
 
 ;Lookup table for recognised * command parameters
+IF IBOS_VERSION < 127
 .CmdParTbl	EQUS &09, "(", &A6, "(R))/", &A1					;Parameter &80 for *ALARM:		'((=<TIME>(R))/ON/OFF/?)'
 		EQUS &04, "(" ,&A7, ")"						;Parameter &81 for *CALENDAR:		'(<DATE>)'
 		EQUS &07, "((=)", &A7, ")"						;Parameter &82 for *DATE:		'((=)<DATE>)'
@@ -1103,9 +1118,61 @@ ENDIF
 		EQUS &05, ")..."							;Parameter &AD:			')...'
 		EQUS &05, "(<0-"							;Parameter &AE:			'(<0-'
 		EQUS &04, &AE, "4>"							;Parameter &AF:			'(<0-4>'
+ELSE
+.CmdParTbl	EQUS &09, "(", &A8, "(R))/", &A3					;Parameter &80 for *ALARM:		'((=<TIME>(R))/ON/OFF/?)'
+		EQUS &04, "(" ,&A9, ")"						;Parameter &81 for *CALENDAR:		'(<DATE>)'
+		EQUS &07, "((=)", &A9, ")"						;Parameter &82 for *DATE:		'((=)<DATE>)'
+		EQUS &03, &A8, ")"							;Parameter &83 for *TIME:		'(=<TIME>)'
+		EQUS &06, &85, "(,", &AA,&AF						;Parameter &84 for *CONFIGURE:	'(<par>)(,<par>)...'
+		EQUS &04, "(", &AA, ")"						;Parameter &85 for *STATUS:		'(<par>)'
+		EQUS &02, &94							;Parameter &86 for *CSAVE:		'<fsp>'
+		EQUS &02, &94							;Parameter &87 for *CLOAD:		'<fsp>'
+		EQUS &08, "(<cmd>", &A2						;Parameter &88 for *BOOT:		'(<cmd>/?)'
+		EQUS &06, &AF, "/#" , &98, &A2					;Parameter &89 for *BUFFER:		'(<0-4>/#<id>(,<id>).../?)'
+		EQUS &03, "(", &A4							;Parameter &8A for *PURGE:		'(ON/OFF/?)'
+		EQUS &03, &98,&A4							;Parameter &8B for *INSERT:		'<id>(,<id>)...(I)'
+		EQUS &03, &98,&A4							;Parameter &8C for *UNPLUG:		'<id>(,<id>)...(I)'
+		EQUS &01								;Parameter &8D for *ROMS:
+		EQUS &03, &B1,&A2							;Parameter &8E for *OSMODE:		'(<0-4>/?)'
+		EQUS &07, "(", &B0, "1>", &A2, ")"					;Parameter &8F for *SHADOW:		'((<0-1>/?))'
+		EQUS &03, "(", &A3							;Parameter &90 for *SHX:		'(ON/OFF/?)'
+		EQUS &03, "(", &A3							;Parameter &91 for *TUBE:		'(ON/OFF/?)'
+		EQUS &03, "<", &AC							;Parameter &92 for *GOIO:		'<addr>'
+		EQUS &01								;Parameter &93 for *NLE:
+		EQUS &06, "<fsp>"							;Parameter &94: 			'<fsp>'
+		EQUS &04, &94, " ", &AE						;Parameter &95: 			'<fsp> <len>'
+		EQUS &02, &94							;Parameter &96:			'<fsp>'
+		EQUS &02, &94							;Parameter &97:			'<fsp>'
+		EQUS &06, &A7, "(,", &A7, &AF						;Parameter &98:			'<id>(,<id>)...'
+		EQUS &02, &98							;Parameter &99:			'<id>(,<id>)...'
+		EQUS &02, &98							;Parameter &9A:			'<id>(,<id>)...'
+		EQUS &04, "(", &98, &A2						;Parameter &9B:			'(<id>(,<id>).../?)'
+		EQUS &05, &94, &AD, &A5, &A4						;Parameter &9C:			'<fsp> <sraddr> (<id>) (Q)(I)'
+		EQUS &05, &94, &AD, &AB, &A5						;Parameter &9D:			'<fsp> (<end>/+<len>) (<id>) (Q)'
+		EQUS &06, "<", &AC, &AB, &AD, &A6					;Parameter &9E:			'<addr> (<end>/+<len>) <sraddr> (<id>)'
+		EQUS &02, &9E							;Parameter &9F:			'<addr> (<end>/+<len>) <sraddr> (<id>)'
+		EQUS &02, &98							;Parameter &A0:			'<id>(,<id>)...'
+		EQUS &02, &98							;Parameter &A1:			'<id>(,<id>)...'
+		EQUS &04, "/?)"							;Parameter &A2:			'/?)'
+		EQUS &08, "ON/OFF", &A2						;Parameter &A3:			'ON/OFF/?)'
+		EQUS &04, "(I)"							;Parameter &A4:			'(I)'
+		EQUS &06, &A6," (Q)"						;Parameter &A5:			' (<id>) (Q)'
+		EQUS &05, " (", &A7, ")"						;Parameter &A6:			' (<id>)'
+		EQUS &05, "<id>"							;Parameter &A7:			'<id>'
+		EQUS &09, "(=<time>"						;Parameter &A8:			'(=<time>'
+		EQUS &07, "<date>"							;Parameter &A9:			'<date>'
+		EQUS &06, "<par>"							;Parameter &AA:			'<par>'
+		EQUS &0C, " (<end>/+", &AE, ")"					;Parameter &AB:			' (<end>/+<len>)'
+		EQUS &06, "addr>"							;Parameter &AC:			'addr>'
+		EQUS &06, " <sr", &AC						;Parameter &AD:			' <sraddr>'
+		EQUS &06, "<len>"							;Parameter &AE:			'<len>'
+		EQUS &05, ")..."							;Parameter &AF:			')...'
+		EQUS &05, "(<0-"							;Parameter &B0:			'(<0-'
+		EQUS &04, &B0, "4>"							;Parameter &B1:			'(<0-4>'
+ENDIF
 
 ;lookup table for start address of recognised * commands
-.^CmdExTbl		EQUW alarm-1							;address of *ALARM command
+.^CmdExTbl	EQUW alarm-1							;address of *ALARM command
 		EQUW calend-1							;address of *CALENDAR command
 		EQUW date-1							;address of *DATE command
 		EQUW time-1							;address of *TIME command
@@ -1251,7 +1318,11 @@ ENDIF
     EQUW CmdRef:EQUB &00,&03							;&04 x IBOS/RTC Sub options - from offset &00
     EQUW CmdRef:EQUB &04,&13							;&10 x IBOS/SYS Sub options - from offset &04
     EQUW CmdRef:EQUB &14,&17							;&04 x IBOS/FSX Sub options - from offset &14
+IF IBOS_VERSION < 127
     EQUW CmdRef:EQUB &18,&1F							;&08 x IBOS/SRAM Sub options - from offset &18
+ELSE
+    EQUW CmdRef:EQUB &18,&21							;&0A x IBOS/SRAM Sub options - from offset &18
+ENDIF
     EQUW ibosRef:EQUB &00,&03							;&04 x IBOS Options - from offset &00
     EQUW ConfRef:EQUB &00,&10							;&11 x CONFIGURE Parameters - from offset &00
 
@@ -1308,7 +1379,11 @@ ENDIF
 .NotLowerCase
     CMP (transientTblPtr),Y:BNE NotSimpleMatch
     INY:CPY KeywordLength:BEQ Match
-    JMP CharacterMatchLoop ; SQUASH: Use "BNE ; always branch"
+IF IBOS_VERSION < 127
+    JMP CharacterMatchLoop
+ELSE
+    BNE CharacterMatchLoop ; always branch
+ENDIF
 .NotSimpleMatch ; but it might be an abbreviation
     CMP #'.':BNE NotMatch
     CPY #MinimumAbbreviationLength:BCC NotMatch
@@ -1603,8 +1678,6 @@ TabColumn = 12
 {
 .SkipSpace
     INY
-; SQUASH: In some places we do "LDA (transientCmdPtr),Y" after alling FindNextCharAfterSpace;
-; this is redundant.
 ; ENHANCE: It's probably not a good idea, but we *could* make IBOS use GSINIT/GSREAD where
 ; appropriate - this would (I think) improve handling of quotes around filenames and allow
 ; standard control codes (e.g. "|M") to be used.
@@ -1648,7 +1721,9 @@ TmpCommandIndex = &AC
     INY ; skip the "I"
     TYA:JSR CmdRef:JSR SearchKeywordTable:BCC RunCommand
 .ExitServiceCallIndirect
-    LDA #4 ; SQUASH: redundant, ExitServiceCall will do PLA
+IF IBOS_VERSION < 127
+    LDA #4 ; redundant, ExitServiceCall will do PLA
+ENDIF
     JMP ExitServiceCall
 			
 .NoIPrefix
@@ -1681,7 +1756,7 @@ if IBOS_VERSION < 126
     DEY:LDA (transientTblPtr),Y:PHA
     ; Record the relevant index at transientCommandIndex for use in generating a syntax error
     ; later if necessary. (transientCommandIndex == transientTblPtr so we couldn't just store
-    ; this here direectly. SQUASH: If we just used a different address instead of
+    ; this here directly. SQUASH: If we just used a different address instead of
     ; transientTblPtr in this subroutine we could probably avoid this.)
     LDX TmpCommandIndex:STX transientCommandIndex
 ELSE
@@ -1782,8 +1857,11 @@ ENDIF
 .^ExitAndClaimServiceCall
     ; SQUASH: Wouldn't "PLA:TAY:PLA:TAX:PLA:LDA #0:RTS" be a byte shorter?
     TSX:LDA #0:STA L0103,X ; set stacked A to 0 to claim the call
-    JMP ExitServiceCall ; SQUASH: BEQ ; always branch
-
+IF IBOS_VERSION < 127
+    JMP ExitServiceCall
+ELSE
+    BEQ ExitServiceCall ; always branch
+ENDIF
 .CallHandlerX
     ; SQUASH: If we split the handler table into low and high tables we could
     ; possibly save three bytes by no longer needing to double X. This assumes
@@ -1849,7 +1927,10 @@ ENDIF
 .ParseOnOff
 {
     JSR FindNextCharAfterSpace
-    LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'O':BNE Invalid
+IF IBOS_VERSION < 127
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
+ENDIF
+    AND #CapitaliseMask:CMP #'O':BNE Invalid
     INY:LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'N':BNE NotOn
     INY
     LDA #prvOn
@@ -2383,7 +2464,11 @@ InputBufSize = 256
 .FullReset
 {
     ; Zero user registers &00-&32 inclusive, except userRegLangFile which is treated as a special case.
+IF IBOS_VERSION < 127
     LDX #&32
+ELSE
+    LDX #&2F
+ENDIF
 .ZeroUserRegLoop
     LDA #0
 IF IBOS_VERSION < 126
@@ -2396,7 +2481,7 @@ IF IBOS_VERSION == 120 OR IBOS_VERSION >= 124
     LDA romselCopy:ASL A:ASL A:ASL A:ASL A:ORA romselCopy
 ELSE
     ; Default LANG to &E and FILE to &C.
-    ; SQUASH: All but the last LDA instruction are redundant.
+    ; All but the last LDA instruction are redundant.
     LDA romselCopy:ASL A:ASL A:ASL A:ASL A:LDA #&EC
 ENDIF
 ELSE
@@ -2459,6 +2544,14 @@ ptr = &00 ; 2 bytes
     ; SQUASH: We could just do LDA #&7F:STA systemViaBase + viaRegisterInterruptEnable - we
     ; know we're running on the host...
     ; Simulate a power-on reset.
+
+IF IBOS_VERSION >= 127
+    LDX #userDefaultRegBankWriteProtectStatus:JSR ReadUserReg
+    LDX #userRegBankWriteProtectStatus:JSR WriteUserReg
+    LDX #userDefaultRegBankWriteProtectStatus + 1:JSR ReadUserReg
+    LDX #userRegBankWriteProtectStatus + 1:JSR WriteUserReg
+ENDIF
+
     LDA #osbyteWriteSheila:LDX #systemViaBase + viaRegisterInterruptEnable:LDY #&7F:JSR OSBYTE
     JMP (RESET)
 
@@ -2502,8 +2595,10 @@ IF IBOS_VERSION == 120 AND IBOS120_VARIANT == 0
 ELSE
     EQUB userRegCentury, 20
 ENDIF
+IF IBOS_VERSION < 127
     EQUB userRegBankWriteProtectStatus + 0, &FF
     EQUB userRegBankWriteProtectStatus + 1, &FF
+ENDIF
     EQUB userRegPrvPrintBufferStart, &90
 IF IBOS_VERSION < 127
     EQUB userRegRamPresenceFlags, &0F		; 64K non-SWR and 64K SWR in banks 4-7
@@ -2601,8 +2696,12 @@ IgnoredBits = %00111110
 ; returned to the caller.)
 .service07
     ; Skip OSBYTE &6C and &72 handling if we're in OSMODE 0.
-    ; SQUASH: CMP #0 is redundant.
-    LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X:CMP #0:BNE osbyte6C
+    ; CMP #0 is redundant.
+    LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X
+IF IBOS_VERSION < 127
+    CMP #0
+ENDIF
+    BNE osbyte6C
     LDA oswdbtA:JMP osbyteA1
 
 ; Test for OSBYTE &6C - Select Shadow/Screen memory for direct access
@@ -2674,11 +2773,18 @@ prvRtcUpdateEndedOptionsMask = prvRtcUpdateEndedOptionsGenerateUserEvent OR prvR
     JMP ExitServiceCall
 
 .osbyte49Internal
-    ; SQUASH: Could we use X instead of A here? Then we'd already have &49 in A and could avoid
+    ; Could we use X instead of A here? Then we'd already have &49 in A and could avoid
     ; LDA #&49.
+IF IBOS_VERSION < 127
     LDA oswdbtX:CMP #&FF:BNE XNeFF
     ; It's X=&FF: test for presence of Integra-B.
-    LDA #&49:STA oswdbtX ; return with X=&49 indicates Integra-B is present
+    LDA #&49
+ELSE
+    LDX oswdbtX:CPX #&FF:BNE XNeFF
+    ; It's X=&FF: test for presence of Integra-B.
+ENDIF    
+    STA oswdbtX ; return with X=&49 indicates Integra-B is present
+
     PLA:LDA romselCopy:AND #maxBank:PHA ; return IBOS bank number to caller in Y
     JMP ExitAndClaimServiceCall
 .XNeFF
@@ -2821,8 +2927,12 @@ ENDIF
 .service08c
     CMP #&49:BNE service08d
     ; Only OSWORD &49 calls with &60 <= XY?0 < &70 are claimed by IBOS.
-    ; SQUASH: No point preserving Y? ExitServiceCall restores it anyway.
+    ; No point preserving Y? ExitServiceCall restores it anyway.
+ IF IBOS_VERSION < 127
     TYA:PHA:LDY #0:LDA (oswdbtX),Y:TAX:PLA:TAY:TXA ; LDA (oswdbtX) preserving Y
+ ELSE
+    LDY #0:LDA (oswdbtX),Y
+ ENDIF
     CMP #&60:BCC service08d
     CMP #&70:BCS service08d
     JMP osword49
@@ -3458,7 +3568,9 @@ ENDIF
 			
 ;*APPEND Command
 .append
-{
+
+; KL 27/8/24: Temporarily dropped this code, to free up space for IBOS127 *ROMS command changes.
+IF IBOS_VERSION < 127{
 ; SFTODO: Express these as transientWorkspace + n, to document what area of memory they live in?
 LineLengthIncludingCr = &A9
 LineNumber = &AA
@@ -3526,6 +3638,11 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 .^printSpace
     LDA #' ':JMP OSWRCH
 }
+ELSE
+    JMP OSNEWLPrvDisExitAndClaimServiceCall
+.printSpace
+    LDA #' ':JMP OSWRCH
+ENDIF
 
 ; *PRINT command
 ; Note that this sends the file to the printer, *unlike* the Master *PRINT command which is
@@ -3596,7 +3713,11 @@ OriginalOutputDeviceStatus = TransientZP + 1
 ; Parse filename at (transientCmdPtr),Y, returning with X=index to resume parsing after the
 ; filename and Y=index of start of filename.
 .^ParseFilename
-    JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:CMP #vduCr:BNE HaveFilename
+    JSR FindNextCharAfterSpace
+IF IBOS_VERSION < 127
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
+ENDIF
+    CMP #vduCr:BNE HaveFilename
 .^GenerateSyntaxErrorForTransientCommandIndexIndirect
     JMP GenerateSyntaxErrorForTransientCommandIndex
 .HaveFilename
@@ -3950,7 +4071,11 @@ ENDIF
     TYA:PHA
     JSR SetConfigValueTransientConfigPrefix ; SFTODO: I'm thinking "transientConfigPrefix" might be badly misnamed (in general, not just here)
     PLA:TAY
-    JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:AND #CapitaliseMask
+    JSR FindNextCharAfterSpace
+IF IBOS_VERSION < 127
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
+ENDIF
+    AND #CapitaliseMask
     ; SQUASH: Re-use another RTS here and fall through.
     CMP #'N':BEQ WriteNfs
     CMP #'D':BEQ WriteDfs ; C will be set if we branch
@@ -4385,6 +4510,29 @@ IF IBOS_VERSION >= 122
 .VectorsNotAlreadyClaimed
 ENDIF
 
+IF IBOS_VERSION >= 127
+; Check if IBOS is running on V2 hardware, and if it is then read
+; RAM / ROM flags from CPLD, and store in private RAM.
+; Otherwise, if using V1 hardware the private RAM should be updated
+; with *FX162,126,x & *FX162,127,x to reflect the amount of on board RAM.
+    JSR testV2hardware
+    BCC noFlagsCopy
+    LDA cpldRAMROMSelectionFlags0_3_V2Status:ORA #&F0:LDX #userRegRamPresenceFlags0_7:JSR WriteUserReg
+    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
+    INX:LDA cpldRAMROMSelectionFlags8_F:JSR WriteUserReg
+; Read default Write Protect flags from CPLD, and save to Private RAM. These will be used during IBOS Reset. 
+    LDA cpldRamWriteProtectFlags0_7
+    LDX #userDefaultRegBankWriteProtectStatus:JSR WriteUserReg
+    LDA cpldRamWriteProtectFlags8_F
+    INX:JSR WriteUserReg
+; Read the Write Protect flags from Battery backed RAM, and write these to the IntegraB board
+    LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
+    STA cpldRamWriteProtectFlags0_7
+    INX:JSR ReadUserReg
+    STA cpldRamWriteProtectFlags8_F
+.noFlagsCopy
+ENDIF
+
     ; SFTODO: What are prv83+[1-7] here? We are setting them to &FF.
     ; SQUASH: I think this code is high enough in the IBOS ROM we don't need to be indirecting
     ; via WritePrivateRam8300X and could just set PRV1 and access directly?
@@ -4581,6 +4729,9 @@ ENDIF
     PLA
     STA ramselCopy
     STA ramsel
+IF IBOS_VERSION > 126
+.^altRTS
+ENDIF
     RTS
 }
 
@@ -4632,9 +4783,14 @@ IF IBOS_VERSION < 127
 RamPresenceFlags = TransientZP
 ENDIF
 
-    ; We just use the default banner if we're in OSMODE 0. SQUASH: CMP #0 is redundant
-    LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X:CMP #0:BEQ Rts
-
+    ; We just use the default banner if we're in OSMODE 0.
+    LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X
+IF IBOS_VERSION < 127    
+    CMP #0 ; redundant
+    BEQ Rts
+ELSE
+    BEQ altRTS ; Rts is too far away.
+ENDIF
     ; If we're in the "ignore OS startup message" state (b7 clear), do nothing. I suspect this
     ; occurs if an earlier ROM has managed to get in before us and probably can't occur in
     ; practice if we're in bank 15.
@@ -4696,16 +4852,39 @@ IF IBOS_VERSION < 127
 ELSE
 ; Count 16K chunks of RAM in kilobytes and print the result.
     LDY #4 ; number of 16K RAM chunks - initial 4 are 32K main RAM, 20K shadow and 12K private
+
+IF IBOS_VERSION >= 127
+; Firstly, test for V2 hardware...
+    JSR testV2hardware
+    BCC endppaddram
+; Check for PALPROM banks, and increment Y by the number of extra banks in use
+    LDX #3
+.palpromaddramloop
+    LDA cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
+    AND palprom_test_table,X:BEQ notpalprom
+    LDA palprom_banks_table,X ; number of extra PALPROM RAM banks
+    JSR sumRAMLoop
+.notpalprom
+    DEX
+    BPL palpromaddramloop
+.endppaddram
+ENDIF    
+
     LDX #userRegRamPresenceFlags0_7:JSR sumRAM
     ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
     INX:JSR sumRAM
     STA transientBin+1 ; we know A is zero after sumRAM
-    ; Y <= 20 here - we started at 4 and can have added a maximum of 16 sideways RAM banks
+    ; IBOS < 127:  Y <= 20 here - we started at 4 and can have added a maximum of 16 sideways RAM banks
+    ; IBOS >= 127: Y <= 32 here - we started at 4 and can have added a maximum of 16 sideways RAM banks and 12 extra PALPROM banks
     TYA
-    ASL A ; result <= 40, no carry
-    ASL A ; result <= 80, no carry
+    ASL A ; result <= 40, no carry for IBOS < 127 (<= 64, no carry for IBOS >=127)
+    ASL A ; result <= 80, no carry for IBOS < 127 (<= 128, no carry for IBOS >=127)
+IF IBOS_VERSION < 127
     ASL A ; result <= 160, no carry
-    ASL A:STA transientBin:ROL transientBin+1 ; result <= 320, so may have carry
+ELSE
+    ASL A:ROL transientBin+1 ; result <= 256, so may have carry
+ENDIF
+    ASL A:STA transientBin:ROL transientBin+1 ; <= 320, so may have carry for IBOS < 127 (<= 512, so may have carry for IBOS >=127)
     SEC
     JSR PrintAbcd16Decimal
     LDA #'K':JSR OSWRCH
@@ -4728,6 +4907,8 @@ ELSE
 .Rts
     RTS
 ENDIF
+
+
 
 .ReverseBanner
     EQUS " B-ARGETNI" ; "INTEGRA-B " reversed
@@ -5234,7 +5415,9 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             STA prvOswordBlockCopy + 6							;low byte of buffer length
             STA prvOswordBlockCopy + 7							;high byte of buffer length
 .L9BF1      JSR FindNextCharAfterSpace							;find next character. offset stored in Y
-            LDA (transientCmdPtr),Y
+IF IBOS_VERSION < 127
+            LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
+ENDIF
             CMP #vduCr
             BEQ rts  								;Yes? Then jump to end
             AND #CapitaliseMask								;Capitalise
@@ -5297,7 +5480,9 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 .^L9C52
     XASSERT_USE_PRV1
       JSR FindNextCharAfterSpace								;find next character. offset stored in Y
+IF IBOS_VERSION < 127
             LDA (transientCmdPtr),Y
+ENDIF
             CMP #'@'
             BNE parseOsword4243BufferAddress
             INY
@@ -5343,7 +5528,9 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 {
     XASSERT_USE_PRV1
             JSR FindNextCharAfterSpace								;find next character. offset stored in Y
-            LDA (transientCmdPtr),Y
+IF IBOS_VERSION < 127
+            LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
+ENDIF
             CMP #'+'
             PHP
             BNE L9CA7
@@ -6472,7 +6659,9 @@ osfileBlock = L02EE
 .WriteUserRegAndCheckNextCharI
     JSR WriteUserReg
     JSR FindNextCharAfterSpace
-    LDA (transientCmdPtr),Y ; SQUASH: redundant?
+IF IBOS_VERSION < 127
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
+ENDIF
     AND #CapitaliseMask
     CMP #'I' ; check for 'I' (Immediate)
     RTS
@@ -6500,6 +6689,7 @@ RamPresenceCopyLow = TransientZP + 0
 RamPresenceCopyHigh = TransientZP + 1
 ENDIF
 
+
 IF IBOS_VERSION < 127
 .LA34A
     ; ENHANCE: We could go and test all the individual banks to see if they're RAM, rather than
@@ -6514,10 +6704,11 @@ IF IBOS_VERSION < 127
     EQUB &80								;Check for RAM at Banks E & F
 ENDIF
 
+
 ;*ROMS Command
+IF IBOS_VERSION < 127
 .^roms
     LDA #maxBank:STA CurrentBank
-IF IBOS_VERSION <127
 .BankLoop
     JSR ShowRom
     DEC CurrentBank:BPL BankLoop
@@ -6534,20 +6725,6 @@ IF IBOS_VERSION <127
     ; doesn't matter here because we mask it off using the table at LA34A.
     LDX #userRegRamPresenceFlags:JSR ReadUserReg
     AND LA34A,Y:BNE IsSidewaysRamBank ; branch if this is a sideways RAM bank
-ELSE
-    LDX #userRegRamPresenceFlags0_7:JSR ReadUserReg:STA RamPresenceCopyLow
-    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
-    INX:JSR ReadUserReg:STA RamPresenceCopyHigh
-.ShowRomLoop
-    JSR ShowRom
-    DEC CurrentBank:BPL ShowRomLoop
-    JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
-.ShowRom
-    LDA CurrentBank:CLC:JSR PrintADecimal ; show bank number right-aligned
-    JSR printSpace
-    LDA #'(':JSR OSWRCH
-    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCS IsSidewaysRamBank
-ENDIF
     LDA #' ':BNE BankTypeCharacterInA ; always branch
 .IsSidewaysRamBank
     LDX CurrentBank:JSR TestRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
@@ -6561,8 +6738,8 @@ ENDIF
     LDY #' ' ; not unplugged
     AND #&FE ; bit 0 of ROM type is undefined, so mask out
     ; SFTODO: If we take this branch, will we ever do PRVDIS?
-    BNE ShowRomHeader
-    ; The RomTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
+   BNE ShowRomHeader
+ ; The RomTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
     ; if our private copy of the ROM type byte is non-0 show those flags.
     LDY #'U' ; Unplugged
     PRVEN ; SFTODO: We already did this, why do we need to do it again?
@@ -6575,20 +6752,81 @@ ENDIF
     JSR printSpace ; ' ' in place of 'L'
     LDA #')':JSR OSWRCH
     JMP OSNEWL
-; Entered with Y=' ' or 'U' and rom type byte in A.
+
+ELSE
+.^roms
+    LDA #maxBank:STA CurrentBank
+
+    LDX #userRegRamPresenceFlags0_7:JSR ReadUserReg:STA RamPresenceCopyLow
+    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
+    INX:JSR ReadUserReg:STA RamPresenceCopyHigh
+
+.ShowRomLoop
+    JSR ShowRom
+    DEC CurrentBank:BPL ShowRomLoop
+    JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
+
+.ShowRom
+    LDA CurrentBank:CLC:JSR PrintADecimal ; show bank number right-aligned
+    JSR printSpace
+    LDA #'(':JSR OSWRCH
+
+.IsSidewaysRamBank
+    LDX CurrentBank:JSR TestRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
+    LDA #'E' ; write-Enabled
+    PLP:BEQ BankTypeCharacterInA
+    LDA #'P' ; Protected
+.BankTypeCharacterInA
+    JSR OSWRCH ; Print the first status character (Protected / write-Enabled)
+    LDY #'R' ; not unplugged
+    LDX CurrentBank:LDA RomTypeTable,X
+ ;   AND #&FE ; bit 0 of ROM type is undefined, so mask out 
+ ; SFTODO: If we take this branch, will we ever do PRVDIS?
+    BNE TestRrpFlagsForNonEmptyBank
+
+ ; The RomTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
+    ; if our private copy of the ROM type byte is non-0 show those flags.
+    LDY #'U' ; Unplugged
+    PRVEN
+    LDA prvRomTypeTableCopy,X
+    PRVDIS
+    BEQ TestRrpFlagsForEmptyBank
+    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh ; Not used here, but need to rotate anyway.
+    JMP ShowRomHeader
+ 
+ .TestRrpFlagsForEmptyBank
+    LDY #'R' ; Physical POM
+    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCC RamRomPalpromFlagCharacterInY
+    JSR TestforPALPROM
+
+.RamRomPalpromFlagCharacterInY
+    TYA:JSR OSWRCH ; Print the second status character ('R','r' or 'p')
+    JSR printSpace ; Print the third status character (' ' in place of 'S')
+    JSR printSpace ; Print the forth status character (' ' in place of 'L')
+    LDA #')':JSR OSWRCH
+    JMP OSNEWL
+
+.TestRrpFlagsForNonEmptyBank
+    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCC ShowRomHeader
+    JSR TestforPALPROM
+    FALLTHROUGH_TO ShowRomHeader
+ENDIF
+
+; Entered with Y=' ' or 'U' and rom type byte in A (IBOS < 127).
+; Entered with Y=' ', 'p', 'r', 'R' or 'U' and rom type byte in A (IBOS >= 127).
 .ShowRomHeader
     PHA
-    TYA:JSR OSWRCH
+    TYA:JSR OSWRCH ; Print the second status character (' ', 'p', 'r', 'R' or 'U')
     LDX #'S' ; Service
     PLA:PHA:ASSERT RomTypeService == 1 << 7:BMI HasServiceEntry
     LDX #' '
 .HasServiceEntry
-    TXA:JSR OSWRCH
+    TXA:JSR OSWRCH ; Print the third status character ('S' or ' ')
     LDX #'L' ; Language
     PLA:AND #RomTypeLanguage:BNE HasLanguageEntry
     LDX #' '
 .HasLanguageEntry
-    TXA:JSR OSWRCH
+    TXA:JSR OSWRCH ; Print the forth status character ('L' or ' ')
     LDA #')':JSR OSWRCH
     JSR printSpace
     ; Print the ROM title and version.
@@ -6612,7 +6850,47 @@ IF IBOS_VERSION >= 126
     LDA #lo(CopyrightOffset):STA osRdRmPtr:LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
     RTS
 ENDIF
-}
+
+IF IBOS_VERSION >= 127
+.TestforPALPROM
+    LDY #'r' ; onboard RAM
+; Firstly, test for V2 hardware...
+    PHA
+    JSR testV2hardware
+    BCC endpptest
+    LDA cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
+; Then test if PALPROM in banks 8..11
+    CPX #8:BCC endpptest
+    CPX #12:BCS endpptest ; 8<=X<12
+    AND palprom_test_table-8,X:BEQ endpptest
+    LDY #'p' ; onboard PALPROM
+.endpptest
+    pla
+    rts
+.^palprom_test_table
+    EQUB &04 ; bank 8 - PALPROM 2a is enabled when cpldPALPROMSelectionFlags0_7 bit 2 is set
+    EQUB &08 ; bank 9 - PALPROM 2b is enabled when cpldPALPROMSelectionFlags0_7 bit 3 is set
+    EQUB &30 ; bank 10 - PALPROM 4a is enabled when cpldPALPROMSelectionFlags0_7 bits 4 & 5 are both set
+    EQUB &40 ; bank 11 - PALPROM 8a is enabled when cpldPALPROMSelectionFlags0_7 bit 6 is set
+.^palprom_banks_table
+    EQUB &01 ; bank 8 - PALPROM 2a has 1 extra bank
+    EQUB &01 ; bank 9 - PALPROM 2b has 1 extra bank
+    EQUB &07 ; bank 10 - PALPROM 4a has 3 extra banks
+    EQUB &7F ; bank 11 - PALPROM 8a has 7 extra banks
+
+; Test for V2 hardware. Carry is set if V2 hardware detected, otherwise carry is cleared.
+.^testV2hardware
+    LDA #0:STA cpldExtendedFunctionFlags
+    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:CMP#&60:BNE endv2test ; On Break, cpldRAMROMSelectionFlags0_3_V2Status[7:5] = 3'b011
+    LDA #3:STA cpldExtendedFunctionFlags
+    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:BNE endv2test
+    SEC
+    RTS
+.endv2test
+    CLC
+    RTS
+ENDIF
+} 
 
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be
 ; used to indicate "everything but the listed banks" SFTODO DEPENDING ON V ON ENTRY?. Return with C set iff at least one bit of
@@ -6681,7 +6959,10 @@ ENDIF
     ; ConvertIntegerDefaultHex? This might only work if we do a "proper" upper case conversion,
     ; not sure.
     JSR FindNextCharAfterSpace:BCS EndOfLine
-    LDA (transientCmdPtr),Y:CMP #',':BNE NotComma
+IF IBOS_VERSION < 127
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
+ENDIF
+    CMP #',':BNE NotComma
     INY
 .NotComma
     JSR ConvertIntegerDefaultDecimal:BCC ParsedDecimalOK
@@ -6777,7 +7058,6 @@ ENDIF
     JMP PrvDis
 }
 
-; SQUASH: These commands may not actually be useful and could potentially be removed.
 {
 ; SFTODO: This little fragment of code is only called once via JMP, can't it just be moved to avoid the JMP (and improve readability)?
 .^LA4FE
@@ -6800,29 +7080,45 @@ ENDIF
     JMP badId
 			
 .LA513
+IF IBOS_VERSION < 127
     LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
+ELSE
+    LDA cpldRamWriteProtectFlags0_7
+ENDIF
     ORA L00AE
     PLP
     PHP
     BCC LA520
     EOR L00AE
 .LA520
+IF IBOS_VERSION < 127
     JSR WriteUserReg
     INX
     JSR ReadUserReg
+ELSE
+    STA cpldRamWriteProtectFlags0_7
+    LDX #userRegBankWriteProtectStatus:JSR WriteUserReg
+    LDA cpldRamWriteProtectFlags8_F
+ENDIF
     ORA L00AF
     PLP
     BCC LA52E
     EOR L00AF
 .LA52E
+IF IBOS_VERSION < 127
     JSR WriteUserReg
     PRVEN
     JSR SFTODOWRITEPROTECTISH
 .^PrvDisExitAndClaimServiceCall2
     PRVDIS
+ELSE
+    STA cpldRamWriteProtectFlags8_F
+    LDX #userRegBankWriteProtectStatus+1:JSR WriteUserReg
+ENDIF
     JMP ExitAndClaimServiceCall
 }
 
+IF IBOS_VERSION < 127
 ; SFTODO: What's going on here? This seems to be writing to RTC register %1xxxxxxx and
 ; %x1xxxxxx, which I'm not even sure exist. The use of userRegBankWriteProtectStatus is
 ; obviously a clue, but the code doesn't seem to be doing anything obviously sensible with
@@ -6846,6 +7142,7 @@ ENDIF
     PLP
     RTS
 }
+ENDIF
 
 ;SPOOL/EXEC file closure warning - Service call 10 SFTODO: I *suspect* we are using this as a "part way through reset" service call rather than for its nominal purpose - have a look at OS 1.2 disassembly and see when this is actually generated. Do filing systems or anything issue it during "normal" operation? (e.g. if you do "*EXEC" with no argument.)
 .service10
@@ -6865,7 +7162,9 @@ ENDIF
 
     PRVEN
 
+IF IBOS_VERSION < 127
     JSR SFTODOWRITEPROTECTISH
+ENDIF
 
     ; Copy the OS ROM type table into private RAM so we know the original contents before we modified it.
     LDX #maxBank
@@ -8515,13 +8814,21 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     DEX:BPL SetOpenLoop
 
     ; If there's nothing on the command line, the date is fully open and we're done parsing.
-    JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:CMP #vduCr:BEQ DateArgumentParsed
+    JSR FindNextCharAfterSpace
+IF IBOS_VERSION < 127
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
+ENDIF
+    CMP #vduCr:BEQ DateArgumentParsed
     ; Otherwise parse the command line and fill in prvDate* accordingly.
     JSR SFTODOProbParsePlusMinusDate:BCS BadDate:STA prvDateDayOfWeek
     CMP #&FF:BEQ DayOfWeekOpen
     ; The user has specified a day of the week; if there's no trailing comma this is the end of
     ; the user-specified partial date.
-    JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:CMP #',':BNE DateArgumentParsed
+    JSR FindNextCharAfterSpace
+IF IBOS_VERSION < 127
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
+ENDIF
+    CMP #',':BNE DateArgumentParsed
     INY ; skip ','
 .DayOfWeekOpen
     JSR ConvertIntegerDefaultDecimal:BCC DayOfMonthInA
@@ -8530,14 +8837,22 @@ DaysBetween1stJan1900And2000 = 36524 ; frink: #2000/01/01#-#1900/01/01# -> days
     STA prvDateDayOfMonth
     ; After the day of the month there may be a '/' followed by month/year components; if
     ; there's no '/' we have finished parsing the user-specified partial date.
-    JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:CMP #'/':BNE DateArgumentParsed
+    JSR FindNextCharAfterSpace
+IF IBOS_VERSION < 127
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
+ENDIF
+    CMP #'/':BNE DateArgumentParsed
     INY ; skip '/'
     JSR ConvertIntegerDefaultDecimal:BCC MonthInA
     LDA #&FF ; month is open
 .MonthInA
     STA prvDateMonth
     ; After the month there may be a '/' followed by a year component; if there's no '/' we have finished parsing the user-specified partial date.
-    JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:CMP #'/':BNE DateArgumentParsed
+    JSR FindNextCharAfterSpace
+IF IBOS_VERSION < 127
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
+ENDIF
+    CMP #'/':BNE DateArgumentParsed
     INY ; skip '/'
     JSR ConvertIntegerDefaultDecimal:BCC ParsedYearOK
     LDA #&FF:STA prvDateYear:STA prvDateCentury ; century/year are open
@@ -8610,7 +8925,10 @@ OriginalY = prvTmp2
     XASSERT_USE_PRV1
     STY OriginalY
     LDA #0:STA SpecificDayOfWeekFlag
-    JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y
+    JSR FindNextCharAfterSpace
+IF IBOS_VERSION < 127
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
+ENDIF
     CMP #'+':BEQ Plus
     CMP #'-':BNE NotPlusOrMinus
     ; SQUASH: Similar chunk of code here and at .plus, could we factor out?
@@ -9051,6 +9369,9 @@ OswordSoundBlockSize = P% - OswordSoundBlock
     JSR InitDateBufferAndEmitTimeAndDate
     JSR PrintDateBuffer
 .PrvDisExitAndClaimServiceCall
+IF IBOS_VERSION >= 127
+.^PrvDisExitAndClaimServiceCall2
+ENDIF
     PRVDIS
     JMP ExitAndClaimServiceCall
 
@@ -9178,7 +9499,11 @@ Column = prvC
 .ParsedTimeOk
     PLP
     JSR CopyPrvAlarmToRtc
-    JSR FindNextCharAfterSpace:LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'R'
+    JSR FindNextCharAfterSpace
+IF IBOS_VERSION < 127
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
+ENDIF
+    AND #CapitaliseMask:CMP #'R'
     PHP:PLA:LSR A:LSR A:PHP:ASSERT flagZ = 1 << 1 ; get Z flag into C and save
     LDX #userRegAlarm:JSR ReadUserReg
     ; Set b7 (userRegAlarmRepeatBit) of userRegAlarm value to saved Z flag, i.e. 1 iff 'R' seen.
