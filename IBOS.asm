@@ -6885,13 +6885,11 @@ IF IBOS_VERSION >= 127
 .testV2hardware
 {
     LDA #0:STA cpldExtendedFunctionFlags
-    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:CMP #&60:BNE endv2test ; On Break, cpldRAMROMSelectionFlags0_3_V2Status[7:5] = 3'b011
+    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:CMP #&60:BNE ClcRts ; On Break, cpldRAMROMSelectionFlags0_3_V2Status[7:5] = 3'b011
+    ; We didn't BNE, so we know A is &60, and since &60>=&60 we know the CMP set carry.
     LDA #3:STA cpldExtendedFunctionFlags
-    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:BNE endv2test
-    SEC
-    RTS
-.endv2test
-    CLC
+    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:BNE ClcRts
+    ; Carry still set from CMP above.
     RTS
 }
 ENDIF
@@ -6914,6 +6912,7 @@ ENDIF
     JSR InvertTransientRomBankMask
 .NotStar
     LDA transientRomBankMask:ORA transientRomBankMask + 1:BEQ SecRts
+.^ClcRts
     CLC
     RTS
 
