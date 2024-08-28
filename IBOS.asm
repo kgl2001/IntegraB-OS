@@ -2120,7 +2120,7 @@ IF IBOS_VERSION < 127
     JMP ConvertIntegerDefaultBaseA
 ELSE
     ; Jump to ConvertIntegerDefaultBaseA using BIT absolute to skip the next two bytes. This
-    ; won't access I/O addresses as its operand high byte is &60.
+    ; won't access I/O addresses as its operand high byte is 10.
     EQUB opcodeBitAbsolute
     ASSERT ConvertIntegerDefaultBaseA = P% + 2
 ENDIF
