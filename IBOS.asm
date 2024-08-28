@@ -6884,12 +6884,16 @@ IF IBOS_VERSION >= 127
 ; Test for V2 hardware. Carry is set if V2 hardware detected, otherwise carry is cleared.
 .testV2hardware
 {
-    LDA #0:STA cpldExtendedFunctionFlags
-    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:CMP #&60:BNE ClcRts ; On Break, cpldRAMROMSelectionFlags0_3_V2Status[7:5] = 3'b011
+    LDA #0:JSR Common:CMP #&60:BNE ClcRts ; On Break, cpldRAMROMSelectionFlags0_3_V2Status[7:5] = 3'b011
     ; We didn't BNE, so we know A is &60, and since &60>=&60 we know the CMP set carry.
-    LDA #3:STA cpldExtendedFunctionFlags
-    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:BNE ClcRts
+    LDA #3:JSR Common:BNE ClcRts
     ; Carry still set from CMP above.
+    RTS
+
+.Common
+    STA cpldExtendedFunctionFlags
+    LDA cpldRAMROMSelectionFlags0_3_V2Status
+    AND #&E0
     RTS
 }
 ENDIF
