@@ -2285,6 +2285,8 @@ ENDIF
 
 ; Page in private RAM temporarily and do STA prv83,X. A, X and Y are preserved, flags reflect A
 ; on exit.
+; SQUASH: As we don't currently fall through into this, we could move the most common LDA/LDX
+; instruction immediately before it and then share that instruction.
 .^WritePrivateRam8300X
     PHP:SEI
     JSR SwitchInPrivateRAM
