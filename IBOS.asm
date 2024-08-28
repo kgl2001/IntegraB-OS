@@ -2149,12 +2149,22 @@ ENDIF
     LDA #&FF:STA NegateFlag ; SQUASH: "ROR NegateFlag"? C is set after CMP and BNE not taken
     ; '-' implies decimal.
 .Decimal
-    LDA #10:JMP BaseInA ; SQUASH: "BNE ; always branch"
+    LDA #10
+IF IBOS_VERSION < 127
+    JMP BaseInA
+ELSE
+    BNE BaseInA ; always branch
+ENDIF
 .NotNegative
     ; Check for prefixes which indicate a particular base, overriding the default.
     CMP #'+':BEQ Decimal
     CMP #'&':BNE NotHex
-    LDA #16:JMP BaseInA ; SQUASH: "BNE ; always branch"
+    LDA #16
+IF IBOS_VERSION < 127
+    JMP BaseInA
+ELSE
+    BNE BaseInA ; always branch
+ENDIF
 .NotHex
     CMP #'%':BNE ParseDigit
     LDA #2
