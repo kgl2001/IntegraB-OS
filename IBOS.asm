@@ -10906,7 +10906,7 @@ IF IBOS_VERSION < 127
 
 .IsPrinterBuffer
 ELSE
-    LDY #ibosCNPVIndex:JSR BufferVHandlerCommon ; SFTODO: ADD CNPV TO NAME
+    LDY #ibosCNPVIndex:JSR BufferVHandlerCommon
 ENDIF
     LDA ramselCopy:PHA
     PRVEN
