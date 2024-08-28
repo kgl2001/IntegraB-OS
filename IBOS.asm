@@ -4855,8 +4855,6 @@ IF IBOS_VERSION < 127
 ELSE
 ; Count 16K chunks of RAM in kilobytes and print the result.
     LDY #4 ; number of 16K RAM chunks - initial 4 are 32K main RAM, 20K shadow and 12K private
-
-IF IBOS_VERSION >= 127
 ; Firstly, test for V2 hardware...
     JSR testV2hardware
     BCC endppaddram
@@ -4871,23 +4869,16 @@ IF IBOS_VERSION >= 127
     DEX
     BPL palpromaddramloop
 .endppaddram
-ENDIF    
-
     LDX #userRegRamPresenceFlags0_7:JSR sumRAM
     ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
     INX:JSR sumRAM
     STA transientBin+1 ; we know A is zero after sumRAM
-    ; IBOS < 127:  Y <= 20 here - we started at 4 and can have added a maximum of 16 sideways RAM banks
-    ; IBOS >= 127: Y <= 32 here - we started at 4 and can have added a maximum of 16 sideways RAM banks and 12 extra PALPROM banks
+    ; Y <= 32 here - we started at 4 and can have added a maximum of 16 sideways RAM banks and 12 extra PALPROM banks
     TYA
-    ASL A ; result <= 40, no carry for IBOS < 127 (<= 64, no carry for IBOS >=127)
-    ASL A ; result <= 80, no carry for IBOS < 127 (<= 128, no carry for IBOS >=127)
-IF IBOS_VERSION < 127
-    ASL A ; result <= 160, no carry
-ELSE
+    ASL A ; result <= 64, no carry
+    ASL A ; result <= 128, no carry
     ASL A:ROL transientBin+1 ; result <= 256, so may have carry
-ENDIF
-    ASL A:STA transientBin:ROL transientBin+1 ; <= 320, so may have carry for IBOS < 127 (<= 512, so may have carry for IBOS >=127)
+    ASL A:STA transientBin:ROL transientBin+1 ; <= 512, so may have carry
     SEC
     JSR PrintAbcd16Decimal
     LDA #'K':JSR OSWRCH
