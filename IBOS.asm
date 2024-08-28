@@ -4515,12 +4515,9 @@ IF IBOS_VERSION >= 127
 ; RAM / ROM flags from CPLD, and store in private RAM.
 ; Otherwise, if using V1 hardware the private RAM should be updated
 ; with *FX162,126,x & *FX162,127,x to reflect the amount of on board RAM.
-    LDY #0:STY cpldExtendedFunctionFlags
-    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:CMP#&60:BNE noFlagsCopy ; On Break, cpldRAMROMSelectionFlags0_3_V2Status[7:5] = 3'b011
-    LDY #3:STY cpldExtendedFunctionFlags
-    LDA cpldRAMROMSelectionFlags0_3_V2Status:TAX:AND #&E0:BNE noFlagsCopy
-    TXA:ORA #&F0:LDX #userRegRamPresenceFlags0_7:JSR WriteUserReg
-;    LDX #userRegRamPresenceFlags0_7:LDA cpldRAMROMSelectionFlags0_3_V2Status:ORA #&F0:JSR WriteUserReg
+    JSR testV2hardware
+    BCC noFlagsCopy
+    LDA cpldRAMROMSelectionFlags0_3_V2Status:ORA #&F0:LDX #userRegRamPresenceFlags0_7:JSR WriteUserReg
     ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
     INX:LDA cpldRAMROMSelectionFlags8_F:JSR WriteUserReg
 ; Read default Write Protect flags from CPLD, and save to Private RAM. These will be used during IBOS Reset. 
@@ -6749,72 +6746,62 @@ ELSE
     JSR printSpace
     LDA #'(':JSR OSWRCH
 
-; KL 27/08/24: The following 2 lines test for ROM/RAM presence, and use this as a mask for 'E' or 'P'.
-;              Mask temporarily removed, and will now always print 'E' or 'P' based on response from
-;              TestRamUsingVariableMainRamSubroutine
-;    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCS IsSidewaysRamBank
-;    LDA #' ':BNE BankTypeCharacterInA ; always branch
-
 .IsSidewaysRamBank
     LDX CurrentBank:JSR TestRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
     LDA #'E' ; write-Enabled
     PLP:BEQ BankTypeCharacterInA
     LDA #'P' ; Protected
 .BankTypeCharacterInA
-    JSR OSWRCH
-    PRVEN
-    LDX CurrentBank:LDA RomTypeTable,X
+    JSR OSWRCH ; Print the first status character (Protected / write-Enabled)
     LDY #'R' ; not unplugged
-    AND #&FE ; bit 0 of ROM type is undefined, so mask out
-    ; SFTODO: If we take this branch, will we ever do PRVDIS?
-    BNE TestRrpFlags
+    LDX CurrentBank:LDA RomTypeTable,X
+ ;   AND #&FE ; bit 0 of ROM type is undefined, so mask out 
+ ; SFTODO: If we take this branch, will we ever do PRVDIS?
+    BNE TestRrpFlagsForNonEmptyBank
 
  ; The RomTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
     ; if our private copy of the ROM type byte is non-0 show those flags.
     LDY #'U' ; Unplugged
-    PRVEN ; SFTODO: We already did this, why do we need to do it again?
+    PRVEN
     LDA prvRomTypeTableCopy,X
-    ; SFTODO: We don't AND #&FE here, is that wrong/inconsistent?
     PRVDIS
-    BEQ TestRrpFlags2
+    BEQ TestRrpFlagsForEmptyBank
     ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh ; Not used here, but need to rotate anyway.
     JMP ShowRomHeader
  
- .TestRrpFlags2
-    LDY #'R'
-    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCC printR
-    LDY #'r'
+ .TestRrpFlagsForEmptyBank
+    LDY #'R' ; Physical POM
+    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCC RamRomPalpromFlagCharacterInY
     JSR TestforPALPROM
 
-.printR
-    TYA:JSR OSWRCH
-    JSR printSpace ; ' ' in place of 'S'
-    JSR printSpace ; ' ' in place of 'L'
+.RamRomPalpromFlagCharacterInY
+    TYA:JSR OSWRCH ; Print the second status character ('R','r' or 'p')
+    JSR printSpace ; Print the third status character (' ' in place of 'S')
+    JSR printSpace ; Print the forth status character (' ' in place of 'L')
     LDA #')':JSR OSWRCH
     JMP OSNEWL
 
-.TestRrpFlags
+.TestRrpFlagsForNonEmptyBank
     ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCC ShowRomHeader
-    LDY #'r'
     JSR TestforPALPROM
-
+    FALLTHROUGH_TO ShowRomHeader
 ENDIF
 
 ; Entered with Y=' ' or 'U' and rom type byte in A (IBOS < 127).
 ; Entered with Y=' ', 'p', 'r', 'R' or 'U' and rom type byte in A (IBOS >= 127).
 .ShowRomHeader
     PHA
-    TYA:JSR OSWRCH
+    TYA:JSR OSWRCH ; Print the second status character (' ', 'p', 'r', 'R' or 'U')
     LDX #'S' ; Service
     PLA:PHA:ASSERT RomTypeService == 1 << 7:BMI HasServiceEntry
     LDX #' '
 .HasServiceEntry
-    TXA:JSR OSWRCH
+    TXA:JSR OSWRCH ; Print the third status character ('S' or ' ')
     LDX #'L' ; Language
     PLA:AND #RomTypeLanguage:BNE HasLanguageEntry
     LDX #' '
 .HasLanguageEntry
-    TXA:JSR OSWRCH
+    TXA:JSR OSWRCH ; Print the forth status character ('L' or ' ')
     LDA #')':JSR OSWRCH
     JSR printSpace
     ; Print the ROM title and version.
@@ -6841,39 +6828,39 @@ ENDIF
 
 IF IBOS_VERSION >= 127
 .TestforPALPROM
+    LDY #'r' ; onboard RAM
 ; Firstly, test for V2 hardware...
     PHA
-    LDA #0:STA cpldExtendedFunctionFlags
-    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:CMP#&60:BNE endpptest ; On Break, cpldRAMROMSelectionFlags0_3_V2Status[7:5] = 3'b011
-    LDA #3:STA cpldExtendedFunctionFlags
-    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:BNE endpptest
-
+    JSR testV2hardware
+    BCC endpptest
     LDA cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
-    
-; PALPROM 2a (bank 8) is enabled when cpldPALPROMSelectionFlags0_7 bit 2 is set
-; PALPROM 2b (bank 9) is enabled when cpldPALPROMSelectionFlags0_7 bit 3 is set
-; PALPROM 4a (bank 10) is enabled when cpldPALPROMSelectionFlags0_7 bits 4 & 5 are both set
-; PALPROM 8a (bank 11) is enabled when cpldPALPROMSelectionFlags0_7 bit 6 is set
-
 ; Then test if PALPROM in banks 8..11
-    CPX #11:BNE testpp4a
-    AND #&40:BNE loadywithp
-.testpp4a    
-    CPX #10:BNE testpp2b
-    AND #&30:BNE loadywithp
-.testpp2b    
-    CPX #9:BNE testpp2a
-    AND #&08:BNE loadywithp
-.testpp2a    
-    CPX #8:BNE endpptest
-    AND #&04:BEQ endpptest
-.loadywithp
-    LDY #'p'
+    CPX #8:BCC endpptest
+    CPX #12:BCS endpptest ; 8<=X<12
+    AND palprom_test_table-8,X:BEQ endpptest
+    LDY #'p' ; onboard PALPROM
 .endpptest
-    PLA
-    RTS
+    pla
+    rts
+.palprom_test_table
+    EQUB &04 ; bank 8 - PALPROM 2a is enabled when cpldPALPROMSelectionFlags0_7 bit 2 is set
+    EQUB &08 ; bank 9 - PALPROM 2b is enabled when cpldPALPROMSelectionFlags0_7 bit 3 is set
+    EQUB &30 ; bank 10 - PALPROM 4a is enabled when cpldPALPROMSelectionFlags0_7 bits 4 & 5 are both set
+    EQUB &40 ; bank 11 - PALPROM 8a is enabled when cpldPALPROMSelectionFlags0_7 bit 6 is set
 ENDIF
 }
+
+; Test for V2 hardware. Carry is set if V2 hardware detected, otherwise carry is cleared.
+.testV2hardware
+    LDA #0:STA cpldExtendedFunctionFlags
+    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:CMP#&60:BNE endv2test ; On Break, cpldRAMROMSelectionFlags0_3_V2Status[7:5] = 3'b011
+    LDA #3:STA cpldExtendedFunctionFlags
+    LDA cpldRAMROMSelectionFlags0_3_V2Status:AND #&E0:BNE endv2test
+    SEC
+    RTS
+.endv2test
+    CLC
+    RTS
 
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be
 ; used to indicate "everything but the listed banks" SFTODO DEPENDING ON V ON ENTRY?. Return with C set iff at least one bit of
