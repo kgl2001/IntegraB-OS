@@ -2062,21 +2062,21 @@ PadFlag = &B1	;b7 clear iff "0" should be converted into "Pad"
     BNE cnvbit
     CLD			;Back to binary
 
-    JSR PrintDigit		;Print 100s
+    JSR PrintDigitInA		;Print 100s
     LDA transientBCD
     LSR A
     LSR A
     LSR A
     LSR A
-    JSR PrintDigit		;Print 10s
+    JSR PrintDigitInA		;Print 10s
     DEC PadFlag		;Do not pad units if value is 0
     LDA transientBCD
     AND #&0F
-    JSR PrintDigit		;Print 1s
+    JSR PrintDigitInA		;Print 1s
     PLA
     RTS
 
-.PrintDigit
+.PrintDigitInA
     TAX ; SQUASH: optimisable?
     LDA Pad
     CPX #0 ; SQUASH: Could get rid of this if LDA moved before DEX
@@ -3250,7 +3250,11 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDY #0
 .ShowBankLoop
     LDA prvPrintBufferBankList,Y:BMI AllBanksShown
-    SEC:JSR PrintADecimal ; SQUASH: PrintADecimalNoPad?
+IF IBOS_VERSION < 127
+    SEC:JSR PrintADecimal
+ELSE
+    JSR PrintADecimalNoPad
+ENDIF
 IF IBOS_VERSION < 126
     LDA #',':JSR OSWRCH
 ELSE
