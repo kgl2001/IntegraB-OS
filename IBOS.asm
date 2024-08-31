@@ -177,6 +177,9 @@ userRegKeyboardRepeat = &0D ; 0-7: Keyboard repeat
 userRegPrinterIgnore = &0E ; 0-7: Printer ignore
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7: Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
+IF IBOS_VERSION >= 127
+userDefaultRegBankWriteProtectStatus = &30 ; 2 bytes
+ENDIF
 userRegOsModeShx = &32 ; 0-2: OSMODE / 3: SHX / 4: automatic daylight saving time adjust SFTODO: Should rename this now we've discovered b4
 ; SFTODO: b4 of userRegOsModeShx doesn't seem to be exposed via *CONFIGURE/*STATUS - should it be? Might be interesting to try setting this bit manually and seeing if it works. If it's not going to be exposed we could save some code by deleting the support for it.
 userRegAlarm = &33 ; SFTODO? bits 0-5?? SFTODO: bit 7 seems to be the "R" flag from *ALARM command ("repeat"???)
@@ -190,6 +193,13 @@ userRegAlarm = &33 ; SFTODO? bits 0-5?? SFTODO: bit 7 seems to be the "R" flag f
     ;     0: alarm overall duration (index into AlarmOverallDurationLookup)
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
+IF IBOS_VERSION >= 127
+userRegPALPROMConfig = &37 ; 0-1: Unused
+		       ;   2: Bank  8 Enable / Disable
+		       ;   3: Bank  9 Enable / Disable
+		       ; 4-5: Bank 10 Enable / Disable / Switching zone select
+		       ; 6-7: Bank 11 Enable / Disable / Switching zone select
+ENDIF
 userRegBankWriteProtectStatus = &38 ; 2 bytes, 1 bit per bank
 userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
 ; userRegRamPresenceFlags has a bit set for every 32K of RAM. Bit n represents sideways ROM
@@ -206,7 +216,6 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 IF IBOS_VERSION < 127
 userRegRamPresenceFlags = &7F
 ELSE
-userDefaultRegBankWriteProtectStatus = &30 ; 2 bytes
 userRegRamPresenceFlags0_7 = &7E
 userRegRamPresenceFlags8_F = &7F
 ENDIF
@@ -4514,26 +4523,35 @@ IF IBOS_VERSION >= 122
 ENDIF
 
 IF IBOS_VERSION >= 127
-; Check if IBOS is running on V2 hardware, and if it is then read
-; RAM / ROM flags from CPLD, and store in private RAM.
+; Check if IBOS is running on V2 hardware, and if it is then:
+;  - read RAM / ROM flags from CPLD, and save to private RAM.
+;  - read 'default' Write Protect flags from CPLD, and save to RTC CMOS. These will be used during IBOS Reset
+;  - read the PALPROM config flags from RTC CMOS, and write these to the CPLD
+;  - read the 'in-use' Write Protect flags from RTC CMOS, and write these to the CPLD
+; Note that the RTC CMOS register for the PALPROM config flags must be updated with *FX162,55,x 
+;
 ; Otherwise, if using V1 hardware the private RAM should be updated
 ; with *FX162,126,x & *FX162,127,x to reflect the amount of on board RAM.
     JSR testV2hardware
-    BCC noFlagsCopy
+    BCC notV2hardware
     LDA cpldRAMROMSelectionFlags0_3_V2Status:ORA #&F0:LDX #userRegRamPresenceFlags0_7:JSR WriteUserReg
     ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
     INX:LDA cpldRAMROMSelectionFlags8_F:JSR WriteUserReg
-; Read default Write Protect flags from CPLD, and save to Private RAM. These will be used during IBOS Reset. 
+; Read 'default' Write Protect flags from CPLD, and save to RTC CMOS. These will be used during IBOS Reset. 
     LDA cpldRamWriteProtectFlags0_7
     LDX #userDefaultRegBankWriteProtectStatus:JSR WriteUserReg
     LDA cpldRamWriteProtectFlags8_F
     INX:JSR WriteUserReg
-; Read the Write Protect flags from Battery backed RAM, and write these to the IntegraB board
-    LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
+; Read the PALPROM config flags from RTC CMOS, and write these to the CPLD
+    LDX #userRegPALPROMConfig:JSR ReadUserReg
+    EOR #&FF:STA cpldPALPROMSelectionFlags0_7
+; Read the 'in use' Write Protect flags from RTC CMOS, and write these to the CPLD
+    ASSERT userRegPALPROMConfig + 1 = userRegBankWriteProtectStatus
+    INX:JSR ReadUserReg
     STA cpldRamWriteProtectFlags0_7
     INX:JSR ReadUserReg
     STA cpldRamWriteProtectFlags8_F
-.noFlagsCopy
+.notV2hardware
 ENDIF
 
     ; SFTODO: What are prv83+[1-7] here? We are setting them to &FF.
@@ -11102,6 +11120,7 @@ ELIF IBOS_VERSION == 126
     SAVE "IBOS-126.rom", start, end
 ELIF IBOS_VERSION == 127
     SAVE "IBOS-127.rom", start, end
+    SAVE "IBOS127C3", start, end ; KL 27/08/24: Temporary copy for testing
 ELSE
     ERROR "Unknown IBOS_VERSION"
 ENDIF
