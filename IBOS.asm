@@ -2417,7 +2417,7 @@ ENDIF
 IF IBOS_VERSION < 127
 .^language
     ; Check this is normal language start up, not (e.g.) Electron soft key expansion.
-    CMP #1:BEQ NormalLanguageStartUp ; SQUASH: Move this so we can fall through and BNE to another RTS
+    CMP #1:BEQ NormalLanguageStartUp
     RTS
 ENDIF
 
