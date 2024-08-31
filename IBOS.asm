@@ -3558,12 +3558,21 @@ ENDIF
 .TurnTubeOnOrOff
     BNE TurnTubeOn
     BIT tubePresenceFlag:BPL ExitAndClaimServiceCallIndirect ; nothing to do if already off
+IF IBOS_VERSION < 127
     ; SFTODO: We seem to be using currentLanguageRom if b7 clear, otherwise we take the bank number from romsel (which will be our bank, won't it) - not sure what's going on exactly
     LDA currentLanguageRom:BPL L8FBF
     LDA romselCopy:AND #maxBank
 .L8FBF
     PHA:JSR DisableTube:PLA
     TAX:JMP DoOsbyteEnterLanguage
+ELSE
+    JSR DisableTube
+    ; We would like to re-enter the current language to make things as transparent as possible,
+	; but that will fail if the current language is a HI language. If that's the case, we enter
+	; the *CONFIGUREd language instead, which may in turn decide to fall back to the IBOS NLE.
+    LDX currentLanguageRom:JSR EnterLangXIfNonHi
+    JMP EnterConfiguredLanguage
+ENDIF
 
 .^DisableTube
     LDA #0:LDX #prvDesiredTubeState - prv83:JSR WritePrivateRam8300X
@@ -4566,13 +4575,13 @@ ENDIF
     DEX
 .^SelectFirstFilingSystemROMLessEqualXAndLanguage
     JSR PassServiceCallToROMsLessEqualX
-    LDA lastBreakType:BNE NotSoftReset2
+    LDA lastBreakType:BNE EnterConfiguredLanguage
 IF IBOS_VERSION < 126
     LDA currentLanguageRom:BPL EnterLangA ; SFTODO: Do we expect this to always branch? Not at all sure.
 ELSE
     LDX currentLanguageRom:BPL EnterLangX ; SFTODO: Do we expect this to always branch? Not at all sure.
 ENDIF
-.NotSoftReset2
+.*EnterConfiguredLanguage
 IF IBOS_VERSION < 126
     LDX #userRegLangFile:JSR ReadUserReg:JSR LsrA4 ; get *CONFIGURE LANG value
     JMP EnterLangA
@@ -4623,7 +4632,7 @@ IF IBOS_VERSION < 127
     BNE NoLanguageEntry ; always branch
 ELSE
     JSR EnterLangXIfNonHi
-    JMP NoLanguageEntry ; SQUASH: rearrange and fall through?
+    JMP NoLanguageEntry
 ENDIF
 .EnterLangALsr4
     JSR LsrA4
@@ -4646,7 +4655,7 @@ ENDIF
 IF IBOS_VERSION >= 127
 ; Enters the language in bank X if it's not a HI language, otherwise returns with X preserved.
 ; If X is not a language at all, this will enter the IBOS NLE.
-.EnterLangXIfNonHi
+.*EnterLangXIfNonHi
     LDA RomTypeTable,X:AND #%00100000:BEQ EnterLangX ; branch if relocation bit not set
     JSR SetOsRdRmPtrToCopyrightOffset
     STX configuredLangTmp
