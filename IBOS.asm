@@ -2359,10 +2359,10 @@ ENDIF
 
 ; This is *not* a subroutine; it expects to PLA:PLP values stacked by the caller.
 .SwitchOutPrivateRAM
-    ; SFTODO: See SwitchInPrivateRAM; are we taking a chance here with NMIs?
 IF IBOS_VERSION >= 127
     PHA
 ENDIF
+    ; SFTODO: See SwitchInPrivateRAM; are we taking a chance here with NMIs?
     LDA romselCopy:STA romsel
     LDA ramselCopy:STA ramsel
     PLA
