@@ -2526,7 +2526,11 @@ InputBufSize = 256
 .ErrorShown
     JSR OSNEWL
 .CmdLoop
+IF IBOS_VERSION < 127
     JSR PrintStar
+ELSE
+    LDA #'*':JMP OSWRCH
+ENDIF
     JSR ReadLine
     LDX #lo(InputBuf):LDY #hi(InputBuf):JSR OSCLI
     JMP CmdLoop
@@ -2539,9 +2543,10 @@ InputBufSize = 256
     EQUB '~' ; maximum acceptable ASCII value
 .OswordInputLineBlockEnd
 
-; SQUASH: This only has one caller
+IF IBOS_VERSION < 127
 .PrintStar
     LDA #'*':JMP OSWRCH
+ENDIF
 
 .ReadLine
     ; SQUASH: I don't believe this is necessary, we can just use OswordInputLineBlock directly.
