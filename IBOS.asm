@@ -2083,7 +2083,7 @@ PadFlag = &B1	;b7 clear iff "0" should be converted into "Pad"
 .PrintDigitInA
     TAX ; SQUASH: optimisable?
     LDA Pad
-    CPX #0 ; SQUASH: Could get rid of this if LDA moved before DEX
+    CPX #0
     BNE NotZero
     BIT PadFlag:BPL PrintPad
 .NotZero
