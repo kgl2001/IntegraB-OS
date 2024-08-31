@@ -2549,12 +2549,15 @@ IF IBOS_VERSION < 127
 ENDIF
 
 .ReadLine
-    ; SQUASH: I don't believe this is necessary, we can just use OswordInputLineBlock directly.
+IF IBOS_VERSION < 127
     LDY #(OswordInputLineBlockEnd - OswordInputLineBlock) - 1
 .CopyLoop
     LDA OswordInputLineBlock,Y:STA L0100,Y
     DEY:BPL CopyLoop
     LDA #oswordInputLine:LDX #lo(L0100):LDY #hi(L0100):JSR OSWORD
+ELSE
+    LDA #oswordInputLine:LDX #lo(OswordInputLineBlock):LDY #hi(OswordInputLineBlock):JSR OSWORD
+ENDIF
     ; SQUASH: could we BCC a nearby RTS and just fall through to acknowledge...?
     BCS AcknowledgeEscapeAndGenerateErrorIndirect
     RTS
