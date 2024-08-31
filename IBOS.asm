@@ -4602,7 +4602,9 @@ ELSE
     ; address other than &8000, we can't enter it without hanging, so we check that first. If
     ; we can't enter it safely, we'll fall back to the IBOS NLE.
     AND #maxBank
-    TAX:LDA RomTypeTable,X:AND #%00100000:BEQ EnterLangX ; branch if relocation bit not set
+    TAX
+IF IBOS_VERSION < 127
+    LDA RomTypeTable,X:AND #%00100000:BEQ EnterLangX ; branch if relocation bit not set
     JSR SetOsRdRmPtrToCopyrightOffset
     STX configuredLangTmp
     JSR OsRdRmFromConfiguredLangTmp:STA osRdRmPtr ; set osRdRmPtr to copyright string
@@ -4619,6 +4621,10 @@ ELSE
     LDX configuredLangTmp
     CMP #&80:BEQ EnterLangX ; branch if this language has a relocation address &80xx
     BNE NoLanguageEntry ; always branch
+ELSE
+    JSR EnterLangXIfNonHi
+    JMP NoLanguageEntry ; SQUASH: rearrange and fall through?
+ENDIF
 .EnterLangALsr4
     JSR LsrA4
     TAX
@@ -4635,6 +4641,29 @@ ELSE
     INC osRdRmPtr ; assume we never wrap past the first page of the ROM
 .OsRdRmFromConfiguredLangTmp
     LDY configuredLangTmp:JMP OSRDRM
+ENDIF
+
+IF IBOS_VERSION >= 127
+; Enters the language in bank X if it's not a HI language, otherwise returns with X preserved.
+; If X is not a language at all, this will enter the IBOS NLE.
+.EnterLangXIfNonHi
+    LDA RomTypeTable,X:AND #%00100000:BEQ EnterLangX ; branch if relocation bit not set
+    JSR SetOsRdRmPtrToCopyrightOffset
+    STX configuredLangTmp
+    JSR OsRdRmFromConfiguredLangTmp:STA osRdRmPtr ; set osRdRmPtr to copyright string
+.FindRelocationAddressLoop
+    JSR OsRdRmFromConfiguredLangTmpWithPreInc
+    ; On OS 1.20 we know the flags after calling OSRDRM reflect the value in A.
+    BNE FindRelocationAddressLoop
+    ; osRdRmPtr now points to the NUL at the end of the copyright string. Advance it by two so
+    ; we can check the high byte of the relocation address. Ideally we'd check the low byte of
+    ; the relocation address is 0, but I don't think it's critical and it saves code to just
+    ; check the high byte.
+    INC osRdRmPtr ; assume we never wrap past the first page of the ROM
+    JSR OsRdRmFromConfiguredLangTmpWithPreInc
+    LDX configuredLangTmp
+    CMP #&80:BEQ EnterLangX ; branch if this language has a relocation address &80xx
+    RTS
 ENDIF
 }
 
