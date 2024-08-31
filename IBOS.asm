@@ -2330,7 +2330,9 @@ ENDIF
     PHP:SEI
     JSR SwitchInPrivateRAM
     STA prv83,X
-    PHA ; SQUASH: move this into SwitchOutPrivateRAM
+IF IBOS_VERSION < 127
+    PHA
+ENDIF
     JMP SwitchOutPrivateRAM
 
 ; Page in private RAM temporarily and do LDA prv83,X. X and Y are preserved, flags reflect A
@@ -2339,7 +2341,9 @@ ENDIF
     PHP:SEI
     JSR SwitchInPrivateRAM
     LDA prv83,X
-    PHA ; SQUASH: move this into SwitchOutPrivateRAM
+IF IBOS_VERSION < 127
+    PHA
+ENDIF
     ; SQUASH: We could move SwitchOutPrivateRAM just after this code and fall through to it.
     JMP SwitchOutPrivateRAM
 
@@ -2355,7 +2359,9 @@ ENDIF
 
 ; This is *not* a subroutine; it expects to PLA:PLP values stacked by the caller.
 .SwitchOutPrivateRAM
-    ; SFTODO: See SwitchInPrivateRAM; are we taking a chance here with NMIs?
+IF IBOS_VERSION >= 127
+    PHA
+ENDIF
     LDA romselCopy:STA romsel
     LDA ramselCopy:STA ramsel
     PLA
