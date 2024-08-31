@@ -2778,13 +2778,25 @@ IgnoredBits = %00111110
 
     PHP:SEI
     PRVEN
-    ; SQUASH: Just do STX in next line and avoid this? *Or* maybe rely on the fact we have this
-    ; value in X to avoid needing to load this later
+IF IBOS_VERSION < 127
     TXA:STA WorkingX
+ELSE
+    STX WorkingX
+ENDIF
     LDA ramselCopy:ROL A:PHP ; stack flags with C=ramselShen
-    LDA WorkingX:AND #StackBit OR ReadBit:CMP #StackBit:BNE NotStackWrite
+IF IBOS_VERSION < 127
+    LDA WorkingX
+ELSE
+    TXA
+ENDIF
+    AND #StackBit OR ReadBit:CMP #StackBit:BNE NotStackWrite
     PLP:PHP:ROR prvOsbyte6FStack ; push ramselShen onto the stack
-    LDA WorkingX:AND_NOT StackBit OR IgnoredBits:STA WorkingX ; clear StackBit
+IF IBOS_VERSION < 127
+    LDA WorkingX
+ELSE
+    TXA
+ENDIF
+    AND_NOT StackBit OR IgnoredBits:STA WorkingX ; clear StackBit
 .NotStackWrite
     ; Set ReturnedX (the value returned in X) to have ramselShen in its low bit and be all 0s
     ; otherwise. SFTODO: BeebWiki seems to imply the return value should have all the other
@@ -2802,7 +2814,11 @@ IgnoredBits = %00111110
     ; Set ramselShen to be a copy of ProgramRamBit from WorkingX.
     LDA ramselCopy:ROL A:ROR WorkingX:ROR A:STA ramselCopy:STA ramsel
 .NonStackRead
-    LDA ReturnedX:TAX ; SQUASH: Just use LDX? Or take more advantage of X being mostly untouched.
+IF IBOS_VERSION < 127
+    LDA ReturnedX:TAX
+ELSE
+    LDX ReturnedX
+ENDIF
     PRVDIS
     PLP
     RTS
