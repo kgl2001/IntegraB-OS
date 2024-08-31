@@ -4595,7 +4595,6 @@ IF IBOS_VERSION < 126
     ; Inform tube no language was found at break.
     LDA #0:CLC:JMP L0400
 ELSE
-    ; SFTODO: VERY EXPERIMENTAL - MAY WANT TO MAKE THIS 1.27 NOT 1.26?
     LDX #userRegLang:JSR ReadUserReg
     ; A is now &tn where t is the language bank if tube is present, n if tube is not present.
     BIT tubePresenceFlag:BMI EnterLangALsr4 ; branch if tube is present to enter bank &t
