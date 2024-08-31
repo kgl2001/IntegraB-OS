@@ -2664,9 +2664,6 @@ FullResetPrv = &2800
     LDA UserRegDefaultTable + 1,Y
     JSR WriteUserReg
     DEY:DEY:BPL SetDefaultLoop
-    ; SQUASH: We could just do LDA #&7F:STA systemViaBase + viaRegisterInterruptEnable - we
-    ; know we're running on the host...
-    ; Simulate a power-on reset.
 
 IF IBOS_VERSION >= 127
     LDX #userDefaultRegBankWriteProtectStatus:JSR ReadUserReg
@@ -2675,7 +2672,12 @@ IF IBOS_VERSION >= 127
     LDX #userRegBankWriteProtectStatus + 1:JSR WriteUserReg
 ENDIF
 
+    ; Simulate a power-on reset.
+IF IBOS_VERSION < 127
     LDA #osbyteWriteSheila:LDX #systemViaBase + viaRegisterInterruptEnable:LDY #&7F:JSR OSBYTE
+ELSE
+    LDA #&7F:STA SHEILA + systemViaBase + viaRegisterInterruptEnable
+ENDIF
     JMP (RESET)
 
 IF IBOS_VERSION < 127
