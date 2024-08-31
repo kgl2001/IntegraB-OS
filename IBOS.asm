@@ -2343,9 +2343,21 @@ ENDIF
     LDA prv83,X
 IF IBOS_VERSION < 127
     PHA
-ENDIF
-    ; SQUASH: We could move SwitchOutPrivateRAM just after this code and fall through to it.
     JMP SwitchOutPrivateRAM
+ELSE
+    FALLTHROUGH_TO SwitchOutPrivateRAM
+
+; This is *not* a subroutine; it expects to PLA:PLP values stacked by the caller.
+.SwitchOutPrivateRAM
+    PHA
+    ; SFTODO: See SwitchInPrivateRAM; are we taking a chance here with NMIs?
+    LDA romselCopy:STA romsel
+    LDA ramselCopy:STA ramsel
+    PLA
+    PLP
+    PHA:PLA ; make flags reflect value in A on exit
+    RTS
+ENDIF
 
 .SwitchInPrivateRAM
     PHA
@@ -2357,11 +2369,9 @@ ENDIF
     PLA
     RTS
 
+IF IBOS_VERSION < 127
 ; This is *not* a subroutine; it expects to PLA:PLP values stacked by the caller.
 .SwitchOutPrivateRAM
-IF IBOS_VERSION >= 127
-    PHA
-ENDIF
     ; SFTODO: See SwitchInPrivateRAM; are we taking a chance here with NMIs?
     LDA romselCopy:STA romsel
     LDA ramselCopy:STA ramsel
@@ -2369,6 +2379,7 @@ ENDIF
     PLP
     PHA:PLA ; make flags reflect value in A on exit
     RTS
+ENDIF
 }
 
 .SaveTransientZP
