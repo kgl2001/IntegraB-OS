@@ -3240,7 +3240,11 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     ; Divide high and mid bytes of prvPrintBufferSize by 4 to get kilobytes.
     LDA prvPrintBufferSizeHigh:LSR A
     LDA prvPrintBufferSizeMid:ROR A:ROR A
-    SEC:JSR PrintADecimal ; SQUASH: PrintADecimalNoPad?
+IF IBOS_VERSION < 127
+    SEC:JSR PrintADecimal
+ELSE
+    JSR PrintADecimalNoPad
+ENDIF
     LDA prvPrintBufferBankList:AND #&F0:CMP #&40:BNE BufferInSwr2 ; SFTODO: magic constants
     LDX #0:JSR PrintKInPrivateOrSidewaysRAM ; write 'k in Private RAM'
     JMP OSNEWLPrvDisExitAndClaimServiceCall
