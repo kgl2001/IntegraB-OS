@@ -6276,7 +6276,11 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
 .TubeClaimLoop
     LDA #tubeEntryClaim + tubeClaimId:JSR tubeEntry:BCC TubeClaimLoop
     ; Get the 32-bit address from prvOswordBlockCopy and set it up as tube transfer address.
-    ; SQUASH: Could we rewrite this using a loop?
+    ; SQUASH: Could we rewrite this using a loop? I think this would work:
+    ; LDX #3
+    ; .CopyLoop
+    ; LDA prvOswordBlockCopy+2,X:STA L0100,X
+    ; DEX:BPL CopyLoop
     LDA prvOswordBlockCopy + 2:STA L0100
     LDA prvOswordBlockCopy + 3:STA L0101
     LDA prvOswordBlockCopy + 4:STA L0102
