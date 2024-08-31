@@ -2294,9 +2294,13 @@ ENDIF
 .^ReadUserReg
     CPX #&80:BCS Rts ; no-op for X>=&80
     CPX #&32:BCS ReadPrivateRam
-    PHA ; SQUASH: redundant? JSR ReadRtcRam will load a value into A...
+IF IBOS_VERSION < 127
+    PHA ; redundant as we're going to return a value in A anyway
+ENDIF
     CLC:TXA:ADC #rtcUserBase:TAX
-    PLA ; SQUASH: redundant?
+IF IBOS_VERSION < 127
+    PLA
+ENDIF
     JSR ReadRtcRam
     JMP CommonEnd
 .^WriteUserReg
