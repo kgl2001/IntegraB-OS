@@ -246,8 +246,8 @@ transientDateSFTODO2 = &AA ; SFTODO: prob just temp storage
 transientDateSFTODO1 = &AB ; SFTODO!? 2 bytes?
 
 IF IBOS_VERSION >= 127
-transientBin = &AE	;2 bits added by KL for IBOS1.27
-transientBCD = &AC	;2 bits added by KL for IBOS1.27
+transientBin = &AE	;2 bytes added by KL for IBOS1.27
+transientBCD = &AC	;2 bytes added by KL for IBOS1.27
 ENDIF
 
 FilingSystemWorkspace = &B0; IBOS repurposes this, which feels a bit risky but presumably works in practice
@@ -4274,7 +4274,12 @@ ENDIF
 IF IBOS_VERSION >= 126
 .ConfLang
 {
-Tmp = TransientZP + 7 ; ConfRefDynamicSyntaxGenerationForTransientCmdIdx uses +6
+    IF IBOS_VERSION < 127
+        Tmp = TransientZP + 7 ; ConfRefDynamicSyntaxGenerationForTransientCmdIdx uses +6
+    ELSE
+        ; TransientZP + {4,5,6,7} are used by PrintADecimalNoPad
+        Tmp = TransientZP + 3
+    ENDIF
 
     BCC ConfLangRead
     JSR ConvertIntegerDefaultDecimalChecked:AND #maxBank:STA Tmp:PHA
