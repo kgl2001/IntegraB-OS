@@ -2555,12 +2555,13 @@ IF IBOS_VERSION < 127
     LDA OswordInputLineBlock,Y:STA L0100,Y
     DEY:BPL CopyLoop
     LDA #oswordInputLine:LDX #lo(L0100):LDY #hi(L0100):JSR OSWORD
-ELSE
-    LDA #oswordInputLine:LDX #lo(OswordInputLineBlock):LDY #hi(OswordInputLineBlock):JSR OSWORD
-ENDIF
-    ; SQUASH: could we BCC a nearby RTS and just fall through to acknowledge...?
     BCS AcknowledgeEscapeAndGenerateErrorIndirect
     RTS
+ELSE
+    LDA #oswordInputLine:LDX #lo(OswordInputLineBlock):LDY #hi(OswordInputLineBlock):JSR OSWORD
+    BCC ZeroPageAUpToC0Rts
+    FALLTHROUGH_TO AcknowledgeEscapeAndGenerateErrorIndirect
+ENDIF
 
 .AcknowledgeEscapeAndGenerateErrorIndirect
     JMP AcknowledgeEscapeAndGenerateError
@@ -2568,8 +2569,24 @@ ENDIF
 
 ;Start of full reset
 ; SFTODO: This has only one caller
-.FullReset
 {
+ptr = &00 ; 2 bytes
+
+IF IBOS_VERSION >= 127
+.ZeroPageAUpToC0
+    STA ptr + 1
+    LDA #0:STA ptr
+    TAY
+.ZeroLoop
+    LDA #0:STA (ptr),Y
+    INY:BNE ZeroLoop
+    INC ptr + 1
+    LDA ptr + 1:CMP #&C0:BNE ZeroLoop
+.^ZeroPageAUpToC0Rts
+    RTS
+ENDIF
+
+.^FullReset
     ; Zero user registers &00-&32 inclusive, except userRegLangFile which is treated as a special case.
 IF IBOS_VERSION < 127
     LDX #&32
@@ -2617,7 +2634,6 @@ FullResetPrv = &2800
 .FullResetPrvTemplate
     ORG FullResetPrv
 
-ptr = &00 ; 2 bytes
     LDA romselCopy:PHA
     ; Zero all sideways RAM.
     LDX #maxBank
@@ -2662,6 +2678,7 @@ ENDIF
     LDA #osbyteWriteSheila:LDX #systemViaBase + viaRegisterInterruptEnable:LDY #&7F:JSR OSBYTE
     JMP (RESET)
 
+IF IBOS_VERSION < 127
 .ZeroPageAUpToC0
     STA ptr + 1
     LDA #0:STA ptr
@@ -2672,6 +2689,7 @@ ENDIF
     INC ptr + 1
     LDA ptr + 1:CMP #&C0:BNE ZeroLoop
     RTS
+ENDIF
 
 ; Default values for user registers overriding the initial zero values assigned.
 .UserRegDefaultTable
