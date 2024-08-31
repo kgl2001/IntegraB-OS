@@ -1753,8 +1753,6 @@ if IBOS_VERSION < 126
     STY TmpCommandTailOffset
     STX TmpCommandIndex
     ; Set transientTblPtr = CmdRef[CmdTblPtrOffset].
-    ; SQUASH: Since we know we're looking at CmdRef here, this is needlessly complex - we can
-    ; just hard-code CmdExTbl.
     JSR CmdRef:STX transientTblPtr:STY transientTblPtr + 1
     LDY #CmdTblPtrOffset:LDA (transientTblPtr),Y:TAX
     INY:LDA (transientTblPtr),Y:STA transientTblPtr + 1
@@ -1765,8 +1763,7 @@ if IBOS_VERSION < 126
     DEY:LDA (transientTblPtr),Y:PHA
     ; Record the relevant index at transientCommandIndex for use in generating a syntax error
     ; later if necessary. (transientCommandIndex == transientTblPtr so we couldn't just store
-    ; this here directly. SQUASH: If we just used a different address instead of
-    ; transientTblPtr in this subroutine we could probably avoid this.)
+    ; this here directly.
     LDX TmpCommandIndex:STX transientCommandIndex
 ELSE
     ; Transfer control to CmdExTbl[X], preserving Y (the index into the next byte of the command
