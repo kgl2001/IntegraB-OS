@@ -1970,8 +1970,6 @@ ENDIF
 IF IBOS_VERSION < 127 
 ; Print A in decimal. C set on entry means no padding, C clear means right align with spaces in
 ; a three character field. A and Y are preserved.
-; SQUASH: If it helps, we could probably corrupt Y and change the callers - the only one I
-; actively know of is at ShowBankLoop - to not rely on it.
 .PrintADecimal
 {
 Pad = &B0 ; character output in place of leading zeros
@@ -2028,6 +2026,10 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
 
 ELSE
 
+; Print A in decimal. C set on entry means no padding, C clear means right align with spaces in
+; a three character field. A and Y are preserved.
+; SQUASH: If it helps, we could probably corrupt Y and change the callers - the only one I
+; actively know of is at ShowBankLoop - to not rely on it.
 .PrintADecimal
 {
 Pad = &B0		;character output in place of leading zeros
