@@ -4523,29 +4523,29 @@ IF IBOS_VERSION >= 122
 ENDIF
 
 IF IBOS_VERSION >= 127
-; Check if IBOS is running on V2 hardware, and if it is then:
-;  - read RAM / ROM flags from CPLD, and save to private RAM.
-;  - read 'default' Write Protect flags from CPLD, and save to RTC CMOS. These will be used during IBOS Reset
-;  - read the PALPROM config flags from RTC CMOS, and write these to the CPLD
-;  - read the 'in-use' Write Protect flags from RTC CMOS, and write these to the CPLD
-; Note that the RTC CMOS register for the PALPROM config flags must be updated with *FX162,55,x 
-;
-; Otherwise, if using V1 hardware the private RAM should be updated
-; with *FX162,126,x & *FX162,127,x to reflect the amount of on board RAM.
+    ; Check if IBOS is running on V2 hardware, and if it is then:
+    ;  - read RAM / ROM flags from CPLD, and save to private RAM.
+    ;  - read 'default' Write Protect flags from CPLD, and save to RTC CMOS. These will be used during IBOS Reset
+    ;  - read the PALPROM config flags from private RAM, and write these to the CPLD
+    ;  - read the 'in-use' Write Protect flags from private RAM, and write these to the CPLD
+    ; Note that the private RAM register for the PALPROM config flags must be updated with *FX162,55,x 
+    ;
+    ; Otherwise, if using V1 hardware the private RAM should be updated
+    ; with *FX162,126,x & *FX162,127,x to reflect the amount of on board RAM.
     JSR testV2hardware
     BCC notV2hardware
     LDA cpldRAMROMSelectionFlags0_3_V2Status:ORA #&F0:LDX #userRegRamPresenceFlags0_7:JSR WriteUserReg
     ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
     INX:LDA cpldRAMROMSelectionFlags8_F:JSR WriteUserReg
-; Read 'default' Write Protect flags from CPLD, and save to RTC CMOS. These will be used during IBOS Reset. 
+    ; Read 'default' Write Protect flags from CPLD, and save to RTC CMOS. These will be used during IBOS Reset. 
     LDA cpldRamWriteProtectFlags0_7
     LDX #userDefaultRegBankWriteProtectStatus:JSR WriteUserReg
     LDA cpldRamWriteProtectFlags8_F
     INX:JSR WriteUserReg
-; Read the PALPROM config flags from RTC CMOS, and write these to the CPLD
+    ; Read the PALPROM config flags from private RAM, and write these to the CPLD
     LDX #userRegPALPROMConfig:JSR ReadUserReg
     EOR #&FF:STA cpldPALPROMSelectionFlags0_7
-; Read the 'in use' Write Protect flags from RTC CMOS, and write these to the CPLD
+    ; Read the 'in use' Write Protect flags from private RAM, and write these to the CPLD
     ASSERT userRegPALPROMConfig + 1 = userRegBankWriteProtectStatus
     INX:JSR ReadUserReg
     STA cpldRamWriteProtectFlags0_7
