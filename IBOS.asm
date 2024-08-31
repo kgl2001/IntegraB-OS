@@ -2529,7 +2529,7 @@ InputBufSize = 256
 IF IBOS_VERSION < 127
     JSR PrintStar
 ELSE
-    LDA #'*':JMP OSWRCH
+    LDA #'*':JSR OSWRCH
 ENDIF
     JSR ReadLine
     LDX #lo(InputBuf):LDY #hi(InputBuf):JSR OSCLI
