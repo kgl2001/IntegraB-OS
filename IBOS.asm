@@ -3436,7 +3436,11 @@ ENDIF
     JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
     LDX #prvOsMode - prv83:JSR ReadPrivateRam8300X
 .^SecPrintADecimalOSNEWLPrvDisExitAndClaimServiceCall
-    SEC:JSR PrintADecimal ; SQUASH: PrintADecimalNoPad?
+IF IBOS_VERSION < 127
+    SEC:JSR PrintADecimal
+ELSE
+    JMP PrintADecimalNoPad
+ENDIF
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 }
 
@@ -3719,7 +3723,6 @@ ENDIF
 			
 ;*APPEND Command
 .append
-
 {
 ; SFTODO: Express these as transientWorkspace + n, to document what area of memory they live in?
 LineLengthIncludingCr = &A9
