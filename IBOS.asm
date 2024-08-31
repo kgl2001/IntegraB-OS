@@ -2823,6 +2823,8 @@ ENDIF
     ; Set ramselShen to be a copy of ProgramRamBit from WorkingX.
     LDA ramselCopy:ROL A:ROR WorkingX:ROR A:STA ramselCopy:STA ramsel
 .NonStackRead
+    ; SFTODO: It's not correct that this returns anything other than &6F in A, but this change
+    ; does make it incorrect in a different way in 1.27 onwards.
 IF IBOS_VERSION < 127
     LDA ReturnedX:TAX
 ELSE
@@ -10609,6 +10611,9 @@ ibosCNPVIndex = (P% - vectorHandlerTbl) DIV 3
     LDA (L00FA),Y:TAY ; get character from OS buffer
     LDA #&98
 .returnFromBYTEV
+    ; SQUASH: The fact this updates the original registers, including A, for OSBYTE seems both
+	; wrong and wasteful of space. The fact we do this means our individual OSBYTE routines tend
+	; to waste space loading their own number back into A before finishing.
     JSR updateOrigVectorRegs
     JMP returnFromVectorHandler
 
