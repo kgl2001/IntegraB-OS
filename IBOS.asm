@@ -1861,12 +1861,11 @@ ENDIF
 
 ; Return from a service call, claiming it.
 .^ExitAndClaimServiceCall
-    ; SQUASH: Wouldn't "PLA:TAY:PLA:TAX:PLA:LDA #0:RTS" be a byte shorter?
-    TSX:LDA #0:STA L0103,X ; set stacked A to 0 to claim the call
 IF IBOS_VERSION < 127
+    TSX:LDA #0:STA L0103,X ; set stacked A to 0 to claim the call
     JMP ExitServiceCall
 ELSE
-    BEQ ExitServiceCall ; always branch
+    PLA:TAY:PLA:TAX:PLA:LDA #0:RTS
 ENDIF
 .CallHandlerX
     ; SQUASH: If we split the handler table into low and high tables we could
