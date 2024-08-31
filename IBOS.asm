@@ -4930,7 +4930,7 @@ IF IBOS_VERSION < 127
     ; If we have 256K of RAM A will have wrapped to 0; we can't have 0K of RAM so there's no
     ; ambiguity.
     CMP #0:BEQ AllBanksPresent ; SQUASH: use TAX instead of CMP #0
-    SEC:JSR PrintADecimal ; SQUASH: JSR PrintADecimalNoPad
+    SEC:JSR PrintADecimal
     JMP PrintKAndNewline
 .AllBanksPresent
     LDA #'2':JSR OSWRCH
