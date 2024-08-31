@@ -11120,7 +11120,6 @@ ELIF IBOS_VERSION == 126
     SAVE "IBOS-126.rom", start, end
 ELIF IBOS_VERSION == 127
     SAVE "IBOS-127.rom", start, end
-    SAVE "IBOS127C3", start, end ; KL 27/08/24: Temporary copy for testing
 ELSE
     ERROR "Unknown IBOS_VERSION"
 ENDIF
