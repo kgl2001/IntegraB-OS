@@ -178,7 +178,12 @@ userRegPrinterIgnore = &0E ; 0-7: Printer ignore
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7: Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
 IF IBOS_VERSION >= 127
-userDefaultRegBankWriteProtectStatus = &30 ; 2 bytes
+;userDefaultRegBankWriteProtectStatus = &2F ; 2 bytes
+userRegPALPROMConfig = &31 ; 0-1: Unused
+		       ;   2: Bank  8 Enable / Disable
+		       ;   3: Bank  9 Enable / Disable
+		       ; 4-5: Bank 10 Enable / Disable / Switching zone select
+		       ; 6-7: Bank 11 Enable / Disable / Switching zone select
 ENDIF
 userRegOsModeShx = &32 ; 0-2: OSMODE / 3: SHX / 4: automatic daylight saving time adjust SFTODO: Should rename this now we've discovered b4
 ; SFTODO: b4 of userRegOsModeShx doesn't seem to be exposed via *CONFIGURE/*STATUS - should it be? Might be interesting to try setting this bit manually and seeing if it works. If it's not going to be exposed we could save some code by deleting the support for it.
@@ -193,13 +198,6 @@ userRegAlarm = &33 ; SFTODO? bits 0-5?? SFTODO: bit 7 seems to be the "R" flag f
     ;     0: alarm overall duration (index into AlarmOverallDurationLookup)
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
-IF IBOS_VERSION >= 127
-userRegPALPROMConfig = &37 ; 0-1: Unused
-		       ;   2: Bank  8 Enable / Disable
-		       ;   3: Bank  9 Enable / Disable
-		       ; 4-5: Bank 10 Enable / Disable / Switching zone select
-		       ; 6-7: Bank 11 Enable / Disable / Switching zone select
-ENDIF
 userRegBankWriteProtectStatus = &38 ; 2 bytes, 1 bit per bank
 userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
 ; userRegRamPresenceFlags has a bit set for every 32K of RAM. Bit n represents sideways ROM
@@ -2594,11 +2592,14 @@ ENDIF
 ptr = &00 ; 2 bytes
 
 .^FullReset
-    ; Zero user registers &00-&32 inclusive, except userRegLangFile which is treated as a special case.
+    ; Zero user RTC registers &00-&32 inclusive, except the following, which are treated as a special case:
+    ;  - register &05: userRegLangFile.
+    ;  - registers &2F / &30: userDefaultRegBankWriteProtectStatus ***CURRENTLY DISABLED***.
+    ;  - register &31: userRegPALPROMConfig.
 IF IBOS_VERSION < 127
     LDX #&32
 ELSE
-    LDX #&2F
+    LDX #&30
 ENDIF
 .ZeroUserRegLoop
     LDA #0
@@ -4739,8 +4740,7 @@ IF IBOS_VERSION >= 127
     LDX #userRegPALPROMConfig:JSR ReadUserReg
     EOR #&FF:STA cpldPALPROMSelectionFlags0_7
     ; Read the 'in use' Write Protect flags from private RAM, and write these to the CPLD
-    ASSERT userRegPALPROMConfig + 1 = userRegBankWriteProtectStatus
-    INX:JSR ReadUserReg
+    LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
     STA cpldRamWriteProtectFlags0_7
     INX:JSR ReadUserReg
     STA cpldRamWriteProtectFlags8_F
