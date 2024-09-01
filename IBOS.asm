@@ -1824,12 +1824,14 @@ ENDIF
     JMP ExitServiceCall
 }
 
+IF IBOS_VERSION < 127
 ; Return with A=Y=0 and (transientCmdPtr),Y accessing the same byte as (osCmdPtr),Y on entry.
 .SetTransientCmdPtr
     CLC:TYA:ADC osCmdPtr:STA transientCmdPtr
     LDA osCmdPtr + 1:ADC #0:STA transientCmdPtr + 1
     LDA #0:TAY
     RTS
+ENDIF
 
 .GenerateSyntaxErrorForTransientCommandIndex
     PRVDIS
@@ -2557,6 +2559,16 @@ IF IBOS_VERSION < 127
     LDA #'*':JMP OSWRCH
 ENDIF
 
+IF IBOS_VERSION >= 127
+; Return with A=Y=0 and (transientCmdPtr),Y accessing the same byte as (osCmdPtr),Y on entry.
+.*SetTransientCmdPtr
+    CLC:TYA:ADC osCmdPtr:STA transientCmdPtr
+    LDA osCmdPtr + 1:ADC #0:STA transientCmdPtr + 1
+    LDA #0:TAY
+.SetTransientCmdPtrRts
+    RTS
+ENDIF
+
 .ReadLine
 IF IBOS_VERSION < 127
     LDY #(OswordInputLineBlockEnd - OswordInputLineBlock) - 1
@@ -2568,7 +2580,7 @@ IF IBOS_VERSION < 127
     RTS
 ELSE
     LDA #oswordInputLine:LDX #lo(OswordInputLineBlock):LDY #hi(OswordInputLineBlock):JSR OSWORD
-    BCC ZeroPageAUpToC0Rts
+    BCC SetTransientCmdPtrRts
     FALLTHROUGH_TO AcknowledgeEscapeAndGenerateErrorIndirect
 ENDIF
 
@@ -2580,20 +2592,6 @@ ENDIF
 ; SFTODO: This has only one caller
 {
 ptr = &00 ; 2 bytes
-
-IF IBOS_VERSION >= 127
-.ZeroPageAUpToC0
-    STA ptr + 1
-    LDA #0:STA ptr
-    TAY
-.ZeroLoop
-    LDA #0:STA (ptr),Y
-    INY:BNE ZeroLoop
-    INC ptr + 1
-    LDA ptr + 1:CMP #&C0:BNE ZeroLoop
-.^ZeroPageAUpToC0Rts
-    RTS
-ENDIF
 
 .^FullReset
     ; Zero user registers &00-&32 inclusive, except userRegLangFile which is treated as a special case.
@@ -2689,7 +2687,6 @@ ELSE
 ENDIF
     JMP (RESET)
 
-IF IBOS_VERSION < 127
 .ZeroPageAUpToC0
     STA ptr + 1
     LDA #0:STA ptr
@@ -2700,7 +2697,6 @@ IF IBOS_VERSION < 127
     INC ptr + 1
     LDA ptr + 1:CMP #&C0:BNE ZeroLoop
     RTS
-ENDIF
 
 ; Default values for user registers overriding the initial zero values assigned.
 .UserRegDefaultTable
