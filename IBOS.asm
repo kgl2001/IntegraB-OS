@@ -3450,7 +3450,7 @@ ENDIF
 IF IBOS_VERSION < 127
     SEC:JSR PrintADecimal
 ELSE
-    JMP PrintADecimalNoPad
+    JSR PrintADecimalNoPad
 ENDIF
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 }
