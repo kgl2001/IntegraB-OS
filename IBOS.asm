@@ -2672,12 +2672,12 @@ FullResetPrv = &2800
     JSR WriteUserReg
     DEY:DEY:BPL SetDefaultLoop
 
-IF IBOS_VERSION >= 127
-    LDX #userDefaultRegBankWriteProtectStatus:JSR ReadUserReg
-    LDX #userRegBankWriteProtectStatus:JSR WriteUserReg
-    LDX #userDefaultRegBankWriteProtectStatus + 1:JSR ReadUserReg
-    LDX #userRegBankWriteProtectStatus + 1:JSR WriteUserReg
-ENDIF
+;IF IBOS_VERSION >= 127
+;    LDX #userDefaultRegBankWriteProtectStatus:JSR ReadUserReg
+;    LDX #userRegBankWriteProtectStatus:JSR WriteUserReg
+;    LDX #userDefaultRegBankWriteProtectStatus + 1:JSR ReadUserReg
+;    LDX #userRegBankWriteProtectStatus + 1:JSR WriteUserReg
+;ENDIF
 
     ; Simulate a power-on reset.
 IF IBOS_VERSION < 127
@@ -2730,6 +2730,9 @@ ENDIF
 IF IBOS_VERSION < 127
     EQUB userRegBankWriteProtectStatus + 0, &FF
     EQUB userRegBankWriteProtectStatus + 1, &FF
+ELSE
+    EQUB userRegBankWriteProtectStatus + 0, &F0
+    EQUB userRegBankWriteProtectStatus + 1, &00
 ENDIF
     EQUB userRegPrvPrintBufferStart, &90
 IF IBOS_VERSION < 127
@@ -4728,10 +4731,10 @@ IF IBOS_VERSION >= 127
     ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
     INX:LDA cpldRAMROMSelectionFlags8_F:JSR WriteUserReg
     ; Read 'default' Write Protect flags from CPLD, and save to RTC CMOS. These will be used during IBOS Reset. 
-    LDA cpldRamWriteProtectFlags0_7
-    LDX #userDefaultRegBankWriteProtectStatus:JSR WriteUserReg
-    LDA cpldRamWriteProtectFlags8_F
-    INX:JSR WriteUserReg
+    ; LDA cpldRamWriteProtectFlags0_7
+    ; LDX #userDefaultRegBankWriteProtectStatus:JSR WriteUserReg
+    ; LDA cpldRamWriteProtectFlags8_F
+    ; INX:JSR WriteUserReg
     ; Read the PALPROM config flags from private RAM, and write these to the CPLD
     LDX #userRegPALPROMConfig:JSR ReadUserReg
     EOR #&FF:STA cpldPALPROMSelectionFlags0_7
