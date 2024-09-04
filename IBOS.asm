@@ -146,6 +146,7 @@ rtcUserBase = &0E
 ;Register &0F - &2D:	0: Tube / 2-4: BAUD / 5-7: Printer
 ;Register &10 - &A0:	0: File system disc/net flag / 4: Boot / 5-7: Data
 ;Register &11 - &FF:          <v1.26: unused / >=v1.26: 0-3: FILE, 4-7: spare
+;Register &31 - &00:          >=127: PALPROM Config: 0-1: Spare / 2: pp2a / 3: pp2b / 4..5: pp4a / 6..7: pp8a
 
 
 ; These registers are held in private RAM at &83B2-&83FF; this is battery-backed
@@ -2592,7 +2593,7 @@ ENDIF
 ptr = &00 ; 2 bytes
 
 .^FullReset
-    ; Zero user RTC registers &00-&32 inclusive, except the following, which are treated as a special case:
+    ; Zero user RTC registers &00-&31 inclusive, except the following, which are treated as a special case:
     ;  - register &05: userRegLangFile.
     ;  - registers &2F / &30: userDefaultRegBankWriteProtectStatus ***CURRENTLY DISABLED***.
     ;  - register &31: userRegPALPROMConfig.
@@ -2732,15 +2733,29 @@ IF IBOS_VERSION < 127
     EQUB userRegBankWriteProtectStatus + 0, &FF
     EQUB userRegBankWriteProtectStatus + 1, &FF
 ELSE
+ ; default is for banks 4..7 to be write enabled. There is no need to define
+ ; userRegBankWriteProtectStatus+1 here, because the default value is '0'.
     EQUB userRegBankWriteProtectStatus + 0, &F0
-    EQUB userRegBankWriteProtectStatus + 1, &00
+;    EQUB userRegBankWriteProtectStatus + 1, &00
 ENDIF
     EQUB userRegPrvPrintBufferStart, &90
 IF IBOS_VERSION < 127
+; userRegRamPresenceFlags is used by V1 hardware to define the total RAM in 32k chunks:
+;  - bits 0..1: 64K non-SWR (base beeb)
+;  - bits 2..3: 64K SWR in banks 4-7
     EQUB userRegRamPresenceFlags, &0F		; 64K non-SWR and 64K SWR in banks 4-7
 ELSE
+; As of IBOS 127, both V1 and V2 hardware use two registers to define the total RAM in 16k chunks
+; On V1 hardware these registers need to be updated manually if extra RAM is added using *FX162
+; or by using the RAMSET utility. This needs to be done after every IBOS reset, otherwise it
+; will default to RAM in banks 4..7
+; On V2 hardware these registers are defined by a set of jumpers on the v2 board.
+; The status of these jumpers is read from the CPLD by IBOS service01 on every BREAK.
+; So for V2 hardware there is no need to specifically define default values here.
+; The default is retained for V1 hardware only. Note the default vaule for userRegRamPresenceFlags8_F
+; is already set to '0' so doesn't need to be set here too.
     EQUB userRegRamPresenceFlags0_7, &F0	; ROMs in Banks 0-3. 16K RAM in each of banks 4-7
-    EQUB userRegRamPresenceFlags8_F, &00	; ROMs in Banks 8-15
+;    EQUB userRegRamPresenceFlags8_F, &00	; ROMs in Banks 8-15
 ENDIF
 .UserRegDefaultTableEnd
 
@@ -4722,7 +4737,7 @@ IF IBOS_VERSION >= 127
     ;  - read 'default' Write Protect flags from CPLD, and save to RTC CMOS. These will be used during IBOS Reset
     ;  - read the PALPROM config flags from private RAM, and write these to the CPLD
     ;  - read the 'in-use' Write Protect flags from private RAM, and write these to the CPLD
-    ; Note that the private RAM register for the PALPROM config flags must be updated with *FX162,55,x 
+    ; Note that the private RAM register for the PALPROM config flags must be updated with *FX162,49,x 
     ;
     ; Otherwise, if using V1 hardware the private RAM should be updated
     ; with *FX162,126,x & *FX162,127,x to reflect the amount of on board RAM.
@@ -11385,6 +11400,7 @@ ELIF IBOS_VERSION == 126
     SAVE "IBOS-126.rom", start, end
 ELIF IBOS_VERSION == 127
     SAVE "IBOS-127.rom", start, end
+    SAVE "IBOS127Z2", start, end
 ELSE
     ERROR "Unknown IBOS_VERSION"
 ENDIF
