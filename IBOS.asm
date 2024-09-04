@@ -5787,7 +5787,7 @@ ENDIF
 ;*SRREAD Command
 .^srread	  PRVEN								;switch in private RAM
             LDA #&00
-            JMP L9CDF
+            JMP L9CDF ; SQUASH: BEQ always or use BIT to skip next two bytes
 			
 ;*SRWRITE Command
 .^srwrite	  PRVEN								;switch in private RAM
