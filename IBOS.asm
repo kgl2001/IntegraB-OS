@@ -11400,7 +11400,6 @@ ELIF IBOS_VERSION == 126
     SAVE "IBOS-126.rom", start, end
 ELIF IBOS_VERSION == 127
     SAVE "IBOS-127.rom", start, end
-    SAVE "IBOS127Z2", start, end
 ELSE
     ERROR "Unknown IBOS_VERSION"
 ENDIF
