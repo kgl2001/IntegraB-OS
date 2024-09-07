@@ -180,11 +180,13 @@ userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7: Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
 IF IBOS_VERSION >= 127
 ;userDefaultRegBankWriteProtectStatus = &2F ; 2 bytes
-userRegPALPROMConfig = &31 ; 0-1: Unused
-		       ;   2: Bank  8 Enable / Disable
-		       ;   3: Bank  9 Enable / Disable
-		       ; 4-5: Bank 10 Enable / Disable / Switching zone select
-		       ; 6-7: Bank 11 Enable / Disable / Switching zone select
+userRegPALPROMConfig = &31 ;   0: Unused
+		       ;   1: Bank  8 Enable / Disable
+		       ;   2: Bank  9 Enable / Disable
+		       ;   3: Bank 10 Enable / Disable
+		       ; 4-5: Bank 10 Switching zone model select
+		       ;   6: Bank 11 Enable / Disable
+		       ;   7: Bank 11 Switching zone model select
 ENDIF
 userRegOsModeShx = &32 ; 0-2: OSMODE / 3: SHX / 4: automatic daylight saving time adjust SFTODO: Should rename this now we've discovered b4
 ; SFTODO: b4 of userRegOsModeShx doesn't seem to be exposed via *CONFIGURE/*STATUS - should it be? Might be interesting to try setting this bit manually and seeing if it works. If it's not going to be exposed we could save some code by deleting the support for it.
@@ -7098,14 +7100,13 @@ IF IBOS_VERSION >= 127
     rts
 .^RegRamMaskTable
     EQUB &01 ; bank 8
-    EQUB &02 ; bank 9
-; note that this table expects the next two bytes to be 4 & 8 for banks 10..11.
-; This should probably be validated with an ASSERT					
+; note that this table expects the next three bytes to be 2, 4 & 8 for banks 9..11.
+; This should probably be validated with an ASSERT
 .^palprom_test_table
-    EQUB &04 ; bank 8 - PALPROM 2a is enabled when cpldPALPROMSelectionFlags0_7 bit 2 is set
-    EQUB &08 ; bank 9 - PALPROM 2b is enabled when cpldPALPROMSelectionFlags0_7 bit 3 is set
-    EQUB &30 ; bank 10 - PALPROM 4a is enabled when cpldPALPROMSelectionFlags0_7 bits 4 & 5 are both set
-    EQUB &40 ; bank 11 - PALPROM 8a is enabled when cpldPALPROMSelectionFlags0_7 bit 6 is set
+    EQUB &02 ; bank 8  - PALPROM 2a is enabled when cpldPALPROMSelectionFlags0_7 bit 1 is set
+    EQUB &04 ; bank 9  - PALPROM 2b is enabled when cpldPALPROMSelectionFlags0_7 bit 2 is set
+    EQUB &08 ; bank 10 - PALPROM 4a is enabled when cpldPALPROMSelectionFlags0_7 bit 3 is set
+    EQUB &40 ; bank 11 - PALPROM 8a is enabled when cpldPALPROMSelectionFlags0_7 bit 5 is set
 .^palprom_banks_table
     EQUB &01 ; bank 8 - PALPROM 2a has 1 extra bank
     EQUB &01 ; bank 9 - PALPROM 2b has 1 extra bank
@@ -7432,7 +7433,7 @@ IF IBOS_VERSION >= 127
     ; INX:JSR WriteUserReg
     ; Read the PALPROM config flags from private RAM, and write these to the CPLD
     LDX #userRegPALPROMConfig:JSR ReadUserReg
-    EOR #&FF:STA cpldPALPROMSelectionFlags0_7
+    STA cpldPALPROMSelectionFlags0_7
     ; Read the 'in use' Write Protect flags from private RAM, and write these to the CPLD
     LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
     STA cpldRamWriteProtectFlags0_7
