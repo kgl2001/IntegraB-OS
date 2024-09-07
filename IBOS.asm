@@ -2736,7 +2736,7 @@ ELSE
  ; default is for banks 4..7 to be write enabled. There is no need to define
  ; userRegBankWriteProtectStatus+1 here, because the default value is '0'.
     EQUB userRegBankWriteProtectStatus + 0, &F0
-;    EQUB userRegBankWriteProtectStatus + 1, &00
+;   EQUB userRegBankWriteProtectStatus + 1, &00
 ENDIF
     EQUB userRegPrvPrintBufferStart, &90
 IF IBOS_VERSION < 127
@@ -2750,12 +2750,12 @@ ELSE
 ; or by using the RAMSET utility. This needs to be done after every IBOS reset, otherwise it
 ; will default to RAM in banks 4..7
 ; On V2 hardware these registers are defined by a set of jumpers on the v2 board.
-; The status of these jumpers is read from the CPLD by IBOS service01 on every BREAK.
+; The status of these jumpers is read from the CPLD by IBOS service10 on every BREAK.
 ; So for V2 hardware there is no need to specifically define default values here.
 ; The default is retained for V1 hardware only. Note the default vaule for userRegRamPresenceFlags8_F
 ; is already set to '0' so doesn't need to be set here too.
     EQUB userRegRamPresenceFlags0_7, &F0	; ROMs in Banks 0-3. 16K RAM in each of banks 4-7
-;    EQUB userRegRamPresenceFlags8_F, &00	; ROMs in Banks 8-15
+;   EQUB userRegRamPresenceFlags8_F, &00	; ROMs in Banks 8-15
 ENDIF
 .UserRegDefaultTableEnd
 
@@ -4730,38 +4730,6 @@ IF IBOS_VERSION >= 122
     LDA BYTEVH:CMP #hi(osPrintBuf):BEQ VectorsAlreadyClaimed
 .VectorsNotAlreadyClaimed
 ENDIF
-
-IF IBOS_VERSION >= 127
-    ; Check if IBOS is running on V2 hardware, and if it is then:
-    ;  - read RAM / ROM flags from CPLD, and save to private RAM.
-    ;  - read 'default' Write Protect flags from CPLD, and save to RTC CMOS. These will be used during IBOS Reset
-    ;  - read the PALPROM config flags from private RAM, and write these to the CPLD
-    ;  - read the 'in-use' Write Protect flags from private RAM, and write these to the CPLD
-    ; Note that the private RAM register for the PALPROM config flags must be updated with *FX162,49,x 
-    ;
-    ; Otherwise, if using V1 hardware the private RAM should be updated
-    ; with *FX162,126,x & *FX162,127,x to reflect the amount of on board RAM.
-    JSR testV2hardware
-    BCC notV2hardware
-    LDA cpldRAMROMSelectionFlags0_3_V2Status:ORA #&F0:LDX #userRegRamPresenceFlags0_7:JSR WriteUserReg
-    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
-    INX:LDA cpldRAMROMSelectionFlags8_F:JSR WriteUserReg
-    ; Read 'default' Write Protect flags from CPLD, and save to RTC CMOS. These will be used during IBOS Reset. 
-    ; LDA cpldRamWriteProtectFlags0_7
-    ; LDX #userDefaultRegBankWriteProtectStatus:JSR WriteUserReg
-    ; LDA cpldRamWriteProtectFlags8_F
-    ; INX:JSR WriteUserReg
-    ; Read the PALPROM config flags from private RAM, and write these to the CPLD
-    LDX #userRegPALPROMConfig:JSR ReadUserReg
-    EOR #&FF:STA cpldPALPROMSelectionFlags0_7
-    ; Read the 'in use' Write Protect flags from private RAM, and write these to the CPLD
-    LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
-    STA cpldRamWriteProtectFlags0_7
-    INX:JSR ReadUserReg
-    STA cpldRamWriteProtectFlags8_F
-.notV2hardware
-ENDIF
-
     ; SFTODO: What are prv83+[1-7] here? We are setting them to &FF.
     ; SQUASH: I think this code is high enough in the IBOS ROM we don't need to be indirecting
     ; via WritePrivateRam8300X and could just set PRV1 and access directly?
@@ -7131,6 +7099,8 @@ IF IBOS_VERSION >= 127
 .^RegRamMaskTable
     EQUB &01 ; bank 8
     EQUB &02 ; bank 9
+; note that this table expects the next two bytes to be 4 & 8 for banks 10..11.
+; This should probably be validated with an ASSERT					
 .^palprom_test_table
     EQUB &04 ; bank 8 - PALPROM 2a is enabled when cpldPALPROMSelectionFlags0_7 bit 2 is set
     EQUB &08 ; bank 9 - PALPROM 2b is enabled when cpldPALPROMSelectionFlags0_7 bit 3 is set
@@ -7438,6 +7408,37 @@ ENDIF
 
 IF IBOS_VERSION < 127
     JSR SFTODOWRITEPROTECTISH
+ENDIF
+
+IF IBOS_VERSION >= 127
+    ; Check if IBOS is running on V2 hardware, and if it is then:
+    ;  - read RAM / ROM flags from CPLD, and save to private RAM.
+    ;  - read 'default' Write Protect flags from CPLD, and save to RTC CMOS. These will be used during IBOS Reset
+    ;  - read the PALPROM config flags from private RAM, and write these to the CPLD
+    ;  - read the 'in-use' Write Protect flags from private RAM, and write these to the CPLD
+    ; Note that the private RAM register for the PALPROM config flags must be updated with *FX162,49,x 
+    ;
+    ; Otherwise, if using V1 hardware the private RAM should be updated
+    ; with *FX162,126,x & *FX162,127,x to reflect the amount of on board RAM.
+    JSR testV2hardware
+    BCC notV2hardware
+    LDA cpldRAMROMSelectionFlags0_3_V2Status:ORA #&F0:LDX #userRegRamPresenceFlags0_7:JSR WriteUserReg
+    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
+    INX:LDA cpldRAMROMSelectionFlags8_F:JSR WriteUserReg
+    ; Read 'default' Write Protect flags from CPLD, and save to RTC CMOS. These will be used during IBOS Reset. 
+    ; LDA cpldRamWriteProtectFlags0_7
+    ; LDX #userDefaultRegBankWriteProtectStatus:JSR WriteUserReg
+    ; LDA cpldRamWriteProtectFlags8_F
+    ; INX:JSR WriteUserReg
+    ; Read the PALPROM config flags from private RAM, and write these to the CPLD
+    LDX #userRegPALPROMConfig:JSR ReadUserReg
+    EOR #&FF:STA cpldPALPROMSelectionFlags0_7
+    ; Read the 'in use' Write Protect flags from private RAM, and write these to the CPLD
+    LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
+    STA cpldRamWriteProtectFlags0_7
+    INX:JSR ReadUserReg
+    STA cpldRamWriteProtectFlags8_F
+.notV2hardware
 ENDIF
 
     ; Copy the OS ROM type table into private RAM so we know the original contents before we modified it.
