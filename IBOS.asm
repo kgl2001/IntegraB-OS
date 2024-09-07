@@ -5620,7 +5620,6 @@ IF IBOS_VERSION >= 127
 .^TestforRamAndSwitchOutPALPROM
     TAX
     JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheck ; branch if not RAM
-; KLTODO: Check if this needs to be done. Is it being done at ParseBankNumberIfPresent???
     TXA:PHA
     JSR removeBankAFromSFTODOFOURBANKS
     PLA:TAX
