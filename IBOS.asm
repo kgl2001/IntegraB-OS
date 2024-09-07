@@ -3760,6 +3760,8 @@ ENDIF
 			
 ;*APPEND Command
 .append
+; KL 27/8/24: Temporarily dropped this code, to free up space for IBOS127 *ROMS command changes.
+IF IBOS_VERSION < 127
 {
 ; SFTODO: Express these as transientWorkspace + n, to document what area of memory they live in?
 LineLengthIncludingCr = &A9
@@ -3828,6 +3830,11 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 .^printSpace
     LDA #' ':JMP OSWRCH
 }
+ELSE
+    JMP OSNEWLPrvDisExitAndClaimServiceCall
+.printSpace
+    LDA #' ':JMP OSWRCH
+ENDIF
 
 ; *PRINT command
 ; Note that this sends the file to the printer, *unlike* the Master *PRINT command which is
@@ -5205,10 +5212,16 @@ ENDIF
 .WipeBankAIfRam
     JSR TestRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
+IF IBOS_VERSION >= 127
+    JSR TestforRamAndSwitchOutPALPROM
+ENDIF
     LDX #lo(wipeRamTemplate):LDY #hi(wipeRamTemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
     JSR variableMainRamSubroutine
+IF IBOS_VERSION < 127
+; In IBOS Version >= 127, this function is carried out in TestforRamAndSwitchOutPALPROM
     PHA:JSR removeBankAFromSFTODOFOURBANKS:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
+ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
 .Rts
     RTS
@@ -5595,6 +5608,36 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             RTS
 }
 
+IF IBOS_VERSION >= 127
+.ParseBankNumberIfPresentAndSwitchOutPALPROM
+{
+    TXA:PHA:TYA:PHA
+    JSR ParseBankNumberIfPresent
+    JSR TestforRamAndSwitchOutPALPROM
+    PLA:TAY:PLA:TAX
+    RTS
+
+.^TestforRamAndSwitchOutPALPROM
+    TAX
+    JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheck ; branch if not RAM
+; KLTODO: Check if this needs to be done. Is it being done at ParseBankNumberIfPresent???
+    TXA:PHA
+    JSR removeBankAFromSFTODOFOURBANKS
+    PLA:TAX
+    JSR testV2hardware:BCC skipPALPROMcheck
+; Then test if PALPROM in banks 8..11
+    CPX #8:BCC skipPALPROMcheck
+    CPX #12:BCS skipPALPROMcheck ; 8<=X<12
+    LDA palprom_test_table-8,X:EOR #&FF
+    AND cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
+    LDX #userRegPALPROMConfig:JSR WriteUserReg
+; Need to also write to CPLD, so CPLD can access correct bank during SRLOAD/SRWRITE/SRWIPE.
+    STA cpldPALPROMSelectionFlags0_7
+.skipPALPROMcheck
+RTS
+}
+ENDIF
+
 ; SFTODO: Returns with C clear in "simple" case, C set in the "mystery" case
 .ParseBankNumberIfPresent ; SFTODO: probably imperfect name, will do until the mystery code in middle is cleared up
 {
@@ -5786,7 +5829,11 @@ ENDIF
             JSR L9C52
             JSR parseOsword4243Length
             JSR L9C42
-            JSR ParseBankNumberIfPresent
+IF IBOS_VERSION < 127
+	  JSR ParseBankNumberIfPresent
+ELSE
+	  JSR ParseBankNumberIfPresentAndSwitchOutPALPROM
+ENDIF
             JMP LA0A6
 }
 
@@ -6395,7 +6442,11 @@ ENDIF
     LDA prvOswordBlockCopy + 7 ; high byte of buffer length
     STA prvOswordBlockCopy + 11 ; high byte of data length
 .NotSave
+IF IBOS_VERSION < 127
     JSR ParseBankNumberIfPresent
+ELSE
+    JSR ParseBankNumberIfPresentAndSwitchOutPALPROM
+ENDIF
     JSR parseSrsaveLoadFlags
     LDA prvOswordBlockCopy + 2 ; byte 0 of "buffer address" we parsed earlier
     STA prvOswordBlockCopy + 8 ; low byte of sideways start address
