@@ -146,7 +146,7 @@ rtcUserBase = &0E
 ;Register &0F - &2D:	0: Tube / 2-4: BAUD / 5-7: Printer
 ;Register &10 - &A0:	0: File system disc/net flag / 4: Boot / 5-7: Data
 ;Register &11 - &FF:          <v1.26: unused / >=v1.26: 0-3: FILE, 4-7: spare
-;Register &31 - &00:          >=127: PALPROM Config: 0-1: Spare / 2: pp2a / 3: pp2b / 4..5: pp4a / 6..7: pp8a
+;Register &31 - &00:          >=v1.27: PALPROM Config: 0-1: Spare / 2: pp2a / 3: pp2b / 4..5: pp4a / 6..7: pp8a
 
 
 ; These registers are held in private RAM at &83B2-&83FF; this is battery-backed
@@ -2595,10 +2595,10 @@ ENDIF
 ptr = &00 ; 2 bytes
 
 .^FullReset
-    ; Zero user RTC registers &00-&31 inclusive, except the following, which are treated as a special case:
+    ; Zero user RTC registers &00-X inclusive, except the following, which are treated as a special case:
     ;  - register &05: userRegLangFile.
     ;  - registers &2F / &30: userDefaultRegBankWriteProtectStatus ***CURRENTLY DISABLED***.
-    ;  - register &31: userRegPALPROMConfig.
+    ;  - register &31: userRegPALPROMConfig (outside the range anyway).
 IF IBOS_VERSION < 127
     LDX #&32
 ELSE
@@ -3757,11 +3757,14 @@ ENDIF
     JSR ConvertIntegerResult - 1
     JMP ExitAndClaimServiceCall
 }
-			
+
 ;*APPEND Command
-.append
+; INCLUDE_APPEND will normally be TRUE in a release build, but setting it to FALSE removes
+; *APPEND to free up space for experimental changes.
 ; KL 08/09/24: Temporarily dropped this code, to free up space for IBOS127 *SRLOAD / *SRWRITE & *SRWIPE command changes.
-IF IBOS_VERSION < 127
+INCLUDE_APPEND = (IBOS_VERSION < 127)
+.append
+IF INCLUDE_APPEND
 {
 ; SFTODO: Express these as transientWorkspace + n, to document what area of memory they live in?
 LineLengthIncludingCr = &A9
@@ -3831,6 +3834,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
     LDA #' ':JMP OSWRCH
 }
 ELSE
+    ; Stub *APPEND implementation for INCLUDE_APPEND=FALSE case.
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 .printSpace
     LDA #' ':JMP OSWRCH
@@ -5611,7 +5615,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 IF IBOS_VERSION >= 127
 .ParseBankNumberIfPresentAndSwitchOutPALPROM
 {
-    TXA:PHA:TYA:PHA
+    TXA:PHA:TYA:PHA ; SQUASH: I am not sure we need to preserve X, and we perhaps *shouldn't* preserve Y
     JSR ParseBankNumberIfPresent
     JSR TestforRamAndSwitchOutPALPROM
     PLA:TAY:PLA:TAX
@@ -7150,7 +7154,7 @@ IF IBOS_VERSION >= 127
     rts
 .^RegRamMaskTable
     EQUB &01 ; bank 8
-; note that this table expects the next three bytes to be 2, 4 & 8 for banks 9..11.
+; note that RegRamMaskTable overlaps with the first three bytes of palprom_test_table; they should be 2, 4 & 8 for banks 9..11.
 ; This should probably be validated with an ASSERT
 .^palprom_test_table
     EQUB &02 ; bank 8  - PALPROM 2a is enabled when cpldPALPROMSelectionFlags0_7 bit 1 is set
