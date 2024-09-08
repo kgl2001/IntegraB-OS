@@ -146,6 +146,7 @@ rtcUserBase = &0E
 ;Register &0F - &2D:	0: Tube / 2-4: BAUD / 5-7: Printer
 ;Register &10 - &A0:	0: File system disc/net flag / 4: Boot / 5-7: Data
 ;Register &11 - &FF:          <v1.26: unused / >=v1.26: 0-3: FILE, 4-7: spare
+;Register &31 - &00:          >=127: PALPROM Config: 0-1: Spare / 2: pp2a / 3: pp2b / 4..5: pp4a / 6..7: pp8a
 
 
 ; These registers are held in private RAM at &83B2-&83FF; this is battery-backed
@@ -178,7 +179,14 @@ userRegPrinterIgnore = &0E ; 0-7: Printer ignore
 userRegTubeBaudPrinter = &0F  ; 0: Tube / 2-4: Baud / 5-7: Printer
 userRegDiscNetBootData = &10 ; 0: File system disc/net flag / 4: Boot / 5-7: Data
 IF IBOS_VERSION >= 127
-userDefaultRegBankWriteProtectStatus = &30 ; 2 bytes
+;userDefaultRegBankWriteProtectStatus = &2F ; 2 bytes
+userRegPALPROMConfig = &31 ;   0: Unused
+		       ;   1: Bank  8 Enable / Disable
+		       ;   2: Bank  9 Enable / Disable
+		       ;   3: Bank 10 Enable / Disable
+		       ; 4-5: Bank 10 Switching zone model select
+		       ;   6: Bank 11 Enable / Disable
+		       ;   7: Bank 11 Switching zone model select
 ENDIF
 userRegOsModeShx = &32 ; 0-2: OSMODE / 3: SHX / 4: automatic daylight saving time adjust SFTODO: Should rename this now we've discovered b4
 ; SFTODO: b4 of userRegOsModeShx doesn't seem to be exposed via *CONFIGURE/*STATUS - should it be? Might be interesting to try setting this bit manually and seeing if it works. If it's not going to be exposed we could save some code by deleting the support for it.
@@ -193,13 +201,6 @@ userRegAlarm = &33 ; SFTODO? bits 0-5?? SFTODO: bit 7 seems to be the "R" flag f
     ;     0: alarm overall duration (index into AlarmOverallDurationLookup)
 userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
-IF IBOS_VERSION >= 127
-userRegPALPROMConfig = &37 ; 0-1: Unused
-		       ;   2: Bank  8 Enable / Disable
-		       ;   3: Bank  9 Enable / Disable
-		       ; 4-5: Bank 10 Enable / Disable / Switching zone select
-		       ; 6-7: Bank 11 Enable / Disable / Switching zone select
-ENDIF
 userRegBankWriteProtectStatus = &38 ; 2 bytes, 1 bit per bank
 userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
 ; userRegRamPresenceFlags has a bit set for every 32K of RAM. Bit n represents sideways ROM
@@ -2594,11 +2595,14 @@ ENDIF
 ptr = &00 ; 2 bytes
 
 .^FullReset
-    ; Zero user registers &00-&32 inclusive, except userRegLangFile which is treated as a special case.
+    ; Zero user RTC registers &00-&31 inclusive, except the following, which are treated as a special case:
+    ;  - register &05: userRegLangFile.
+    ;  - registers &2F / &30: userDefaultRegBankWriteProtectStatus ***CURRENTLY DISABLED***.
+    ;  - register &31: userRegPALPROMConfig.
 IF IBOS_VERSION < 127
     LDX #&32
 ELSE
-    LDX #&2F
+    LDX #&30
 ENDIF
 .ZeroUserRegLoop
     LDA #0
@@ -2672,12 +2676,12 @@ FullResetPrv = &2800
     JSR WriteUserReg
     DEY:DEY:BPL SetDefaultLoop
 
-IF IBOS_VERSION >= 127
-    LDX #userDefaultRegBankWriteProtectStatus:JSR ReadUserReg
-    LDX #userRegBankWriteProtectStatus:JSR WriteUserReg
-    LDX #userDefaultRegBankWriteProtectStatus + 1:JSR ReadUserReg
-    LDX #userRegBankWriteProtectStatus + 1:JSR WriteUserReg
-ENDIF
+;IF IBOS_VERSION >= 127
+;    LDX #userDefaultRegBankWriteProtectStatus:JSR ReadUserReg
+;    LDX #userRegBankWriteProtectStatus:JSR WriteUserReg
+;    LDX #userDefaultRegBankWriteProtectStatus + 1:JSR ReadUserReg
+;    LDX #userRegBankWriteProtectStatus + 1:JSR WriteUserReg
+;ENDIF
 
     ; Simulate a power-on reset.
 IF IBOS_VERSION < 127
@@ -2730,13 +2734,30 @@ ENDIF
 IF IBOS_VERSION < 127
     EQUB userRegBankWriteProtectStatus + 0, &FF
     EQUB userRegBankWriteProtectStatus + 1, &FF
+ELSE
+ ; default is for banks 4..7 to be write enabled. There is no need to define
+ ; userRegBankWriteProtectStatus+1 here, because the default value is '0'.
+    EQUB userRegBankWriteProtectStatus + 0, &F0
+;   EQUB userRegBankWriteProtectStatus + 1, &00
 ENDIF
     EQUB userRegPrvPrintBufferStart, &90
 IF IBOS_VERSION < 127
+; userRegRamPresenceFlags is used by V1 hardware to define the total RAM in 32k chunks:
+;  - bits 0..1: 64K non-SWR (base beeb)
+;  - bits 2..3: 64K SWR in banks 4-7
     EQUB userRegRamPresenceFlags, &0F		; 64K non-SWR and 64K SWR in banks 4-7
 ELSE
+; As of IBOS 127, both V1 and V2 hardware use two registers to define the total RAM in 16k chunks
+; On V1 hardware these registers need to be updated manually if extra RAM is added using *FX162
+; or by using the RAMSET utility. This needs to be done after every IBOS reset, otherwise it
+; will default to RAM in banks 4..7
+; On V2 hardware these registers are defined by a set of jumpers on the v2 board.
+; The status of these jumpers is read from the CPLD by IBOS service10 on every BREAK.
+; So for V2 hardware there is no need to specifically define default values here.
+; The default is retained for V1 hardware only. Note the default vaule for userRegRamPresenceFlags8_F
+; is already set to '0' so doesn't need to be set here too.
     EQUB userRegRamPresenceFlags0_7, &F0	; ROMs in Banks 0-3. 16K RAM in each of banks 4-7
-    EQUB userRegRamPresenceFlags8_F, &00	; ROMs in Banks 8-15
+;   EQUB userRegRamPresenceFlags8_F, &00	; ROMs in Banks 8-15
 ENDIF
 .UserRegDefaultTableEnd
 
@@ -3739,6 +3760,8 @@ ENDIF
 			
 ;*APPEND Command
 .append
+; KL 08/09/24: Temporarily dropped this code, to free up space for IBOS127 *SRLOAD / *SRWRITE & *SRWIPE command changes.
+IF IBOS_VERSION < 127
 {
 ; SFTODO: Express these as transientWorkspace + n, to document what area of memory they live in?
 LineLengthIncludingCr = &A9
@@ -3807,6 +3830,11 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
 .^printSpace
     LDA #' ':JMP OSWRCH
 }
+ELSE
+    JMP OSNEWLPrvDisExitAndClaimServiceCall
+.printSpace
+    LDA #' ':JMP OSWRCH
+ENDIF
 
 ; *PRINT command
 ; Note that this sends the file to the printer, *unlike* the Master *PRINT command which is
@@ -4711,39 +4739,6 @@ IF IBOS_VERSION >= 122
     LDA BYTEVH:CMP #hi(osPrintBuf):BEQ VectorsAlreadyClaimed
 .VectorsNotAlreadyClaimed
 ENDIF
-
-IF IBOS_VERSION >= 127
-; Check if IBOS is running on V2 hardware, and if it is then:
-;  - read RAM / ROM flags from CPLD, and save to private RAM.
-;  - read 'default' Write Protect flags from CPLD, and save to RTC CMOS. These will be used during IBOS Reset
-;  - read the PALPROM config flags from RTC CMOS, and write these to the CPLD
-;  - read the 'in-use' Write Protect flags from RTC CMOS, and write these to the CPLD
-; Note that the RTC CMOS register for the PALPROM config flags must be updated with *FX162,55,x 
-;
-; Otherwise, if using V1 hardware the private RAM should be updated
-; with *FX162,126,x & *FX162,127,x to reflect the amount of on board RAM.
-    JSR testV2hardware
-    BCC notV2hardware
-    LDA cpldRAMROMSelectionFlags0_3_V2Status:ORA #&F0:LDX #userRegRamPresenceFlags0_7:JSR WriteUserReg
-    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
-    INX:LDA cpldRAMROMSelectionFlags8_F:JSR WriteUserReg
-; Read 'default' Write Protect flags from CPLD, and save to RTC CMOS. These will be used during IBOS Reset. 
-    LDA cpldRamWriteProtectFlags0_7
-    LDX #userDefaultRegBankWriteProtectStatus:JSR WriteUserReg
-    LDA cpldRamWriteProtectFlags8_F
-    INX:JSR WriteUserReg
-; Read the PALPROM config flags from RTC CMOS, and write these to the CPLD
-    LDX #userRegPALPROMConfig:JSR ReadUserReg
-    EOR #&FF:STA cpldPALPROMSelectionFlags0_7
-; Read the 'in use' Write Protect flags from RTC CMOS, and write these to the CPLD
-    ASSERT userRegPALPROMConfig + 1 = userRegBankWriteProtectStatus
-    INX:JSR ReadUserReg
-    STA cpldRamWriteProtectFlags0_7
-    INX:JSR ReadUserReg
-    STA cpldRamWriteProtectFlags8_F
-.notV2hardware
-ENDIF
-
     ; SFTODO: What are prv83+[1-7] here? We are setting them to &FF.
     ; SQUASH: I think this code is high enough in the IBOS ROM we don't need to be indirecting
     ; via WritePrivateRam8300X and could just set PRV1 and access directly?
@@ -5217,10 +5212,16 @@ ENDIF
 .WipeBankAIfRam
     JSR TestRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
+IF IBOS_VERSION >= 127
+    JSR TestforRamAndSwitchOutPALPROM
+ENDIF
     LDX #lo(wipeRamTemplate):LDY #hi(wipeRamTemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
     JSR variableMainRamSubroutine
+IF IBOS_VERSION < 127
+; In IBOS Version >= 127, this function is carried out in TestforRamAndSwitchOutPALPROM
     PHA:JSR removeBankAFromSFTODOFOURBANKS:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
+ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
 .Rts
     RTS
@@ -5607,6 +5608,35 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             RTS
 }
 
+IF IBOS_VERSION >= 127
+.ParseBankNumberIfPresentAndSwitchOutPALPROM
+{
+    TXA:PHA:TYA:PHA
+    JSR ParseBankNumberIfPresent
+    JSR TestforRamAndSwitchOutPALPROM
+    PLA:TAY:PLA:TAX
+    RTS
+
+.^TestforRamAndSwitchOutPALPROM
+    TAX
+    JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheck ; branch if not RAM
+    TXA:PHA
+    JSR removeBankAFromSFTODOFOURBANKS
+    PLA:TAX
+    JSR testV2hardware:BCC skipPALPROMcheck
+; Then test if PALPROM in banks 8..11
+    CPX #8:BCC skipPALPROMcheck
+    CPX #12:BCS skipPALPROMcheck ; 8<=X<12
+    LDA palprom_test_table-8,X:EOR #&FF
+    AND cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
+    LDX #userRegPALPROMConfig:JSR WriteUserReg
+; Need to also write to CPLD, so CPLD can access correct bank during SRLOAD/SRWRITE/SRWIPE.
+    STA cpldPALPROMSelectionFlags0_7
+.skipPALPROMcheck
+RTS
+}
+ENDIF
+
 ; SFTODO: Returns with C clear in "simple" case, C set in the "mystery" case
 .ParseBankNumberIfPresent ; SFTODO: probably imperfect name, will do until the mystery code in middle is cleared up
 {
@@ -5798,7 +5828,11 @@ ENDIF
             JSR L9C52
             JSR parseOsword4243Length
             JSR L9C42
-            JSR ParseBankNumberIfPresent
+IF IBOS_VERSION < 127
+	  JSR ParseBankNumberIfPresent
+ELSE
+	  JSR ParseBankNumberIfPresentAndSwitchOutPALPROM
+ENDIF
             JMP LA0A6
 }
 
@@ -6407,7 +6441,11 @@ ENDIF
     LDA prvOswordBlockCopy + 7 ; high byte of buffer length
     STA prvOswordBlockCopy + 11 ; high byte of data length
 .NotSave
+IF IBOS_VERSION < 127
     JSR ParseBankNumberIfPresent
+ELSE
+    JSR ParseBankNumberIfPresentAndSwitchOutPALPROM
+ENDIF
     JSR parseSrsaveLoadFlags
     LDA prvOswordBlockCopy + 2 ; byte 0 of "buffer address" we parsed earlier
     STA prvOswordBlockCopy + 8 ; low byte of sideways start address
@@ -7112,12 +7150,13 @@ IF IBOS_VERSION >= 127
     rts
 .^RegRamMaskTable
     EQUB &01 ; bank 8
-    EQUB &02 ; bank 9
+; note that this table expects the next three bytes to be 2, 4 & 8 for banks 9..11.
+; This should probably be validated with an ASSERT
 .^palprom_test_table
-    EQUB &04 ; bank 8 - PALPROM 2a is enabled when cpldPALPROMSelectionFlags0_7 bit 2 is set
-    EQUB &08 ; bank 9 - PALPROM 2b is enabled when cpldPALPROMSelectionFlags0_7 bit 3 is set
-    EQUB &30 ; bank 10 - PALPROM 4a is enabled when cpldPALPROMSelectionFlags0_7 bits 4 & 5 are both set
-    EQUB &40 ; bank 11 - PALPROM 8a is enabled when cpldPALPROMSelectionFlags0_7 bit 6 is set
+    EQUB &02 ; bank 8  - PALPROM 2a is enabled when cpldPALPROMSelectionFlags0_7 bit 1 is set
+    EQUB &04 ; bank 9  - PALPROM 2b is enabled when cpldPALPROMSelectionFlags0_7 bit 2 is set
+    EQUB &08 ; bank 10 - PALPROM 4a is enabled when cpldPALPROMSelectionFlags0_7 bit 3 is set
+    EQUB &40 ; bank 11 - PALPROM 8a is enabled when cpldPALPROMSelectionFlags0_7 bit 5 is set
 .^palprom_banks_table
     EQUB &01 ; bank 8 - PALPROM 2a has 1 extra bank
     EQUB &01 ; bank 9 - PALPROM 2b has 1 extra bank
@@ -7460,6 +7499,36 @@ ENDIF
     LDX #userRegBankInsertStatus + 1:JSR ReadUserReg:STA transientRomBankMask + 1
     JSR unplugBanksUsingTransientRomBankMask
 .Finish
+IF IBOS_VERSION >= 127
+    ; Check if IBOS is running on V2 hardware, and if it is then:
+    ;  - read RAM / ROM flags from CPLD, and save to private RAM.
+    ;  - read 'default' Write Protect flags from CPLD, and save to RTC CMOS. These will be used during IBOS Reset
+    ;  - read the PALPROM config flags from private RAM, and write these to the CPLD
+    ;  - read the 'in-use' Write Protect flags from private RAM, and write these to the CPLD
+    ; Note that the private RAM register for the PALPROM config flags must be updated with *FX162,49,x 
+    ;
+    ; Otherwise, if using V1 hardware the private RAM should be updated
+    ; with *FX162,126,x & *FX162,127,x to reflect the amount of on board RAM.
+    JSR testV2hardware
+    BCC notV2hardware
+    LDA cpldRAMROMSelectionFlags0_3_V2Status:ORA #&F0:LDX #userRegRamPresenceFlags0_7:JSR WriteUserReg
+    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
+    INX:LDA cpldRAMROMSelectionFlags8_F:JSR WriteUserReg
+    ; Read 'default' Write Protect flags from CPLD, and save to RTC CMOS. These will be used during IBOS Reset. 
+    ; LDA cpldRamWriteProtectFlags0_7
+    ; LDX #userDefaultRegBankWriteProtectStatus:JSR WriteUserReg
+    ; LDA cpldRamWriteProtectFlags8_F
+    ; INX:JSR WriteUserReg
+    ; Read the PALPROM config flags from private RAM, and write these to the CPLD
+    LDX #userRegPALPROMConfig:JSR ReadUserReg
+    STA cpldPALPROMSelectionFlags0_7
+    ; Read the 'in use' Write Protect flags from private RAM, and write these to the CPLD
+    LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
+    STA cpldRamWriteProtectFlags0_7
+    INX:JSR ReadUserReg
+    STA cpldRamWriteProtectFlags8_F
+.notV2hardware
+ENDIF
 ; SFTODO: Next bit of code is either claiming or not claiming the service call based on prvTubeOnOffInProgress; it will return with A=&10 (this call) or 0.
     LDX #prvTubeOnOffInProgress - prv83:JSR ReadPrivateRam8300X
     EOR #&FF
