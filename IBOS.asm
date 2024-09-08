@@ -3760,7 +3760,7 @@ ENDIF
 			
 ;*APPEND Command
 .append
-; KL 27/8/24: Temporarily dropped this code, to free up space for IBOS127 *ROMS command changes.
+; KL 08/09/24: Temporarily dropped this code, to free up space for IBOS127 *SRLOAD / *SRWRITE & *SRWIPE command changes.
 IF IBOS_VERSION < 127
 {
 ; SFTODO: Express these as transientWorkspace + n, to document what area of memory they live in?
