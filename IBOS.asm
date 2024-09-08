@@ -7440,6 +7440,9 @@ IF IBOS_VERSION >= 127
 ENDIF
 
 ;SPOOL/EXEC file closure warning - Service call 10 SFTODO: I *suspect* we are using this as a "part way through reset" service call rather than for its nominal purpose - have a look at OS 1.2 disassembly and see when this is actually generated. Do filing systems or anything issue it during "normal" operation? (e.g. if you do "*EXEC" with no argument.)
+; NB: On a BBC B with OS 1.20 (which is the only relevant case for IBOS), the very first
+; service call issued on power on is this one. (It occurs inside the call to "JSR
+; .setupTapeOptions", using TobyLobster's disassembly labels.)
 .service10
 {
     ; SFTODO: I'm guessing, but note that during a typical boot service call &10 is issued
