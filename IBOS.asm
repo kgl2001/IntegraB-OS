@@ -3288,6 +3288,9 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     STA prvPrintBufferBankList,X
     INX:BNE DisableUnwantedBankLoop ; always branch
 .prvPrintBufferBankListInitialised
+IF IBOS_VERSION >= 127
+.^prvPrintBufferBankListInitialised2
+ENDIF
     JSR InitialiseBuffer
     JMP ShowBufferSizeAndLocation
 }
@@ -3315,11 +3318,11 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDY TmpTransientCmdPtrOffset
     JMP ParseUserBankListLoop
 
-    ; SQUASH: This code is identical to prvPrintBufferBankListInitialised above, so we could
-    ; just share it; we don't even fall through into it, so the label just needs moving.
+IF IBOS_VERSION < 127
 .prvPrintBufferBankListInitialised2
     JSR InitialiseBuffer
     JMP ShowBufferSizeAndLocation
+ENDIF
 }
 
 ; SQUASH: Could we use this in some other places where we're initialising
