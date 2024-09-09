@@ -929,7 +929,7 @@ ENDMACRO
 start = &8000
 end = &C000
 ORG start
-; SFTODO TEMP DISABLED GUARD end
+GUARD end
 
 .RomHeader
     JMP language
@@ -938,6 +938,10 @@ ORG start
     EQUB RomTypeService OR RomTypeLanguage OR RomType6502
 .CopyrightOffset
     EQUB Copyright - RomHeader
+; TODO: It would be good to give a meaningful binary version number; since all known versions
+; of IBOS use &FF, we could start at 0 for 1.27 and bump it by one each time. (This would make
+; it easier for user programs to query the precise IBOS version, if they need a particular
+; fix.) Or we could use 127 for 1.27 and so on, but that would give us less headroom.
     EQUB &FF ; binary version number
 .Title
     EQUS "IBOS", 0
@@ -3249,6 +3253,7 @@ ENDIF
 ; to manage paging private RAM in/out.
 .^PrvEn
     PHA
+    ; SFTODO: Should we be doing AND_NOT ramselPrvs1 in the next line? Or maybe AND_NOT (ramselShen OR ramselPrvs1)?
     LDA ramselCopy:ORA #ramselPrvs1:STA ramselCopy:STA ramsel
     LDA romselCopy:ORA #romselPrvEn:STA romselCopy:STA romsel
     PLA
@@ -10603,11 +10608,26 @@ ENDIF
 ; https://github.com/ZornsLemma/GXR.
 
 ; It would be nice if "*CO." could be used as an abbreviation for *CONFIGURE, as on the Master,
-; but OS 1.20 interprets this as an abbreviate for "*CODE" and IBOS never gets a chance to see
-; it. Short of installing a USERV handler, there isn't much we can do about this.
+; but OS 1.20 interprets this as an abbreviation for "*CODE" and IBOS never gets a chance to
+; see it. Short of installing a USERV handler, there isn't much we can do about this.
+
+; SFTODO: Look at the integrap ROM packaged with b-em and see if we can build that too.
+
+; SFTODO: If a user application is using the private RAM (except the 1K allocated to IBOS), is
+; there a danger that things like pressing Escape will trigger the printer buffer to be flushed
+; and corrupt data in the private RAM? Or will this leave the "other" 11K of the private RAM
+; alone as long as there's no data in the buffer? I am assuming the printer buffer is the only
+; thing in IBOS that uses the "other" 11K, but if anything else does that might be a concern
+; too. *If necessary*, it might be nice to provide some kind of call (OSWORD/OSBYTE) which a
+; user application can use to tell IBOS "I want the other 11K, keep your hands off it". There
+; is a bit of a corner case here as IBOS steals the OS printer buffer, which is OK as long as
+; it is providing its own printer buffer (at the moment you cannot turn it off), but this means
+; you cannot currently use the 11K private RAM for yourself *and* print. Maybe this is OK, but
+; ideally it would be possible to do both (but not with a big buffer, of course). (We could say
+; "allocate a SWR bank for the buffer if you're using the 11K and want to print", but in that
+; case the application might just as well use the SWR bank itself and leave the private RAM to
+; IBOS.) Maybe an application using the 11K should be expected to do *FX5,0 first???
 
 ;; Local Variables:
 ;; fill-column: 95
 ;; End:
-
-; SFTODO: Look at the integrap ROM packaged with b-em and see if we can build that too.
