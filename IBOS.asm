@@ -3158,18 +3158,40 @@ ENDIF
     LDX prvBootCommandLength:BEQ FinishShow
     LDX #1
 .ShowLoop
-    LDA prvBootCommand - 1,X:JSR PrintEscapedCharacter
+    LDA prvBootCommand - 1,X
+IF IBOS_VERSION < 127
+    JSR PrintEscapedCharacter
+ELSE
+    BPL NotTopBitSet ; our one caller has done LDA immediately before calling
+    PHA
+    LDA #'|':JSR OSWRCH
+    LDA #'!':JSR OSWRCH
+    PLA
+.NotTopBitSet
+    AND #&7F
+    CMP #&20:BCS NotLowControl
+.HighControl
+    AND #&3F
+.Special
+    PHA
+    LDA #'|':JSR OSWRCH
+    PLA
+    CMP #&20:BCS Printable
+    ORA #'@'
+.NotLowControl
+    CMP #vduDel:BEQ HighControl
+    CMP #'"':BEQ Special
+    CMP #'|':BEQ Special
+.Printable
+    JSR OSWRCH
+ENDIF
     INX:CPX prvBootCommandLength:BNE ShowLoop
 .FinishShow
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 
-; SQUASH: This has only one caller
-.PrintEscapedCharacter
 IF IBOS_VERSION < 127
+.PrintEscapedCharacter
     CMP #&80:BCC NotTopBitSet
-ELSE
-    BPL NotTopBitSet ; our one caller has done LDA immediately before calling
-ENDIF
     PHA
     LDA #'|':JSR OSWRCH
     LDA #'!':JSR OSWRCH
@@ -3191,6 +3213,7 @@ ENDIF
     CMP #'|':BEQ Special
 .Printable
     JMP OSWRCH
+ENDIF
 }
 
 ; *PURGE Command
