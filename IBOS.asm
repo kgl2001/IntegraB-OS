@@ -681,10 +681,11 @@ prvPrintBufferFirstBankIndex = prv82 + &0D
 ; banks used for the printer buffer. This is &C0 for sideways RAM or &B0 for
 ; private RAM.
 prvPrintBufferBankEnd   = prv82 + &0E
+IF IBOS_VERSION < 127
 ; prvPrintBufferBankCount seems to be the number of banks of sideways RAM allocated to the
 ; printer buffer; it's 0 if there's no buffer or the buffer is in private RAM.
-; SQUASH: This seems to be write-only.
 prvPrintBufferBankCount = prv82 + &0F
+ENDIF
 MaxPrintBufferSwrBanks = 4
 ; prvPrintBufferBankList is a 4 byte list of private/sideways RAM banks used by
 ; the printer buffer. If there are less than 4 banks, the unused entries will be
@@ -3318,7 +3319,9 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA #&B0:STA prvPrintBufferBankEnd ; SFTODO: mildly magic
     LDA #0
     STA prvPrintBufferFirstBankIndex
+IF IBOS_VERSION < 127
     STA prvPrintBufferBankCount
+ENDIF
     STA prvPrintBufferSizeLow
     STA prvPrintBufferSizeHigh
     SEC:LDA prvPrintBufferBankEnd:SBC prvPrintBufferBankStart:STA prvPrintBufferSizeMid
@@ -3341,7 +3344,9 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA #&80:STA prvPrintBufferBankStart ; SFTODO: mildly magic
     LDA #0:STA prvPrintBufferFirstBankIndex
     LDA #&C0:STA prvPrintBufferBankEnd ; SFTODO: mildly magic
+IF IBOS_VERSION < 127
     STX prvPrintBufferBankCount
+ENDIF
     JMP PurgePrintBuffer
 }
 			
@@ -11197,7 +11202,9 @@ ENDIF
     STA prvPrintBufferSizeLow
     STA prvPrintBufferSizeHigh
     STA prvPrintBufferFirstBankIndex
+IF IBOS_VERSION < 127
     STA prvPrintBufferBankCount
+ENDIF
     ; SFTODO: Following code is similar to chunk just below InitialiseBuffer, could
     ; it be factored out?
     JSR SanitisePrvPrintBufferStart:STA prvPrintBufferBankStart
