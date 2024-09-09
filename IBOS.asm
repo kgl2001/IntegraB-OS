@@ -20,7 +20,7 @@
 ; INCLUDE_APPEND will normally be TRUE in a release build, but setting it to FALSE removes
 ; *APPEND to free up space for experimental changes.
 ; KL 08/09/24: Temporarily dropped this code, to free up space for IBOS127 *SRLOAD / *SRWRITE & *SRWIPE command changes.
-INCLUDE_APPEND = (IBOS_VERSION < 127) ; TRUE
+INCLUDE_APPEND = TRUE
 
 IF IBOS_VERSION != 120
     IBOS120_VARIANT = 0
@@ -969,7 +969,7 @@ ENDMACRO
 start = &8000
 end = &C000
 ORG start
-GUARD end
+; TODO TCO GUARD end
 
 .RomHeader
     JMP language
@@ -3165,7 +3165,11 @@ ENDIF
 
 ; SQUASH: This has only one caller
 .PrintEscapedCharacter
-    CMP #&80:BCC NotTopBitSet ; SQUASH: TAY:BPL?
+IF IBOS_VERSION < 127
+    CMP #&80:BCC NotTopBitSet
+ELSE
+    BPL NotTopBitSet ; our one caller has done LDA immediately before calling
+ENDIF
     PHA
     LDA #'|':JSR OSWRCH
     LDA #'!':JSR OSWRCH
