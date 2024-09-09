@@ -969,7 +969,7 @@ ENDMACRO
 start = &8000
 end = &C000
 ORG start
-; TODO TCO GUARD end
+GUARD end
 
 .RomHeader
     JMP language
@@ -3345,12 +3345,16 @@ ENDIF
 
 {
 .UsePrivateRam
-    ; SQUASH: "JSR UnassignPrintBufferBanks" here, then delete the LDA #&FF:STA... below?
+IF IBOS_VERSION < 127
     LDA romselCopy:AND #maxBank:ORA #romselPrvEn:STA prvPrintBufferBankList
     LDA #&FF
     STA prvPrintBufferBankList + 1
     STA prvPrintBufferBankList + 2
     STA prvPrintBufferBankList + 3
+ELSE
+    JSR UnassignPrintBufferBanks
+    LDA romselCopy:AND #maxBank:ORA #romselPrvEn:STA prvPrintBufferBankList
+ENDIF
 .^InitialiseBuffer
     LDA prvPrintBufferBankList:CMP #&FF:BEQ UsePrivateRam
     AND #&F0:CMP #romselPrvEn:BNE BufferInSwr1 ; SFTODO: magic
