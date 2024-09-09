@@ -20,7 +20,7 @@
 ; INCLUDE_APPEND will normally be TRUE in a release build, but setting it to FALSE removes
 ; *APPEND to free up space for experimental changes.
 ; KL 08/09/24: Temporarily dropped this code, to free up space for IBOS127 *SRLOAD / *SRWRITE & *SRWIPE command changes.
-INCLUDE_APPEND = TRUE
+INCLUDE_APPEND = (IBOS_VERSION < 127) ; TRUE
 
 IF IBOS_VERSION != 120
     IBOS120_VARIANT = 0
@@ -222,6 +222,7 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 IF IBOS_VERSION < 127
 userRegRamPresenceFlags = &7F
 ELSE
+userRegTmp = &7C ; 2 bytes for temporary use
 userRegRamPresenceFlags0_7 = &7E
 userRegRamPresenceFlags8_F = &7F
 ENDIF
@@ -7387,6 +7388,7 @@ ENDIF
     SEC
 .Common
     PHP
+    ; SFTODO: Should this code be checking for a v2 board?
     JSR ParseRomBankList
     BCC LA513
     JMP badId
@@ -7395,6 +7397,17 @@ ENDIF
 IF IBOS_VERSION < 127
     LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
 ELSE
+    LDX #userRegBankWriteProtectStatus
+    JSR FindNextCharAfterSpaceSkippingComma
+    BCS NoOption
+    AND #CapitaliseMask
+    CMP #'T'
+    BNE NoOption
+    ; We implement temporary changes by redirecting the WriteUserReg calls to two bytes of
+    ; temporary space instead of the correct registers.
+    JSR &FFEE ; TEMP!!!
+    LDX #userRegTmp
+.NoOption
     LDA cpldRamWriteProtectFlags0_7
 ENDIF
     ORA L00AE
@@ -7409,7 +7422,7 @@ IF IBOS_VERSION < 127
     JSR ReadUserReg
 ELSE
     STA cpldRamWriteProtectFlags0_7
-    LDX #userRegBankWriteProtectStatus:JSR WriteUserReg
+    JSR WriteUserReg
     LDA cpldRamWriteProtectFlags8_F
 ENDIF
     ORA L00AF
