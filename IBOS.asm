@@ -17,6 +17,11 @@
 ;
 ; ENHANCE: An idea for a possible enhancement in a future version of IBOS.
 
+; INCLUDE_APPEND will normally be TRUE in a release build, but setting it to FALSE removes
+; *APPEND to free up space for experimental changes.
+; KL 08/09/24: Temporarily dropped this code, to free up space for IBOS127 *SRLOAD / *SRWRITE & *SRWIPE command changes.
+INCLUDE_APPEND = TRUE
+
 IF IBOS_VERSION != 120
     IBOS120_VARIANT = 0
 ENDIF
@@ -146,7 +151,7 @@ rtcUserBase = &0E
 ;Register &0F - &2D:	0: Tube / 2-4: BAUD / 5-7: Printer
 ;Register &10 - &A0:	0: File system disc/net flag / 4: Boot / 5-7: Data
 ;Register &11 - &FF:          <v1.26: unused / >=v1.26: 0-3: FILE, 4-7: spare
-;Register &31 - &00:          >=127: PALPROM Config: 0-1: Spare / 2: pp2a / 3: pp2b / 4..5: pp4a / 6..7: pp8a
+;Register &31 - &00:          >=v1.27: PALPROM Config: 0-1: Spare / 2: pp2a / 3: pp2b / 4..5: pp4a / 6..7: pp8a
 
 
 ; These registers are held in private RAM at &83B2-&83FF; this is battery-backed
@@ -676,10 +681,11 @@ prvPrintBufferFirstBankIndex = prv82 + &0D
 ; banks used for the printer buffer. This is &C0 for sideways RAM or &B0 for
 ; private RAM.
 prvPrintBufferBankEnd   = prv82 + &0E
+IF IBOS_VERSION < 127
 ; prvPrintBufferBankCount seems to be the number of banks of sideways RAM allocated to the
 ; printer buffer; it's 0 if there's no buffer or the buffer is in private RAM.
-; SQUASH: This seems to be write-only.
 prvPrintBufferBankCount = prv82 + &0F
+ENDIF
 MaxPrintBufferSwrBanks = 4
 ; prvPrintBufferBankList is a 4 byte list of private/sideways RAM banks used by
 ; the printer buffer. If there are less than 4 banks, the unused entries will be
@@ -1001,7 +1007,14 @@ ELIF IBOS_VERSION == 125
 ELIF IBOS_VERSION == 126
     EQUS "1.26" ; version string
 ELIF IBOS_VERSION == 127
-    EQUS "1.27" ; version string
+    ; TODO: We could pull the "1" prefix on all the version strings out into a separate EQUS,
+    ; so we can just check INCLUDE_APPEND once instead of having to duplicate it for each
+    ; version.
+    IF INCLUDE_APPEND
+        EQUS "1.27" ; version string
+    ELSE
+        EQUS "X.27" ; version string
+    ENDIF
 ENDIF
 .Copyright
     EQUS 0, "(C)"
@@ -2595,10 +2608,10 @@ ENDIF
 ptr = &00 ; 2 bytes
 
 .^FullReset
-    ; Zero user RTC registers &00-&31 inclusive, except the following, which are treated as a special case:
+    ; Zero user RTC registers &00-X inclusive, except the following, which are treated as a special case:
     ;  - register &05: userRegLangFile.
     ;  - registers &2F / &30: userDefaultRegBankWriteProtectStatus ***CURRENTLY DISABLED***.
-    ;  - register &31: userRegPALPROMConfig.
+    ;  - register &31: userRegPALPROMConfig (outside the range anyway).
 IF IBOS_VERSION < 127
     LDX #&32
 ELSE
@@ -3306,7 +3319,9 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA #&B0:STA prvPrintBufferBankEnd ; SFTODO: mildly magic
     LDA #0
     STA prvPrintBufferFirstBankIndex
+IF IBOS_VERSION < 127
     STA prvPrintBufferBankCount
+ENDIF
     STA prvPrintBufferSizeLow
     STA prvPrintBufferSizeHigh
     SEC:LDA prvPrintBufferBankEnd:SBC prvPrintBufferBankStart:STA prvPrintBufferSizeMid
@@ -3329,7 +3344,9 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDA #&80:STA prvPrintBufferBankStart ; SFTODO: mildly magic
     LDA #0:STA prvPrintBufferFirstBankIndex
     LDA #&C0:STA prvPrintBufferBankEnd ; SFTODO: mildly magic
+IF IBOS_VERSION < 127
     STX prvPrintBufferBankCount
+ENDIF
     JMP PurgePrintBuffer
 }
 			
@@ -3757,11 +3774,10 @@ ENDIF
     JSR ConvertIntegerResult - 1
     JMP ExitAndClaimServiceCall
 }
-			
+
 ;*APPEND Command
 .append
-; KL 08/09/24: Temporarily dropped this code, to free up space for IBOS127 *SRLOAD / *SRWRITE & *SRWIPE command changes.
-IF IBOS_VERSION < 127
+IF INCLUDE_APPEND
 {
 ; SFTODO: Express these as transientWorkspace + n, to document what area of memory they live in?
 LineLengthIncludingCr = &A9
@@ -3831,6 +3847,7 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
     LDA #' ':JMP OSWRCH
 }
 ELSE
+    ; Stub *APPEND implementation for INCLUDE_APPEND=FALSE case.
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 .printSpace
     LDA #' ':JMP OSWRCH
@@ -5210,6 +5227,9 @@ ENDIF
 
 ; SQUASH: This has only one caller, the code immediately above - could it just be inlined?
 .WipeBankAIfRam
+    ; SQUASH: TestforRamAndSwitchOutPALPROM already does this test, but it doesn't return with
+    ; Z indicating the result. We might be able to tweak things to avoid needing this call to
+    ; TestRamUsingVariableMainRamSubroutine.
     JSR TestRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
 IF IBOS_VERSION >= 127
@@ -5611,7 +5631,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 IF IBOS_VERSION >= 127
 .ParseBankNumberIfPresentAndSwitchOutPALPROM
 {
-    TXA:PHA:TYA:PHA
+    TXA:PHA:TYA:PHA ; SQUASH: I am not sure we need to preserve X, and we perhaps *shouldn't* preserve Y
     JSR ParseBankNumberIfPresent
     JSR TestforRamAndSwitchOutPALPROM
     PLA:TAY:PLA:TAX
@@ -5817,7 +5837,7 @@ ENDIF
 ;*SRREAD Command
 .^srread	  PRVEN								;switch in private RAM
             LDA #&00
-            JMP L9CDF
+            JMP L9CDF ; SQUASH: BEQ always or use BIT to skip next two bytes
 			
 ;*SRWRITE Command
 .^srwrite	  PRVEN								;switch in private RAM
@@ -6308,15 +6328,17 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
 .TubeClaimLoop
     LDA #tubeEntryClaim + tubeClaimId:JSR tubeEntry:BCC TubeClaimLoop
     ; Get the 32-bit address from prvOswordBlockCopy and set it up as tube transfer address.
-    ; SQUASH: Could we rewrite this using a loop? I think this would work:
-    ; LDX #3
-    ; .CopyLoop
-    ; LDA prvOswordBlockCopy+2,X:STA L0100,X
-    ; DEX:BPL CopyLoop
+IF IBOS_VERSION < 127
     LDA prvOswordBlockCopy + 2:STA L0100
     LDA prvOswordBlockCopy + 3:STA L0101
     LDA prvOswordBlockCopy + 4:STA L0102
     LDA prvOswordBlockCopy + 5:STA L0103
+ELSE
+    LDX #3
+.CopyLoop
+    LDA prvOswordBlockCopy+2,X:STA L0100,X
+    DEX:BPL CopyLoop
+ENDIF
     ; Set b0 of A to be !b7 of Function, with all other bits of A clear.
     ; A=0 means multi-byte transfer, parasite to host
     ; A=1 means multi-byte transfer, host to parasite
@@ -7150,7 +7172,7 @@ IF IBOS_VERSION >= 127
     rts
 .^RegRamMaskTable
     EQUB &01 ; bank 8
-; note that this table expects the next three bytes to be 2, 4 & 8 for banks 9..11.
+; note that RegRamMaskTable overlaps with the first three bytes of palprom_test_table; they should be 2, 4 & 8 for banks 9..11.
 ; This should probably be validated with an ASSERT
 .^palprom_test_table
     EQUB &02 ; bank 8  - PALPROM 2a is enabled when cpldPALPROMSelectionFlags0_7 bit 1 is set
@@ -7440,6 +7462,9 @@ IF IBOS_VERSION >= 127
 ENDIF
 
 ;SPOOL/EXEC file closure warning - Service call 10 SFTODO: I *suspect* we are using this as a "part way through reset" service call rather than for its nominal purpose - have a look at OS 1.2 disassembly and see when this is actually generated. Do filing systems or anything issue it during "normal" operation? (e.g. if you do "*EXEC" with no argument.)
+; NB: On a BBC B with OS 1.20 (which is the only relevant case for IBOS), the very first
+; service call issued on power on is this one. (It occurs inside the call to "JSR
+; .setupTapeOptions", using TobyLobster's disassembly labels.)
 .service10
 {
     ; SFTODO: I'm guessing, but note that during a typical boot service call &10 is issued
@@ -11177,7 +11202,9 @@ ENDIF
     STA prvPrintBufferSizeLow
     STA prvPrintBufferSizeHigh
     STA prvPrintBufferFirstBankIndex
+IF IBOS_VERSION < 127
     STA prvPrintBufferBankCount
+ENDIF
     ; SFTODO: Following code is similar to chunk just below InitialiseBuffer, could
     ; it be factored out?
     JSR SanitisePrvPrintBufferStart:STA prvPrintBufferBankStart
