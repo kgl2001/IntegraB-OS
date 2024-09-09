@@ -20,7 +20,7 @@
 ; INCLUDE_APPEND will normally be TRUE in a release build, but setting it to FALSE removes
 ; *APPEND to free up space for experimental changes.
 ; KL 08/09/24: Temporarily dropped this code, to free up space for IBOS127 *SRLOAD / *SRWRITE & *SRWIPE command changes.
-INCLUDE_APPEND = (IBOS_VERSION < 127)
+INCLUDE_APPEND = TRUE
 
 IF IBOS_VERSION != 120
     IBOS120_VARIANT = 0
@@ -967,7 +967,7 @@ ENDMACRO
 start = &8000
 end = &C000
 ORG start
-GUARD end
+; SFTODO TCO GUARD end
 
 .RomHeader
     JMP language
@@ -6323,15 +6323,17 @@ Function = prvOswordBlockCopy ; SFTODO: global constant for this?
 .TubeClaimLoop
     LDA #tubeEntryClaim + tubeClaimId:JSR tubeEntry:BCC TubeClaimLoop
     ; Get the 32-bit address from prvOswordBlockCopy and set it up as tube transfer address.
-    ; SQUASH: Could we rewrite this using a loop? I think this would work:
-    ; LDX #3
-    ; .CopyLoop
-    ; LDA prvOswordBlockCopy+2,X:STA L0100,X
-    ; DEX:BPL CopyLoop
+IF IBOS_VERSION < 127
     LDA prvOswordBlockCopy + 2:STA L0100
     LDA prvOswordBlockCopy + 3:STA L0101
     LDA prvOswordBlockCopy + 4:STA L0102
     LDA prvOswordBlockCopy + 5:STA L0103
+ELSE
+    LDX #3
+.CopyLoop
+    LDA prvOswordBlockCopy+2,X:STA L0100,X
+    DEX:BPL CopyLoop
+ENDIF
     ; Set b0 of A to be !b7 of Function, with all other bits of A clear.
     ; A=0 means multi-byte transfer, parasite to host
     ; A=1 means multi-byte transfer, host to parasite
