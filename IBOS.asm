@@ -5214,6 +5214,9 @@ ENDIF
 
 ; SQUASH: This has only one caller, the code immediately above - could it just be inlined?
 .WipeBankAIfRam
+    ; SQUASH: TestforRamAndSwitchOutPALPROM already does this test, but it doesn't return with
+    ; Z indicating the result. We might be able to tweak things to avoid needing this call to
+    ; TestRamUsingVariableMainRamSubroutine.
     JSR TestRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
 IF IBOS_VERSION >= 127
