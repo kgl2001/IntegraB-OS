@@ -2861,6 +2861,7 @@ IF IBOS_VERSION < 127
     LDA ReturnedX:TAX
 ELSE
     LDX ReturnedX
+    LDA #&6F ; SQUASH: can we avoid the need for our OSBYTE calls to preserve A internally?
 ENDIF
     PRVDIS
     PLP
