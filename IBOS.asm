@@ -3330,10 +3330,17 @@ ENDIF
 ; would potentially still save code.
 .UnassignPrintBufferBanks
     LDA #&FF
+IF IBOS_VERSION < 127
     STA prvPrintBufferBankList
     STA prvPrintBufferBankList + 1
     STA prvPrintBufferBankList + 2
     STA prvPrintBufferBankList + 3
+ELSE
+    LDX #3
+.Loop
+    STA prvPrintBufferBankList,X
+    DEX:BPL Loop
+ENDIF
     RTS
 
 {
