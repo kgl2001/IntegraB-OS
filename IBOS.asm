@@ -1161,7 +1161,7 @@ ELSE
 		EQUS &02, &94							;Parameter &86 for *CSAVE:		'<fsp>'
 		EQUS &02, &94							;Parameter &87 for *CLOAD:		'<fsp>'
 		EQUS &08, "(<cmd>", &A2						;Parameter &88 for *BOOT:		'(<cmd>/?)'
-		EQUS &06, &AF, "/#" , &98, &A2					;Parameter &89 for *BUFFER:		'(<0-4>/#<id>(,<id>).../?)'
+		EQUS &06, &B1, "/#" , &98, &A2					;Parameter &89 for *BUFFER:		'(<0-4>/#<id>(,<id>).../?)'
 		EQUS &03, "(", &A4							;Parameter &8A for *PURGE:		'(ON/OFF/?)'
 		EQUS &03, &98,&A4							;Parameter &8B for *INSERT:		'<id>(,<id>)...(I)'
 		EQUS &03, &98,&A4							;Parameter &8C for *UNPLUG:		'<id>(,<id>)...(I)'
