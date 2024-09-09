@@ -17,6 +17,11 @@
 ;
 ; ENHANCE: An idea for a possible enhancement in a future version of IBOS.
 
+; INCLUDE_APPEND will normally be TRUE in a release build, but setting it to FALSE removes
+; *APPEND to free up space for experimental changes.
+; KL 08/09/24: Temporarily dropped this code, to free up space for IBOS127 *SRLOAD / *SRWRITE & *SRWIPE command changes.
+INCLUDE_APPEND = (IBOS_VERSION < 127)
+
 IF IBOS_VERSION != 120
     IBOS120_VARIANT = 0
 ENDIF
@@ -1001,7 +1006,14 @@ ELIF IBOS_VERSION == 125
 ELIF IBOS_VERSION == 126
     EQUS "1.26" ; version string
 ELIF IBOS_VERSION == 127
-    EQUS "1.27" ; version string
+    ; TODO: We could pull the "1" prefix on all the version strings out into a separate EQUS,
+    ; so we can just check INCLUDE_APPEND once instead of having to duplicate it for each
+    ; version.
+    IF INCLUDE_APPEND
+        EQUS "1.27" ; version string
+    ELSE
+        EQUS "X.27" ; version string
+    ENDIF
 ENDIF
 .Copyright
     EQUS 0, "(C)"
@@ -3759,10 +3771,6 @@ ENDIF
 }
 
 ;*APPEND Command
-; INCLUDE_APPEND will normally be TRUE in a release build, but setting it to FALSE removes
-; *APPEND to free up space for experimental changes.
-; KL 08/09/24: Temporarily dropped this code, to free up space for IBOS127 *SRLOAD / *SRWRITE & *SRWIPE command changes.
-INCLUDE_APPEND = (IBOS_VERSION < 127)
 .append
 IF INCLUDE_APPEND
 {
