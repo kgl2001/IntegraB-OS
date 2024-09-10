@@ -7480,7 +7480,7 @@ IF IBOS_VERSION < 127
     PRVDIS
 ELSE
     STA cpldRamWriteProtectFlags8_F
-    LDX #userRegBankWriteProtectStatus+1:JSR WriteUserReg
+    INX:JSR WriteUserReg
 ENDIF
     JMP ExitAndClaimServiceCall
 }
