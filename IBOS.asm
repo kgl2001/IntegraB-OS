@@ -222,6 +222,7 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 IF IBOS_VERSION < 127
 userRegRamPresenceFlags = &7F
 ELSE
+userRegTmp = &7C ; 2 bytes for temporary use
 userRegRamPresenceFlags0_7 = &7E
 userRegRamPresenceFlags8_F = &7F
 ENDIF
@@ -1160,7 +1161,7 @@ ELSE
 		EQUS &02, &94							;Parameter &86 for *CSAVE:		'<fsp>'
 		EQUS &02, &94							;Parameter &87 for *CLOAD:		'<fsp>'
 		EQUS &08, "(<cmd>", &A2						;Parameter &88 for *BOOT:		'(<cmd>/?)'
-		EQUS &06, &AF, "/#" , &98, &A2					;Parameter &89 for *BUFFER:		'(<0-4>/#<id>(,<id>).../?)'
+		EQUS &06, &B1, "/#" , &98, &A2					;Parameter &89 for *BUFFER:		'(<0-4>/#<id>(,<id>).../?)'
 		EQUS &03, "(", &A4							;Parameter &8A for *PURGE:		'(ON/OFF/?)'
 		EQUS &03, &98,&A4							;Parameter &8B for *INSERT:		'<id>(,<id>)...(I)'
 		EQUS &03, &98,&A4							;Parameter &8C for *UNPLUG:		'<id>(,<id>)...(I)'
@@ -1183,8 +1184,8 @@ ELSE
 		EQUS &05, &94, &AD, &AB, &A5						;Parameter &9D:			'<fsp> (<end>/+<len>) (<id>) (Q)'
 		EQUS &06, "<", &AC, &AB, &AD, &A6					;Parameter &9E:			'<addr> (<end>/+<len>) <sraddr> (<id>)'
 		EQUS &02, &9E							;Parameter &9F:			'<addr> (<end>/+<len>) <sraddr> (<id>)'
-		EQUS &02, &98							;Parameter &A0:			'<id>(,<id>)...'
-		EQUS &02, &98							;Parameter &A1:			'<id>(,<id>)...'
+		EQUS &03, &98, &B2							;Parameter &A0:			'<id>(,<id>)... (T)'
+		EQUS &03, &98, &B2							;Parameter &A1:			'<id>(,<id>)... (T)'
 		EQUS &04, "/?)"							;Parameter &A2:			'/?)'
 		EQUS &08, "ON/OFF", &A2						;Parameter &A3:			'ON/OFF/?)'
 		EQUS &04, "(I)"							;Parameter &A4:			'(I)'
@@ -1201,6 +1202,7 @@ ELSE
 		EQUS &05, ")..."							;Parameter &AF:			')...'
 		EQUS &05, "(<0-"							;Parameter &B0:			'(<0-'
 		EQUS &04, &B0, "4>"							;Parameter &B1:			'(<0-4>'
+        EQUS &05, " (T)"                            ; Parameter &B2: ' (T)'
 ENDIF
 
 ;lookup table for start address of recognised * commands
@@ -2859,6 +2861,7 @@ IF IBOS_VERSION < 127
     LDA ReturnedX:TAX
 ELSE
     LDX ReturnedX
+    LDA #&6F ; SQUASH: can we avoid the need for our OSBYTE calls to preserve A internally?
 ENDIF
     PRVDIS
     PLP
@@ -3155,14 +3158,40 @@ ENDIF
     LDX prvBootCommandLength:BEQ FinishShow
     LDX #1
 .ShowLoop
-    LDA prvBootCommand - 1,X:JSR PrintEscapedCharacter
+    LDA prvBootCommand - 1,X
+IF IBOS_VERSION < 127
+    JSR PrintEscapedCharacter
+ELSE
+    BPL NotTopBitSet
+    PHA
+    LDA #'|':JSR OSWRCH
+    LDA #'!':JSR OSWRCH
+    PLA
+.NotTopBitSet
+    AND #&7F
+    CMP #&20:BCS NotLowControl
+.HighControl
+    AND #&3F
+.Special
+    PHA
+    LDA #'|':JSR OSWRCH
+    PLA
+    CMP #&20:BCS Printable
+    ORA #'@'
+.NotLowControl
+    CMP #vduDel:BEQ HighControl
+    CMP #'"':BEQ Special
+    CMP #'|':BEQ Special
+.Printable
+    JSR OSWRCH
+ENDIF
     INX:CPX prvBootCommandLength:BNE ShowLoop
 .FinishShow
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 
-; SQUASH: This has only one caller
+IF IBOS_VERSION < 127
 .PrintEscapedCharacter
-    CMP #&80:BCC NotTopBitSet ; SQUASH: TAY:BPL?
+    CMP #&80:BCC NotTopBitSet
     PHA
     LDA #'|':JSR OSWRCH
     LDA #'!':JSR OSWRCH
@@ -3184,6 +3213,7 @@ ENDIF
     CMP #'|':BEQ Special
 .Printable
     JMP OSWRCH
+ENDIF
 }
 
 ; *PURGE Command
@@ -3258,6 +3288,9 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     STA prvPrintBufferBankList,X
     INX:BNE DisableUnwantedBankLoop ; always branch
 .prvPrintBufferBankListInitialised
+IF IBOS_VERSION >= 127
+.^prvPrintBufferBankListInitialised2
+ENDIF
     JSR InitialiseBuffer
     JMP ShowBufferSizeAndLocation
 }
@@ -3285,11 +3318,11 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
     LDY TmpTransientCmdPtrOffset
     JMP ParseUserBankListLoop
 
-    ; SQUASH: This code is identical to prvPrintBufferBankListInitialised above, so we could
-    ; just share it; we don't even fall through into it, so the label just needs moving.
+IF IBOS_VERSION < 127
 .prvPrintBufferBankListInitialised2
     JSR InitialiseBuffer
     JMP ShowBufferSizeAndLocation
+ENDIF
 }
 
 ; SQUASH: Could we use this in some other places where we're initialising
@@ -3297,20 +3330,31 @@ TestAddress = &8000 ; ENHANCE: use romBinaryVersion just to play it safe
 ; would potentially still save code.
 .UnassignPrintBufferBanks
     LDA #&FF
+IF IBOS_VERSION < 127
     STA prvPrintBufferBankList
     STA prvPrintBufferBankList + 1
     STA prvPrintBufferBankList + 2
     STA prvPrintBufferBankList + 3
+ELSE
+    LDX #3
+.Loop
+    STA prvPrintBufferBankList,X
+    DEX:BPL Loop
+ENDIF
     RTS
 
 {
 .UsePrivateRam
-    ; SQUASH: "JSR UnassignPrintBufferBanks" here, then delete the LDA #&FF:STA... below?
+IF IBOS_VERSION < 127
     LDA romselCopy:AND #maxBank:ORA #romselPrvEn:STA prvPrintBufferBankList
     LDA #&FF
     STA prvPrintBufferBankList + 1
     STA prvPrintBufferBankList + 2
     STA prvPrintBufferBankList + 3
+ELSE
+    JSR UnassignPrintBufferBanks
+    LDA romselCopy:AND #maxBank:ORA #romselPrvEn:STA prvPrintBufferBankList
+ENDIF
 .^InitialiseBuffer
     LDA prvPrintBufferBankList:CMP #&FF:BEQ UsePrivateRam
     AND #&F0:CMP #romselPrvEn:BNE BufferInSwr1 ; SFTODO: magic
@@ -7387,6 +7431,7 @@ ENDIF
     SEC
 .Common
     PHP
+    ; SFTODO: Should this code be checking for a v2 board?
     JSR ParseRomBankList
     BCC LA513
     JMP badId
@@ -7395,6 +7440,16 @@ ENDIF
 IF IBOS_VERSION < 127
     LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
 ELSE
+    LDX #userRegBankWriteProtectStatus
+    JSR FindNextCharAfterSpaceSkippingComma
+    BCS NoOption
+    AND #CapitaliseMask
+    CMP #'T'
+    BNE NoOption
+    ; We implement temporary changes by redirecting the WriteUserReg calls to two bytes of
+    ; temporary space instead of the correct registers.
+    LDX #userRegTmp
+.NoOption
     LDA cpldRamWriteProtectFlags0_7
 ENDIF
     ORA L00AE
@@ -7409,7 +7464,7 @@ IF IBOS_VERSION < 127
     JSR ReadUserReg
 ELSE
     STA cpldRamWriteProtectFlags0_7
-    LDX #userRegBankWriteProtectStatus:JSR WriteUserReg
+    JSR WriteUserReg
     LDA cpldRamWriteProtectFlags8_F
 ENDIF
     ORA L00AF
