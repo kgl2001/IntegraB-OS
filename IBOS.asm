@@ -3162,7 +3162,7 @@ ENDIF
 IF IBOS_VERSION < 127
     JSR PrintEscapedCharacter
 ELSE
-    BPL NotTopBitSet ; our one caller has done LDA immediately before calling
+    BPL NotTopBitSet
     PHA
     LDA #'|':JSR OSWRCH
     LDA #'!':JSR OSWRCH
