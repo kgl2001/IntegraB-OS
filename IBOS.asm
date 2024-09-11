@@ -5677,6 +5677,8 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 }
 
 IF IBOS_VERSION >= 127
+; Test bank A to see if it's RAM. If it is, remove it from the *SRDATA banks and (on v2
+; hardware) take it out of PALPROM mode.
 .TestforRamAndSwitchOutPALPROM
 {
     TAX
@@ -5700,7 +5702,7 @@ IF IBOS_VERSION >= 127
 }
 ENDIF
 
-; SFTODO: Returns with C clear in "simple" case, C set in the "mystery" case
+; SFTODO: Returns with C clear in "simple" case, C set in the "mystery" case (which is probably no bank number being specified so we are implicitly using pseudo addressing to save a chunk of the *SRDATA banks)
 .ParseBankNumberIfPresent ; SFTODO: probably imperfect name, will do until the mystery code in middle is cleared up
 {
     XASSERT_USE_PRV1
@@ -6422,7 +6424,7 @@ ENDIF
     RTS
 }
 
-; Relocation code then check for RAM banks.
+; Relocation code then check for RAM in bank X.
 ; SFTODO: "Using..." part of name is perhaps OTT, but it might be important to "remind" us that
 ; this tramples over variableMainRamSubroutine - perhaps change later once more code is
 ; labelled up
