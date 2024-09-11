@@ -5673,16 +5673,10 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 }
 
 IF IBOS_VERSION >= 127
-.ParseBankNumberIfPresentAndSwitchOutPALPROM
+.TestforRamAndSwitchOutPALPROM
 {
-    TXA:PHA:TYA:PHA ; SQUASH: I am not sure we need to preserve X, and we perhaps *shouldn't* preserve Y
-    JSR ParseBankNumberIfPresent
-    JSR TestforRamAndSwitchOutPALPROM
-    PLA:TAY:PLA:TAX
-    RTS
-
-.^TestforRamAndSwitchOutPALPROM
     TAX
+    TYA:PHA
     JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheck ; branch if not RAM
     TXA:PHA
     JSR removeBankAFromSFTODOFOURBANKS
@@ -5697,7 +5691,8 @@ IF IBOS_VERSION >= 127
 ; Need to also write to CPLD, so CPLD can access correct bank during SRLOAD/SRWRITE/SRWIPE.
     STA cpldPALPROMSelectionFlags0_7
 .skipPALPROMcheck
-RTS
+    PLA:TAY
+    RTS
 }
 ENDIF
 
@@ -5892,10 +5887,9 @@ ENDIF
             JSR L9C52
             JSR parseOsword4243Length
             JSR L9C42
-IF IBOS_VERSION < 127
 	  JSR ParseBankNumberIfPresent
-ELSE
-	  JSR ParseBankNumberIfPresentAndSwitchOutPALPROM
+IF IBOS_VERSION >= 127
+            JSR TestforRamAndSwitchOutPALPROM
 ENDIF
             JMP LA0A6
 }
@@ -6507,10 +6501,9 @@ ENDIF
     LDA prvOswordBlockCopy + 7 ; high byte of buffer length
     STA prvOswordBlockCopy + 11 ; high byte of data length
 .NotSave
-IF IBOS_VERSION < 127
     JSR ParseBankNumberIfPresent
-ELSE
-    JSR ParseBankNumberIfPresentAndSwitchOutPALPROM
+IF IBOS_VERSION >= 127
+    JSR TestforRamAndSwitchOutPALPROM
 ENDIF
     JSR parseSrsaveLoadFlags
     LDA prvOswordBlockCopy + 2 ; byte 0 of "buffer address" we parsed earlier
