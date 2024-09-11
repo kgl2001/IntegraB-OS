@@ -6507,6 +6507,8 @@ ENDIF
 .NotSave
     JSR ParseBankNumberIfPresent
 IF IBOS_VERSION >= 127
+    ; SQUASH: If we did this after parseSrsaveLoadFlags, could we avoid
+    ; TestforRamAndSwitchOutPALPROM having to preserve Y?
     JSR TestforRamAndSwitchOutPALPROM
 ENDIF
     JSR parseSrsaveLoadFlags
