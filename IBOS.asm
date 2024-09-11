@@ -1061,185 +1061,189 @@ IF IBOS_VERSION < 126
 ENDIF
 
 ;* commands
-.CmdTbl		EQUS &06, "ALARM"
-		EQUS &09, "CALENDAR"
-		EQUS &05, "DATE"
-		EQUS &05, "TIME"
+.CmdTbl
+    EQUS &06, "ALARM"
+    EQUS &09, "CALENDAR"
+    EQUS &05, "DATE"
+    EQUS &05, "TIME"
 
-		EQUS &0A, "CONFIGURE"
-		EQUS &07, "STATUS"
-		EQUS &06, "CSAVE"
-		EQUS &06, "CLOAD"
-		EQUS &05, "BOOT"
-		EQUS &07, "BUFFER"
-		EQUS &06, "PURGE"
-		EQUS &07, "INSERT"
-		EQUS &07, "UNPLUG"
-		EQUS &05, "ROMS"
-		EQUS &07, "OSMODE"
-		EQUS &07, "SHADOW"
-		EQUS &04, "SHX"
-		EQUS &05, "TUBE"
-		EQUS &05, "GOIO"
-		EQUS &04, "NLE"
+    EQUS &0A, "CONFIGURE"
+    EQUS &07, "STATUS"
+    EQUS &06, "CSAVE"
+    EQUS &06, "CLOAD"
+    EQUS &05, "BOOT"
+    EQUS &07, "BUFFER"
+    EQUS &06, "PURGE"
+    EQUS &07, "INSERT"
+    EQUS &07, "UNPLUG"
+    EQUS &05, "ROMS"
+    EQUS &07, "OSMODE"
+    EQUS &07, "SHADOW"
+    EQUS &04, "SHX"
+    EQUS &05, "TUBE"
+    EQUS &05, "GOIO"
+    EQUS &04, "NLE"
 
-		EQUS &07, "APPEND"
-		EQUS &07, "CREATE"
-		EQUS &06, "PRINT"
-		EQUS &08, "SPOOLON"
+    EQUS &07, "APPEND"
+    EQUS &07, "CREATE"
+    EQUS &06, "PRINT"
+    EQUS &08, "SPOOLON"
 
-		EQUS &07, "SRWIPE"
-		EQUS &07, "SRDATA"
-		EQUS &06, "SRROM"
-		EQUS &06, "SRSET"
-		EQUS &07, "SRLOAD"
-		EQUS &07, "SRSAVE"
-		EQUS &07, "SRREAD"
-		EQUS &08, "SRWRITE"
+    EQUS &07, "SRWIPE"
+    EQUS &07, "SRDATA"
+    EQUS &06, "SRROM"
+    EQUS &06, "SRSET"
+    EQUS &07, "SRLOAD"
+    EQUS &07, "SRSAVE"
+    EQUS &07, "SRREAD"
+    EQUS &08, "SRWRITE"
 
-		EQUS &05, "SRWE"
-		EQUS &05, "SRWP"
-		EQUB &00
+    EQUS &05, "SRWE"
+    EQUS &05, "SRWP"
+    EQUB &00
 
 ;Lookup table for recognised * command parameters
 IF IBOS_VERSION < 127
-.CmdParTbl	EQUS &09, "(", &A6, "(R))/", &A1					;Parameter &80 for *ALARM:		'((=<TIME>(R))/ON/OFF/?)'
-		EQUS &04, "(" ,&A7, ")"						;Parameter &81 for *CALENDAR:		'(<DATE>)'
-		EQUS &07, "((=)", &A7, ")"						;Parameter &82 for *DATE:		'((=)<DATE>)'
-		EQUS &03, &A6, ")"							;Parameter &83 for *TIME:		'(=<TIME>)'
-		EQUS &06, &85, "(,", &A8,&AD						;Parameter &84 for *CONFIGURE:	'(<par>)(,<par>)...'
-		EQUS &04, "(", &A8, ")"						;Parameter &85 for *STATUS:		'(<par>)'
-		EQUS &02, &94							;Parameter &86 for *CSAVE:		'<fsp>'
-		EQUS &02, &94							;Parameter &87 for *CLOAD:		'<fsp>'
-		EQUS &08, "(<cmd>", &A0						;Parameter &88 for *BOOT:		'(<cmd>/?)'
-		EQUS &06, &AF, "/#" , &98, &A0					;Parameter &89 for *BUFFER:		'(<0-4>/#<id>(,<id>).../?)'
-		EQUS &03, "(", &A1							;Parameter &8A for *PURGE:		'(ON/OFF/?)'
-		EQUS &03, &98,&A2							;Parameter &8B for *INSERT:		'<id>(,<id>)...(I)'
-		EQUS &03, &98,&A2							;Parameter &8C for *UNPLUG:		'<id>(,<id>)...(I)'
-		EQUS &01								;Parameter &8D for *ROMS:
-		EQUS &03, &AF,&A0							;Parameter &8E for *OSMODE:		'(<0-4>/?)'
-		EQUS &07, "(", &AE, "1>", &A0, ")"					;Parameter &8F for *SHADOW:		'((<0-1>/?))'
-		EQUS &03, "(", &A1							;Parameter &90 for *SHX:		'(ON/OFF/?)'
-		EQUS &03, "(", &A1							;Parameter &91 for *TUBE:		'(ON/OFF/?)'
-		EQUS &03, "<", &AA							;Parameter &92 for *GOIO:		'<addr>'
-		EQUS &01								;Parameter &93 for *NLE:
-		EQUS &06, "<fsp>"							;Parameter &94: 			'<fsp>'
-		EQUS &04, &94, " ", &AC						;Parameter &95: 			'<fsp> <len>'
-		EQUS &02, &94							;Parameter &96:			'<fsp>'
-		EQUS &02, &94							;Parameter &97:			'<fsp>'
-		EQUS &06, &A5, "(,", &A5, &AD						;Parameter &98:			'<id>(,<id>)...'
-		EQUS &02, &98							;Parameter &99:			'<id>(,<id>)...'
-		EQUS &02, &98							;Parameter &9A:			'<id>(,<id>)...'
-		EQUS &04, "(", &98, &A0						;Parameter &9B:			'(<id>(,<id>).../?)'
-		EQUS &05, &94, &AB, &A3, &A2						;Parameter &9C:			'<fsp> <sraddr> (<id>) (Q)(I)'
-		EQUS &05, &94, &AB, &A9, &A3						;Parameter &9D:			'<fsp> (<end>/+<len>) (<id>) (Q)'
-		EQUS &06, "<", &AA, &A9, &AB, &A4					;Parameter &9E:			'<addr> (<end>/+<len>) <sraddr> (<id>)'
-		EQUS &02, &9E							;Parameter &9F:			'<addr> (<end>/+<len>) <sraddr> (<id>)'
-		EQUS &04, "/?)"							;Parameter &A0:			'/?)'
-		EQUS &08, "ON/OFF", &A0						;Parameter &A1:			'ON/OFF/?)'
-		EQUS &04, "(I)"							;Parameter &A2:			'(I)'
-		EQUS &06, &A4," (Q)"						;Parameter &A3:			' (<id>) (Q)'
-		EQUS &05, " (", &A5, ")"						;Parameter &A4:			' (<id>)'
-		EQUS &05, "<id>"							;Parameter &A5:			'<id>'
-		EQUS &09, "(=<time>"						;Parameter &A6:			'(=<time>'
-		EQUS &07, "<date>"							;Parameter &A7:			'<date>'
-		EQUS &06, "<par>"							;Parameter &A8:			'<par>'
-		EQUS &0C, " (<end>/+", &AC, ")"					;Parameter &A9:			' (<end>/+<len>)'
-		EQUS &06, "addr>"							;Parameter &AA:			'addr>'
-		EQUS &06, " <sr", &AA						;Parameter &AB:			' <sraddr>'
-		EQUS &06, "<len>"							;Parameter &AC:			'<len>'
-		EQUS &05, ")..."							;Parameter &AD:			')...'
-		EQUS &05, "(<0-"							;Parameter &AE:			'(<0-'
-		EQUS &04, &AE, "4>"							;Parameter &AF:			'(<0-4>'
+.CmdParTbl
+    EQUS &09, "(", &A6, "(R))/", &A1    ;Parameter &80 for *ALARM:      '((=<TIME>(R))/ON/OFF/?)'
+    EQUS &04, "(" ,&A7, ")"             ;Parameter &81 for *CALENDAR:   '(<DATE>)'
+    EQUS &07, "((=)", &A7, ")"          ;Parameter &82 for *DATE:       '((=)<DATE>)'
+    EQUS &03, &A6, ")"                  ;Parameter &83 for *TIME:       '(=<TIME>)'
+    EQUS &06, &85, "(,", &A8,&AD        ;Parameter &84 for *CONFIGURE:  '(<par>)(,<par>)...'
+    EQUS &04, "(", &A8, ")"             ;Parameter &85 for *STATUS:     '(<par>)'
+    EQUS &02, &94                       ;Parameter &86 for *CSAVE:      '<fsp>'
+    EQUS &02, &94                       ;Parameter &87 for *CLOAD:      '<fsp>'
+    EQUS &08, "(<cmd>", &A0             ;Parameter &88 for *BOOT:       '(<cmd>/?)'
+    EQUS &06, &AF, "/#" , &98, &A0      ;Parameter &89 for *BUFFER:     '(<0-4>/#<id>(,<id>).../?)'
+    EQUS &03, "(", &A1                  ;Parameter &8A for *PURGE:      '(ON/OFF/?)'
+    EQUS &03, &98,&A2                   ;Parameter &8B for *INSERT:     '<id>(,<id>)...(I)'
+    EQUS &03, &98,&A2                   ;Parameter &8C for *UNPLUG:     '<id>(,<id>)...(I)'
+    EQUS &01                            ;Parameter &8D for *ROMS:
+    EQUS &03, &AF,&A0                   ;Parameter &8E for *OSMODE:     '(<0-4>/?)'
+    EQUS &07, "(", &AE, "1>", &A0, ")"  ;Parameter &8F for *SHADOW:     '((<0-1>/?))'
+    EQUS &03, "(", &A1                  ;Parameter &90 for *SHX:        '(ON/OFF/?)'
+    EQUS &03, "(", &A1                  ;Parameter &91 for *TUBE:       '(ON/OFF/?)'
+    EQUS &03, "<", &AA                  ;Parameter &92 for *GOIO:       '<addr>'
+    EQUS &01                            ;Parameter &93 for *NLE:
+    EQUS &06, "<fsp>"                   ;Parameter &94:                 '<fsp>'
+    EQUS &04, &94, " ", &AC             ;Parameter &95:                 '<fsp> <len>'
+    EQUS &02, &94                       ;Parameter &96:                 '<fsp>'
+    EQUS &02, &94                       ;Parameter &97:                 '<fsp>'
+    EQUS &06, &A5, "(,", &A5, &AD       ;Parameter &98:                 '<id>(,<id>)...'
+    EQUS &02, &98                       ;Parameter &99:                 '<id>(,<id>)...'
+    EQUS &02, &98                       ;Parameter &9A:                 '<id>(,<id>)...'
+    EQUS &04, "(", &98, &A0             ;Parameter &9B:                 '(<id>(,<id>).../?)'
+    EQUS &05, &94, &AB, &A3, &A2        ;Parameter &9C:                 '<fsp> <sraddr> (<id>) (Q)(I)'
+    EQUS &05, &94, &AB, &A9, &A3        ;Parameter &9D:                 '<fsp> (<end>/+<len>) (<id>) (Q)'
+    EQUS &06, "<", &AA, &A9, &AB, &A4   ;Parameter &9E:                 '<addr> (<end>/+<len>) <sraddr> (<id>)'
+    EQUS &02, &9E                       ;Parameter &9F:                 '<addr> (<end>/+<len>) <sraddr> (<id>)'
+    EQUS &04, "/?)"                     ;Parameter &A0:                 '/?)'
+    EQUS &08, "ON/OFF", &A0             ;Parameter &A1:                 'ON/OFF/?)'
+    EQUS &04, "(I)"                     ;Parameter &A2:                 '(I)'
+    EQUS &06, &A4," (Q)"                ;Parameter &A3:                 ' (<id>) (Q)'
+    EQUS &05, " (", &A5, ")"            ;Parameter &A4:                 ' (<id>)'
+    EQUS &05, "<id>"                    ;Parameter &A5:                 '<id>'
+    EQUS &09, "(=<time>"                ;Parameter &A6:                 '(=<time>'
+    EQUS &07, "<date>"                  ;Parameter &A7:                 '<date>'
+    EQUS &06, "<par>"                   ;Parameter &A8:                 '<par>'
+    EQUS &0C, " (<end>/+", &AC, ")"     ;Parameter &A9:                 ' (<end>/+<len>)'
+    EQUS &06, "addr>"                   ;Parameter &AA:                 'addr>'
+    EQUS &06, " <sr", &AA               ;Parameter &AB:                 ' <sraddr>'
+    EQUS &06, "<len>"                   ;Parameter &AC:                 '<len>'
+    EQUS &05, ")..."                    ;Parameter &AD:                 ')...'
+    EQUS &05, "(<0-"                    ;Parameter &AE:                 '(<0-'
+    EQUS &04, &AE, "4>"                 ;Parameter &AF:                 '(<0-4>'
 ELSE
-.CmdParTbl	EQUS &09, "(", &A8, "(R))/", &A3					;Parameter &80 for *ALARM:		'((=<TIME>(R))/ON/OFF/?)'
-		EQUS &04, "(" ,&A9, ")"						;Parameter &81 for *CALENDAR:		'(<DATE>)'
-		EQUS &07, "((=)", &A9, ")"						;Parameter &82 for *DATE:		'((=)<DATE>)'
-		EQUS &03, &A8, ")"							;Parameter &83 for *TIME:		'(=<TIME>)'
-		EQUS &06, &85, "(,", &AA,&AF						;Parameter &84 for *CONFIGURE:	'(<par>)(,<par>)...'
-		EQUS &04, "(", &AA, ")"						;Parameter &85 for *STATUS:		'(<par>)'
-		EQUS &02, &94							;Parameter &86 for *CSAVE:		'<fsp>'
-		EQUS &02, &94							;Parameter &87 for *CLOAD:		'<fsp>'
-		EQUS &08, "(<cmd>", &A2						;Parameter &88 for *BOOT:		'(<cmd>/?)'
-		EQUS &06, &B1, "/#" , &98, &A2					;Parameter &89 for *BUFFER:		'(<0-4>/#<id>(,<id>).../?)'
-		EQUS &03, "(", &A4							;Parameter &8A for *PURGE:		'(ON/OFF/?)'
-		EQUS &03, &98,&A4							;Parameter &8B for *INSERT:		'<id>(,<id>)...(I)'
-		EQUS &03, &98,&A4							;Parameter &8C for *UNPLUG:		'<id>(,<id>)...(I)'
-		EQUS &01								;Parameter &8D for *ROMS:
-		EQUS &03, &B1,&A2							;Parameter &8E for *OSMODE:		'(<0-4>/?)'
-		EQUS &07, "(", &B0, "1>", &A2, ")"					;Parameter &8F for *SHADOW:		'((<0-1>/?))'
-		EQUS &03, "(", &A3							;Parameter &90 for *SHX:		'(ON/OFF/?)'
-		EQUS &03, "(", &A3							;Parameter &91 for *TUBE:		'(ON/OFF/?)'
-		EQUS &03, "<", &AC							;Parameter &92 for *GOIO:		'<addr>'
-		EQUS &01								;Parameter &93 for *NLE:
-		EQUS &06, "<fsp>"							;Parameter &94: 			'<fsp>'
-		EQUS &04, &94, " ", &AE						;Parameter &95: 			'<fsp> <len>'
-		EQUS &02, &94							;Parameter &96:			'<fsp>'
-		EQUS &02, &94							;Parameter &97:			'<fsp>'
-		EQUS &06, &A7, "(,", &A7, &AF						;Parameter &98:			'<id>(,<id>)...'
-		EQUS &02, &98							;Parameter &99:			'<id>(,<id>)...'
-		EQUS &02, &98							;Parameter &9A:			'<id>(,<id>)...'
-		EQUS &04, "(", &98, &A2						;Parameter &9B:			'(<id>(,<id>).../?)'
-		EQUS &05, &94, &AD, &A5, &A4						;Parameter &9C:			'<fsp> <sraddr> (<id>) (Q)(I)'
-		EQUS &05, &94, &AD, &AB, &A5						;Parameter &9D:			'<fsp> (<end>/+<len>) (<id>) (Q)'
-		EQUS &06, "<", &AC, &AB, &AD, &A6					;Parameter &9E:			'<addr> (<end>/+<len>) <sraddr> (<id>)'
-		EQUS &02, &9E							;Parameter &9F:			'<addr> (<end>/+<len>) <sraddr> (<id>)'
-		EQUS &03, &98, &B2							;Parameter &A0:			'<id>(,<id>)... (T)'
-		EQUS &03, &98, &B2							;Parameter &A1:			'<id>(,<id>)... (T)'
-		EQUS &04, "/?)"							;Parameter &A2:			'/?)'
-		EQUS &08, "ON/OFF", &A2						;Parameter &A3:			'ON/OFF/?)'
-		EQUS &04, "(I)"							;Parameter &A4:			'(I)'
-		EQUS &06, &A6," (Q)"						;Parameter &A5:			' (<id>) (Q)'
-		EQUS &05, " (", &A7, ")"						;Parameter &A6:			' (<id>)'
-		EQUS &05, "<id>"							;Parameter &A7:			'<id>'
-		EQUS &09, "(=<time>"						;Parameter &A8:			'(=<time>'
-		EQUS &07, "<date>"							;Parameter &A9:			'<date>'
-		EQUS &06, "<par>"							;Parameter &AA:			'<par>'
-		EQUS &0C, " (<end>/+", &AE, ")"					;Parameter &AB:			' (<end>/+<len>)'
-		EQUS &06, "addr>"							;Parameter &AC:			'addr>'
-		EQUS &06, " <sr", &AC						;Parameter &AD:			' <sraddr>'
-		EQUS &06, "<len>"							;Parameter &AE:			'<len>'
-		EQUS &05, ")..."							;Parameter &AF:			')...'
-		EQUS &05, "(<0-"							;Parameter &B0:			'(<0-'
-		EQUS &04, &B0, "4>"							;Parameter &B1:			'(<0-4>'
-        EQUS &05, " (T)"                            ; Parameter &B2: ' (T)'
+.CmdParTbl
+    EQUS &09, "(", &A8, "(R))/", &A3    ;Parameter &80 for *ALARM:      '((=<TIME>(R))/ON/OFF/?)'
+    EQUS &04, "(" ,&A9, ")"             ;Parameter &81 for *CALENDAR:   '(<DATE>)'
+    EQUS &07, "((=)", &A9, ")"          ;Parameter &82 for *DATE:       '((=)<DATE>)'
+    EQUS &03, &A8, ")"                  ;Parameter &83 for *TIME:       '(=<TIME>)'
+    EQUS &06, &85, "(,", &AA,&AF        ;Parameter &84 for *CONFIGURE:  '(<par>)(,<par>)...'
+    EQUS &04, "(", &AA, ")"             ;Parameter &85 for *STATUS:     '(<par>)'
+    EQUS &02, &94                       ;Parameter &86 for *CSAVE:      '<fsp>'
+    EQUS &02, &94                       ;Parameter &87 for *CLOAD:      '<fsp>'
+    EQUS &08, "(<cmd>", &A2             ;Parameter &88 for *BOOT:       '(<cmd>/?)'
+    EQUS &06, &B1, "/#" , &98, &A2      ;Parameter &89 for *BUFFER:     '(<0-4>/#<id>(,<id>).../?)'
+    EQUS &03, "(", &A4                  ;Parameter &8A for *PURGE:      '(ON/OFF/?)'
+    EQUS &03, &98,&A4                   ;Parameter &8B for *INSERT:     '<id>(,<id>)...(I)'
+    EQUS &03, &98,&A4                   ;Parameter &8C for *UNPLUG:     '<id>(,<id>)...(I)'
+    EQUS &01                            ;Parameter &8D for *ROMS:
+    EQUS &03, &B1,&A2                   ;Parameter &8E for *OSMODE:     '(<0-4>/?)'
+    EQUS &07, "(", &B0, "1>", &A2, ")"  ;Parameter &8F for *SHADOW:     '((<0-1>/?))'
+    EQUS &03, "(", &A3                  ;Parameter &90 for *SHX:        '(ON/OFF/?)'
+    EQUS &03, "(", &A3                  ;Parameter &91 for *TUBE:       '(ON/OFF/?)'
+    EQUS &03, "<", &AC                  ;Parameter &92 for *GOIO:       '<addr>'
+    EQUS &01                            ;Parameter &93 for *NLE:
+    EQUS &06, "<fsp>"                   ;Parameter &94:                 '<fsp>'
+    EQUS &04, &94, " ", &AE             ;Parameter &95:                 '<fsp> <len>'
+    EQUS &02, &94                       ;Parameter &96:                 '<fsp>'
+    EQUS &02, &94                       ;Parameter &97:                 '<fsp>'
+    EQUS &06, &A7, "(,", &A7, &AF       ;Parameter &98:                 '<id>(,<id>)...'
+    EQUS &02, &98                       ;Parameter &99:                 '<id>(,<id>)...'
+    EQUS &02, &98                       ;Parameter &9A:                 '<id>(,<id>)...'
+    EQUS &04, "(", &98, &A2             ;Parameter &9B:                 '(<id>(,<id>).../?)'
+    EQUS &05, &94, &AD, &A5, &A4        ;Parameter &9C:                 '<fsp> <sraddr> (<id>) (Q)(I)'
+    EQUS &05, &94, &AD, &AB, &A5        ;Parameter &9D:                 '<fsp> (<end>/+<len>) (<id>) (Q)'
+    EQUS &06, "<", &AC, &AB, &AD, &A6   ;Parameter &9E:                 '<addr> (<end>/+<len>) <sraddr> (<id>)'
+    EQUS &02, &9E                       ;Parameter &9F:                 '<addr> (<end>/+<len>) <sraddr> (<id>)'
+    EQUS &03, &98, &B2                  ;Parameter &A0:                 '<id>(,<id>)... (T)'
+    EQUS &03, &98, &B2                  ;Parameter &A1:                 '<id>(,<id>)... (T)'
+    EQUS &04, "/?)"                     ;Parameter &A2:                 '/?)'
+    EQUS &08, "ON/OFF", &A2             ;Parameter &A3:                 'ON/OFF/?)'
+    EQUS &04, "(I)"                     ;Parameter &A4:                 '(I)'
+    EQUS &06, &A6," (Q)"                ;Parameter &A5:                 ' (<id>) (Q)'
+    EQUS &05, " (", &A7, ")"            ;Parameter &A6:                 ' (<id>)'
+    EQUS &05, "<id>"                    ;Parameter &A7:                 '<id>'
+    EQUS &09, "(=<time>"                ;Parameter &A8:                 '(=<time>'
+    EQUS &07, "<date>"                  ;Parameter &A9:                 '<date>'
+    EQUS &06, "<par>"                   ;Parameter &AA:                 '<par>'
+    EQUS &0C, " (<end>/+", &AE, ")"     ;Parameter &AB:                 ' (<end>/+<len>)'
+    EQUS &06, "addr>"                   ;Parameter &AC:                 'addr>'
+    EQUS &06, " <sr", &AC               ;Parameter &AD:                 ' <sraddr>'
+    EQUS &06, "<len>"                   ;Parameter &AE:                 '<len>'
+    EQUS &05, ")..."                    ;Parameter &AF:                 ')...'
+    EQUS &05, "(<0-"                    ;Parameter &B0:                 '(<0-'
+    EQUS &04, &B0, "4>"                 ;Parameter &B1:                 '(<0-4>'
+    EQUS &05, " (T)"                    ;Parameter &B2:                 ' (T)'
 ENDIF
 
 ;lookup table for start address of recognised * commands
-.^CmdExTbl	EQUW alarm-1							;address of *ALARM command
-		EQUW calend-1							;address of *CALENDAR command
-		EQUW date-1							;address of *DATE command
-		EQUW time-1							;address of *TIME command
-		EQUW config-1							;address of *CONFIGURE command
-		EQUW status-1							;address of *STATUS command
-		EQUW csave-1							;address of *CSAVE command
-		EQUW cload-1							;address of *CLOAD command
-		EQUW boot-1							;address of *BOOT command
-		EQUW buffer-1							;address of *BUFFER command
-		EQUW purge-1							;address of *PURGE command
-		EQUW insert-1							;address of *INSERT command
-		EQUW unplug-1							;address of *UNPLUG command
-		EQUW roms-1							;address of *ROMS command
-		EQUW osmode-1							;address of *OSMODE command
-		EQUW shadow-1							;address of *SHADOW command
-		EQUW shx-1							;address of *SHX command
-		EQUW tube-1							;address of *TUBE command
-		EQUW goio-1							;address of *GOIO command
-		EQUW nle-1							;address of *NLE command
-		EQUW append-1							;address of *APPEND command
-		EQUW create-1							;address of *CREATE command
-		EQUW print-1							;address of *PRINT command
-		EQUW SpoolOn-1							;address of *SPOOLON command
-		EQUW srwipe-1							;address of *SRWIPE command
-		EQUW srdata-1							;address of *SRDATA command
-		EQUW srrom-1							;address of *SRROM command
-		EQUW srset-1							;address of *SRSET command
-		EQUW srload-1							;address of *SRLOAD command
-		EQUW srsave-1							;address of *SRSAVE command
-		EQUW srread-1							;address of *SRREAD command
-		EQUW srwrite-1							;address of *SRWRITE command
-		EQUW srwe-1							;address of *SRWE command
-		EQUW srwp-1							;address of *SRWP command
+.^CmdExTbl
+    EQUW alarm-1                        ;address of *ALARM command
+    EQUW calend-1                       ;address of *CALENDAR command
+    EQUW date-1                         ;address of *DATE command
+    EQUW time-1                         ;address of *TIME command
+    EQUW config-1                       ;address of *CONFIGURE command
+    EQUW status-1                       ;address of *STATUS command
+    EQUW csave-1                        ;address of *CSAVE command
+    EQUW cload-1                        ;address of *CLOAD command
+    EQUW boot-1                         ;address of *BOOT command
+    EQUW buffer-1                       ;address of *BUFFER command
+    EQUW purge-1                        ;address of *PURGE command
+    EQUW insert-1                       ;address of *INSERT command
+    EQUW unplug-1                       ;address of *UNPLUG command
+    EQUW roms-1                         ;address of *ROMS command
+    EQUW osmode-1                       ;address of *OSMODE command
+    EQUW shadow-1                       ;address of *SHADOW command
+    EQUW shx-1                          ;address of *SHX command
+    EQUW tube-1                         ;address of *TUBE command
+    EQUW goio-1                         ;address of *GOIO command
+    EQUW nle-1                          ;address of *NLE command
+    EQUW append-1                       ;address of *APPEND command
+    EQUW create-1                       ;address of *CREATE command
+    EQUW print-1                        ;address of *PRINT command
+    EQUW SpoolOn-1                      ;address of *SPOOLON command
+    EQUW srwipe-1                       ;address of *SRWIPE command
+    EQUW srdata-1                       ;address of *SRDATA command
+    EQUW srrom-1                        ;address of *SRROM command
+    EQUW srset-1                        ;address of *SRSET command
+    EQUW srload-1                       ;address of *SRLOAD command
+    EQUW srsave-1                       ;address of *SRSAVE command
+    EQUW srread-1                       ;address of *SRREAD command
+    EQUW srwrite-1                      ;address of *SRWRITE command
+    EQUW srwe-1                         ;address of *SRWE command
+    EQUW srwp-1                         ;address of *SRWP command
 }
 	
 ;Store *CONFIGURE reference table pointer address in X & Y
@@ -1279,34 +1283,34 @@ ENDIF
 ;*CONFIGURE parameters table
 .ConfParTbl
 t = &80
-    ;     n, char 1, 2, ..., n-1 	   i  ConfTbl entry		fully expanded text
+    ;     n, char 1, 2, ..., n-1           i  ConfTbl entry  fully expanded text
 IF IBOS_VERSION < 126
-    EQUB  7, t+1, "(D/N)"		;  0  FILE		"<0-15>(D/N)"
-    EQUB  5, t+19, "15>"		;  1  LANG		"<0-15>"
+    EQUB  7, t+1, "(D/N)"               ;  0  FILE           "<0-15>(D/N)"
+    EQUB  5, t+19, "15>"                ;  1  LANG           "<0-15>"
 ELSE
-    EQUB  7, t+20, "(D/N)"		;  0  FILE		"<0-15>(D/N)"
-    EQUB  6, t+20, "(,", t+20, ")"      ;  1  LANG		"<0-15>(,<0-15>)"
+    EQUB  7, t+20, "(D/N)"              ;  0  FILE           "<0-15>(D/N)"
+    EQUB  6, t+20, "(,", t+20, ")"      ;  1  LANG           "<0-15>(,<0-15>)"
 ENDIF
-    EQUB  6, "<1-8>"		;  2  BAUD          	"<1-8>"
-    EQUB  4, t+19, "7>"		;  3  DATA		"<0-7>"
-    EQUB  2, t+3			;  4  FDRIVE		"<0-7>"
-    EQUB  4, t+19, "4>"		;  5  PRINTER       	"<0-4>"
-    EQUB  6, t+19, "255>"		;  6  IGNORE		"<0-255>"
-    EQUB  2, t+6			;  7  DELAY		"<0-255>"
-    EQUB  2, t+6			;  8  REPEAT		"<0-255>"
-    EQUB  7, t+17, t+18, "/SH", t+18	;  9  CAPS		"/NOCAPS/SHCAPS"
-    EQUB  6, t+6, ",", t+19, "1>"	; 10  TV			"<0-255>,<0-1>"
-    EQUB 14, "(", t+4, "/<128-135>)"	; 11  MODE		"(<0-7>/<128-135>)"
-    EQUB  6, t+17, "TUBE"		; 12  TUBE		"/NOTUBE"
-    EQUB  6, t+17, "BOOT"		; 13  BOOT		"/NOBOOT"
-    EQUB  5, t+17, "SHX"		; 14  SHX			"/NOSHX"
-    EQUB  2, t+5			; 15  OSMODE		"<0-4>"
-    EQUB  5, t+19, "63>"		; 16  ALARM		"<0-63>"
-    EQUB  4, "/NO"			; 17  -			"/NO"
-    EQUB  5, "CAPS"			; 18  -			"CAPS"
-    EQUB  4, "<0-"			; 19  -			"<0-"
+    EQUB  6, "<1-8>"                    ;  2  BAUD           "<1-8>"
+    EQUB  4, t+19, "7>"                 ;  3  DATA           "<0-7>"
+    EQUB  2, t+3                        ;  4  FDRIVE         "<0-7>"
+    EQUB  4, t+19, "4>"                 ;  5  PRINTER        "<0-4>"
+    EQUB  6, t+19, "255>"               ;  6  IGNORE         "<0-255>"
+    EQUB  2, t+6                        ;  7  DELAY          "<0-255>"
+    EQUB  2, t+6                        ;  8  REPEAT         "<0-255>"
+    EQUB  7, t+17, t+18, "/SH", t+18    ;  9  CAPS           "/NOCAPS/SHCAPS"
+    EQUB  6, t+6, ",", t+19, "1>"       ; 10  TV             "<0-255>,<0-1>"
+    EQUB 14, "(", t+4, "/<128-135>)"    ; 11  MODE           "(<0-7>/<128-135>)"
+    EQUB  6, t+17, "TUBE"               ; 12  TUBE           "/NOTUBE"
+    EQUB  6, t+17, "BOOT"               ; 13  BOOT           "/NOBOOT"
+    EQUB  5, t+17, "SHX"                ; 14  SHX            "/NOSHX"
+    EQUB  2, t+5                        ; 15  OSMODE         "<0-4>"
+    EQUB  5, t+19, "63>"                ; 16  ALARM          "<0-63>"
+    EQUB  4, "/NO"                      ; 17  -              "/NO"
+    EQUB  5, "CAPS"                     ; 18  -              "CAPS"
+    EQUB  4, "<0-"                      ; 19  -              "<0-"
 IF IBOS_VERSION >= 126
-    EQUB  5, t+19, "15>"                ; 20  -                       "<0-15>"
+    EQUB  5, t+19, "15>"                ; 20  -              "<0-15>"
 ENDIF
     EQUB  0
 }
@@ -1319,9 +1323,9 @@ ENDIF
 
     EQUB &04								;Number of IBOS options
     ASSERT P% = ibosRef + KeywordTableOffset
-    EQUW ibosTbl							;Start of IBOS options lookup table
+    EQUW ibosTbl								;Start of IBOS options lookup table
     ASSERT P% = ibosRef + ParameterTableOffset
-    EQUW ibosParTbl							;Start of IBOS options parameters lookup table (there are no parameters!)
+    EQUW ibosParTbl								;Start of IBOS options parameters lookup table (there are no parameters!)
 IF IBOS_VERSION < 126
     ; SQUASH: I am not sure we actually need the next pointer, if we make the suggested SQUASH:
     ; change in DynamicSyntaxGenerationForIbosHelpTableA.
