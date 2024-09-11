@@ -5275,19 +5275,19 @@ ENDIF
 
 ; SQUASH: This has only one caller, the code immediately above - could it just be inlined?
 .WipeBankAIfRam
-    ; SQUASH: TestforRamAndSwitchOutPALPROM already does this test, but it doesn't return with
+    ; SQUASH: RamTestforPPSwitchOut already does this test, but it doesn't return with
     ; Z indicating the result. We might be able to tweak things to avoid needing this call to
     ; TestRamUsingVariableMainRamSubroutine.
     JSR TestRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
 IF IBOS_VERSION >= 127
-    JSR TestforRamAndSwitchOutPALPROM
+    JSR RamTestforPPSwitchOut
 ENDIF
     LDX #lo(wipeRamTemplate):LDY #hi(wipeRamTemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
     JSR variableMainRamSubroutine
 IF IBOS_VERSION < 127
-; In IBOS Version >= 127, this function is carried out in TestforRamAndSwitchOutPALPROM
+; In IBOS Version >= 127, this function is carried out in RamTestforPPSwitchOut
     PHA:JSR removeBankAFromSFTODOFOURBANKS:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
 ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
@@ -5677,7 +5677,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 }
 
 IF IBOS_VERSION >= 127
-.TestforRamAndSwitchOutPALPROM
+.RamTestforPPSwitchOut
 {
     TAX
     TYA:PHA
@@ -5893,7 +5893,9 @@ ENDIF
             JSR L9C42
 	  JSR ParseBankNumberIfPresent
 IF IBOS_VERSION >= 127
-            JSR TestforRamAndSwitchOutPALPROM
+            BCS noRamTestforPPSwitchOut
+	  JSR RamTestforPPSwitchOut
+.noRamTestforPPSwitchOut
 ENDIF
             JMP LA0A6
 }
@@ -6507,7 +6509,9 @@ ENDIF
 .NotSave
     JSR ParseBankNumberIfPresent
 IF IBOS_VERSION >= 127
-    JSR TestforRamAndSwitchOutPALPROM
+    BCS noRamTestforPPSwitchOut
+    JSR RamTestforPPSwitchOut
+.noRamTestforPPSwitchOut
 ENDIF
     JSR parseSrsaveLoadFlags
     LDA prvOswordBlockCopy + 2 ; byte 0 of "buffer address" we parsed earlier
