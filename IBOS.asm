@@ -5680,7 +5680,7 @@ IF IBOS_VERSION >= 127
 .RamTestforPPSwitchOut
 {
     TAX
-    TYA:PHA
+;    TYA:PHA
     JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheck ; branch if not RAM
     TXA:PHA
     JSR removeBankAFromSFTODOFOURBANKS
@@ -5695,7 +5695,7 @@ IF IBOS_VERSION >= 127
 ; Need to also write to CPLD, so CPLD can access correct bank during SRLOAD/SRWRITE/SRWIPE.
     STA cpldPALPROMSelectionFlags0_7
 .skipPALPROMcheck
-    PLA:TAY
+;    PLA:TAY
     RTS
 }
 ENDIF
@@ -6508,11 +6508,6 @@ ENDIF
     STA prvOswordBlockCopy + 11 ; high byte of data length
 .NotSave
     JSR ParseBankNumberIfPresent
-IF IBOS_VERSION >= 127
-    BCS noRamTestforPPSwitchOut
-    JSR RamTestforPPSwitchOut
-.noRamTestforPPSwitchOut
-ENDIF
     JSR parseSrsaveLoadFlags
     LDA prvOswordBlockCopy + 2 ; byte 0 of "buffer address" we parsed earlier
     STA prvOswordBlockCopy + 8 ; low byte of sideways start address
@@ -6816,11 +6811,16 @@ osfileBlock = L02EE
 .^osword43Internal
     XASSERT_USE_PRV1
             JSR adjustOsword43LengthAndBuffer
+IF IBOS_VERSION >= 127
+            BIT prvOswordBlockCopy:BPL NoPPTest						;test if loading or saving
+            LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number;
+	  JSR RamTestforPPSwitchOut							;only if loading
+.NoPPTest
+ENDIF
             LDA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
             ORA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
             BNE bufferLengthNotZero
-            BIT prvOswordBlockCopy                                                                  ;function
-            BPL readFromSwr
+            BIT prvOswordBlockCopy:BPL readFromSwr					;test if loading or saving
             ; We're writing to sideways RAM.
             LDA #osfindOpenInput
             LDX #lo(loadSwrTemplate)
@@ -6859,7 +6859,8 @@ osfileBlock = L02EE
             JMP bufferLengthNotZeroReadFromSwr
 
 .bufferLengthNotZeroWriteToSwr
-.LA1D5      JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
+.LA1D5
+	  JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
             BCS dataLengthGreaterThanBufferLength
             JSR copySFTODOWouldBeDataLengthOverBufferLengthAndZeroWouldBeDataLength
             LDA prvOswordBlockCopy + 12                                                             ;low byte of filename in I/O processor
