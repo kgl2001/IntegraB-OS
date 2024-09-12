@@ -5677,8 +5677,11 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 }
 
 IF IBOS_VERSION >= 127
-.ensureBankAIsUsableRamIfPossibleAndDisablePPSwitch
+.ensureBankAIsUsableRamIfPossible
 {
+    BIT prvOswordBlockCopy:BPL skipPALPROMcheck					;test if reading or writing
+    LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheck				;test if ROM bank number=&FF / pseudo addressing in operation
+.^ensureBankAIsUsableRamIfPossibleAndDisablePPSwitch
     TAX
     JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheck ; branch if not RAM
     TXA:PHA
@@ -6618,7 +6621,7 @@ osfileBlock = L02EE
 IF IBOS_VERSION < 127
     BCS LA0B1 ; SFTODO: I don't believe this branch can ever be taken
 ELSE
-    JSR commonPALPROMdisableTest
+    JSR ensureBankAIsUsableRamIfPossible
 ENDIF
     JSR PrepareMainSidewaysRamTransfer
     JSR doTransfer
@@ -6629,15 +6632,6 @@ ENDIF
     JSR tubeEntry
 .NoTubeReleasePending
     JMP plpPrvDisexitSc
-
-IF IBOS_VERSION >= 127
-.^commonPALPROMdisableTest
-    BIT prvOswordBlockCopy:BPL noDisablePPSwtich					;test if reading or writing
-    LDA prvOswordBlockCopy + 1:BMI noDisablePPSwtich				;test if ROM bank number=&FF / pseudo addressing in operation
-    JSR ensureBankAIsUsableRamIfPossibleAndDisablePPSwitch				;On entry A=ROM bank. only if writing in absolute address mode
-.noDisablePPSwtich
-    RTS
-ENDIF
 }
 
 ;SFTODOWIP
@@ -6818,7 +6812,7 @@ ENDIF
     XASSERT_USE_PRV1
             JSR adjustOsword43LengthAndBuffer
 IF IBOS_VERSION >= 127
-            JSR commonPALPROMdisableTest
+            JSR ensureBankAIsUsableRamIfPossible
 ENDIF
             LDA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
             ORA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
