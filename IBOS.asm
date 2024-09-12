@@ -5275,19 +5275,19 @@ ENDIF
 
 ; SQUASH: This has only one caller, the code immediately above - could it just be inlined?
 .WipeBankAIfRam
-    ; SQUASH: RamTestforPPSwitchOut already does this test, but it doesn't return with
+    ; SQUASH: ensureBankAIsUsableRamIfPossibleAndDisablePPSwitch already does this test, but it doesn't return with
     ; Z indicating the result. We might be able to tweak things to avoid needing this call to
     ; TestRamUsingVariableMainRamSubroutine.
     JSR TestRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
 IF IBOS_VERSION >= 127
-    JSR RamTestforPPSwitchOut
+    JSR ensureBankAIsUsableRamIfPossibleAndDisablePPSwitch
 ENDIF
     LDX #lo(wipeRamTemplate):LDY #hi(wipeRamTemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
     JSR variableMainRamSubroutine
 IF IBOS_VERSION < 127
-; In IBOS Version >= 127, this function is carried out in RamTestforPPSwitchOut
+; In IBOS Version >= 127, this function is carried out in ensureBankAIsUsableRamIfPossibleAndDisablePPSwitch
     PHA:JSR removeBankAFromSFTODOFOURBANKS:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
 ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
@@ -5679,10 +5679,12 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 IF IBOS_VERSION >= 127
 ; Test bank A to see if it's RAM. If it is, remove it from the *SRDATA banks and (on v2
 ; hardware) take it out of PALPROM mode.
-.RamTestforPPSwitchOut
+.ensureBankAIsUsableRamIfPossible
 {
+    BIT prvOswordBlockCopy:BPL skipPALPROMcheck					;test if reading or writing
+    LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheck				;test if ROM bank number=&FF / pseudo addressing in operation
+.^ensureBankAIsUsableRamIfPossibleAndDisablePPSwitch
     TAX
-;    TYA:PHA
     JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheck ; branch if not RAM
     TXA:PHA
     JSR removeBankAFromSFTODOFOURBANKS
@@ -5697,7 +5699,6 @@ IF IBOS_VERSION >= 127
 ; Need to also write to CPLD, so CPLD can access correct bank during SRLOAD/SRWRITE/SRWIPE.
     STA cpldPALPROMSelectionFlags0_7
 .skipPALPROMcheck
-;    PLA:TAY
     RTS
 }
 ENDIF
@@ -5894,12 +5895,7 @@ ENDIF
             JSR parseOsword4243Length
             JSR L9C42
 	  JSR ParseBankNumberIfPresent
-IF IBOS_VERSION >= 127
-            BCS noRamTestforPPSwitchOut
-	  JSR RamTestforPPSwitchOut
-.noRamTestforPPSwitchOut
-ENDIF
-            JMP LA0A6
+            JMP osword42Internal
 }
 
 ; SFTODO: slightly poor name based on quick scan of code below, I don't know
@@ -6621,10 +6617,14 @@ osfileBlock = L02EE
 {
     JSR copyOswordDetailsToPrv
     JSR adjustPrvOsword42Block
-.^LA0A6
+.^osword42Internal
     XASSERT_USE_PRV1
     JSR getAddressesAndLengthFromPrvOswordBlockCopy
+IF IBOS_VERSION < 127
     BCS LA0B1 ; SFTODO: I don't believe this branch can ever be taken
+ELSE
+    JSR ensureBankAIsUsableRamIfPossible
+ENDIF
     JSR PrepareMainSidewaysRamTransfer
     JSR doTransfer
 .LA0B1
@@ -6814,10 +6814,7 @@ osfileBlock = L02EE
     XASSERT_USE_PRV1
             JSR adjustOsword43LengthAndBuffer
 IF IBOS_VERSION >= 127
-            BIT prvOswordBlockCopy:BPL NoPPTest						;test if loading or saving
-            LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number;
-	  JSR RamTestforPPSwitchOut							;only if loading
-.NoPPTest
+            JSR ensureBankAIsUsableRamIfPossible
 ENDIF
             LDA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
             ORA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
@@ -6861,8 +6858,7 @@ ENDIF
             JMP bufferLengthNotZeroReadFromSwr
 
 .bufferLengthNotZeroWriteToSwr
-.LA1D5
-	  JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
+.LA1D5      JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
             BCS dataLengthGreaterThanBufferLength
             JSR copySFTODOWouldBeDataLengthOverBufferLengthAndZeroWouldBeDataLength
             LDA prvOswordBlockCopy + 12                                                             ;low byte of filename in I/O processor
