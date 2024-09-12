@@ -5275,19 +5275,19 @@ ENDIF
 
 ; SQUASH: This has only one caller, the code immediately above - could it just be inlined?
 .WipeBankAIfRam
-    ; SQUASH: TestforRamAndSwitchOutPALPROM already does this test, but it doesn't return with
+    ; SQUASH: RamTestforPPSwitchOut already does this test, but it doesn't return with
     ; Z indicating the result. We might be able to tweak things to avoid needing this call to
     ; TestRamUsingVariableMainRamSubroutine.
     JSR TestRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
 IF IBOS_VERSION >= 127
-    JSR TestforRamAndSwitchOutPALPROM
+    JSR RamTestforPPSwitchOut
 ENDIF
     LDX #lo(wipeRamTemplate):LDY #hi(wipeRamTemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
     JSR variableMainRamSubroutine
 IF IBOS_VERSION < 127
-; In IBOS Version >= 127, this function is carried out in TestforRamAndSwitchOutPALPROM
+; In IBOS Version >= 127, this function is carried out in RamTestforPPSwitchOut
     PHA:JSR removeBankAFromSFTODOFOURBANKS:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
 ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
@@ -5679,10 +5679,10 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 IF IBOS_VERSION >= 127
 ; Test bank A to see if it's RAM. If it is, remove it from the *SRDATA banks and (on v2
 ; hardware) take it out of PALPROM mode.
-.TestforRamAndSwitchOutPALPROM
+.RamTestforPPSwitchOut
 {
     TAX
-    TYA:PHA
+;    TYA:PHA
     JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheck ; branch if not RAM
     TXA:PHA
     JSR removeBankAFromSFTODOFOURBANKS
@@ -5697,7 +5697,7 @@ IF IBOS_VERSION >= 127
 ; Need to also write to CPLD, so CPLD can access correct bank during SRLOAD/SRWRITE/SRWIPE.
     STA cpldPALPROMSelectionFlags0_7
 .skipPALPROMcheck
-    PLA:TAY
+;    PLA:TAY
     RTS
 }
 ENDIF
@@ -5895,7 +5895,9 @@ ENDIF
             JSR L9C42
 	  JSR ParseBankNumberIfPresent
 IF IBOS_VERSION >= 127
-            JSR TestforRamAndSwitchOutPALPROM
+            BCS noRamTestforPPSwitchOut
+	  JSR RamTestforPPSwitchOut
+.noRamTestforPPSwitchOut
 ENDIF
             JMP LA0A6
 }
@@ -6508,9 +6510,6 @@ ENDIF
     STA prvOswordBlockCopy + 11 ; high byte of data length
 .NotSave
     JSR ParseBankNumberIfPresent
-IF IBOS_VERSION >= 127
-    JSR TestforRamAndSwitchOutPALPROM
-ENDIF
     JSR parseSrsaveLoadFlags
     LDA prvOswordBlockCopy + 2 ; byte 0 of "buffer address" we parsed earlier
     STA prvOswordBlockCopy + 8 ; low byte of sideways start address
@@ -6814,11 +6813,16 @@ osfileBlock = L02EE
 .^osword43Internal
     XASSERT_USE_PRV1
             JSR adjustOsword43LengthAndBuffer
+IF IBOS_VERSION >= 127
+            BIT prvOswordBlockCopy:BPL NoPPTest						;test if loading or saving
+            LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number;
+	  JSR RamTestforPPSwitchOut							;only if loading
+.NoPPTest
+ENDIF
             LDA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
             ORA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
             BNE bufferLengthNotZero
-            BIT prvOswordBlockCopy                                                                  ;function
-            BPL readFromSwr
+            BIT prvOswordBlockCopy:BPL readFromSwr					;test if loading or saving
             ; We're writing to sideways RAM.
             LDA #osfindOpenInput
             LDX #lo(loadSwrTemplate)
@@ -6857,7 +6861,8 @@ osfileBlock = L02EE
             JMP bufferLengthNotZeroReadFromSwr
 
 .bufferLengthNotZeroWriteToSwr
-.LA1D5      JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
+.LA1D5
+	  JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
             BCS dataLengthGreaterThanBufferLength
             JSR copySFTODOWouldBeDataLengthOverBufferLengthAndZeroWouldBeDataLength
             LDA prvOswordBlockCopy + 12                                                             ;low byte of filename in I/O processor
