@@ -5275,19 +5275,19 @@ ENDIF
 
 ; SQUASH: This has only one caller, the code immediately above - could it just be inlined?
 .WipeBankAIfRam
-    ; SQUASH: RamTestforPPSwitchOut already does this test, but it doesn't return with
+    ; SQUASH: ensureBankAIsUsableRamIfPossibleAndDisablePPSwitch already does this test, but it doesn't return with
     ; Z indicating the result. We might be able to tweak things to avoid needing this call to
     ; TestRamUsingVariableMainRamSubroutine.
     JSR TestRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
 IF IBOS_VERSION >= 127
-    JSR RamTestforPPSwitchOut
+    JSR ensureBankAIsUsableRamIfPossibleAndDisablePPSwitch
 ENDIF
     LDX #lo(wipeRamTemplate):LDY #hi(wipeRamTemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
     JSR variableMainRamSubroutine
 IF IBOS_VERSION < 127
-; In IBOS Version >= 127, this function is carried out in RamTestforPPSwitchOut
+; In IBOS Version >= 127, this function is carried out in ensureBankAIsUsableRamIfPossibleAndDisablePPSwitch
     PHA:JSR removeBankAFromSFTODOFOURBANKS:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
 ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
@@ -5677,7 +5677,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 }
 
 IF IBOS_VERSION >= 127
-.RamTestforPPSwitchOut
+.ensureBankAIsUsableRamIfPossibleAndDisablePPSwitch
 {
     TAX
     JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheck ; branch if not RAM
@@ -5890,12 +5890,7 @@ ENDIF
             JSR parseOsword4243Length
             JSR L9C42
 	  JSR ParseBankNumberIfPresent
-IF IBOS_VERSION >= 127
-            BCS noRamTestforPPSwitchOut
-	  JSR RamTestforPPSwitchOut
-.noRamTestforPPSwitchOut
-ENDIF
-            JMP LA0A6
+            JMP osword42Internal
 }
 
 ; SFTODO: slightly poor name based on quick scan of code below, I don't know
@@ -6617,10 +6612,14 @@ osfileBlock = L02EE
 {
     JSR copyOswordDetailsToPrv
     JSR adjustPrvOsword42Block
-.^LA0A6
+.^osword42Internal
     XASSERT_USE_PRV1
     JSR getAddressesAndLengthFromPrvOswordBlockCopy
+IF IBOS_VERSION < 127
     BCS LA0B1 ; SFTODO: I don't believe this branch can ever be taken
+ELSE
+    JSR commonPALPROMdisableTest
+ENDIF
     JSR PrepareMainSidewaysRamTransfer
     JSR doTransfer
 .LA0B1
@@ -6630,6 +6629,15 @@ osfileBlock = L02EE
     JSR tubeEntry
 .NoTubeReleasePending
     JMP plpPrvDisexitSc
+
+IF IBOS_VERSION >= 127
+.^commonPALPROMdisableTest
+    BIT prvOswordBlockCopy:BPL noDisablePPSwtich					;test if reading or writing
+    LDA prvOswordBlockCopy + 1:BMI noDisablePPSwtich				;test if ROM bank number=&FF / pseudo addressing in operation
+    JSR ensureBankAIsUsableRamIfPossibleAndDisablePPSwitch				;On entry A=ROM bank. only if writing in absolute address mode
+.noDisablePPSwtich
+    RTS
+ENDIF
 }
 
 ;SFTODOWIP
@@ -6810,11 +6818,7 @@ osfileBlock = L02EE
     XASSERT_USE_PRV1
             JSR adjustOsword43LengthAndBuffer
 IF IBOS_VERSION >= 127
-            BIT prvOswordBlockCopy:BPL NoPPTest						;test if loading or saving
-            LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number;
-	  BMI NoPPTest								;bank number=&FF if pseudo addressing in operation
-	  JSR RamTestforPPSwitchOut							;only if loading
-.NoPPTest
+            JSR commonPALPROMdisableTest
 ENDIF
             LDA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
             ORA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
