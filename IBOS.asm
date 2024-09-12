@@ -5680,7 +5680,6 @@ IF IBOS_VERSION >= 127
 .RamTestforPPSwitchOut
 {
     TAX
-;    TYA:PHA
     JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheck ; branch if not RAM
     TXA:PHA
     JSR removeBankAFromSFTODOFOURBANKS
@@ -5695,7 +5694,6 @@ IF IBOS_VERSION >= 127
 ; Need to also write to CPLD, so CPLD can access correct bank during SRLOAD/SRWRITE/SRWIPE.
     STA cpldPALPROMSelectionFlags0_7
 .skipPALPROMcheck
-;    PLA:TAY
     RTS
 }
 ENDIF
@@ -6814,6 +6812,7 @@ osfileBlock = L02EE
 IF IBOS_VERSION >= 127
             BIT prvOswordBlockCopy:BPL NoPPTest						;test if loading or saving
             LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number;
+	  BMI NoPPTest								;bank number=&FF if pseudo addressing in operation
 	  JSR RamTestforPPSwitchOut							;only if loading
 .NoPPTest
 ENDIF
@@ -6859,8 +6858,7 @@ ENDIF
             JMP bufferLengthNotZeroReadFromSwr
 
 .bufferLengthNotZeroWriteToSwr
-.LA1D5
-	  JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
+.LA1D5      JSR SFTODOSortOfCalculateWouldBeDataLengthMinusBufferLength
             BCS dataLengthGreaterThanBufferLength
             JSR copySFTODOWouldBeDataLengthOverBufferLengthAndZeroWouldBeDataLength
             LDA prvOswordBlockCopy + 12                                                             ;low byte of filename in I/O processor
