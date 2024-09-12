@@ -5677,8 +5677,6 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 }
 
 IF IBOS_VERSION >= 127
-; Test bank A to see if it's RAM. If it is, remove it from the *SRDATA banks and (on v2
-; hardware) take it out of PALPROM mode.
 .ensureBankAIsUsableRamIfPossible
 {
     BIT prvOswordBlockCopy:BPL skipPALPROMcheck					;test if reading or writing
