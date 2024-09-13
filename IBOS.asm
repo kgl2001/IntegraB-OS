@@ -20,7 +20,7 @@
 ; INCLUDE_APPEND will normally be TRUE in a release build, but setting it to FALSE removes
 ; *APPEND to free up space for experimental changes.
 ; KL 08/09/24: Temporarily dropped this code, to free up space for IBOS127 *SRLOAD / *SRWRITE & *SRWIPE command changes.
-INCLUDE_APPEND = TRUE
+INCLUDE_APPEND = FALSE
 
 IF IBOS_VERSION != 120
     IBOS120_VARIANT = 0
@@ -2661,9 +2661,9 @@ FullResetPrv = &2800
     JMP FullResetPrv
 
 ; This code is relocated from IBOS ROM to RAM starting at FullResetPrv
-.FullResetPrvTemplate
+.^FullResetPrvTemplate
     ORG FullResetPrv
-
+.^FullResetPrvCopy
     LDA romselCopy:PHA
     ; Zero all sideways RAM.
     LDX #maxBank
@@ -2722,7 +2722,7 @@ ENDIF
     RTS
 
 ; Default values for user registers overriding the initial zero values assigned.
-.UserRegDefaultTable
+.^UserRegDefaultTable
     EQUB userRegBankInsertStatus + 0, &FF     	; default to no banks unplugged
     EQUB userRegBankInsertStatus + 1, &FF 	; default to no banks unplugged
 IF IBOS_VERSION == 120 OR IBOS_VERSION >= 126
@@ -5275,19 +5275,19 @@ ENDIF
 
 ; SQUASH: This has only one caller, the code immediately above - could it just be inlined?
 .WipeBankAIfRam
-    ; SQUASH: ensureBankAIsUsableRamIfPossibleAndDisablePPSwitch already does this test, but it doesn't return with
+    ; SQUASH: ensureBankAIsUsableRamIfPossible already does this test, but it doesn't return with
     ; Z indicating the result. We might be able to tweak things to avoid needing this call to
     ; TestRamUsingVariableMainRamSubroutine.
     JSR TestRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
 IF IBOS_VERSION >= 127
-    JSR ensureBankAIsUsableRamIfPossibleAndDisablePPSwitch
+    JSR ensureBankAIsUsableRamIfPossible
 ENDIF
     LDX #lo(wipeRamTemplate):LDY #hi(wipeRamTemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
     JSR variableMainRamSubroutine
 IF IBOS_VERSION < 127
-; In IBOS Version >= 127, this function is carried out in ensureBankAIsUsableRamIfPossibleAndDisablePPSwitch
+; In IBOS Version >= 127, this function is carried out in ensureBankAIsUsableRamIfPossible
     PHA:JSR removeBankAFromSFTODOFOURBANKS:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
 ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
@@ -5671,31 +5671,31 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             STA prvOswordBlockCopy + 2
             PLA
 .^checkRamBankAndMakeAbsoluteAndUpdatePrvOswordBlockCopy ; SFTODO: catchy!
-.L9BBC     JSR checkRamBankAndMakeAbsolute						;convert pseudo RAM bank to absolute RAM bank
+.L9BBC     JSR checkRamBankAndMakeAbsolute					;convert pseudo RAM bank to absolute RAM bank
             STA prvOswordBlockCopy + 1						;and save to private address &8221
             RTS
 }
 
 IF IBOS_VERSION >= 127
-.ensureBankAIsUsableRamIfPossible
+.ensureOswordBlockBankIsUsableRamIfPossible
 {
-    BIT prvOswordBlockCopy:BPL skipPALPROMcheck					;test if reading or writing
-    LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheck				;test if ROM bank number=&FF / pseudo addressing in operation
-.^ensureBankAIsUsableRamIfPossibleAndDisablePPSwitch
+    BIT prvOswordBlockCopy:BPL skipPALPROMcheckSetZero ; branch if reading from SWR
+    LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheckSetZero ; branch if pseudo addressing in operation
+.^ensureBankAIsUsableRamIfPossible
     TAX
     JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheck ; branch if not RAM
     TXA:PHA
     JSR removeBankAFromSFTODOFOURBANKS
     PLA:TAX
-    JSR testV2hardware:BCC skipPALPROMcheck
-; Then test if PALPROM in banks 8..11
-    CPX #8:BCC skipPALPROMcheck
-    CPX #12:BCS skipPALPROMcheck ; 8<=X<12
+    JSR testV2hardware:BCC skipPALPROMcheckSetZero
+    CPX #8:BCC skipPALPROMcheckSetZero
+    CPX #12:BCS skipPALPROMcheckSetZero
     LDA palprom_test_table-8,X:EOR #&FF
-    AND cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
-    LDX #userRegPALPROMConfig:JSR WriteUserReg
-; Need to also write to CPLD, so CPLD can access correct bank during SRLOAD/SRWRITE/SRWIPE.
+    AND cpldPALPROMSelectionFlags0_7
     STA cpldPALPROMSelectionFlags0_7
+    LDX #userRegPALPROMConfig:JSR WriteUserReg
+.skipPALPROMcheckSetZero
+    LDX #0 ; set Zero flag
 .skipPALPROMcheck
     RTS
 }
@@ -6621,7 +6621,8 @@ osfileBlock = L02EE
 IF IBOS_VERSION < 127
     BCS LA0B1 ; SFTODO: I don't believe this branch can ever be taken
 ELSE
-    JSR ensureBankAIsUsableRamIfPossible
+    JSR ensureOswordBlockBankIsUsableRamIfPossible
+    BNE badIdIndirect
 ENDIF
     JSR PrepareMainSidewaysRamTransfer
     JSR doTransfer
@@ -6632,6 +6633,11 @@ ENDIF
     JSR tubeEntry
 .NoTubeReleasePending
     JMP plpPrvDisexitSc
+
+IF IBOS_VERSION >= 127
+.badIdIndirect
+    JMP badId
+ENDIF
 }
 
 ;SFTODOWIP
@@ -6812,7 +6818,8 @@ ENDIF
     XASSERT_USE_PRV1
             JSR adjustOsword43LengthAndBuffer
 IF IBOS_VERSION >= 127
-            JSR ensureBankAIsUsableRamIfPossible
+            JSR ensureOswordBlockBankIsUsableRamIfPossible
+	  BNE badIdIndirect
 ENDIF
             LDA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
             ORA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
@@ -6823,6 +6830,11 @@ ENDIF
             LDX #lo(loadSwrTemplate)
             LDY #hi(loadSwrTemplate)
             JMP LA1AA								;Relocate code from &9EAE
+
+IF IBOS_VERSION >= 127
+.badIdIndirect
+            JMP badId
+ENDIF
 
 .readFromSwr
 .LA1A4      LDA #osfindOpenOutput
@@ -7429,9 +7441,10 @@ ENDIF
     SEC
 .Common
     PHP
-    ; SFTODO: Should this code be checking for a v2 board?
-    JSR ParseRomBankList
-    BCC LA513
+IF IBOS_VERSION >= 127
+    JSR testV2hardware:BCC v2Only
+ENDIF
+    JSR ParseRomBankList:BCC LA513
     JMP badId
 			
 .LA513
@@ -7482,6 +7495,13 @@ ELSE
 ENDIF
     JMP ExitAndClaimServiceCall
 }
+
+IF IBOS_VERSION >= 127
+.v2Only
+    JSR RaiseError
+    EQUB &80
+    EQUS "V2 Only", &00
+ENDIF
 
 IF IBOS_VERSION < 127
 ; SFTODO: What's going on here? This seems to be writing to RTC register %1xxxxxxx and
@@ -11509,6 +11529,11 @@ ELSE
     LDA #hi(MaxPrintBufferStart):JMP WritePrivateRam8300X
 ENDIF
 }
+
+IF IBOS_VERSION >= 127
+SKIPTO &BFFE
+EQUW FullResetPrvTemplate+UserRegDefaultTable-FullResetPrvCopy
+ENDIF
 
 PRINT end - P%, "bytes free"
 IF IBOS_VERSION == 120
