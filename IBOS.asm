@@ -5302,17 +5302,14 @@ ENDIF
 
 ; SQUASH: This has only one caller, the code immediately above - could it just be inlined?
 .WipeBankXIfRam
-    ; SQUASH: ensureBankAIsUsableRamIfPossible already does this test, but it doesn't return with
-    ; Z indicating the result. We might be able to tweak things to avoid needing this call to
-    ; TestBankXForRamUsingVariableMainRamSubroutine.
-    ; SFTODONOW: DOES IT NOW RETURN WITH THIS INDICATED?
+IF IBOS_VERSION < 127
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
-IF IBOS_VERSION >= 127
-    ; A contains the bank to be tested (as well as X) following JSR TestBankX...
-    JSR ensureBankAIsUsableRamIfPossible
 ENDIF
-    LDX #lo(wipeRamTemplate):LDY #hi(wipeRamTemplate):JSR CopyYxToVariableMainRamSubroutine
+IF IBOS_VERSION >= 127
+    TXA:PHA:JSR ensureBankAIsUsableRamIfPossible:BNE badIdIndirect2
+ENDIF
+    LDX #lo(wipeBankATemplate):LDY #hi(wipeBankATemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
     JSR variableMainRamSubroutine
 IF IBOS_VERSION < 127
@@ -5322,6 +5319,11 @@ ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
 .Rts
     RTS
+
+IF IBOS_VERSION >= 127
+.badIdIndirect2 ; SQUASH: can we optimise all these badId calls?
+    JMP badId
+ENDIF
 }
 
 IF IBOS_VERSION < 126
@@ -6170,7 +6172,7 @@ ENDIF
 
 ;Wipe RAM at bank A
 ;this code is relocated to and executed at &03A7
-.wipeRamTemplate
+.wipeBankATemplate
 {
     ORG variableMainRamSubroutine
 
@@ -6187,8 +6189,8 @@ ENDIF
     STX romselCopy:STX romsel
     RTS
 
-    RELOCATE variableMainRamSubroutine, wipeRamTemplate
-    ASSERT P% - wipeRamTemplate <= variableMainRamSubroutineMaxSize
+    RELOCATE variableMainRamSubroutine, wipeBankATemplate
+    ASSERT P% - wipeBankATemplate <= variableMainRamSubroutineMaxSize
 }
 
 ;write ROM header to RAM at bank A
