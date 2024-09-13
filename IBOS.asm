@@ -20,7 +20,7 @@
 ; INCLUDE_APPEND will normally be TRUE in a release build, but setting it to FALSE removes
 ; *APPEND to free up space for experimental changes.
 ; KL 08/09/24: Temporarily dropped this code, to free up space for IBOS127 *SRLOAD / *SRWRITE & *SRWIPE command changes.
-INCLUDE_APPEND = FALSE
+INCLUDE_APPEND = (IBOS_VERSION < 127)
 
 IF IBOS_VERSION != 120
     IBOS120_VARIANT = 0
