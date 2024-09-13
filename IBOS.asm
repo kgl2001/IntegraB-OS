@@ -20,7 +20,7 @@
 ; INCLUDE_APPEND will normally be TRUE in a release build, but setting it to FALSE removes
 ; *APPEND to free up space for experimental changes.
 ; KL 08/09/24: Temporarily dropped this code, to free up space for IBOS127 *SRLOAD / *SRWRITE & *SRWIPE command changes.
-INCLUDE_APPEND = TRUE
+INCLUDE_APPEND = FALSE
 
 IF IBOS_VERSION != 120
     IBOS120_VARIANT = 0
@@ -5679,21 +5679,24 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 IF IBOS_VERSION >= 127
 .ensureOswordBlockBankIsUsableRamIfPossible
 {
-    BIT prvOswordBlockCopy:BPL skipPALPROMcheck ; branch if reading from SWR
-    LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheck ; branch if pseudo addressing in operation
+    BIT prvOswordBlockCopy:BPL skipPALPROMcheckWithCLC ; branch if reading from SWR
+    LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheckWithCLC ; branch if pseudo addressing in operation
 .^ensureBankAIsUsableRamIfPossible
+    SEC
     TAX
     JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheck ; branch if not RAM
     TXA:PHA
     JSR removeBankAFromSFTODOFOURBANKS
     PLA:TAX
-    JSR testV2hardware:BCC skipPALPROMcheck
-    CPX #8:BCC skipPALPROMcheck
-    CPX #12:BCS skipPALPROMcheck
+    JSR testV2hardware:BCC skipPALPROMcheckWithCLC
+    CPX #8:BCC skipPALPROMcheckWithCLC
+    CPX #12:BCS skipPALPROMcheckWithCLC
     LDA palprom_test_table-8,X:EOR #&FF
     AND cpldPALPROMSelectionFlags0_7
     STA cpldPALPROMSelectionFlags0_7
     LDX #userRegPALPROMConfig:JSR WriteUserReg
+.skipPALPROMcheckWithCLC
+    CLC
 .skipPALPROMcheck
     RTS
 }
@@ -6620,6 +6623,7 @@ IF IBOS_VERSION < 127
     BCS LA0B1 ; SFTODO: I don't believe this branch can ever be taken
 ELSE
     JSR ensureOswordBlockBankIsUsableRamIfPossible
+    BCS badIdIndirect
 ENDIF
     JSR PrepareMainSidewaysRamTransfer
     JSR doTransfer
@@ -6630,6 +6634,9 @@ ENDIF
     JSR tubeEntry
 .NoTubeReleasePending
     JMP plpPrvDisexitSc
+
+.badIdIndirect
+    JMP badId
 }
 
 ;SFTODOWIP
@@ -6811,6 +6818,7 @@ ENDIF
             JSR adjustOsword43LengthAndBuffer
 IF IBOS_VERSION >= 127
             JSR ensureOswordBlockBankIsUsableRamIfPossible
+	  BCS badIdIndirect
 ENDIF
             LDA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
             ORA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
@@ -6821,6 +6829,9 @@ ENDIF
             LDX #lo(loadSwrTemplate)
             LDY #hi(loadSwrTemplate)
             JMP LA1AA								;Relocate code from &9EAE
+
+.badIdIndirect
+            JMP badId
 
 .readFromSwr
 .LA1A4      LDA #osfindOpenOutput
