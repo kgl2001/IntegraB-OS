@@ -3446,6 +3446,7 @@ ENDIF
 }
 
 ; Return with C clear iff bank Y is an empty sideways RAM bank. X and Y are preserved.
+; SQUASH: Could this use TestRamUsingVariableMainRamSubroutine after doing the NotEmpty test?
 .TestForEmptySwrInBankY
 {
     TXA:PHA
