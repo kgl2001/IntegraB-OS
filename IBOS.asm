@@ -5677,6 +5677,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 }
 
 IF IBOS_VERSION >= 127
+; Returns with Z such that BNE will branch if and only if the bank tested is not RAM.
 .ensureOswordBlockBankIsUsableRamIfPossible
 {
     BIT prvOswordBlockCopy:BPL skipPALPROMcheckSetZero ; branch if reading from SWR
