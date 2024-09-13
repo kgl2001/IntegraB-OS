@@ -5684,7 +5684,7 @@ IF IBOS_VERSION >= 127
     LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheckSetZero ; branch if pseudo addressing in operation
 .^ensureBankAIsUsableRamIfPossible
     TAX
-    JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheck ; branch if not RAM
+    JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheckPreserveZero ; branch if not RAM
     TXA:PHA
     JSR removeBankAFromSFTODOFOURBANKS
     PLA:TAX
@@ -5697,7 +5697,7 @@ IF IBOS_VERSION >= 127
     LDX #userRegPALPROMConfig:JSR WriteUserReg
 .skipPALPROMcheckSetZero
     LDX #0 ; set Zero flag
-.skipPALPROMcheck
+.skipPALPROMcheckPreserveZero
     RTS
 }
 ENDIF
