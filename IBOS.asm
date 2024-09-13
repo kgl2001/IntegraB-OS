@@ -11540,12 +11540,17 @@ ELSE
 ENDIF
 }
 
-IF IBOS_VERSION >= 127
-SKIPTO &BFFE
-EQUW FullResetPrvTemplate+UserRegDefaultTable-FullResetPrvCopy
+IF IBOS_VERSION < 127
+    PRINT end - P%, "bytes free"
+ELSE
+.code_end
+    ; Add a pointer to the full reset data table in a known place at the end of the IBOS ROM,
+    ; so it can potentially be used by the recovery tool to ensure consistency.
+    SKIPTO &BFFE
+    EQUW FullResetPrvTemplate+UserRegDefaultTable-FullResetPrvCopy
+    PRINT (end - code_end) - 2, "bytes free"
 ENDIF
 
-PRINT end - P%, "bytes free"
 IF IBOS_VERSION == 120
 IF IBOS120_VARIANT == 0
     SAVE "IBOS-120.rom", start, end
