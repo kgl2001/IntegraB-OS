@@ -19,8 +19,7 @@
 
 ; INCLUDE_APPEND will normally be TRUE in a release build, but setting it to FALSE removes
 ; *APPEND to free up space for experimental changes.
-; KL 08/09/24: Temporarily dropped this code, to free up space for IBOS127 *SRLOAD / *SRWRITE & *SRWIPE command changes.
-INCLUDE_APPEND = (IBOS_VERSION < 127)
+INCLUDE_APPEND = TRUE ; (IBOS_VERSION < 127)
 
 IF IBOS_VERSION != 120
     IBOS120_VARIANT = 0
@@ -969,7 +968,7 @@ ENDMACRO
 start = &8000
 end = &C000
 ORG start
-GUARD end
+; SFTODONOW TCO GUARD end
 
 .RomHeader
     JMP language
@@ -11546,8 +11545,12 @@ IF IBOS_VERSION < 127
 ELSE
 .code_end
     ; Add a pointer to the full reset data table in a known place at the end of the IBOS ROM,
-    ; so it can potentially be used by the recovery tool to ensure consistency.
-    SKIPTO &BFFE
+    ; so it can potentially be used by the recovery tool to ensure consistency. We only do the
+    ; SKIPTO if it will succeed; we'll still hit the guard in this case when it's present, but
+    ; it means we get the negative bytes free reported correctly when the guard is disabled.
+    IF P% <= &BFFE
+        SKIPTO &BFFE
+    ENDIF
     EQUW FullResetPrvTemplate+UserRegDefaultTable-FullResetPrvCopy
     PRINT (end - code_end) - 2, "bytes free"
 ENDIF
