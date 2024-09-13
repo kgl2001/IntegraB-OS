@@ -3331,7 +3331,7 @@ ENDIF
 ; SQUASH: Could we use this in some other places where we're initialising
 ; prvPrintBufferBankList? Even if we called this first and then overwrote the first entry it
 ; would potentially still save code.
-.^UnassignPrintBufferBanks
+.UnassignPrintBufferBanks
     LDA #&FF
 IF IBOS_VERSION < 127
     STA prvPrintBufferBankList
@@ -3346,6 +3346,13 @@ ELSE
 ENDIF
     RTS
 
+IF IBOS_VERSION >= 127
+.^SetPrintBufferBanksToPrivateRam
+    JSR UnassignPrintBufferBanks
+    LDA romselCopy:AND #maxBank:ORA #romselPrvEn:STA prvPrintBufferBankList
+    RTS
+ENDIF
+
 {
 .UsePrivateRam
 IF IBOS_VERSION < 127
@@ -3355,8 +3362,7 @@ IF IBOS_VERSION < 127
     STA prvPrintBufferBankList + 2
     STA prvPrintBufferBankList + 3
 ELSE
-    JSR UnassignPrintBufferBanks
-    LDA romselCopy:AND #maxBank:ORA #romselPrvEn:STA prvPrintBufferBankList
+    JSR SetPrintBufferBanksToPrivateRam
 ENDIF
 .^InitialiseBuffer
     LDA prvPrintBufferBankList:CMP #&FF:BEQ UsePrivateRam
@@ -11300,8 +11306,7 @@ IF IBOS_VERSION < 127
     STA prvPrintBufferBankList + 2
     STA prvPrintBufferBankList + 3
 ELSE
-    JSR UnassignPrintBufferBanks
-    LDA romselCopy:ORA #romselPrvEn:STA prvPrintBufferBankList
+    JSR SetPrintBufferBanksToPrivateRam
 ENDIF
 .SoftReset
     JSR PurgePrintBuffer
