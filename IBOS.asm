@@ -5278,6 +5278,7 @@ ENDIF
     ; SQUASH: ensureBankAIsUsableRamIfPossible already does this test, but it doesn't return with
     ; Z indicating the result. We might be able to tweak things to avoid needing this call to
     ; TestRamUsingVariableMainRamSubroutine.
+    ; SFTODONOW: DOES IT NOW RETURN WITH THIS INDICATED?
     JSR TestRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
 IF IBOS_VERSION >= 127
