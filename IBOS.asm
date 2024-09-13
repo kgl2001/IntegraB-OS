@@ -11509,9 +11509,6 @@ ELSE
 
 SKIPTO &BFFE
 EQUW FullResetPrvTemplate+UserRegDefaultTable-FullResetPrvCopy
-;ORG &7FFE
-;EQUB lo(FullResetPrvTemplate+FullResetPrvCopy-UserRegDefaultTable)
-;EQUB hi(FullResetPrvTemplate+FullResetPrvCopy-UserRegDefaultTable)
 ENDIF
 
 PRINT end - P%, "bytes free"
