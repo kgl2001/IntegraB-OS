@@ -6634,8 +6634,10 @@ ENDIF
 .NoTubeReleasePending
     JMP plpPrvDisexitSc
 
+IF IBOS_VERSION >= 127
 .badIdIndirect
     JMP badId
+ENDIF
 }
 
 ;SFTODOWIP
@@ -6829,8 +6831,10 @@ ENDIF
             LDY #hi(loadSwrTemplate)
             JMP LA1AA								;Relocate code from &9EAE
 
+IF IBOS_VERSION >= 127
 .badIdIndirect
             JMP badId
+ENDIF
 
 .readFromSwr
 .LA1A4      LDA #osfindOpenOutput
@@ -7437,9 +7441,10 @@ ENDIF
     SEC
 .Common
     PHP
-    ; SFTODO: Should this code be checking for a v2 board?
-    JSR ParseRomBankList
-    BCC LA513
+IF IBOS_VERSION >= 127
+    JSR testV2hardware:BCC v2Only
+ENDIF
+    JSR ParseRomBankList:BCC LA513
     JMP badId
 			
 .LA513
@@ -7490,6 +7495,13 @@ ELSE
 ENDIF
     JMP ExitAndClaimServiceCall
 }
+
+IF IBOS_VERSION >= 127
+.v2Only
+    JSR RaiseError
+    EQUB &80
+    EQUS "V2 Only", &00
+ENDIF
 
 IF IBOS_VERSION < 127
 ; SFTODO: What's going on here? This seems to be writing to RTC register %1xxxxxxx and
@@ -11515,8 +11527,10 @@ ELSE
     CMP #hi(MaxPrintBufferStart):BCC LdaPrintBufferReadPtrRts
 .UseAC
     LDA #hi(MaxPrintBufferStart):JMP WritePrivateRam8300X
+ENDIF
 }
 
+IF IBOS_VERSION >= 127
 SKIPTO &BFFE
 EQUW FullResetPrvTemplate+UserRegDefaultTable-FullResetPrvCopy
 ENDIF
