@@ -5295,13 +5295,13 @@ ENDIF
     LDX #0
 .BankLoop
     ROR transientRomBankMask + 1:ROR transientRomBankMask:BCC SkipBank
-    JSR WipeBankAIfRam
+    JSR WipeBankXIfRam
 .SkipBank
     INX:CPX #maxBank + 1:BNE BankLoop
     JMP PrvDisexitSc
 
 ; SQUASH: This has only one caller, the code immediately above - could it just be inlined?
-.WipeBankAIfRam
+.WipeBankXIfRam
     ; SQUASH: ensureBankAIsUsableRamIfPossible already does this test, but it doesn't return with
     ; Z indicating the result. We might be able to tweak things to avoid needing this call to
     ; TestBankXForRamUsingVariableMainRamSubroutine.
@@ -5309,6 +5309,7 @@ ENDIF
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
 IF IBOS_VERSION >= 127
+    ; A contains the bank to be tested (as well as X) following JSR TestBankX...
     JSR ensureBankAIsUsableRamIfPossible
 ENDIF
     LDX #lo(wipeRamTemplate):LDY #hi(wipeRamTemplate):JSR CopyYxToVariableMainRamSubroutine
