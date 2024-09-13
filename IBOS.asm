@@ -5677,11 +5677,20 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 }
 
 IF IBOS_VERSION >= 127
-; Returns with Z such that BNE will branch if and only if the bank tested is not RAM.
+; If prvOswordBlockCopy is writing to a non-pseudo address, try to ensure the specified bank is
+; usable, i.e.:
+; - remove it from SFTODOFOURBANKS
+; - if it's currently in PALPROM mode, turn PALPROM mode off
+; No error is generated if the bank is ROM or write-protected RAM, but we return with Z such
+; that BNE will branch if and only if the bank tested is not RAM.
+; A, X and Y are corrupt on exit.
 .ensureOswordBlockBankIsUsableRamIfPossible
 {
     BIT prvOswordBlockCopy:BPL skipPALPROMcheckSetZero ; branch if reading from SWR
     LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheckSetZero ; branch if pseudo addressing in operation
+; Alternate entry point with the bank number in A and therefore no checks for the OSWORD block
+; specifying a write or that normal non-pseudo addressing is in use. The behaviour is otherwise
+; identical.
 .^ensureBankAIsUsableRamIfPossible
     TAX
     JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheckPreserveZero ; branch if not RAM
