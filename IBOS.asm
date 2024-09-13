@@ -3446,7 +3446,7 @@ ENDIF
 }
 
 ; Return with C clear iff bank Y is an empty sideways RAM bank. X and Y are preserved.
-; SQUASH: Could this use TestRamUsingVariableMainRamSubroutine after doing the NotEmpty test?
+; SQUASH: Could this use TestBankXForRamUsingVariableMainRamSubroutine after doing the NotEmpty test?
 .TestForEmptySwrInBankY
 {
     TXA:PHA
@@ -5225,7 +5225,7 @@ ENDIF
     STY prvTmp
     ; SQUASH: Use LDX abs,Y and save TAX?
     LDA prvPseudoBankNumbers,Y:BMI NotRam ; this pseudo-bank is not defined
-    TAX:JSR TestRamUsingVariableMainRamSubroutine:BNE NotRam
+    TAX:JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE NotRam
     ; We only count a bank as RAM if it's not in use to hold a sideways ROM.
     LDA prvRomTypeTableCopy,X
     BEQ Ram
@@ -5286,9 +5286,9 @@ ENDIF
 .WipeBankAIfRam
     ; SQUASH: ensureBankAIsUsableRamIfPossible already does this test, but it doesn't return with
     ; Z indicating the result. We might be able to tweak things to avoid needing this call to
-    ; TestRamUsingVariableMainRamSubroutine.
+    ; TestBankXForRamUsingVariableMainRamSubroutine.
     ; SFTODONOW: DOES IT NOW RETURN WITH THIS INDICATED?
-    JSR TestRamUsingVariableMainRamSubroutine:BNE Rts
+    JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
 IF IBOS_VERSION >= 127
     JSR ensureBankAIsUsableRamIfPossible
@@ -5401,7 +5401,7 @@ ENDIF
             BCC SkipBank
             TYA
             PHA
-            JSR TestRamUsingVariableMainRamSubroutine
+            JSR TestBankXForRamUsingVariableMainRamSubroutine
             BNE plyAndSkipBank ; branch if not RAM
             LDA prvRomTypeTableCopy,X
             BEQ emptyBank
@@ -5495,7 +5495,7 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
     STX bankTmp
     PHP
     LDA #0:ROR A:STA RomRamFlagTmp ; put C in b7 of RomRamFlagTmp
-    JSR TestRamUsingVariableMainRamSubroutine:BNE FailSFTODOA ; branch if not RAM
+    JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE FailSFTODOA ; branch if not RAM
     LDA prvRomTypeTableCopy,X:BEQ EmptyBank
     CMP #RomTypeSrData:BNE FailSFTODOA
 .EmptyBank
@@ -5703,7 +5703,7 @@ IF IBOS_VERSION >= 127
 ; identical.
 .^ensureBankAIsUsableRamIfPossible
     TAX
-    JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheckPreserveZero ; branch if not RAM
+    JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheckPreserveZero ; branch if not RAM
     TXA:PHA
     JSR removeBankAFromSFTODOFOURBANKS
     PLA:TAX
@@ -6444,7 +6444,7 @@ ENDIF
 ; SFTODO: "Using..." part of name is perhaps OTT, but it might be important to "remind" us that
 ; this tramples over variableMainRamSubroutine - perhaps change later once more code is
 ; labelled up
-.TestRamUsingVariableMainRamSubroutine
+.TestBankXForRamUsingVariableMainRamSubroutine
     TXA:PHA
     LDX #lo(TestRamTemplate):LDY #hi(TestRamTemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
@@ -7102,7 +7102,7 @@ IF IBOS_VERSION < 127
     AND LA34A,Y:BNE IsSidewaysRamBank ; branch if this is a sideways RAM bank
     LDA #' ':BNE BankTypeCharacterInA ; always branch
 .IsSidewaysRamBank
-    LDX CurrentBank:JSR TestRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
+    LDX CurrentBank:JSR TestBankXForRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
     LDA #'E' ; write-Enabled
     PLP:BEQ BankTypeCharacterInA
     LDA #'P' ; Protected
@@ -7147,7 +7147,7 @@ ELSE
     LDA #'(':JSR OSWRCH
 
 .IsSidewaysRamBank
-    LDX CurrentBank:JSR TestRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
+    LDX CurrentBank:JSR TestBankXForRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
     LDA #'E' ; write-Enabled
     PLP:BEQ BankTypeCharacterInA
     LDA #'P' ; Protected
