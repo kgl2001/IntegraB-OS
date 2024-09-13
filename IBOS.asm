@@ -5679,24 +5679,23 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 IF IBOS_VERSION >= 127
 .ensureOswordBlockBankIsUsableRamIfPossible
 {
-    BIT prvOswordBlockCopy:BPL skipPALPROMcheckWithCLC ; branch if reading from SWR
-    LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheckWithCLC ; branch if pseudo addressing in operation
+    BIT prvOswordBlockCopy:BPL skipPALPROMcheckSetZero ; branch if reading from SWR
+    LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheckSetZero ; branch if pseudo addressing in operation
 .^ensureBankAIsUsableRamIfPossible
-    SEC
     TAX
     JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheck ; branch if not RAM
     TXA:PHA
     JSR removeBankAFromSFTODOFOURBANKS
     PLA:TAX
-    JSR testV2hardware:BCC skipPALPROMcheckWithCLC
-    CPX #8:BCC skipPALPROMcheckWithCLC
-    CPX #12:BCS skipPALPROMcheckWithCLC
+    JSR testV2hardware:BCC skipPALPROMcheckSetZero
+    CPX #8:BCC skipPALPROMcheckSetZero
+    CPX #12:BCS skipPALPROMcheckSetZero
     LDA palprom_test_table-8,X:EOR #&FF
     AND cpldPALPROMSelectionFlags0_7
     STA cpldPALPROMSelectionFlags0_7
     LDX #userRegPALPROMConfig:JSR WriteUserReg
-.skipPALPROMcheckWithCLC
-    CLC
+.skipPALPROMcheckSetZero
+    LDX #0 ; set Zero flag
 .skipPALPROMcheck
     RTS
 }
@@ -6623,7 +6622,7 @@ IF IBOS_VERSION < 127
     BCS LA0B1 ; SFTODO: I don't believe this branch can ever be taken
 ELSE
     JSR ensureOswordBlockBankIsUsableRamIfPossible
-    BCS badIdIndirect
+    BNE badIdIndirect
 ENDIF
     JSR PrepareMainSidewaysRamTransfer
     JSR doTransfer
@@ -6818,7 +6817,7 @@ ENDIF
             JSR adjustOsword43LengthAndBuffer
 IF IBOS_VERSION >= 127
             JSR ensureOswordBlockBankIsUsableRamIfPossible
-	  BCS badIdIndirect
+	  BNE badIdIndirect
 ENDIF
             LDA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
             ORA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
