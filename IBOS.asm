@@ -11546,8 +11546,9 @@ ELSE
 .code_end
     ; Add a pointer to the full reset data table in a known place at the end of the IBOS ROM,
     ; so it can potentially be used by the recovery tool to ensure consistency. We only do the
-    ; SKIPTO if it will succeed; we'll still hit the guard in this case when it's present, but
-    ; it means we get the negative bytes free reported correctly when the guard is disabled.
+    ; SKIPTO if it will succeed; we'll still hit the guard if the ROM is over-full without the
+    ; SKIPTO, but it means we get the negative bytes free reported correctly when the guard is
+    ; disabled instead of the SKIPTO terminating the build.
     IF P% <= &BFFE
         SKIPTO &BFFE
     ENDIF
