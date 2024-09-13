@@ -3389,8 +3389,11 @@ ENDIF
 .CountBankLoop
     LDA prvPrintBufferBankList,X:BMI AllBanksCounted
     CLC:LDA prvPrintBufferSizeMid:ADC #&40:STA prvPrintBufferSizeMid ; SFTODO: mildly magic
-    ; SQUASH: INCCS prvprintBufferSizeHigh
+IF IBOS_VERSION < 127
     LDA prvPrintBufferSizeHigh:ADC #0:STA prvPrintBufferSizeHigh
+ELSE
+    INCCS prvPrintBufferSizeHigh
+ENDIF
     INX:CPX #MaxPrintBufferSwrBanks:BNE CountBankLoop
     DEX
 .AllBanksCounted
