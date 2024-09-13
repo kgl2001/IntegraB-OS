@@ -837,6 +837,7 @@ opcodeJmpAbsolute = &4C
 opcodeRts = &60
 opcodeJmpIndirect = &6C
 opcodeCmpAbs = &CD
+opcodeLdaImmediate = &A9
 opcodeLdaAbs = &AD
 opcodeStaAbs = &8D
 
@@ -3312,7 +3313,8 @@ ENDIF
 .ParseUserBankListLoop
     JSR ParseBankNumber:STY TmpTransientCmdPtrOffset
     BCS prvPrintBufferBankListInitialised2 ; stop parsing if bank number is invalid
-    TAY:JSR TestForEmptySwrInBankY:TYA:BCS NotEmptySwrBank
+    TAY
+    JSR TestForEmptySwrInBankY:TYA:BCS NotEmptySwrBank
     ; SQUASH: INC TmpBankCount:LDX TmpBankCount:STA prvPrintBufferBankList-1,X:...:CPX
     ; #MaxPrintBufferSwrBanks+1? Or initialise TmpBankCount to &FF?
     LDX TmpBankCount:STA prvPrintBufferBankList,X:INX:STX TmpBankCount
@@ -3446,8 +3448,8 @@ ENDIF
 }
 
 ; Return with C clear iff bank Y is an empty sideways RAM bank. X and Y are preserved.
-; SQUASH: Could this use TestBankXForRamUsingVariableMainRamSubroutine after doing the NotEmpty test?
 .TestForEmptySwrInBankY
+IF IBOS_VERSION < 127
 {
     TXA:PHA
     LDA RomTypeTable,Y:BNE NotEmpty
@@ -3481,13 +3483,29 @@ ENDIF
     ; modifications so A is naturally preserved?
     TAX:LDA #opcodeStaAbs:STA RomAccessSubroutineVariableInsn:TXA:JSR RomAccessSubroutine
     PLP
-    JMP CommonEnd
+    JMP PlaTaxRts
 .NotEmpty
     SEC
-.CommonEnd
+.PlaTaxRts
     PLA:TAX
     RTS
 }
+ELSE
+{
+    TXA:PHA
+    TYA:PHA
+    LDA RomTypeTable,Y:BNE SecPullRts ; branch if not empty
+    LDA prvRomTypeTableCopy,Y:BNE SecPullRts ; branch if not empty
+    TYA:TAX:JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE SecPullRts ; branch if not RAM
+    CLC
+    EQUB opcodeLdaImmediate ; skip following SEC
+.SecPullRts
+    SEC
+    PLA:TAY
+    PLA:TAX
+    RTS
+}
+ENDIF
 }
 
 ;Check if printer buffer is empty
