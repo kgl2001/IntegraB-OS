@@ -809,7 +809,7 @@ prvSetPrinterTypePending = prv83 + &49 ; Flag used to ensure *FX5 is only set on
 
 prvIbosBankNumber = prv83 + &00 ; SFTODO: not sure about this, but service01 seems to set this
 prvPseudoBankNumbers = prv83 + &08 ; 4 bytes, absolute RAM bank number for the Pseudo RAM banks W, X, Y, Z; SFTODO: may be &FF indicating "no such bank" if SRSET is used?
-prvSFTODOFOURBANKS = prv83 + &0C ; 4 bytes, SFTODO: something to do with the pseudo RAM banks I think
+prvSrDataBanks = prv83 + &0C ; 4 bytes, absolute RAM bank numbers for pseudo-addressing (*SRDATA), padded with &FF if less than 4 banks
 prvRomTypeTableCopy = prv83 + &2C ; 16 bytes
 
 ; prvLastScreenMode is the last screen mode selected. This differs from currentMode because a)
@@ -2675,10 +2675,10 @@ FullResetPrv = &2800
     LDA #ramselShen OR ramselPrvs841:STA ramselCopy:STA ramsel
     LDA #romselPrvEn:STA romselCopy:STA romsel
     LDA #&30:JSR ZeroPageAUpToC0 ; SFTODO: mildly magic
-    ; Initialise prvSFTODOFOURBANKS.
+    ; Initialise prvSrDataBanks. SQUASH: SHhorten with a loop?
     LDA #&FF
-    STA prvSFTODOFOURBANKS + 0:STA prvSFTODOFOURBANKS + 1
-    STA prvSFTODOFOURBANKS + 2:STA prvSFTODOFOURBANKS + 3
+    STA prvSrDataBanks + 0:STA prvSrDataBanks + 1
+    STA prvSrDataBanks + 2:STA prvSrDataBanks + 3
     LDA #0:STA ramselCopy:STA ramsel
     PLA:STA romselCopy:STA romsel
     ; Set the user registers to their default values.
@@ -5266,12 +5266,12 @@ ENDIF
             SEI
             LDA #&00
             STA oswdbtX
-	  ; SFTODO: Is all the saving and restoring of Y needed? FindAInPrvSFTODOFOURBANKS doesn't seem to corrupt Y.
+	  ; SFTODO: Is all the saving and restoring of Y needed? FindAInPrvSrDataBanks doesn't seem to corrupt Y.
             LDY #&03
 .bankLoop   STY prvTmp
             LDA prvPseudoBankNumbers,Y
             BMI bankAbs   								;&FF indicates no absolute bank assigned to this pseudo-bank SFTODO: I guess we say that's an absolute addressing bank as it is less likely our caller will decide to try to use it, but it is a bit arbitrary
-            JSR FindAInPrvSFTODOFOURBANKS ; SFTODO: I am inferring SFTODOFOURBANKS is therefore a list of up to 4 banks being used for pseudo-addressing - the fact we need to do the previous BMI suggests the list is padded to the full 4 entries with &FF
+            JSR FindAInPrvSrDataBanks ; SFTODO: I am inferring SrDataBanks is therefore a list of up to 4 banks being used for pseudo-addressing - the fact we need to do the previous BMI suggests the list is padded to the full 4 entries with &FF
             BPL bankPseudo								;branch if we found a match
 .bankAbs    CLC
             BCC bankStateInC
@@ -5314,7 +5314,7 @@ ENDIF
     JSR variableMainRamSubroutine
 IF IBOS_VERSION < 127
 ; In IBOS Version >= 127, this function is carried out in ensureBankAIsUsableRamIfPossible
-    PHA:JSR removeBankAFromSFTODOFOURBANKS:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
+    PHA:JSR removeBankAFromSrDataBanks:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
 ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
 .Rts
@@ -5348,55 +5348,55 @@ ENDIF
 }
 
 {
-; Search prvSFTODOFOURBANKS for A; if found, remove it, shuffling the elements down so all the non-&FF entries are at the start and are followed by enough &FF entries to fill the list.
-.^removeBankAFromSFTODOFOURBANKS
+; Search prvSrDataBanks for A; if found, remove it, shuffling the elements down so all the non-&FF entries are at the start and are followed by enough &FF entries to fill the list.
+.^removeBankAFromSrDataBanks
     XASSERT_USE_PRV1
     LDX #3 ; SFTODO: MILDLY MAGIC
 .FindLoop
-    CMP prvSFTODOFOURBANKS,X:BEQ Found
+    CMP prvSrDataBanks,X:BEQ Found
     DEX:BPL FindLoop
     SEC ; SFTODO: Not sure any callers care about this, and I think we'll *always* exit with carry set even if we do find a match
     RTS
 
 .Found
-    LDA #&FF:STA prvSFTODOFOURBANKS,X
+    LDA #&FF:STA prvSrDataBanks,X
 .Shuffle
     LDX #0:LDY #0
 .ShuffleLoop
-    LDA prvSFTODOFOURBANKS,X:BMI Unassigned
-    STA prvSFTODOFOURBANKS,Y:INY
+    LDA prvSrDataBanks,X:BMI Unassigned
+    STA prvSrDataBanks,Y:INY
 .Unassigned
     INX:CPX #&04:BNE ShuffleLoop ; SFTODO: mildly magic
     TYA:TAX
     JMP PadLoopStart ; SQUASH: BPL always?
 			
 .PadLoop
-    LDA #&FF:STA prvSFTODOFOURBANKS,Y
+    LDA #&FF:STA prvSrDataBanks,Y
     INY
 .PadLoopStart
     CPY #4:BNE PadLoop  ; SFTODO: mildly magic
     RTS
 
-; If there's an unused entry, add A to SFTODOFOURBANKS and return with C clear, otherwise
+; If there's an unused entry, add A to SrDataBanks and return with C clear, otherwise
 ; return with C set to indicate no room.
 ; SQUASH: This has only one caller
-.^AddBankAToSFTODOFOURBANKS
+.^AddBankAToSrDataBanks
     XASSERT_USE_PRV1
     PHA:JSR Shuffle:PLA
     CPX #4:BCS Rts ; SFTODO: mildly magic
-    STA prvSFTODOFOURBANKS,X
+    STA prvSrDataBanks,X
 .Rts
     RTS
 }
 
-; Return with X such that prvSFTODOFOURBANKS[X] == A (N flag clear), or with X=-1 if there is no such X (N flag set).
+; Return with X such that prvSrDataBanks[X] == A (N flag clear), or with X=-1 if there is no such X (N flag set).
 ; SQUASH: This only has one caller
-.FindAInPrvSFTODOFOURBANKS
+.FindAInPrvSrDataBanks
 {
     XASSERT_USE_PRV1
     LDX #3 ; SFTODO: mildly magic
 .Loop
-    CMP prvSFTODOFOURBANKS,X:BEQ Rts
+    CMP prvSrDataBanks,X:BEQ Rts
     DEX:BPL Loop
 .Rts
     RTS
@@ -5519,9 +5519,9 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
     LDA prvRomTypeTableCopy,X:BEQ EmptyBank
     CMP #RomTypeSrData:BNE FailSFTODOA
 .EmptyBank
-    LDA bankTmp:JSR removeBankAFromSFTODOFOURBANKS
+    LDA bankTmp:JSR removeBankAFromSrDataBanks
     PLP:BCS IsSrrom
-    LDA bankTmp:JSR AddBankAToSFTODOFOURBANKS:BCS FailSFTODOB ; branch if already had max banks
+    LDA bankTmp:JSR AddBankAToSrDataBanks:BCS FailSFTODOB ; branch if already had max banks
 .IsSrrom
     LDA RomRamFlagTmp:JSR WriteRomHeaderAndPatchUsingVariableMainRamSubroutine
     LDX bankTmp:LDA #RomTypeSrData:STA prvRomTypeTableCopy,X:STA RomTypeTable,X
@@ -5731,7 +5731,7 @@ IF IBOS_VERSION >= 127
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE notWERam ; branch if not RAM
     PLP
     TXA:PHA
-    JSR removeBankAFromSFTODOFOURBANKS
+    JSR removeBankAFromSrDataBanks
     PLA:TAX
     JSR testV2hardware:BCC Rts
     CPX #8:BCC Rts
@@ -5762,10 +5762,10 @@ ENDIF
 .parsedOk   STA prvOswordBlockCopy + 1						;absolute ROM number
             BCC parsedOk2
 	  ; SFTODO: What do these addresses hold? I *speculate* they hold the real banks assigned to pseudo-banks W-Z, &FF meaning "not assigned".
-            LDA prvSFTODOFOURBANKS
-            AND prvSFTODOFOURBANKS + 1
-            AND prvSFTODOFOURBANKS + 2
-            AND prvSFTODOFOURBANKS + 3
+            LDA prvSrDataBanks
+            AND prvSrDataBanks + 1
+            AND prvSrDataBanks + 2
+            AND prvSrDataBanks + 3
             BMI badIdIndirect
             LDA prvOswordBlockCopy						;function
             ORA #&40							;set pseudo addressing mode
@@ -6055,7 +6055,7 @@ ENDIF
             CMP #&04
             BCS secSevRts
             TAX
-            LDA prvSFTODOFOURBANKS,X
+            LDA prvSrDataBanks,X
             BMI clvSecRts
             TAX
 .ClcRts
@@ -6087,7 +6087,7 @@ ENDIF
             BVC absoluteAddress
             ; We're dealing with a pseudo-address.
             ; SFTODO: What do next four lines do?
-            LDA prvSFTODOFOURBANKS,X
+            LDA prvSrDataBanks,X
             CLV
             BMI L9DAE
             TAX
