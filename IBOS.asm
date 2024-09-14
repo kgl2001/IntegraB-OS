@@ -5557,7 +5557,12 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
 }
 
 
-; SFTODO: Do we really need this *and* ParseRomBankListChecked? Isn't ParseRomBankListChecked better than this one?
+; SFTODO: Do we really need this *and* ParseRomBankListChecked? Isn't ParseRomBankListChecked
+; better than this one?
+; SFTODONOW: I think as written ...Checked *is* better and would be a drop-in replacement -
+; would need to test. However, since I am looking to add write protect/*SRDATA/PALPROM check
+; logic, I need to be careful. It may be ...Checked could still be used everywhere and take a
+; flag to tell it what to do about checking for write protect etc.
 .ParseRomBankListChecked2
 {
 .L9B25      JSR ParseRomBankList
