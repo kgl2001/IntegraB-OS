@@ -5409,6 +5409,9 @@ ENDIF
             BEQ showStatus
 	  ; Select the first four suitable banks from the list provided and store them at prvPseudoBankNumbers.
       ; SFTODONOW: Should this exclude write-protected banks? I can see arguments either way.
+      ; ENHANCE: This does not check the state after ParseRomBankList - "*SRSET HG" is
+      ; accepted. Care is needed here as arguably "*SRSET" is legitimate, specifying no pseudo
+      ; banks are defined.
             JSR ParseRomBankList
             PRVEN
             LDX #&00
@@ -7314,6 +7317,8 @@ ENDIF
     ; - V will have been populated to indicate this by ParseBankNumber. I assume the idea here
     ; is that inverting is dangerous if an undefined pseudo-bank was specified on the command
     ; line, which may or may not be sensible.
+    ; ENHANCE: I can't help feeling it would be cleaner all round if this BVS was moved to
+    ; immediately after the NoBankNumber label.
     BVS SecRts
     INY
     JSR InvertTransientRomBankMask
