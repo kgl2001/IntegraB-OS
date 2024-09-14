@@ -7313,12 +7313,19 @@ ENDIF
 .NoBankNumber
     LDA (transientCmdPtr),Y
     CMP #'*':BNE NotStar
-    ; This BVS will branch if an undefined pseudo-bank has been referenced on the command line
-    ; - V will have been populated to indicate this by ParseBankNumber. I assume the idea here
-    ; is that inverting is dangerous if an undefined pseudo-bank was specified on the command
-    ; line, which may or may not be sensible.
-    ; ENHANCE: I can't help feeling it would be cleaner all round if this BVS was moved to
-    ; immediately after the NoBankNumber label.
+    ; This BVS will branch if an invalid bank has been specified on the command line - V will
+    ; have been populated to indicate this by ParseBankNumber. I assume the idea here is that
+    ; inverting is dangerous if an undefined pseudo-bank was specified on the command line,
+    ; which may or may not be sensible.
+    ;
+    ; ENHANCE: Because we only check V here, if you do *SRSET 4 (so only pseudo bank W is
+    ; defined) and then *INSERT X,4 you get a bad ID error (because X is an invalid bank and
+    ; terminates processing while no banks are set, so C is set on exit), but *INSERT 4,X just
+    ; silently ignores the X.  One fix for this would be to do this BVS immediately after the
+    ; NoBankNumber label, *but* that would break callers (such as - probably - *SRWE) which
+    ; need to be able to parse an apparently invalid bank as a trailing option like "T".
+    ;
+    ; SFTODONOW *SRSET IS NOT PRESERVED ON CTRL BREAK IS THIS RIGHT?
     BVS SecRts
     INY
     JSR InvertTransientRomBankMask
