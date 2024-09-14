@@ -5408,7 +5408,6 @@ ENDIF
             CMP #'?'
             BEQ showStatus
 	  ; Select the first four suitable banks from the list provided and store them at prvPseudoBankNumbers.
-    ; TODO: Should we be setting/clearing V before calling JSR ParseRomBankList?
             JSR ParseRomBankList
             PRVEN
             LDX #&00
@@ -5557,7 +5556,6 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
 ; SFTODO: Do we really need this *and* ParseRomBankListChecked? Isn't ParseRomBankListChecked better than this one?
 .ParseRomBankListChecked2
 {
-    ; TODO: Should we be setting/clearing V before calling JSR ParseRomBankList?
 .L9B25      JSR ParseRomBankList
             BCS badIdIndirect
             RTS
@@ -7021,7 +7019,6 @@ ENDIF
 
 .ParseRomBankListChecked
 {
-    ; TODO: Should we be setting/clearing V before calling JSR ParseRomBankList?
     JSR ParseRomBankList
     BCC Rts
     BVC GenerateSyntaxErrorIndirect
@@ -7298,7 +7295,7 @@ IF IBOS_VERSION >= 127
 ENDIF
 
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be
-; used to indicate "everything but the listed banks" SFTODO DEPENDING ON V ON ENTRY?. Return with C set iff at least one bit of
+; used to indicate "everything but the listed banks". Return with C set iff at least one bit of
 ; transientRomBankMask is set.
 .ParseRomBankList
 {
@@ -7310,7 +7307,11 @@ ENDIF
 .NoBankNumber
     LDA (transientCmdPtr),Y
     CMP #'*':BNE NotStar
-    BVS SecRts ; branch if not at end of line SFTODO: isn't this redundant? We just successfully checked and found a '*' not a CR? So we'll never branch, right? Should we have checked this earlier (e.g. at .NoBankNumber)? Have I just got confused? I am wondering if V doesn't mean "end of line", it's not entirely clear to me where V is set - maybe by the caller? ParseBankNumber doesn't seem to set V. Maybe the caller sets it to allow/disallow use of '*'???
+    ; This BVS will branch if an undefined pseudo-bank has been referenced on the command line
+    ; - V will have been populated to indicate this by ParseBankNumber. I assume the idea here
+    ; is that inverting is dangerous if an undefined pseudo-bank was specified on the command
+    ; line, which may or may not be sensible.
+    BVS SecRts
     INY
     JSR InvertTransientRomBankMask
 .NotStar
@@ -7336,7 +7337,7 @@ ENDIF
     LDA #0:STA transientRomBankMask:STA transientRomBankMask + 1
     PLA
 
-; Set bit A of the 16-bit word at transientRomBankMask. Y is preserved.
+; Set bit A of the 16-bit word at transientRomBankMask. Y and V are preserved.
 .^addToRomBankMask
     TAX:TYA:PHA:TXA ; push Y, preserving A
     LDX #0
@@ -7484,7 +7485,6 @@ ENDIF
 IF IBOS_VERSION >= 127
     JSR testV2hardware:BCC v2Only
 ENDIF
-    ; TODO: Should we be setting/clearing V before calling JSR ParseRomBankList?
     JSR ParseRomBankList:BCC LA513
     JMP badId
 			
