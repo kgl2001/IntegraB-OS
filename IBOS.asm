@@ -5408,6 +5408,7 @@ ENDIF
             CMP #'?'
             BEQ showStatus
 	  ; Select the first four suitable banks from the list provided and store them at prvPseudoBankNumbers.
+      ; SFTODONOW: Should this exclude write-protected banks? I can see arguments either way.
             JSR ParseRomBankList
             PRVEN
             LDX #&00
@@ -7017,10 +7018,11 @@ ENDIF
             JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
+; At the moment, this is used only by *INSERT and *UNPLUG.
 .ParseRomBankListChecked
 {
     JSR ParseRomBankList
-    BCC Rts
+    BCC Rts ; branch if no banks selected
     BVC GenerateSyntaxErrorIndirect
 .^badId
     JSR RaiseError
@@ -7485,6 +7487,9 @@ ENDIF
 IF IBOS_VERSION >= 127
     JSR testV2hardware:BCC v2Only
 ENDIF
+    ; SFTODONOW: Could/should this use one of the ParseRomBankListChecked subroutines? Of
+    ; course we do not want to do write protect, *SRDATA or PALPROM checks here, so be careful
+    ; as these routines are tweaked.
     JSR ParseRomBankList:BCC LA513
     JMP badId
 			
