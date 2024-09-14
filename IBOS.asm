@@ -5706,11 +5706,9 @@ IF IBOS_VERSION >= 127
 .ensureOswordBlockBankIsUsableRamIfPossibleViaOsword
 {
     SEC
-;    BCS ensureOswordBlockBankIsUsableRamIfPossibleViaOswordwithSEC
     EQUB opcodeLdaImmediate ; skip following CLC
 .^ensureOswordBlockBankIsUsableRamIfPossibleViaStarCmd
     CLC
-;.ensureOswordBlockBankIsUsableRamIfPossibleViaOswordwithSEC
     BIT prvOswordBlockCopy:BPL skipPALPROMcheck ; branch if reading from SWR
     LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheck ; branch if pseudo addressing in operation
 ; Alternate entry point with the bank number in A and therefore no checks for the OSWORD block
