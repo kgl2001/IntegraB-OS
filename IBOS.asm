@@ -5710,13 +5710,13 @@ IF IBOS_VERSION >= 127
     EQUB opcodeLdaImmediate ; skip following CLC
 .^ensureOswordBlockBankIsUsableRamIfPossibleViaStarCmd
     CLC
-    BIT prvOswordBlockCopy:BPL skipPALPROMcheck ; branch if reading from SWR
-    LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheck ; branch if pseudo addressing in operation
+    BIT prvOswordBlockCopy:BPL Rts ; branch if reading from SWR
+    LDA prvOswordBlockCopy + 1:BMI Rts ; branch if pseudo addressing in operation
 ; Alternate entry point with the bank number in A and therefore no checks for the OSWORD block
 ; specifying a write or that normal non-pseudo addressing is in use. The behavior is otherwise
 ; identical.
 .^ensureBankAIsUsableRamIfPossible
-    BCS skipPALPROMcheck
+    BCS Rts
     TAX
     PHP
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE notWERam ; branch if not RAM
@@ -5724,19 +5724,19 @@ IF IBOS_VERSION >= 127
     TXA:PHA
     JSR removeBankAFromSFTODOFOURBANKS
     PLA:TAX
-    JSR testV2hardware:BCC skipPALPROMcheck
-    CPX #8:BCC skipPALPROMcheck
-    CPX #12:BCS skipPALPROMcheck
+    JSR testV2hardware:BCC Rts
+    CPX #8:BCC Rts
+    CPX #12:BCS Rts
     LDA palprom_test_table-8,X:EOR #&FF
     AND cpldPALPROMSelectionFlags0_7
     STA cpldPALPROMSelectionFlags0_7
     LDX #userRegPALPROMConfig:JSR WriteUserReg
-.skipPALPROMcheck
+.Rts
     RTS
 
 .notWERam
     PLP
-    BCS skipPALPROMcheck
+    BCS Rts
     JSR RaiseError
     EQUB &83
     EQUS "Not W/E RAM", &00
