@@ -809,7 +809,7 @@ prvSetPrinterTypePending = prv83 + &49 ; Flag used to ensure *FX5 is only set on
 
 prvIbosBankNumber = prv83 + &00 ; SFTODO: not sure about this, but service01 seems to set this
 prvPseudoBankNumbers = prv83 + &08 ; 4 bytes, absolute RAM bank number for the Pseudo RAM banks W, X, Y, Z; SFTODO: may be &FF indicating "no such bank" if SRSET is used?
-prvSFTODOFOURBANKS = prv83 + &0C ; 4 bytes, SFTODO: something to do with the pseudo RAM banks I think
+prvSrDataBanks = prv83 + &0C ; 4 bytes, absolute RAM bank numbers for pseudo-addressing (*SRDATA), padded with &FF if less than 4 banks
 prvRomTypeTableCopy = prv83 + &2C ; 16 bytes
 
 ; prvLastScreenMode is the last screen mode selected. This differs from currentMode because a)
@@ -2675,10 +2675,10 @@ FullResetPrv = &2800
     LDA #ramselShen OR ramselPrvs841:STA ramselCopy:STA ramsel
     LDA #romselPrvEn:STA romselCopy:STA romsel
     LDA #&30:JSR ZeroPageAUpToC0 ; SFTODO: mildly magic
-    ; Initialise prvSFTODOFOURBANKS.
+    ; Initialise prvSrDataBanks. SQUASH: SHhorten with a loop?
     LDA #&FF
-    STA prvSFTODOFOURBANKS + 0:STA prvSFTODOFOURBANKS + 1
-    STA prvSFTODOFOURBANKS + 2:STA prvSFTODOFOURBANKS + 3
+    STA prvSrDataBanks + 0:STA prvSrDataBanks + 1
+    STA prvSrDataBanks + 2:STA prvSrDataBanks + 3
     LDA #0:STA ramselCopy:STA ramsel
     PLA:STA romselCopy:STA romsel
     ; Set the user registers to their default values.
@@ -5266,12 +5266,12 @@ ENDIF
             SEI
             LDA #&00
             STA oswdbtX
-	  ; SFTODO: Is all the saving and restoring of Y needed? FindAInPrvSFTODOFOURBANKS doesn't seem to corrupt Y.
+	  ; SFTODO: Is all the saving and restoring of Y needed? FindAInPrvSrDataBanks doesn't seem to corrupt Y.
             LDY #&03
 .bankLoop   STY prvTmp
             LDA prvPseudoBankNumbers,Y
             BMI bankAbs   								;&FF indicates no absolute bank assigned to this pseudo-bank SFTODO: I guess we say that's an absolute addressing bank as it is less likely our caller will decide to try to use it, but it is a bit arbitrary
-            JSR FindAInPrvSFTODOFOURBANKS ; SFTODO: I am inferring SFTODOFOURBANKS is therefore a list of up to 4 banks being used for pseudo-addressing - the fact we need to do the previous BMI suggests the list is padded to the full 4 entries with &FF
+            JSR FindAInPrvSrDataBanks ; SFTODO: I am inferring SrDataBanks is therefore a list of up to 4 banks being used for pseudo-addressing - the fact we need to do the previous BMI suggests the list is padded to the full 4 entries with &FF
             BPL bankPseudo								;branch if we found a match
 .bankAbs    CLC
             BCC bankStateInC
@@ -5314,7 +5314,7 @@ ENDIF
     JSR variableMainRamSubroutine
 IF IBOS_VERSION < 127
 ; In IBOS Version >= 127, this function is carried out in ensureBankAIsUsableRamIfPossible
-    PHA:JSR removeBankAFromSFTODOFOURBANKS:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
+    PHA:JSR removeBankAFromSrDataBanks:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
 ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
 .Rts
@@ -5348,55 +5348,55 @@ ENDIF
 }
 
 {
-; Search prvSFTODOFOURBANKS for A; if found, remove it, shuffling the elements down so all the non-&FF entries are at the start and are followed by enough &FF entries to fill the list.
-.^removeBankAFromSFTODOFOURBANKS
+; Search prvSrDataBanks for A; if found, remove it, shuffling the elements down so all the non-&FF entries are at the start and are followed by enough &FF entries to fill the list.
+.^removeBankAFromSrDataBanks
     XASSERT_USE_PRV1
     LDX #3 ; SFTODO: MILDLY MAGIC
 .FindLoop
-    CMP prvSFTODOFOURBANKS,X:BEQ Found
+    CMP prvSrDataBanks,X:BEQ Found
     DEX:BPL FindLoop
     SEC ; SFTODO: Not sure any callers care about this, and I think we'll *always* exit with carry set even if we do find a match
     RTS
 
 .Found
-    LDA #&FF:STA prvSFTODOFOURBANKS,X
+    LDA #&FF:STA prvSrDataBanks,X
 .Shuffle
     LDX #0:LDY #0
 .ShuffleLoop
-    LDA prvSFTODOFOURBANKS,X:BMI Unassigned
-    STA prvSFTODOFOURBANKS,Y:INY
+    LDA prvSrDataBanks,X:BMI Unassigned
+    STA prvSrDataBanks,Y:INY
 .Unassigned
     INX:CPX #&04:BNE ShuffleLoop ; SFTODO: mildly magic
     TYA:TAX
     JMP PadLoopStart ; SQUASH: BPL always?
 			
 .PadLoop
-    LDA #&FF:STA prvSFTODOFOURBANKS,Y
+    LDA #&FF:STA prvSrDataBanks,Y
     INY
 .PadLoopStart
     CPY #4:BNE PadLoop  ; SFTODO: mildly magic
     RTS
 
-; If there's an unused entry, add A to SFTODOFOURBANKS and return with C clear, otherwise
+; If there's an unused entry, add A to SrDataBanks and return with C clear, otherwise
 ; return with C set to indicate no room.
 ; SQUASH: This has only one caller
-.^AddBankAToSFTODOFOURBANKS
+.^AddBankAToSrDataBanks
     XASSERT_USE_PRV1
     PHA:JSR Shuffle:PLA
     CPX #4:BCS Rts ; SFTODO: mildly magic
-    STA prvSFTODOFOURBANKS,X
+    STA prvSrDataBanks,X
 .Rts
     RTS
 }
 
-; Return with X such that prvSFTODOFOURBANKS[X] == A (N flag clear), or with X=-1 if there is no such X (N flag set).
+; Return with X such that prvSrDataBanks[X] == A (N flag clear), or with X=-1 if there is no such X (N flag set).
 ; SQUASH: This only has one caller
-.FindAInPrvSFTODOFOURBANKS
+.FindAInPrvSrDataBanks
 {
     XASSERT_USE_PRV1
     LDX #3 ; SFTODO: mildly magic
 .Loop
-    CMP prvSFTODOFOURBANKS,X:BEQ Rts
+    CMP prvSrDataBanks,X:BEQ Rts
     DEX:BPL Loop
 .Rts
     RTS
@@ -5408,6 +5408,10 @@ ENDIF
             CMP #'?'
             BEQ showStatus
 	  ; Select the first four suitable banks from the list provided and store them at prvPseudoBankNumbers.
+      ; SFTODONOW: Should this exclude write-protected banks? I can see arguments either way.
+      ; ENHANCE: This does not check the state after ParseRomBankList - "*SRSET HG" is
+      ; accepted. Care is needed here as arguably "*SRSET" is legitimate, specifying no pseudo
+      ; banks are defined.
             JSR ParseRomBankList
             PRVEN
             LDX #&00
@@ -5515,9 +5519,9 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
     LDA prvRomTypeTableCopy,X:BEQ EmptyBank
     CMP #RomTypeSrData:BNE FailSFTODOA
 .EmptyBank
-    LDA bankTmp:JSR removeBankAFromSFTODOFOURBANKS
+    LDA bankTmp:JSR removeBankAFromSrDataBanks
     PLP:BCS IsSrrom
-    LDA bankTmp:JSR AddBankAToSFTODOFOURBANKS:BCS FailSFTODOB ; branch if already had max banks
+    LDA bankTmp:JSR AddBankAToSrDataBanks:BCS FailSFTODOB ; branch if already had max banks
 .IsSrrom
     LDA RomRamFlagTmp:JSR WriteRomHeaderAndPatchUsingVariableMainRamSubroutine
     LDX bankTmp:LDA #RomTypeSrData:STA prvRomTypeTableCopy,X:STA RomTypeTable,X
@@ -5553,7 +5557,13 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
 }
 
 
-; SFTODO: Do we really need this *and* ParseRomBankListChecked? Isn't ParseRomBankListChecked better than this one?
+; At the moment this is only used by *SRWIPE, *SRROM and *SRDATA.
+; SFTODO: Do we really need this *and* ParseRomBankListChecked? Isn't ParseRomBankListChecked
+; better than this one?
+; SFTODONOW: I think as written ...Checked *is* better and would be a drop-in replacement -
+; would need to test. However, since I am looking to add write protect/*SRDATA/PALPROM check
+; logic, I need to be careful. It may be ...Checked could still be used everywhere and take a
+; flag to tell it what to do about checking for write protect etc.
 .ParseRomBankListChecked2
 {
 .L9B25      JSR ParseRomBankList
@@ -5709,33 +5719,33 @@ IF IBOS_VERSION >= 127
     EQUB opcodeLdaImmediate ; skip following CLC
 .^ensureOswordBlockBankIsUsableRamIfPossibleViaStarCmd
     CLC
-    BIT prvOswordBlockCopy:BPL skipPALPROMcheck ; branch if reading from SWR
-    LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheck ; branch if pseudo addressing in operation
+    BIT prvOswordBlockCopy:BPL Rts ; branch if reading from SWR
+    LDA prvOswordBlockCopy + 1:BMI Rts ; branch if pseudo addressing in operation
 ; Alternate entry point with the bank number in A and therefore no checks for the OSWORD block
 ; specifying a write or that normal non-pseudo addressing is in use. The behavior is otherwise
 ; identical.
 .^ensureBankAIsUsableRamIfPossible
-    BCS skipPALPROMcheck
+    BCS Rts
     TAX
     PHP
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE notWERam ; branch if not RAM
     PLP
     TXA:PHA
-    JSR removeBankAFromSFTODOFOURBANKS
+    JSR removeBankAFromSrDataBanks
     PLA:TAX
-    JSR testV2hardware:BCC skipPALPROMcheck
-    CPX #8:BCC skipPALPROMcheck
-    CPX #12:BCS skipPALPROMcheck
+    JSR testV2hardware:BCC Rts
+    CPX #8:BCC Rts
+    CPX #12:BCS Rts
     LDA palprom_test_table-8,X:EOR #&FF
     AND cpldPALPROMSelectionFlags0_7
     STA cpldPALPROMSelectionFlags0_7
     LDX #userRegPALPROMConfig:JSR WriteUserReg
-.skipPALPROMcheck
+.Rts
     RTS
 
 .notWERam
     PLP
-    BCS skipPALPROMcheck
+    BCS Rts
     JSR RaiseError
     EQUB &83
     EQUS "Not W/E RAM", &00
@@ -5752,10 +5762,10 @@ ENDIF
 .parsedOk   STA prvOswordBlockCopy + 1						;absolute ROM number
             BCC parsedOk2
 	  ; SFTODO: What do these addresses hold? I *speculate* they hold the real banks assigned to pseudo-banks W-Z, &FF meaning "not assigned".
-            LDA prvSFTODOFOURBANKS
-            AND prvSFTODOFOURBANKS + 1
-            AND prvSFTODOFOURBANKS + 2
-            AND prvSFTODOFOURBANKS + 3
+            LDA prvSrDataBanks
+            AND prvSrDataBanks + 1
+            AND prvSrDataBanks + 2
+            AND prvSrDataBanks + 3
             BMI badIdIndirect
             LDA prvOswordBlockCopy						;function
             ORA #&40							;set pseudo addressing mode
@@ -6045,7 +6055,7 @@ ENDIF
             CMP #&04
             BCS secSevRts
             TAX
-            LDA prvSFTODOFOURBANKS,X
+            LDA prvSrDataBanks,X
             BMI clvSecRts
             TAX
 .ClcRts
@@ -6077,7 +6087,7 @@ ENDIF
             BVC absoluteAddress
             ; We're dealing with a pseudo-address.
             ; SFTODO: What do next four lines do?
-            LDA prvSFTODOFOURBANKS,X
+            LDA prvSrDataBanks,X
             CLV
             BMI L9DAE
             TAX
@@ -7017,10 +7027,12 @@ ENDIF
             JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
+; A wrapper for ParseRomBankList which returns if at least one bank was parsed and generates an
+; error otherwise. At the moment, this is used only by *INSERT and *UNPLUG.
 .ParseRomBankListChecked
 {
     JSR ParseRomBankList
-    BCC Rts
+    BCC Rts ; branch if no banks selected
     BVC GenerateSyntaxErrorIndirect
 .^badId
     JSR RaiseError
@@ -7295,8 +7307,8 @@ IF IBOS_VERSION >= 127
 ENDIF
 
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be
-; used to indicate "everything but the listed banks" SFTODO DEPENDING ON V ON ENTRY?. Return with C set iff at least one bit of
-; transientRomBankMask is set.
+; used to indicate "everything but the listed banks". Return with C clear iff at least one bit
+; of transientRomBankMask is set.
 .ParseRomBankList
 {
     LDA #0:STA transientRomBankMask:STA transientRomBankMask + 1
@@ -7307,7 +7319,20 @@ ENDIF
 .NoBankNumber
     LDA (transientCmdPtr),Y
     CMP #'*':BNE NotStar
-    BVS SecRts ; branch if not at end of line SFTODO: isn't this redundant? We just successfully checked and found a '*' not a CR? So we'll never branch, right? Should we have checked this earlier (e.g. at .NoBankNumber)? Have I just got confused? I am wondering if V doesn't mean "end of line", it's not entirely clear to me where V is set - maybe by the caller? ParseBankNumber doesn't seem to set V. Maybe the caller sets it to allow/disallow use of '*'???
+    ; This BVS will branch if an invalid bank has been specified on the command line - V will
+    ; have been populated to indicate this by ParseBankNumber. I assume the idea here is that
+    ; inverting is dangerous if an undefined pseudo-bank was specified on the command line,
+    ; which may or may not be sensible.
+    ;
+    ; ENHANCE: Because we only check V here, if you do *SRSET 4 (so only pseudo bank W is
+    ; defined) and then *INSERT X,4 you get a bad ID error (because X is an invalid bank and
+    ; terminates processing while no banks are set, so C is set on exit), but *INSERT 4,X just
+    ; silently ignores the X.  One fix for this would be to do this BVS immediately after the
+    ; NoBankNumber label, *but* that would break callers (such as - probably - *SRWE) which
+    ; need to be able to parse an apparently invalid bank as a trailing option like "T".
+    ;
+    ; SFTODONOW *SRSET IS NOT PRESERVED ON CTRL BREAK IS THIS RIGHT?
+    BVS SecRts
     INY
     JSR InvertTransientRomBankMask
 .NotStar
@@ -7333,7 +7358,7 @@ ENDIF
     LDA #0:STA transientRomBankMask:STA transientRomBankMask + 1
     PLA
 
-; Set bit A of the 16-bit word at transientRomBankMask. Y is preserved.
+; Set bit A of the 16-bit word at transientRomBankMask. Y and V are preserved.
 .^addToRomBankMask
     TAX:TYA:PHA:TXA ; push Y, preserving A
     LDX #0
@@ -7354,7 +7379,10 @@ ENDIF
 ; Parse a bank number from the command line, converting pseudo banks W-Z into the corresponding
 ; absolute bank numbers. If a bank is parsed successfully, return with C and V clear and the
 ; bank in A. If a bank is not parsed successfully, return with C set; V will be set iff the
-; problem was the use of a pseudo bank for which no absolute bank has been defined.
+; problem was the use of an invalid bank number (>15 or a pseudo bank with no associated
+; absolute bank).
+; ENHANCE: While not a huge problem, this will not detect an error if given a bank number which
+; doesn't fit in 8 bits.
 ; SFTODO: Maybe check callers agree with this understanding of return convention?
 .ParseBankNumber
 {
@@ -7381,8 +7409,8 @@ ENDIF
 .ParsedBank
     INY
 .ParsedDecimalOK
-    ; SFTODO: I believe this branch should only be taken if prvPseudoBankNumbers contains &FF
-    ; to indicate an undefined bank.
+    ; This branch is taken if prvPseudoBankNumbers contains &FF for the relevant pseudo bank or
+    ; if the user specifies an out-of-range bank directly.
     CMP #maxBank+1:BCS SevRts
 .EndOfLine
     CLV
@@ -7481,6 +7509,9 @@ ENDIF
 IF IBOS_VERSION >= 127
     JSR testV2hardware:BCC v2Only
 ENDIF
+    ; SFTODONOW: Could/should this use one of the ParseRomBankListChecked subroutines? Of
+    ; course we do not want to do write protect, *SRDATA or PALPROM checks here, so be careful
+    ; as these routines are tweaked.
     JSR ParseRomBankList:BCC LA513
     JMP badId
 			
