@@ -5725,7 +5725,6 @@ IF IBOS_VERSION >= 127
 ; specifying a write or that normal non-pseudo addressing is in use. The behavior is otherwise
 ; identical.
 .^ensureBankAIsUsableRamIfPossible
-    BCS Rts
     TAX
     PHP
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE notWERam ; branch if not RAM
