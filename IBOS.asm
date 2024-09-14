@@ -7018,6 +7018,7 @@ ENDIF
             JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
+; A wrapper for ParseRomBankList which returns if C is clear and generates an error otherwise.
 ; At the moment, this is used only by *INSERT and *UNPLUG.
 .ParseRomBankListChecked
 {
