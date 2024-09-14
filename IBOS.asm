@@ -5307,7 +5307,7 @@ IF IBOS_VERSION < 127
     PHA
 ENDIF
 IF IBOS_VERSION >= 127
-    TXA:PHA:JSR ensureBankAIsUsableRamIfPossible:BNE notWERamIndirect
+    TXA:PHA:JSR ensureBankAIsUsableRamIfPossible
 ENDIF
     LDX #lo(wipeBankATemplate):LDY #hi(wipeBankATemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
@@ -5319,11 +5319,6 @@ ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
 .Rts
     RTS
-
-IF IBOS_VERSION >= 127
-.notWERamIndirect ; SQUASH: can we optimise all these badId calls?
-    JMP notWERam
-ENDIF
 }
 
 IF IBOS_VERSION < 126
@@ -5717,28 +5712,31 @@ IF IBOS_VERSION >= 127
 ; A, X and Y are corrupt on exit.
 .ensureOswordBlockBankIsUsableRamIfPossible
 {
-    BIT prvOswordBlockCopy:BPL skipPALPROMcheckSetZero ; branch if reading from SWR
-    LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheckSetZero ; branch if pseudo addressing in operation
+    BIT prvOswordBlockCopy:BPL skipPALPROMcheck ; branch if reading from SWR
+    LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheck ; branch if pseudo addressing in operation
 ; Alternate entry point with the bank number in A and therefore no checks for the OSWORD block
 ; specifying a write or that normal non-pseudo addressing is in use. The behaviour is otherwise
 ; identical.
 .^ensureBankAIsUsableRamIfPossible
     TAX
-    JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheckPreserveZero ; branch if not RAM
+    JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE notWERam ; branch if not RAM
     TXA:PHA
     JSR removeBankAFromSFTODOFOURBANKS
     PLA:TAX
-    JSR testV2hardware:BCC skipPALPROMcheckSetZero
-    CPX #8:BCC skipPALPROMcheckSetZero
-    CPX #12:BCS skipPALPROMcheckSetZero
+    JSR testV2hardware:BCC skipPALPROMcheck
+    CPX #8:BCC skipPALPROMcheck
+    CPX #12:BCS skipPALPROMcheck
     LDA palprom_test_table-8,X:EOR #&FF
     AND cpldPALPROMSelectionFlags0_7
     STA cpldPALPROMSelectionFlags0_7
     LDX #userRegPALPROMConfig:JSR WriteUserReg
-.skipPALPROMcheckSetZero
-    LDX #0 ; set Zero flag
-.skipPALPROMcheckPreserveZero
+.skipPALPROMcheck
     RTS
+
+.notWERam
+    JSR RaiseError
+    EQUB &80
+    EQUS "Not W/E RAM", &00
 }
 ENDIF
 
@@ -5935,7 +5933,7 @@ ENDIF
             JSR L9C42
 	  JSR ParseBankNumberIfPresent
 IF IBOS_VERSION >= 127
-	  JSR SrloadSrwriteWERamCheck
+	  JSR ensureOswordBlockBankIsUsableRamIfPossible
 ENDIF
             JMP osword42Internal
 }
@@ -6555,25 +6553,12 @@ ENDIF
     STA prvOswordBlockCopy + 9 ; high byte of sideways start address
     BIT prvOswordBlockCopy + 7 ; SFTODO: document what's at this address
 IF IBOS_VERSION >= 127
-    JSR SrloadSrwriteWERamCheck
+    JSR ensureOswordBlockBankIsUsableRamIfPossible
 ENDIF
     JMP osword43Internal
 }
 
-IF IBOS_VERSION >= 127
-.SrloadSrwriteWERamCheck
-{
-    BIT prvOswordBlockCopy:BPL NotLoadWrite ; test function
-    JSR ensureOswordBlockBankIsUsableRamIfPossible:BNE notWERam
-.NotLoadWrite
-    RTS
 
-.^notWERam
-    JSR RaiseError
-    EQUB &80
-    EQUS "Not W/E RAM", &00
-}
-ENDIF
 
 ; Fix up an adjusted OSWORD &43 buffer at prvOswordBlockCopy so:
 ; - it has the right start address and size if we're supposed to use PAGE-HIMEM
