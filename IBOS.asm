@@ -7361,7 +7361,7 @@ ENDIF
 ; Parse a bank number from the command line, converting pseudo banks W-Z into the corresponding
 ; absolute bank numbers. If a bank is parsed successfully, return with C and V clear and the
 ; bank in A. If a bank is not parsed successfully, return with C set; V will be set iff the
-; problem was the use of an invalid bank number (e.g. 20 or a pseudo bank with no associated
+; problem was the use of an invalid bank number (>15 or a pseudo bank with no associated
 ; absolute bank).
 ; ENHANCE: While not a huge problem, this will not detect an error if given a bank number which
 ; doesn't fit in 8 bits.
