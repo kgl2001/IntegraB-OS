@@ -5408,6 +5408,7 @@ ENDIF
             CMP #'?'
             BEQ showStatus
 	  ; Select the first four suitable banks from the list provided and store them at prvPseudoBankNumbers.
+    ; TODO: Should we be setting/clearing V before calling JSR ParseRomBankList?
             JSR ParseRomBankList
             PRVEN
             LDX #&00
@@ -7020,6 +7021,7 @@ ENDIF
 
 .ParseRomBankListChecked
 {
+    ; TODO: Should we be setting/clearing V before calling JSR ParseRomBankList?
     JSR ParseRomBankList
     BCC Rts
     BVC GenerateSyntaxErrorIndirect
@@ -7482,6 +7484,7 @@ ENDIF
 IF IBOS_VERSION >= 127
     JSR testV2hardware:BCC v2Only
 ENDIF
+    ; TODO: Should we be setting/clearing V before calling JSR ParseRomBankList?
     JSR ParseRomBankList:BCC LA513
     JMP badId
 			
