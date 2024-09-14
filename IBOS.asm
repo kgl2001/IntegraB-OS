@@ -5557,6 +5557,7 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
 }
 
 
+; At the moment this is only used by *SRWIPE, *SRROM and *SRDATA.
 ; SFTODO: Do we really need this *and* ParseRomBankListChecked? Isn't ParseRomBankListChecked
 ; better than this one?
 ; SFTODONOW: I think as written ...Checked *is* better and would be a drop-in replacement -
