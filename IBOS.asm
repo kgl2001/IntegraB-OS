@@ -7021,8 +7021,8 @@ ENDIF
             JMP ExitAndClaimServiceCall								;Exit Service Call
 }
 
-; A wrapper for ParseRomBankList which returns if C is clear and generates an error otherwise.
-; At the moment, this is used only by *INSERT and *UNPLUG.
+; A wrapper for ParseRomBankList which returns if at least one bank was parsed and generates an
+; error otherwise. At the moment, this is used only by *INSERT and *UNPLUG.
 .ParseRomBankListChecked
 {
     JSR ParseRomBankList
@@ -7301,8 +7301,8 @@ IF IBOS_VERSION >= 127
 ENDIF
 
 ; Parse a list of bank numbers, returning them as a bitmask in transientRomBankMask. '*' can be
-; used to indicate "everything but the listed banks". Return with C set iff at least one bit of
-; transientRomBankMask is set.
+; used to indicate "everything but the listed banks". Return with C clear iff at least one bit
+; of transientRomBankMask is set.
 .ParseRomBankList
 {
     LDA #0:STA transientRomBankMask:STA transientRomBankMask + 1
