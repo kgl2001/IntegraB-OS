@@ -5307,7 +5307,7 @@ IF IBOS_VERSION < 127
     PHA
 ENDIF
 IF IBOS_VERSION >= 127
-    TXA:PHA:JSR ensureBankAIsUsableRamIfPossible
+    TXA:PHA:CLC:JSR ensureBankAIsUsableRamIfPossible
 ENDIF
     LDX #lo(wipeBankATemplate):LDY #hi(wipeBankATemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
@@ -5703,16 +5703,25 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 }
 
 IF IBOS_VERSION >= 127
-.ensureOswordBlockBankIsUsableRamIfPossible
+.ensureOswordBlockBankIsUsableRamIfPossibleViaOsword
 {
+    SEC
+;    BCS ensureOswordBlockBankIsUsableRamIfPossibleViaOswordwithSEC
+    EQUB opcodeLdaImmediate ; skip following CLC
+.^ensureOswordBlockBankIsUsableRamIfPossibleViaStarCmd
+    CLC
+;.ensureOswordBlockBankIsUsableRamIfPossibleViaOswordwithSEC
     BIT prvOswordBlockCopy:BPL skipPALPROMcheck ; branch if reading from SWR
     LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheck ; branch if pseudo addressing in operation
 ; Alternate entry point with the bank number in A and therefore no checks for the OSWORD block
-; specifying a write or that normal non-pseudo addressing is in use. The behaviour is otherwise
+; specifying a write or that normal non-pseudo addressing is in use. The behavior is otherwise
 ; identical.
 .^ensureBankAIsUsableRamIfPossible
+    BCS skipPALPROMcheck
     TAX
+    PHP
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE notWERam ; branch if not RAM
+    PLP
     TXA:PHA
     JSR removeBankAFromSFTODOFOURBANKS
     PLA:TAX
@@ -5727,6 +5736,8 @@ IF IBOS_VERSION >= 127
     RTS
 
 .notWERam
+    PLP
+    BCS skipPALPROMcheck
     JSR RaiseError
     EQUB &83
     EQUS "Not W/E RAM", &00
@@ -5926,7 +5937,7 @@ ENDIF
             JSR L9C42
 	  JSR ParseBankNumberIfPresent
 IF IBOS_VERSION >= 127
-	  JSR ensureOswordBlockBankIsUsableRamIfPossible
+	  JSR ensureOswordBlockBankIsUsableRamIfPossibleViaStarCmd
 ENDIF
             JMP osword42Internal
 }
@@ -6546,7 +6557,7 @@ ENDIF
     STA prvOswordBlockCopy + 9 ; high byte of sideways start address
     BIT prvOswordBlockCopy + 7 ; SFTODO: document what's at this address
 IF IBOS_VERSION >= 127
-    JSR ensureOswordBlockBankIsUsableRamIfPossible
+    JSR ensureOswordBlockBankIsUsableRamIfPossibleViaStarCmd
 ENDIF
     JMP osword43Internal
 }
@@ -6660,6 +6671,8 @@ osfileBlock = L02EE
     JSR getAddressesAndLengthFromPrvOswordBlockCopy
 IF IBOS_VERSION < 127
     BCS LA0B1 ; SFTODO: I don't believe this branch can ever be taken
+ELSE
+    JSR ensureOswordBlockBankIsUsableRamIfPossibleViaOsword
 ENDIF
     JSR PrepareMainSidewaysRamTransfer
     JSR doTransfer
@@ -6849,6 +6862,9 @@ ENDIF
 .^osword43Internal
     XASSERT_USE_PRV1
             JSR adjustOsword43LengthAndBuffer
+IF IBOS_VERSION >= 127
+            JSR ensureOswordBlockBankIsUsableRamIfPossibleViaOsword
+ENDIF
             LDA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
             ORA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
             BNE bufferLengthNotZero
