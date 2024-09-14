@@ -5307,7 +5307,7 @@ IF IBOS_VERSION < 127
     PHA
 ENDIF
 IF IBOS_VERSION >= 127
-    TXA:PHA:JSR ensureBankAIsUsableRamIfPossible:BNE badIdIndirect2
+    TXA:PHA:JSR ensureBankAIsUsableRamIfPossible:BNE notWERamIndirect
 ENDIF
     LDX #lo(wipeBankATemplate):LDY #hi(wipeBankATemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
@@ -5321,8 +5321,8 @@ ENDIF
     RTS
 
 IF IBOS_VERSION >= 127
-.badIdIndirect2 ; SQUASH: can we optimise all these badId calls?
-    JMP badId
+.notWERamIndirect ; SQUASH: can we optimise all these badId calls?
+    JMP notWERam
 ENDIF
 }
 
@@ -5934,6 +5934,9 @@ ENDIF
             JSR parseOsword4243Length
             JSR L9C42
 	  JSR ParseBankNumberIfPresent
+IF IBOS_VERSION >= 127
+	  JSR SrloadSrwriteWERamCheck
+ENDIF
             JMP osword42Internal
 }
 
@@ -6551,8 +6554,26 @@ ENDIF
     LDA prvOswordBlockCopy + 3 ; byte 1 of "buffer address" we parsed earlier
     STA prvOswordBlockCopy + 9 ; high byte of sideways start address
     BIT prvOswordBlockCopy + 7 ; SFTODO: document what's at this address
+IF IBOS_VERSION >= 127
+    JSR SrloadSrwriteWERamCheck
+ENDIF
     JMP osword43Internal
 }
+
+IF IBOS_VERSION >= 127
+.SrloadSrwriteWERamCheck
+{
+    BIT prvOswordBlockCopy:BPL NotLoadWrite ; test function
+    JSR ensureOswordBlockBankIsUsableRamIfPossible:BNE notWERam
+.NotLoadWrite
+    RTS
+
+.^notWERam
+    JSR RaiseError
+    EQUB &80
+    EQUS "Not W/E RAM", &00
+}
+ENDIF
 
 ; Fix up an adjusted OSWORD &43 buffer at prvOswordBlockCopy so:
 ; - it has the right start address and size if we're supposed to use PAGE-HIMEM
@@ -6661,9 +6682,6 @@ osfileBlock = L02EE
     JSR getAddressesAndLengthFromPrvOswordBlockCopy
 IF IBOS_VERSION < 127
     BCS LA0B1 ; SFTODO: I don't believe this branch can ever be taken
-ELSE
-    JSR ensureOswordBlockBankIsUsableRamIfPossible
-    BNE badIdIndirect
 ENDIF
     JSR PrepareMainSidewaysRamTransfer
     JSR doTransfer
@@ -6674,11 +6692,6 @@ ENDIF
     JSR tubeEntry
 .NoTubeReleasePending
     JMP plpPrvDisexitSc
-
-IF IBOS_VERSION >= 127
-.badIdIndirect
-    JMP badId
-ENDIF
 }
 
 ;SFTODOWIP
@@ -6858,10 +6871,6 @@ ENDIF
 .^osword43Internal
     XASSERT_USE_PRV1
             JSR adjustOsword43LengthAndBuffer
-IF IBOS_VERSION >= 127
-            JSR ensureOswordBlockBankIsUsableRamIfPossible
-	  BNE badIdIndirect
-ENDIF
             LDA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
             ORA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
             BNE bufferLengthNotZero
@@ -6871,11 +6880,6 @@ ENDIF
             LDX #lo(loadSwrTemplate)
             LDY #hi(loadSwrTemplate)
             JMP LA1AA								;Relocate code from &9EAE
-
-IF IBOS_VERSION >= 127
-.badIdIndirect
-            JMP badId
-ENDIF
 
 .readFromSwr
 .LA1A4      LDA #osfindOpenOutput
