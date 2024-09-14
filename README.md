@@ -77,4 +77,5 @@ If you have problems or suggestions for improvement, please post in the [IBOS th
   * Update RAM calculation for startup banner. Will now display a maximum of 256K for V1 hardware and 512K for V2 hardware. If PALPROMs are detected in banks 8..11, this will influence the calculation based on the size of PALPROM in use.
   * Update *SRLOAD, *SRWRITE and *SRWIPE commands to be PALPROM aware. These commands will reset a PALPROM bank back to a standard 16K RAM bank to prevent PALPROM switching on a non PALPROM ROM image.
   * Fix long standing bug where *SRLOAD & *SRWRITE were not *SRDATA ('RAM') aware. These commands will now reduce the SRDATA RAM counter if the bank had previously been configued as a *SRDATA (RAM) bank.
-  * SRLOAD & SRWRITE will now generate an error if you try to write an image to a bank that isn't set up with Write Enabled RAM.
+  * Check for writable RAM in *SRLOAD/*SRWRITE/*SRWIPE calls and generate a "Bad id" if the bank is not writable RAM.
+  * Preserve A in OSBYTE &6F (111), as all OSBYTE calls should.

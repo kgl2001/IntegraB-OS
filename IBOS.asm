@@ -19,8 +19,7 @@
 
 ; INCLUDE_APPEND will normally be TRUE in a release build, but setting it to FALSE removes
 ; *APPEND to free up space for experimental changes.
-; KL 08/09/24: Temporarily dropped this code, to free up space for IBOS127 *SRLOAD / *SRWRITE & *SRWIPE command changes.
-INCLUDE_APPEND = FALSE
+INCLUDE_APPEND = TRUE ; (IBOS_VERSION < 127)
 
 IF IBOS_VERSION != 120
     IBOS120_VARIANT = 0
@@ -838,6 +837,7 @@ opcodeJmpAbsolute = &4C
 opcodeRts = &60
 opcodeJmpIndirect = &6C
 opcodeCmpAbs = &CD
+opcodeLdaImmediate = &A9
 opcodeLdaAbs = &AD
 opcodeStaAbs = &8D
 
@@ -3313,7 +3313,8 @@ ENDIF
 .ParseUserBankListLoop
     JSR ParseBankNumber:STY TmpTransientCmdPtrOffset
     BCS prvPrintBufferBankListInitialised2 ; stop parsing if bank number is invalid
-    TAY:JSR TestForEmptySwrInBankY:TYA:BCS NotEmptySwrBank
+    TAY
+    JSR TestForEmptySwrInBankY:TYA:BCS NotEmptySwrBank
     ; SQUASH: INC TmpBankCount:LDX TmpBankCount:STA prvPrintBufferBankList-1,X:...:CPX
     ; #MaxPrintBufferSwrBanks+1? Or initialise TmpBankCount to &FF?
     LDX TmpBankCount:STA prvPrintBufferBankList,X:INX:STX TmpBankCount
@@ -3347,6 +3348,13 @@ ELSE
 ENDIF
     RTS
 
+IF IBOS_VERSION >= 127
+.^SetPrintBufferBanksToPrivateRam
+    JSR UnassignPrintBufferBanks
+    LDA romselCopy:AND #maxBank:ORA #romselPrvEn:STA prvPrintBufferBankList
+    RTS
+ENDIF
+
 {
 .UsePrivateRam
 IF IBOS_VERSION < 127
@@ -3356,8 +3364,7 @@ IF IBOS_VERSION < 127
     STA prvPrintBufferBankList + 2
     STA prvPrintBufferBankList + 3
 ELSE
-    JSR UnassignPrintBufferBanks
-    LDA romselCopy:AND #maxBank:ORA #romselPrvEn:STA prvPrintBufferBankList
+    JSR SetPrintBufferBanksToPrivateRam
 ENDIF
 .^InitialiseBuffer
     LDA prvPrintBufferBankList:CMP #&FF:BEQ UsePrivateRam
@@ -3384,8 +3391,11 @@ ENDIF
 .CountBankLoop
     LDA prvPrintBufferBankList,X:BMI AllBanksCounted
     CLC:LDA prvPrintBufferSizeMid:ADC #&40:STA prvPrintBufferSizeMid ; SFTODO: mildly magic
-    ; SQUASH: INCCS prvprintBufferSizeHigh
+IF IBOS_VERSION < 127
     LDA prvPrintBufferSizeHigh:ADC #0:STA prvPrintBufferSizeHigh
+ELSE
+    INCCS prvPrintBufferSizeHigh
+ENDIF
     INX:CPX #MaxPrintBufferSwrBanks:BNE CountBankLoop
     DEX
 .AllBanksCounted
@@ -3439,6 +3449,7 @@ ENDIF
 
 ; Return with C clear iff bank Y is an empty sideways RAM bank. X and Y are preserved.
 .TestForEmptySwrInBankY
+IF IBOS_VERSION < 127
 {
     TXA:PHA
     LDA RomTypeTable,Y:BNE NotEmpty
@@ -3472,13 +3483,29 @@ ENDIF
     ; modifications so A is naturally preserved?
     TAX:LDA #opcodeStaAbs:STA RomAccessSubroutineVariableInsn:TXA:JSR RomAccessSubroutine
     PLP
-    JMP CommonEnd
+    JMP PlaTaxRts
 .NotEmpty
     SEC
-.CommonEnd
+.PlaTaxRts
     PLA:TAX
     RTS
 }
+ELSE
+{
+    TXA:PHA
+    TYA:PHA
+    LDA RomTypeTable,Y:BNE SecPullRts ; branch if not empty
+    LDA prvRomTypeTableCopy,Y:BNE SecPullRts ; branch if not empty
+    TYA:TAX:JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE SecPullRts ; branch if not RAM
+    CLC
+    EQUB opcodeLdaImmediate ; skip following SEC
+.SecPullRts
+    SEC
+    PLA:TAY
+    PLA:TAX
+    RTS
+}
+ENDIF
 }
 
 ;Check if printer buffer is empty
@@ -5216,7 +5243,7 @@ ENDIF
     STY prvTmp
     ; SQUASH: Use LDX abs,Y and save TAX?
     LDA prvPseudoBankNumbers,Y:BMI NotRam ; this pseudo-bank is not defined
-    TAX:JSR TestRamUsingVariableMainRamSubroutine:BNE NotRam
+    TAX:JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE NotRam
     ; We only count a bank as RAM if it's not in use to hold a sideways ROM.
     LDA prvRomTypeTableCopy,X
     BEQ Ram
@@ -5268,22 +5295,21 @@ ENDIF
     LDX #0
 .BankLoop
     ROR transientRomBankMask + 1:ROR transientRomBankMask:BCC SkipBank
-    JSR WipeBankAIfRam
+    JSR WipeBankXIfRam
 .SkipBank
     INX:CPX #maxBank + 1:BNE BankLoop
     JMP PrvDisexitSc
 
 ; SQUASH: This has only one caller, the code immediately above - could it just be inlined?
-.WipeBankAIfRam
-    ; SQUASH: ensureBankAIsUsableRamIfPossible already does this test, but it doesn't return with
-    ; Z indicating the result. We might be able to tweak things to avoid needing this call to
-    ; TestRamUsingVariableMainRamSubroutine.
-    JSR TestRamUsingVariableMainRamSubroutine:BNE Rts
+.WipeBankXIfRam
+IF IBOS_VERSION < 127
+    JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
-IF IBOS_VERSION >= 127
-    JSR ensureBankAIsUsableRamIfPossible
 ENDIF
-    LDX #lo(wipeRamTemplate):LDY #hi(wipeRamTemplate):JSR CopyYxToVariableMainRamSubroutine
+IF IBOS_VERSION >= 127
+    TXA:PHA:JSR ensureBankAIsUsableRamIfPossible:BNE badIdIndirect2
+ENDIF
+    LDX #lo(wipeBankATemplate):LDY #hi(wipeBankATemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
     JSR variableMainRamSubroutine
 IF IBOS_VERSION < 127
@@ -5293,6 +5319,11 @@ ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
 .Rts
     RTS
+
+IF IBOS_VERSION >= 127
+.badIdIndirect2 ; SQUASH: can we optimise all these badId calls?
+    JMP badId
+ENDIF
 }
 
 IF IBOS_VERSION < 126
@@ -5391,7 +5422,7 @@ ENDIF
             BCC SkipBank
             TYA
             PHA
-            JSR TestRamUsingVariableMainRamSubroutine
+            JSR TestBankXForRamUsingVariableMainRamSubroutine
             BNE plyAndSkipBank ; branch if not RAM
             LDA prvRomTypeTableCopy,X
             BEQ emptyBank
@@ -5485,7 +5516,7 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
     STX bankTmp
     PHP
     LDA #0:ROR A:STA RomRamFlagTmp ; put C in b7 of RomRamFlagTmp
-    JSR TestRamUsingVariableMainRamSubroutine:BNE FailSFTODOA ; branch if not RAM
+    JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE FailSFTODOA ; branch if not RAM
     LDA prvRomTypeTableCopy,X:BEQ EmptyBank
     CMP #RomTypeSrData:BNE FailSFTODOA
 .EmptyBank
@@ -5677,13 +5708,23 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 }
 
 IF IBOS_VERSION >= 127
+; If prvOswordBlockCopy is writing to a non-pseudo address, try to ensure the specified bank is
+; usable, i.e.:
+; - remove it from SFTODOFOURBANKS
+; - if it's currently in PALPROM mode, turn PALPROM mode off
+; No error is generated if the bank is ROM or write-protected RAM, but we return with Z such
+; that BNE will branch if and only if the bank tested is not writable RAM.
+; A, X and Y are corrupt on exit.
 .ensureOswordBlockBankIsUsableRamIfPossible
 {
     BIT prvOswordBlockCopy:BPL skipPALPROMcheckSetZero ; branch if reading from SWR
     LDA prvOswordBlockCopy + 1:BMI skipPALPROMcheckSetZero ; branch if pseudo addressing in operation
+; Alternate entry point with the bank number in A and therefore no checks for the OSWORD block
+; specifying a write or that normal non-pseudo addressing is in use. The behaviour is otherwise
+; identical.
 .^ensureBankAIsUsableRamIfPossible
     TAX
-    JSR TestRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheck ; branch if not RAM
+    JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE skipPALPROMcheckPreserveZero ; branch if not RAM
     TXA:PHA
     JSR removeBankAFromSFTODOFOURBANKS
     PLA:TAX
@@ -5696,12 +5737,12 @@ IF IBOS_VERSION >= 127
     LDX #userRegPALPROMConfig:JSR WriteUserReg
 .skipPALPROMcheckSetZero
     LDX #0 ; set Zero flag
-.skipPALPROMcheck
+.skipPALPROMcheckPreserveZero
     RTS
 }
 ENDIF
 
-; SFTODO: Returns with C clear in "simple" case, C set in the "mystery" case
+; SFTODO: Returns with C clear in "simple" case, C set in the "mystery" case (which is probably no bank number being specified so we are implicitly using pseudo addressing to save a chunk of the *SRDATA banks)
 .ParseBankNumberIfPresent ; SFTODO: probably imperfect name, will do until the mystery code in middle is cleared up
 {
     XASSERT_USE_PRV1
@@ -6131,7 +6172,7 @@ ENDIF
 
 ;Wipe RAM at bank A
 ;this code is relocated to and executed at &03A7
-.wipeRamTemplate
+.wipeBankATemplate
 {
     ORG variableMainRamSubroutine
 
@@ -6148,8 +6189,8 @@ ENDIF
     STX romselCopy:STX romsel
     RTS
 
-    RELOCATE variableMainRamSubroutine, wipeRamTemplate
-    ASSERT P% - wipeRamTemplate <= variableMainRamSubroutineMaxSize
+    RELOCATE variableMainRamSubroutine, wipeBankATemplate
+    ASSERT P% - wipeBankATemplate <= variableMainRamSubroutineMaxSize
 }
 
 ;write ROM header to RAM at bank A
@@ -6420,11 +6461,11 @@ ENDIF
     RTS
 }
 
-; Relocation code then check for RAM banks.
+; Relocation code then check for RAM in bank X.
 ; SFTODO: "Using..." part of name is perhaps OTT, but it might be important to "remind" us that
 ; this tramples over variableMainRamSubroutine - perhaps change later once more code is
 ; labelled up
-.TestRamUsingVariableMainRamSubroutine
+.TestBankXForRamUsingVariableMainRamSubroutine
     TXA:PHA
     LDX #lo(TestRamTemplate):LDY #hi(TestRamTemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
@@ -7082,7 +7123,7 @@ IF IBOS_VERSION < 127
     AND LA34A,Y:BNE IsSidewaysRamBank ; branch if this is a sideways RAM bank
     LDA #' ':BNE BankTypeCharacterInA ; always branch
 .IsSidewaysRamBank
-    LDX CurrentBank:JSR TestRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
+    LDX CurrentBank:JSR TestBankXForRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
     LDA #'E' ; write-Enabled
     PLP:BEQ BankTypeCharacterInA
     LDA #'P' ; Protected
@@ -7127,7 +7168,7 @@ ELSE
     LDA #'(':JSR OSWRCH
 
 .IsSidewaysRamBank
-    LDX CurrentBank:JSR TestRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
+    LDX CurrentBank:JSR TestBankXForRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
     LDA #'E' ; write-Enabled
     PLP:BEQ BankTypeCharacterInA
     LDA #'P' ; Protected
@@ -11283,11 +11324,15 @@ ENDIF
     JSR SanitisePrvPrintBufferStart:STA prvPrintBufferBankStart
     LDA #&B0:STA prvPrintBufferBankEnd ; SFTODO: Magic constant ("top of private RAM")
     SEC:LDA prvPrintBufferBankEnd:SBC prvPrintBufferBankStart:STA prvPrintBufferSizeMid
+IF IBOS_VERSION < 127
     LDA romselCopy:ORA #romselPrvEn:STA prvPrintBufferBankList
     LDA #&FF
     STA prvPrintBufferBankList + 1
     STA prvPrintBufferBankList + 2
     STA prvPrintBufferBankList + 3
+ELSE
+    JSR SetPrintBufferBanksToPrivateRam
+ENDIF
 .SoftReset
     JSR PurgePrintBuffer
     PRVDIS
@@ -11530,12 +11575,22 @@ ELSE
 ENDIF
 }
 
-IF IBOS_VERSION >= 127
-SKIPTO &BFFE
-EQUW FullResetPrvTemplate+UserRegDefaultTable-FullResetPrvCopy
+IF IBOS_VERSION < 127
+    PRINT end - P%, "bytes free"
+ELSE
+.code_end
+    ; Add a pointer to the full reset data table in a known place at the end of the IBOS ROM,
+    ; so it can potentially be used by the recovery tool to ensure consistency. We only do the
+    ; SKIPTO if it will succeed; we'll still hit the guard if the ROM is over-full without the
+    ; SKIPTO, but it means we get the negative bytes free reported correctly when the guard is
+    ; disabled instead of the SKIPTO terminating the build.
+    IF P% <= &BFFE
+        SKIPTO &BFFE
+    ENDIF
+    EQUW FullResetPrvTemplate+UserRegDefaultTable-FullResetPrvCopy
+    PRINT (end - code_end) - 2, "bytes free"
 ENDIF
 
-PRINT end - P%, "bytes free"
 IF IBOS_VERSION == 120
 IF IBOS120_VARIANT == 0
     SAVE "IBOS-120.rom", start, end
