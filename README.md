@@ -74,7 +74,11 @@ If you have problems or suggestions for improvement, please post in the [IBOS th
   * *SRWP & *SRWE have 'T'emporary option whereby the W/E and W/P actions will only apply until reset is carried out, or the command is run again (on *any* bank) without the T option.
   * Don't re-enter the current language on *TUBE OFF if it is a HI language. In this case we behave as on a CTRL-BREAK and enter the language specified by *CONFIGURE LANG, falling back to the IBOS NLE if that isn't usable.
   * Change the information shown in the *ROMs parenthesis. The column that previously displayed 'U'nplugged will now also show 'p' if a PALPROM is configured, 'r' if the bank is defined as RAM or 'R' if the bank is defined as ROM.
-  * Update RAM calculation for startup banner. Will now display a maximum of 256K for V1 hardware and 512K for V2 hardware. If PALPROMs are detected in banks 8..11, this will influence the calculation based on the size of PALPROM in use.
+  * Update RAM calculation for startup banner.
+  - Can now calculate total RAM >256K.
+  - Will now display a maximum of 320K for V1 hardware, influenced by the values stored in the RTC ROM / RAM registers (set by *FX162,127,x and *FX162,128,y).
+  - and will display a maximum of 512K for V2 hardware. Without PALPROMs enabled, the maximum RAM will be 320K, and will be influenced by the position of the ROM / RAM jumpers on the IntegraB board. 
+  - On V2 hardware, if PALPROMs are detected in banks 8..11, this will influence the calculation based on the size of PALPROM in use, up to a total maximum of 512K.
   * Update *SRLOAD, *SRWRITE and *SRWIPE commands to be PALPROM aware. These commands will reset a PALPROM bank back to a standard 16K RAM bank to prevent PALPROM switching on a non PALPROM ROM image.
   * Fix long standing bug where *SRLOAD & *SRWRITE were not *SRDATA ('RAM') aware. These commands will now reduce the SRDATA RAM counter if the bank had previously been configured as a *SRDATA (RAM) bank.
   * Check for writable RAM in *SRLOAD/*SRWRITE/*SRWIPE calls and generate a "Bad id" if the bank is not writable RAM.
