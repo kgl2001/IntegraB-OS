@@ -5561,6 +5561,7 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
 ; SFTODO: Do we really need this *and* ParseRomBankListChecked? Isn't ParseRomBankListChecked better than this one?
 .ParseRomBankListChecked2
 {
+    ; TODO: Should we be setting/clearing V before calling JSR ParseRomBankList?
 .L9B25      JSR ParseRomBankList
             BCS badIdIndirect
             RTS
