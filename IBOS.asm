@@ -7361,7 +7361,10 @@ ENDIF
 ; Parse a bank number from the command line, converting pseudo banks W-Z into the corresponding
 ; absolute bank numbers. If a bank is parsed successfully, return with C and V clear and the
 ; bank in A. If a bank is not parsed successfully, return with C set; V will be set iff the
-; problem was the use of a pseudo bank for which no absolute bank has been defined.
+; problem was the use of an invalid bank number (e.g. 20 or a pseudo bank with no associated
+; absolute bank).
+; ENHANCE: While not a huge problem, this will not detect an error if given a bank number which
+; doesn't fit in 8 bits.
 ; SFTODO: Maybe check callers agree with this understanding of return convention?
 .ParseBankNumber
 {
@@ -7388,8 +7391,8 @@ ENDIF
 .ParsedBank
     INY
 .ParsedDecimalOK
-    ; SFTODO: I believe this branch should only be taken if prvPseudoBankNumbers contains &FF
-    ; to indicate an undefined bank.
+    ; This branch is taken if prvPseudoBankNumbers contains &FF for the relevant pseudo bank or
+    ; if the user specifies an out-of-range bank directly.
     CMP #maxBank+1:BCS SevRts
 .EndOfLine
     CLV
