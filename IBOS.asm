@@ -7630,11 +7630,11 @@ ELSE
 .NoOption
     LDA cpldRamWriteProtectFlags0_7
 ENDIF
-    ORA L00AE
+    ORA transientRomBankMask + 0
     PLP
     PHP
     BCC LA520
-    EOR L00AE
+    EOR transientRomBankMask + 0
 .LA520
 IF IBOS_VERSION < 127
     JSR WriteUserReg
@@ -7645,10 +7645,10 @@ ELSE
     JSR WriteUserReg
     LDA cpldRamWriteProtectFlags8_F
 ENDIF
-    ORA L00AF
+    ORA transientRomBankMask + 1
     PLP
     BCC LA52E
-    EOR L00AF
+    EOR transientRomBankMask + 1
 .LA52E
 IF IBOS_VERSION < 127
     JSR WriteUserReg
