@@ -5508,8 +5508,10 @@ IF IBOS_VERSION < 127
 ELSE
     SEC:JSR ParseWERamBankListChecked
 ENDIF
-    ; SQUASH: Loops of this form (not just here) could maybe be written to LDX #maxBank, rotate left
-    ; and save the CPX #maxBank + 1.
+    ; SQUASH: We could save two bytes by doing LDX #maxBank, rotating left instead of right and
+    ; doing DEX:BPL BankLoop at the end. However, this would be slightly user-visible because
+    ; if the user has specified more banks than there are "slots", it would affect which of the
+    ; banks specified on the command line got used first.
     LDX #0
 .BankLoop
     ROR transientRomBankMask + 1:ROR transientRomBankMask:BCC SkipBank
@@ -5528,7 +5530,7 @@ IF IBOS_VERSION < 127
     bankTmp = prvOswordBlockCopy + 1
 ELSE
     ; Putting bankTmp in transient ZP workspace saves code size in itself, but also allows us
-    ; to avoid doing PRVEN here.
+    ; to avoid doing PRVEN above.
     bankTmp = L00AC
 ENDIF
 RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
