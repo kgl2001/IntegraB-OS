@@ -7593,54 +7593,63 @@ ENDIF
 }
 
 {
-; SFTODO: This little fragment of code is only called once via JMP, can't it just be moved to avoid the JMP (and improve readability)?
-; SFTODONOW: I am not sure this entry point is really correct in 1.27 - needs examining - we are trying to parse "T" but it won't be there if called via this entry point
+; This entry point is used (as a JMP, not a subroutine) by OSWORD &43. It write-protects bank
+; A, and may (will) be called with PRVEN in effect, so we must PRVDIS before exiting the
+; service call.
+; SFTODO: This is only called once via JMP, can't it just be moved to avoid the JMP (and improve readability)?
 .^writeProtectBankA
     JSR createRomBankMaskForBankA
     SEC
     PHP
-    JMP LA513 ; SQUASH: BCS always? Or move this code and just fall through?
-			
+IF IBOS_VERSION < 127
+    JMP writeProtectControlCommonNonInteractive
+ELSE
+    BCS writeProtectControlCommonNonInteractive ; always branch
+ENDIF
+
 ;*SRWE Command
 .^srwe
-    CLC:BCC Common ; always branch
+   CLC:BCC Common ; always branch
 
 ;*SRWP Command
 .^srwp
     SEC
 .Common
     PHP
-IF IBOS_VERSION >= 127
-    JSR testV2hardware:BCC v2Only
-ENDIF
 IF IBOS_VERSION < 127
-    JSR ParseRomBankList:BCC LA513
+    JSR ParseRomBankList:BCC writeProtectControlCommonNonInteractive
     JMP badId
-ELSE
-    JSR ParseRomBankListChecked
-ENDIF
-.LA513
-IF IBOS_VERSION < 127
+; This entry point protects/unprotects (according to C) the bank(s) already set up in
+; transientRomBankMask. It can be entered from OSWORD &43, so it must not try to parse anything
+; from the command line.
+.writeProtectControlCommonNonInteractive
     LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
 ELSE
-    LDX #userRegBankWriteProtectStatus
-    JSR FindNextCharAfterSpaceSkippingComma
-    BCS NoOption
-    AND #CapitaliseMask
-    CMP #'T'
-    BNE NoOption
+    JSR testV2hardware:BCC v2Only
+    JSR ParseRomBankListChecked
     ; We implement temporary changes by redirecting the WriteUserReg calls to two bytes of
     ; temporary space instead of the correct registers.
     LDX #userRegTmp
+    JSR FindNextCharAfterSpaceSkippingComma
+    BCS NoOption ; branch if at end of line
+    AND #CapitaliseMask
+    CMP #'T'
+    BEQ userRegInX ; branch if we have a "T" option; X is already set
 .NoOption
+; This entry point protects/unprotects (according to C) the bank(s) already set up in
+; transientRomBankMask. It can be entered from OSWORD &43, so it must not try to parse anything
+; from the command line. There is no check for v2 hardware on this path, but it is presumably
+; harmless to read and write junk from these non-existent hardware addresses.
+.writeProtectControlCommonNonInteractive
+    LDX #userRegBankWriteProtectStatus
+.userRegInX
     LDA cpldRamWriteProtectFlags0_7
 ENDIF
     ORA transientRomBankMask + 0
-    PLP
-    PHP
-    BCC LA520
+    PLP:PHP ; peek stacked C
+    BCC dontInvert1 ; branch if we are write-enabling
     EOR transientRomBankMask + 0
-.LA520
+.dontInvert1
 IF IBOS_VERSION < 127
     JSR WriteUserReg
     INX
@@ -7651,20 +7660,22 @@ ELSE
     LDA cpldRamWriteProtectFlags8_F
 ENDIF
     ORA transientRomBankMask + 1
-    PLP
-    BCC LA52E
+    PLP ; get stacked C
+    BCC dontInvert2 ; branch if we are write-enabling
     EOR transientRomBankMask + 1
-.LA52E
+.dontInvert2
 IF IBOS_VERSION < 127
     JSR WriteUserReg
     PRVEN
     JSR SFTODOWRITEPROTECTISH
 .^PrvDisExitAndClaimServiceCall2
-    PRVDIS
 ELSE
     STA cpldRamWriteProtectFlags8_F
     INX:JSR WriteUserReg
 ENDIF
+    ; We need to PRVDIS because we may have been entered via writeProtectBankA from OSWORD &43
+    ; which will have done PRVEN. This is harmless if we haven't done PRVEN.
+    PRVDIS
     JMP ExitAndClaimServiceCall
 }
 
