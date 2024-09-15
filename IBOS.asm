@@ -5305,15 +5305,14 @@ ENDIF
 IF IBOS_VERSION < 127
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
-ENDIF
-IF IBOS_VERSION >= 127
-    TXA:PHA:CLC:JSR ensureBankAIsUsableRamIfPossible
+ELSE
+    TXA:PHA
 ENDIF
     LDX #lo(wipeBankATemplate):LDY #hi(wipeBankATemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
     JSR variableMainRamSubroutine
 IF IBOS_VERSION < 127
-; In IBOS Version >= 127, this function is carried out in ensureBankAIsUsableRamIfPossible
+; In IBOS Version >= 127, this function is carried out in ParseRomBankListChecked2
     PHA:JSR removeBankAFromSrDataBanks:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
 ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
@@ -5515,6 +5514,7 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
     STX bankTmp
     PHP
     LDA #0:ROR A:STA RomRamFlagTmp ; put C in b7 of RomRamFlagTmp
+    ; SFTODONOW: SOME (NOT ALL) OF THIS IS HANDLED BY PARSE...CHECKED2 NOW AND CAN BE REMOVED IN 1.27
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE FailSFTODOA ; branch if not RAM
     LDA prvRomTypeTableCopy,X:BEQ EmptyBank
     CMP #RomTypeSrData:BNE FailSFTODOA
@@ -5728,7 +5728,7 @@ IF IBOS_VERSION >= 127
 ; Alternate entry point with the bank number in A and therefore no checks for the OSWORD block
 ; specifying a write or that normal non-pseudo addressing is in use. The behavior is otherwise
 ; identical.
-.^ensureBankAIsUsableRamIfPossible
+.^ensureBankAIsUsableRamIfPossible ; SFTODONOW IS THIS ENTRY POINT STILL USED?
     TAX
     PHP
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE notWERam ; branch if not RAM
