@@ -19,7 +19,7 @@
 
 ; INCLUDE_APPEND will normally be TRUE in a release build, but setting it to FALSE removes
 ; *APPEND to free up space for experimental changes.
-INCLUDE_APPEND = (IBOS_VERSION < 127) ; SFTODONOW!
+INCLUDE_APPEND = TRUE ; (IBOS_VERSION < 127)
 
 IF IBOS_VERSION != 120
     IBOS120_VARIANT = 0
@@ -5292,9 +5292,6 @@ ENDIF
 {
 IF IBOS_VERSION < 127
     JSR ParseRomBankListChecked2
-ELSE
-    CLC:JSR ParseWERamBankListChecked
-ENDIF
     PRVEN
     LDX #0
 .BankLoop
@@ -5302,6 +5299,16 @@ ENDIF
     JSR WipeBankXIfRam
 .SkipBank
     INX:CPX #maxBank + 1:BNE BankLoop
+ELSE
+    CLC:JSR ParseWERamBankListChecked
+    PRVEN
+    LDX #maxBank
+.BankLoop
+    ASL transientRomBankMask:ROL transientRomBankMask + 1:BCC SkipBank
+    JSR WipeBankXIfRam
+.SkipBank
+    DEX:BPL BankLoop
+ENDIF
     JMP PrvDisexitSc
 
 ; SQUASH: This has only one caller, the code immediately above - could it just be inlined?
@@ -5316,7 +5323,7 @@ ENDIF
     PLA
     JSR variableMainRamSubroutine
 IF IBOS_VERSION < 127
-; In IBOS Version >= 127, this function is carried out in ParseWERamBankListChecked
+    ; In IBOS Version >= 127, this function is carried out in ParseWERamBankListChecked
     PHA:JSR removeBankAFromSrDataBanks:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
 ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
@@ -5783,16 +5790,18 @@ IF IBOS_VERSION >= 127
     EQUS "Not W/E RAM", &00
 }
 
-; The IBOS 1.27 version of this routine wraps ParseRomBankListChecked (which therefore makes
-; the extended syntax it offers available). Each bank is tested before any destructive
-; operations are performed:
+; This IBOS 1.27+ routine replaces ParseRamBankListChecked2. It wraps ParseRomBankListChecked,
+; which gives slightly improved error reporting compared to earlier IBOS versions. Each bank is
+; tested before any destructive operations are performed:
 ; - for being write-enabled RAM
 ; - iff C is set on entry, for being empty or for being a *SRDATA/*SRROM bank
 ; An error is generated if a test fails for any bank. If all the banks pass the test,
-; destructive changes to make the banks "usable" are performed (see ensureWriteableBankXIsUsableRam), so there
-; is an implicit assumption that no errors can occur after this point. SFTODONOW IS THIS
-; TRUE/CORRECT/COMPLETE?
-; At the moment this is only used by *SRWIPE (entered with C clear), *SRROM and *SRDATA (both entered with C set).
+; destructive changes to make the banks "usable" are performed (see
+; ensureWriteableBankXIsUsableRam), so there is an implicit assumption that no errors can occur
+; after this point in our caller. SFTODONOW IS THIS TRUE/CORRECT/COMPLETE?
+;
+; At the moment this is only used by *SRWIPE (entered with C clear), *SRROM and *SRDATA (both
+; entered with C set).
 .ParseWERamBankListChecked
 {
     PHP ; save C on entry
