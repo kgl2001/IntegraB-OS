@@ -5566,9 +5566,9 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
 ; flag to tell it what to do about checking for write protect etc.
 .ParseRomBankListChecked2
 {
-.L9B25      JSR ParseRomBankList
-            BCS badIdIndirect
-            RTS
+    JSR ParseRomBankList
+    BCS badIdIndirect
+    RTS
 }
 
 .badIdIndirect
