@@ -7056,12 +7056,12 @@ ENDIF
             ; SFTODO: Why are we testing the low bit of 'function' here? The defined values always have this 0. Is something setting this internally to flag something?
             BCC LA240 ; SFTODO: always branch? At least during an official user-called OSWORD &43 we will, as low bit should always be 0 according to e.g. Master Ref Manual
             LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number
-            JSR createRomBankMaskAndInsertBanks
+            JSR createRomBankMaskForBankAAndInsertBanks
 .LA240      PRVEN								;switch in private RAM
             LSR prvOswordBlockCopy
             ; SFTODO: And again, we're testing what was b1 of 'function' before we started shifting - why? Is this an internal flag?
             BCC PrvDisexitScIndirect
-.LA248      LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number
+            LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number
             JMP LA4FE
 
 .PrvDisexitScIndirect
@@ -7453,7 +7453,7 @@ ENDIF
 ; preserved.
 ; SQUASH: Am I missing something, or wouldn't it be far easier just to do a 16-bit rotate left
 ; in a loop? Maybe that wouldn't be shorter. Maybe this is performance critical? (Doubt it)
-.^createRomBankMask
+.^createRomBankMaskForBankA
     PHA
     LDA #0:STA transientRomBankMask:STA transientRomBankMask + 1
     PLA
@@ -7528,8 +7528,8 @@ ENDIF
 }
 
 {
-.^createRomBankMaskAndInsertBanks
-    JSR createRomBankMask
+.^createRomBankMaskForBankAAndInsertBanks
+    JSR createRomBankMaskForBankA
 ; Read ROM type from ROM header for ROMs with a 1 bit in transientRomBankMask and save to the
 ; OS ROM type table and our private copy. This is used to immediately *INSERT ROMs without
 ; waiting for BREAK.
@@ -7593,7 +7593,7 @@ ENDIF
 ; SFTODO: This little fragment of code is only called once via JMP, can't it just be moved to avoid the JMP (and improve readability)?
 ; SFTODONOW: I am not sure this entry point is really correct - needs examining
 .^LA4FE
-    JSR createRomBankMask
+    JSR createRomBankMaskForBankA
     SEC
     PHP
     JMP LA513 ; SQUASH: BCS always? Or move this code and just fall through?
