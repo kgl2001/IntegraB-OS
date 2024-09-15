@@ -3741,7 +3741,7 @@ ENDIF
     PLA
     RTS
 			
-; Page out private RAM. Preserves A, X, Y and carry.
+; Page out private RAM. Preserves A, X, Y and carry. Flags reflect A on exit.
 ; SFTODO: This clears PRVS1 in RAMSEL, but is that actually necessary? If PRVEN is
 ; clear none of the private RAM is accessible. Do we ever just set PRVEN and rely
 ; on RAMSEL already having some of PRVS1/4/8 set? The name "pageOutPrv1" is chosen
@@ -5290,7 +5290,11 @@ ENDIF
 ;*SRWIPE Command
 .srwipe
 {
+IF IBOS_VERSION < 127
     JSR ParseRomBankListChecked2
+ELSE
+    CLC:JSR ParseRomBankListChecked2
+ENDIF
     PRVEN
     LDX #0
 .BankLoop
@@ -5354,7 +5358,7 @@ ENDIF
 .FindLoop
     CMP prvSrDataBanks,X:BEQ Found
     DEX:BPL FindLoop
-    SEC ; SFTODO: Not sure any callers care about this, and I think we'll *always* exit with carry set even if we do find a match
+    SEC ; SQUASH: Not sure any callers care about this, and I think we'll *always* exit with carry set even if we do find a match
     RTS
 
 .Found
@@ -5493,8 +5497,12 @@ ENDIF
     CLC
 .Common
     PHP
+IF IBOS_VERSION < 127
     JSR ParseRomBankListChecked2
-    PRVEN
+ELSE
+    SEC:JSR ParseRomBankListChecked2
+ENDIF
+    PRVEN ; SFTODONOW: CAN WE GET RID OF PRVEN/PRVDIS ON 1.27? WE WOULD PROBABLY NEED TO RELOCATE BANKTMP AT LEAST
     LDX #0
 .BankLoop
     ROR transientRomBankMask + 1:ROR transientRomBankMask:BCC SkipBank
@@ -5514,14 +5522,24 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
     STX bankTmp
     PHP
     LDA #0:ROR A:STA RomRamFlagTmp ; put C in b7 of RomRamFlagTmp
-    ; SFTODONOW: SOME (NOT ALL) OF THIS IS HANDLED BY PARSE...CHECKED2 NOW AND CAN BE REMOVED IN 1.27
+IF IBOS_VERSION < 127
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE FailSFTODOA ; branch if not RAM
     LDA prvRomTypeTableCopy,X:BEQ EmptyBank
     CMP #RomTypeSrData:BNE FailSFTODOA
 .EmptyBank
     LDA bankTmp:JSR removeBankAFromSrDataBanks
+ELSE
+    ; In IBOS >= 1.27, this is handled by ParseRomBankListChecked2.
+ENDIF
     PLP:BCS IsSrrom
-    LDA bankTmp:JSR AddBankAToSrDataBanks:BCS FailSFTODOB ; branch if already had max banks
+    LDA bankTmp:JSR AddBankAToSrDataBanks
+IF IBOS_VERSION < 127
+    BCS FailSFTODOB ; branch if already had max banks
+ELSE
+    ; ENHANCE: We could generate an error message here. IBOS < 1.27 seems to effectively just
+    ; ignore this error, as we just set some flags which I don't believe anything ever checked.
+    BCS RestoreXRts ; branch if already had max banks
+ENDIF
 .IsSrrom
     LDA RomRamFlagTmp:JSR WriteRomHeaderAndPatchUsingVariableMainRamSubroutine
     LDX bankTmp:LDA #RomTypeSrData:STA prvRomTypeTableCopy,X:STA RomTypeTable,X
@@ -5530,8 +5548,11 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
 .Rts
     RTS
 
+IF IBOS_VERSION < 127
     ; SQUASH: Set/clear V first in both these cases, then the first can "BVC always" to SEC:BCS
     ; RestoreXRts in second.
+    ; SQUASH: Does anything actually ever check C and V here? We are a * command, not a subroutine
+    ; being used by general code.
 .FailSFTODOA
 	PLP
     SEC
@@ -5541,6 +5562,7 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
 	SEC
     BIT Rts ; set V
     BCS RestoreXRts ; always branch
+ENDIF
 }
 
 {
@@ -5757,14 +5779,19 @@ IF IBOS_VERSION >= 127
 }
 
 ; The IBOS 1.27 version of this routine wraps ParseRomBankListChecked (which therefore makes
-; the extended syntax it offers available). It also assumes that the caller intends to write to
-; each of the mentioned banks, so if any bank is not write-enabled RAM an error is generated.
-; If all the banks are write-enabled RAM, non-reversible changes to make the banks "usable" are
-; performed (see TODOROUTINENAME), so there is an implicit assumption that no errors can occur
-; after this point. SFTODONOW IS THIS TRUE/CORRECT/COMPLETE?
-; At the moment this is only used by *SRWIPE, *SRROM and *SRDATA.
+; the extended syntax it offers available). Each bank is tested before any "destructive"
+; operations are performed:
+; - for being write-enabled RAM
+; - iff C is set on entry, for being empty or for being a *SRDATA/*SRROM bank
+; An error is generated if a test fails for any bank. If all the banks pass the test,
+; non-reversible changes to make the banks "usable" are performed (see TODOROUTINENAME), so
+; there is an implicit assumption that no errors can occur after this point. SFTODONOW IS THIS
+; TRUE/CORRECT/COMPLETE?
+; At the moment this is only used by *SRWIPE (entered with C clear), *SRROM and *SRDATA (entered with C set).
+; SFTODONOW: NOW THIS NEEDS SPECIAL CALLING CODE ON IBOS 1.27 THE SUBROUTINE CAN BE RENAMED TO INDICATE ITS RAMINESS
 .ParseRomBankListChecked2
 {
+    PHP ; save C on entry
     JSR ParseRomBankListChecked
 
     LDX #maxBank
@@ -5774,8 +5801,29 @@ IF IBOS_VERSION >= 127
     ASL transientRomBankMask:ROL transientRomBankMask+1:INCCS transientRomBankMask
     BCC SkipBank1
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE errorNotWERam
+    PLP:PHP ; peek stacked C
+    BCC BankPassedTests
+    ; For *SRDATA/*SRROM, we perform some additional checks.
+    ; SFTODONOW: This check of prvRomTypeTableCopy,X is what older versions do for
+    ; *SRROM/*SRDATA, but it seems odd. With IBOS 1.20 for example, I can do *SRLOAD ROM 8000 7
+    ; Q then CTRL-BREAK then *SRDATA 7 and it happily destroys the ROM in bank 7. This is not
+    ; necessarily wrong, but I'm not sure what the purpose of checking prvRomTypeTableCopy here
+    ; is if this behaviour is meant to work. I note we are checking only the copy, not the OS
+    ; table, so maybe there is some intent to protect unplugged ROMs, but I'm far from clear.
+    ; It may be there is a bug updating prvRomTypeTableCopy in the first place, but I haven't
+    ; checked.
+    PRVEN:LDA prvRomTypeTableCopy,X:PRVDIS:BEQ BankPassedTests
+    CMP #RomTypeSrData:BEQ BankPassedTests
+    ; This error is what DFS 2.24's SRAM utilities raise. SQUASH: The error message is a bit
+    ; long and could probably be shrunk, given how relatively unimportant this case is - IBOS
+    ; <1.27 didn't generate an error in this case at all.
+    JSR RaiseError
+    EQUB &83
+    EQUS "RAM occupied", &00
+.BankPassedTests
 .SkipBank1
     DEX:BPL BankLoop1
+    PLP ; discard stacked C
 
     ; SFTODONOW: Can we factor out the bank loop logic into a subroutine using a JMP (someprivateramptr)?
     LDX #maxBank
