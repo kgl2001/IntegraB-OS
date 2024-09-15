@@ -5794,7 +5794,7 @@ IF IBOS_VERSION >= 127
 ; An error is generated if a test fails for any bank. If all the banks pass the test,
 ; destructive changes to make the banks "usable" are performed (see
 ; ensureWriteableBankXIsUsableRam), so there is an implicit assumption that no errors can occur
-; after this point in our caller. SFTODONOW IS THIS TRUE/CORRECT/COMPLETE?
+; after this point in our caller.
 ;
 ; At the moment this is only used by *SRWIPE (entered with C clear), *SRROM and *SRDATA (both
 ; entered with C set).
