@@ -19,7 +19,7 @@
 
 ; INCLUDE_APPEND will normally be TRUE in a release build, but setting it to FALSE removes
 ; *APPEND to free up space for experimental changes.
-INCLUDE_APPEND = TRUE ; (IBOS_VERSION < 127)
+INCLUDE_APPEND = (IBOS_VERSION < 127) ; SFTODONOW!
 
 IF IBOS_VERSION != 120
     IBOS120_VARIANT = 0
@@ -5557,22 +5557,26 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
 }
 
 
-; At the moment this is only used by *SRWIPE, *SRROM and *SRDATA.
+; SFTODONOW: *ROMS IS NOT SHOWING UNPLUGGED BANKS!?
+; SFTODONOW: DELETE THESE COMMENTS ONCE I FINISH
 ; SFTODO: Do we really need this *and* ParseRomBankListChecked? Isn't ParseRomBankListChecked
 ; better than this one?
 ; SFTODONOW: I think as written ...Checked *is* better and would be a drop-in replacement -
 ; would need to test. However, since I am looking to add write protect/*SRDATA/PALPROM check
 ; logic, I need to be careful. It may be ...Checked could still be used everywhere and take a
 ; flag to tell it what to do about checking for write protect etc.
+IF IBOS_VERSION < 127
+; SFTODONOW: THE CALLERS OF THIS ARE STILL DOING WORK WHICH THIS SUBROUTINE NOW DOES
 .ParseRomBankListChecked2
 {
     JSR ParseRomBankList
     BCS badIdIndirect
     RTS
 }
+ENDIF
 
 .badIdIndirect
-.L9B2B      JMP badId						;Error Bad ID
+    JMP badId						;Error Bad ID
 
 
 ; SFTODO: This has only one caller
@@ -5729,6 +5733,7 @@ IF IBOS_VERSION >= 127
     PHP
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE notWERam ; branch if not RAM
     PLP
+.^ensureWriteableBankXIsUsableRam
     TXA:PHA
     JSR removeBankAFromSrDataBanks
     PLA:TAX
@@ -5745,9 +5750,45 @@ IF IBOS_VERSION >= 127
 .notWERam
     PLP
     BCS Rts
+.^errorNotWERam
     JSR RaiseError
     EQUB &83
     EQUS "Not W/E RAM", &00
+}
+
+; The IBOS 1.27 version of this routine wraps ParseRomBankListChecked (which therefore makes
+; the extended syntax it offers available). It also assumes that the caller intends to write to
+; each of the mentioned banks, so if any bank is not write-enabled RAM an error is generated.
+; If all the banks are write-enabled RAM, non-reversible changes to make the banks "usable" are
+; performed (see TODOROUTINENAME), so there is an implicit assumption that no errors can occur
+; after this point. SFTODONOW IS THIS TRUE/CORRECT/COMPLETE?
+; At the moment this is only used by *SRWIPE, *SRROM and *SRDATA.
+.ParseRomBankListChecked2
+{
+    JSR ParseRomBankListChecked
+
+    LDX #maxBank
+.BankLoop1
+    ; Perform a 16-bit rotate left on transientRomBankMask+{0,1}; this means that by the time
+    ; we finish BankLoop1, the original value is restored for our caller to use.
+    ASL transientRomBankMask:ROL transientRomBankMask+1:INCCS transientRomBankMask
+    BCC SkipBank1
+    JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE errorNotWERam
+.SkipBank1
+    DEX:BPL BankLoop1
+
+    ; SFTODONOW: Can we factor out the bank loop logic into a subroutine using a JMP (someprivateramptr)?
+    LDX #maxBank
+.BankLoop2
+    ASL transientRomBankMask:ROL transientRomBankMask+1:INCCS transientRomBankMask
+    BCC SkipBank2
+    TXA:PHA
+    JSR ensureWriteableBankXIsUsableRam
+    PLA:TAX
+.SkipBank2
+    DEX:BPL BankLoop2
+
+    RTS
 }
 ENDIF
 
@@ -6473,7 +6514,8 @@ ENDIF
     RTS
 }
 
-; Relocation code then check for RAM in bank X.
+; Relocation code then check for RAM in bank X. On exit X is preserved, A contains the same
+; value as X and Y is corrupted.
 ; SFTODO: "Using..." part of name is perhaps OTT, but it might be important to "remind" us that
 ; this tramples over variableMainRamSubroutine - perhaps change later once more code is
 ; labelled up
