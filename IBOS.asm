@@ -7590,6 +7590,7 @@ ENDIF
 
 {
 ; SFTODO: This little fragment of code is only called once via JMP, can't it just be moved to avoid the JMP (and improve readability)?
+; SFTODONOW: I am not sure this entry point is really correct - needs examining
 .^LA4FE
     JSR createRomBankMask
     SEC
