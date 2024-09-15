@@ -7127,7 +7127,8 @@ ENDIF
 }
 
 ; A wrapper for ParseRomBankList which returns if at least one bank was parsed and generates an
-; error otherwise. At the moment, this is used only by *INSERT and *UNPLUG.
+; error otherwise. At the moment, this is used only by *INSERT and *UNPLUG and (from IBOS 1.27)
+; *SRWE/*SRWP.
 .ParseRomBankListChecked
 {
     JSR ParseRomBankList
@@ -7609,12 +7610,12 @@ ENDIF
 IF IBOS_VERSION >= 127
     JSR testV2hardware:BCC v2Only
 ENDIF
-    ; SFTODONOW: Could/should this use one of the ParseRomBankListChecked subroutines? Of
-    ; course we do not want to do write protect, *SRDATA or PALPROM checks here, so be careful
-    ; as these routines are tweaked.
+IF IBOS_VERSION < 127
     JSR ParseRomBankList:BCC LA513
     JMP badId
-			
+ELSE
+    JSR ParseRomBankListChecked
+ENDIF
 .LA513
 IF IBOS_VERSION < 127
     LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
