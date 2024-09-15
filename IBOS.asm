@@ -7052,6 +7052,9 @@ ENDIF
 .LA22E      BIT prvOswordBlockCopy                                                                  ;function
             BPL PrvDisexitScIndirect                                                                ;branch if read
             BVS PrvDisexitScIndirect                                                                ;branch if pseudo-address
+            ; TODO: This looks like an "unofficial" extension to OSWORD &43 where b0 means
+            ; "*INSERT the bank automatically" and b1 means "*SRWP the bank automatically after
+            ; loading", but I am not sure.
             LSR prvOswordBlockCopy                                                                  ;function
             ; SFTODO: Why are we testing the low bit of 'function' here? The defined values always have this 0. Is something setting this internally to flag something?
             BCC LA240 ; SFTODO: always branch? At least during an official user-called OSWORD &43 we will, as low bit should always be 0 according to e.g. Master Ref Manual
@@ -7062,7 +7065,7 @@ ENDIF
             ; SFTODO: And again, we're testing what was b1 of 'function' before we started shifting - why? Is this an internal flag?
             BCC PrvDisexitScIndirect
             LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number
-            JMP LA4FE
+            JMP writeProtectBankA
 
 .PrvDisexitScIndirect
 .LA24E      JMP PrvDisexitSc
@@ -7591,8 +7594,8 @@ ENDIF
 
 {
 ; SFTODO: This little fragment of code is only called once via JMP, can't it just be moved to avoid the JMP (and improve readability)?
-; SFTODONOW: I am not sure this entry point is really correct - needs examining
-.^LA4FE
+; SFTODONOW: I am not sure this entry point is really correct in 1.27 - needs examining - we are trying to parse "T" but it won't be there if called via this entry point
+.^writeProtectBankA
     JSR createRomBankMaskForBankA
     SEC
     PHP
