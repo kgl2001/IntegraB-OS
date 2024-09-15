@@ -5756,10 +5756,6 @@ IF IBOS_VERSION >= 127
     CLC
     BIT prvOswordBlockCopy:BPL Rts ; branch if reading from SWR
     LDA prvOswordBlockCopy + 1:BMI Rts ; branch if pseudo addressing in operation
-; Alternate entry point with the bank number in A and therefore no checks for the OSWORD block
-; specifying a write or that normal non-pseudo addressing is in use. The behavior is otherwise
-; identical.
-.^ensureBankAIsUsableRamIfPossible ; SFTODONOW IS THIS ENTRY POINT STILL USED?
     TAX
     PHP
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE notWERam ; branch if not RAM
@@ -5788,13 +5784,13 @@ IF IBOS_VERSION >= 127
 }
 
 ; The IBOS 1.27 version of this routine wraps ParseRomBankListChecked (which therefore makes
-; the extended syntax it offers available). Each bank is tested before any "destructive"
+; the extended syntax it offers available). Each bank is tested before any destructive
 ; operations are performed:
 ; - for being write-enabled RAM
 ; - iff C is set on entry, for being empty or for being a *SRDATA/*SRROM bank
 ; An error is generated if a test fails for any bank. If all the banks pass the test,
-; non-reversible changes to make the banks "usable" are performed (see TODOROUTINENAME), so
-; there is an implicit assumption that no errors can occur after this point. SFTODONOW IS THIS
+; destructive changes to make the banks "usable" are performed (see TODOROUTINENAME), so there
+; is an implicit assumption that no errors can occur after this point. SFTODONOW IS THIS
 ; TRUE/CORRECT/COMPLETE?
 ; At the moment this is only used by *SRWIPE (entered with C clear), *SRROM and *SRDATA (entered with C set).
 ; SFTODONOW: NOW THIS NEEDS SPECIAL CALLING CODE ON IBOS 1.27 THE SUBROUTINE CAN BE RENAMED TO INDICATE ITS RAMINESS
