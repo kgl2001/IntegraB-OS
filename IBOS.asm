@@ -5799,10 +5799,12 @@ IF IBOS_VERSION >= 127
     PHP ; save C on entry
     JSR ParseRomBankListChecked
 
+    ; The following loops perform a 16-bit rotate left on transientRomBankMask+{0,1}; this
+    ; means that by the time we finish each loop, the original value is restored for the
+    ; following loop or our caller to use.
+
     LDX #maxBank
 .BankLoop1
-    ; Perform a 16-bit rotate left on transientRomBankMask+{0,1}; this means that by the time
-    ; we finish BankLoop1, the original value is restored for our caller to use.
     ASL transientRomBankMask:ROL transientRomBankMask+1:INCCS transientRomBankMask
     BCC SkipBank1
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE errorNotWERam
