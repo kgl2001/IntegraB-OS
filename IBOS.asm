@@ -5315,6 +5315,10 @@ IF IBOS_VERSION < 127
 ELSE
     CLC:JSR ParseWERamBankListChecked
     PRVEN
+    ; SQUASH: Probably not worth it, but just possibly we do enough looping over a 16-bit ROM mask that
+    ; a subroutine which lets us do:
+    ;     JSR IterateOverTransientRomBankMask:EQUW subroutine_to_call_for_each_bank
+    ; might pay off. (This could always iterate low to high, for the cases where it sort of matters.)
     LDX #maxBank
 .BankLoop
     ASL transientRomBankMask:ROL transientRomBankMask + 1:BCC SkipBank
@@ -5596,15 +5600,7 @@ ENDIF
 
 
 ; SFTODONOW: *ROMS IS NOT SHOWING UNPLUGGED BANKS!?
-; SFTODONOW: DELETE THESE COMMENTS ONCE I FINISH
-; SFTODO: Do we really need this *and* ParseRomBankListChecked? Isn't ParseRomBankListChecked
-; better than this one?
-; SFTODONOW: I think as written ...Checked *is* better and would be a drop-in replacement -
-; would need to test. However, since I am looking to add write protect/*SRDATA/PALPROM check
-; logic, I need to be careful. It may be ...Checked could still be used everywhere and take a
-; flag to tell it what to do about checking for write protect etc.
 IF IBOS_VERSION < 127
-; SFTODONOW: THE CALLERS OF THIS ARE STILL DOING WORK WHICH THIS SUBROUTINE NOW DOES
 .ParseRomBankListChecked2
 {
     JSR ParseRomBankList
