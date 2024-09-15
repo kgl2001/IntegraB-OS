@@ -5305,30 +5305,29 @@ ELSE
     LDX #maxBank
 .BankLoop
     ASL transientRomBankMask:ROL transientRomBankMask + 1:BCC SkipBank
-    JSR WipeBankXIfRam
+    TXA:PHA
+    LDX #lo(wipeBankATemplate):LDY #hi(wipeBankATemplate):JSR CopyYxToVariableMainRamSubroutine
+    PLA
+    JSR variableMainRamSubroutine
+    TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
 .SkipBank
     DEX:BPL BankLoop
 ENDIF
     JMP PrvDisexitSc
 
-; SQUASH: This has only one caller, the code immediately above - could it just be inlined?
-.WipeBankXIfRam
 IF IBOS_VERSION < 127
+.WipeBankXIfRam
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
-ELSE
-    TXA:PHA
-ENDIF
     LDX #lo(wipeBankATemplate):LDY #hi(wipeBankATemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
     JSR variableMainRamSubroutine
-IF IBOS_VERSION < 127
     ; In IBOS Version >= 127, this function is carried out in ParseWERamBankListChecked
     PHA:JSR removeBankAFromSrDataBanks:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
-ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
 .Rts
     RTS
+ENDIF
 }
 
 IF IBOS_VERSION < 126
