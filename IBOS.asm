@@ -7038,7 +7038,7 @@ ENDIF
             JMP LA21B
 
 .dataLengthGreaterThanBufferLength
-.LA211      LDA #osfindOpenInput
+            LDA #osfindOpenInput
             JSR openFile
 .LA216      LDA #osgbpbReadCurPtr
             JSR doOsgbpbForOsword
