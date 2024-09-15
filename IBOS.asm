@@ -5299,6 +5299,19 @@ IF IBOS_VERSION < 127
     JSR WipeBankXIfRam
 .SkipBank
     INX:CPX #maxBank + 1:BNE BankLoop
+    JMP PrvDisexitSc
+
+.WipeBankXIfRam
+    JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE Rts
+    PHA
+    LDX #lo(wipeBankATemplate):LDY #hi(wipeBankATemplate):JSR CopyYxToVariableMainRamSubroutine
+    PLA
+    JSR variableMainRamSubroutine
+    ; In IBOS Version >= 127, this function is carried out in ParseWERamBankListChecked
+    PHA:JSR removeBankAFromSrDataBanks:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
+    TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
+.Rts
+    RTS
 ELSE
     CLC:JSR ParseWERamBankListChecked
     PRVEN
@@ -5312,21 +5325,7 @@ ELSE
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
 .SkipBank
     DEX:BPL BankLoop
-ENDIF
     JMP PrvDisexitSc
-
-IF IBOS_VERSION < 127
-.WipeBankXIfRam
-    JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE Rts
-    PHA
-    LDX #lo(wipeBankATemplate):LDY #hi(wipeBankATemplate):JSR CopyYxToVariableMainRamSubroutine
-    PLA
-    JSR variableMainRamSubroutine
-    ; In IBOS Version >= 127, this function is carried out in ParseWERamBankListChecked
-    PHA:JSR removeBankAFromSrDataBanks:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
-    TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
-.Rts
-    RTS
 ENDIF
 }
 
