@@ -5499,10 +5499,10 @@ ENDIF
     PHP
 IF IBOS_VERSION < 127
     JSR ParseRomBankListChecked2
+    PRVEN
 ELSE
     SEC:JSR ParseRomBankListChecked2
 ENDIF
-    PRVEN ; SFTODONOW: CAN WE GET RID OF PRVEN/PRVDIS ON 1.27? WE WOULD PROBABLY NEED TO RELOCATE BANKTMP AT LEAST
     ; SQUASH: Loops of this form (not just here) could maybe be written to LDX #maxBank, rotate left
     ; and save the CPX #maxBank + 1.
     LDX #0
@@ -5511,6 +5511,7 @@ ENDIF
     PLP:PHP:JSR DoBankX
 .SkipBank
     INX:CPX #maxBank + 1:BNE BankLoop
+    ; IBOS >= 1.27 won't have done PRVEN, but PRVDIS is safe even if it's redundant.
     JMP plpPrvDisexitSc ; SQUASH: close enough to BEQ always?
 
     ; SQUASH: This has only one caller and a single RTS, so can it just be inlined?
@@ -5518,7 +5519,13 @@ ENDIF
     ; SQUASH: Although some other code uses prvOswordBlockCopy + 1 to hold a bank number, I
     ; don't believe this code is ever used in conjunction with an OSWORD call. If that's right,
     ; we could shorten the code slightly by using a zero-page temporary for bankTmp.
-bankTmp = prvOswordBlockCopy + 1
+IF IBOS_VERSION < 127
+    bankTmp = prvOswordBlockCopy + 1
+ELSE
+    ; Putting bankTmp in transient ZP workspace saves code size in itself, but also allows us
+    ; to avoid doing PRVEN here.
+    bankTmp = L00AC
+ENDIF
 RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
 .DoBankX
     STX bankTmp
