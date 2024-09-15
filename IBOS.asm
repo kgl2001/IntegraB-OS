@@ -5503,6 +5503,8 @@ ELSE
     SEC:JSR ParseRomBankListChecked2
 ENDIF
     PRVEN ; SFTODONOW: CAN WE GET RID OF PRVEN/PRVDIS ON 1.27? WE WOULD PROBABLY NEED TO RELOCATE BANKTMP AT LEAST
+    ; SQUASH: Loops of this form (not just here) could maybe be written to LDX #maxBank, rotate left
+    ; and save the CPX #maxBank + 1.
     LDX #0
 .BankLoop
     ROR transientRomBankMask + 1:ROR transientRomBankMask:BCC SkipBank
@@ -5537,7 +5539,7 @@ IF IBOS_VERSION < 127
     BCS FailSFTODOB ; branch if already had max banks
 ELSE
     ; ENHANCE: We could generate an error message here. IBOS < 1.27 seems to effectively just
-    ; ignore this error, as we just set some flags which I don't believe anything ever checked.
+    ; ignore this error, as we just set some flags which I don't believe anything ever checks.
     BCS RestoreXRts ; branch if already had max banks
 ENDIF
 .IsSrrom
@@ -5825,7 +5827,6 @@ IF IBOS_VERSION >= 127
     DEX:BPL BankLoop1
     PLP ; discard stacked C
 
-    ; SFTODONOW: Can we factor out the bank loop logic into a subroutine using a JMP (someprivateramptr)?
     LDX #maxBank
 .BankLoop2
     ASL transientRomBankMask:ROL transientRomBankMask+1:INCCS transientRomBankMask
