@@ -5293,7 +5293,7 @@ ENDIF
 IF IBOS_VERSION < 127
     JSR ParseRomBankListChecked2
 ELSE
-    CLC:JSR ParseRomBankListChecked2
+    CLC:JSR ParseWERamBankListChecked
 ENDIF
     PRVEN
     LDX #0
@@ -5316,7 +5316,7 @@ ENDIF
     PLA
     JSR variableMainRamSubroutine
 IF IBOS_VERSION < 127
-; In IBOS Version >= 127, this function is carried out in ParseRomBankListChecked2
+; In IBOS Version >= 127, this function is carried out in ParseWERamBankListChecked
     PHA:JSR removeBankAFromSrDataBanks:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
 ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
@@ -5501,7 +5501,7 @@ IF IBOS_VERSION < 127
     JSR ParseRomBankListChecked2
     PRVEN
 ELSE
-    SEC:JSR ParseRomBankListChecked2
+    SEC:JSR ParseWERamBankListChecked
 ENDIF
     ; SQUASH: Loops of this form (not just here) could maybe be written to LDX #maxBank, rotate left
     ; and save the CPX #maxBank + 1.
@@ -5538,7 +5538,7 @@ IF IBOS_VERSION < 127
 .EmptyBank
     LDA bankTmp:JSR removeBankAFromSrDataBanks
 ELSE
-    ; In IBOS >= 1.27, this is handled by ParseRomBankListChecked2.
+    ; In IBOS >= 1.27, this is handled by ParseWERamBankListChecked.
 ENDIF
     PLP:BCS IsSrrom
     LDA bankTmp:JSR AddBankAToSrDataBanks
@@ -5793,8 +5793,7 @@ IF IBOS_VERSION >= 127
 ; is an implicit assumption that no errors can occur after this point. SFTODONOW IS THIS
 ; TRUE/CORRECT/COMPLETE?
 ; At the moment this is only used by *SRWIPE (entered with C clear), *SRROM and *SRDATA (both entered with C set).
-; SFTODONOW: NOW THIS NEEDS SPECIAL CALLING CODE ON IBOS 1.27 THE SUBROUTINE CAN BE RENAMED TO INDICATE ITS RAMINESS
-.ParseRomBankListChecked2
+.ParseWERamBankListChecked
 {
     PHP ; save C on entry
     JSR ParseRomBankListChecked
