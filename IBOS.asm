@@ -5600,7 +5600,6 @@ ENDIF
 }
 
 
-; SFTODONOW: *ROMS IS NOT SHOWING UNPLUGGED BANKS!?
 IF IBOS_VERSION < 127
 .ParseRomBankListChecked2
 {
@@ -7235,7 +7234,7 @@ IF IBOS_VERSION < 127
     AND #&FE ; bit 0 of ROM type is undefined, so mask out
     ; SFTODO: If we take this branch, will we ever do PRVDIS?
    BNE ShowRomHeader
- ; The RomTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
+    ; The RomTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
     ; if our private copy of the ROM type byte is non-0 show those flags.
     LDY #'U' ; Unplugged
     PRVEN ; SFTODO: We already did this, why do we need to do it again?
@@ -7336,7 +7335,7 @@ InsertStatusCopyHigh = &71
     ; At this point the bank is either RAM or (on v2 hardware only) a PALPROM.
     LDY #'r' ; onboard 'r'AM
     JSR testV2hardware:BCC SFTODOSECONDCHARINY ; branch if v1 hardware
-; Then test if PALPROM in banks 8..11
+    ; Then test if PALPROM in banks 8..11
     CPX #8:BCC SFTODOSECONDCHARINY ; branch if not PALPROM (X<8)
     CPX #12:BCS SFTODOSECONDCHARINY ; branch if not PALPROM (X>=12)
     ; 8<=X<12
@@ -7760,6 +7759,13 @@ ENDIF
     ; reset and that *UNPLUGged banks do get their non-unplugged ROM type stored in
     ; prvRomTypeTableCopy? We can look at fixing b-em once it's confirmed this isn't an IBOS
     ; bug.
+IF FALSE
+IF IBOS_VERSION >= 127
+    ; SFTODO: This hack allows working round the possible incompleteness of b-em's RTC emulation
+    ; here so prvRomTypeTableCopy is set up correctly.
+    LDA &8F:INC &8F:CMP #0:BEQ SQWESet
+ENDIF
+ENDIF
     SEC:JSR AlarmAndSQWEControl:BCS SQWESet
     JMP SoftReset ; SQUASH: BCC always? SFTODO: Rename this label given its use here?
 .SQWESet
