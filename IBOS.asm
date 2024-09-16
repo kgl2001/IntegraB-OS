@@ -7753,11 +7753,13 @@ ENDIF
     ; execute the code at SQWESet on the first service call &10 (after power up? CTRL-BREAK?),
     ; then to execute the code at SoftReset on subsequent service call &10s.
     ; SFTODONOW: On b-em this code *always* seems to detect a soft reset. This means that
-    ; prvRomTypeTableCopy is not populated correctly. Ken - can you please confirm this *is*
-    ; still working on real hardware? Maybe deliberately corrupt prvRomTypeTableCopy by setting
-    ; all bytes to 0 and check it is regenerated on hard reset and that *UNPLUGged banks do get
-    ; their non-unplugged ROM type stored in prvRomTypeTableCopy? We can look at fixing b-em
-    ; once it's confirmed this isn't an IBOS bug.
+    ; prvRomTypeTableCopy is not populated correctly because *UNPLUGged ROMs are completely
+    ; invisible as the second call overwrites prvRoMTypeTableCopy with 0s for unplugged banks.
+    ; Ken - can you please confirm this *is* still working on real hardware? Maybe deliberately
+    ; corrupt prvRomTypeTableCopy by setting all bytes to 0 and check it is regenerated on hard
+    ; reset and that *UNPLUGged banks do get their non-unplugged ROM type stored in
+    ; prvRomTypeTableCopy? We can look at fixing b-em once it's confirmed this isn't an IBOS
+    ; bug.
     SEC:JSR AlarmAndSQWEControl:BCS SQWESet
     JMP SoftReset ; SQUASH: BCC always? SFTODO: Rename this label given its use here?
 .SQWESet
