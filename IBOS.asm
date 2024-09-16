@@ -207,6 +207,8 @@ userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegBankWriteProtectStatus = &38 ; 2 bytes, 1 bit per bank
 userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
+;
+IF IBOS_VERSION < 127
 ; userRegRamPresenceFlags has a bit set for every 32K of RAM. Bit n represents sideways ROM
 ; banks 2n and 2n+1; however, bits 0 and 1 are effectively repurposed to represent the 64K of
 ; non-sideways RAM (the 32K on the model B, plus the 32K of shadow/private RAM on the
@@ -216,12 +218,10 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 ; Maybe stop treating banks 0-3 as a special case and just add 64K (for the main and
 ; shadow/private RAM) to the sideways RAM count when displaying the banner? Ken already has
 ; some code to change the behaviour in this area.
-;
-; KL 3/8/24: userRegRamPresenceFlags0_7 & userRegRamPresenceFlags8_F used in IBOS1.27 and above.
-IF IBOS_VERSION < 127
 userRegRamPresenceFlags = &7F
 ELSE
 userRegTmp = &7C ; 2 bytes for temporary use
+; KL 3/8/24: userRegRamPresenceFlags0_7 & userRegRamPresenceFlags8_F used in IBOS1.27 and above.
 userRegRamPresenceFlags0_7 = &7E
 userRegRamPresenceFlags8_F = &7F
 ENDIF
@@ -7209,9 +7209,8 @@ IF IBOS_VERSION < 127
 .BankLoop
     JSR ShowRom
     DEC CurrentBank:BPL BankLoop
-    JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
+    JMP PrvDisExitAndClaimServiceCall2
 			
-; SQUASH: This has only one caller
 .ShowRom
     LDA CurrentBank:CLC:JSR PrintADecimal ; show bank number right-aligned
     JSR printSpace
@@ -7250,81 +7249,7 @@ IF IBOS_VERSION < 127
     LDA #')':JSR OSWRCH
     JMP OSNEWL
 
-ELSE
-; PrintADecimal uses transientBin and transientBCD so we must fit round those.
-RamPresenceCopyLow = TransientZP + 0
-RamPresenceCopyHigh = TransientZP + 1
-
-; SFTODONOW: TEMP NOTE, 9 BYTES FREE BEFORE STARTED TO TINKER WITH UNPLUG IMPLEMENTATION
-.^roms
-    LDA #maxBank:STA CurrentBank
-
-    LDX #userRegRamPresenceFlags0_7:JSR ReadUserReg:STA RamPresenceCopyLow
-    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
-    INX:JSR ReadUserReg:STA RamPresenceCopyHigh
-
-.ShowRomLoop
-    JSR ShowRom
-    DEC CurrentBank:BPL ShowRomLoop
-    JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
-
-.ShowRom
-    LDA CurrentBank:CLC:JSR PrintADecimal ; show bank number right-aligned
-    JSR printSpace
-    LDA #'(':JSR OSWRCH
-
-.IsSidewaysRamBank
-    LDX CurrentBank:JSR TestBankXForRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
-    LDA #'E' ; write-Enabled
-    PLP:BEQ BankTypeCharacterInA
-    LDA #'P' ; Protected
-.BankTypeCharacterInA
-    JSR OSWRCH ; Print the first status character (Protected / write-Enabled)
-
-    ; SFTODONOW: Would need to ask Ken, but would it make sense to use a second status character of " " for truly empty sockets which are configured as ROM not RAM?
-    ; SFTODONOW: Technically "U" is independent of R/r/p - we *could* add a fifth column or put U in another column to avoid hiding R/r/p. Probably not really desirable but just a thought.
-    ; We now need to derive the second status character, which will be one of:
-    ; 'R' - configured as ROM, 'U' takes precedence
-    ; 'r' - configured as onboard RAM, 'U' takes precedence
-    ; 'p' - configured as PALPROM, 'U' takes precedence
-    ; 'U' - unplugged and non-empty
-    LDY #'R' ; not unplugged
-    LDX CurrentBank:LDA RomTypeTable,X
- ;   AND #&FE ; bit 0 of ROM type is undefined, so mask out 
-    BNE TestRrpFlagsForNonEmptyBank
-
- ; The RomTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
-    ; if our private copy of the ROM type byte is non-0 show those flags.
-    LDY #'U' ; Unplugged
-    PRVEN
-    LDA prvRomTypeTableCopy,X
-    PRVDIS
-    BEQ TestRrpFlagsForEmptyBank
-    ; SFTODONOW: IS THERE ANY CHANCE WE CAN DO THIS ASL:ROL EARLIER IN COMMON CODE AND PHP IT THERE THEN PLP IT ON EACH CODE PATH? OR COULD DO THE ROTATE IN TESTFORPALPROM - WE DON'T CURRENTLY CALL IT ON THIS PATH, BUT COULD WE??
-    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh ; Not used here, but need to rotate anyway.
-    JMP ShowRomHeader
- 
-.TestRrpFlagsForEmptyBank
-{
-    LDY #'R' ; Physical POM
-    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCC RamRomPalpromFlagCharacterInY
-    JSR TestforPALPROM
-.RamRomPalpromFlagCharacterInY
-    TYA:JSR OSWRCH ; Print the second status character ('R','r' or 'p')
-    JSR printSpace ; Print the third status character (' ' in place of 'S')
-    JSR printSpace ; Print the forth status character (' ' in place of 'L')
-    LDA #')':JSR OSWRCH
-    JMP OSNEWL
-}
-
-.TestRrpFlagsForNonEmptyBank
-    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCC ShowRomHeader
-    JSR TestforPALPROM
-    FALLTHROUGH_TO ShowRomHeader
-ENDIF
-
-; Entered with Y=' ' or 'U' and rom type byte in A (IBOS < 127).
-; Entered with Y=' ', 'p', 'r', 'R' or 'U' and rom type byte in A (IBOS >= 127).
+; Entered with Y=' ' or 'U' and rom type byte in A.
 .ShowRomHeader
     PHA
     TYA:JSR OSWRCH ; Print the second status character (' ', 'p', 'r', 'R' or 'U')
@@ -7356,6 +7281,105 @@ ENDIF
     INC osRdRmPtr ; advance osRdRmPtr; we know the high byte isn't going to change
     LDA osRdRmPtr:CMP BankCopyrightOffset:BCC TitleAndVersionLoop
     JMP OSNEWL
+ELSE
+; PrintADecimal uses transientBin and transientBCD so we must fit round those.
+RamPresenceCopyLow = TransientZP + 0
+RamPresenceCopyHigh = TransientZP + 1
+
+; SFTODONOW: THIS ALLOCATION IS UTTERLY WRONG, BUT I WANT TO GET ON WITH CODE FOR THE MOMENT
+InsertStatusCopyLow = &70
+InsertStatusCopyHigh = &71
+
+; SFTODONOW: TEMP NOTE, 9 BYTES FREE BEFORE STARTED TO TINKER WITH UNPLUG IMPLEMENTATION
+.^roms
+    LDA #maxBank:STA CurrentBank
+
+    LDX #userRegRamPresenceFlags0_7:JSR ReadUserReg:STA RamPresenceCopyLow
+    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
+    INX:JSR ReadUserReg:STA RamPresenceCopyHigh
+    LDX #userRegBankInsertStatus + 0:JSR ReadUserReg:STA InsertStatusCopyLow
+    INX:JSR ReadUserReg:STA InsertStatusCopyHigh
+
+.ShowRomLoop
+    JSR ShowRom
+    DEC CurrentBank:BPL ShowRomLoop
+    JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
+
+.ShowRom
+    LDA CurrentBank:CLC:JSR PrintADecimal ; show bank number right-aligned
+    JSR printSpace
+    LDA #'(':JSR OSWRCH
+
+    ; Generate and print the first status character (protected/write-enabled)
+    LDX CurrentBank:JSR TestBankXForRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
+    LDA #'E' ; write-Enabled
+    PLP:BEQ BankTypeCharacterInA
+    LDA #'P' ; Protected
+.BankTypeCharacterInA
+    JSR OSWRCH ; Print the first status character (Protected / write-Enabled)
+
+    ; Generate and print the second status character (unplugged/ROM/RAM/PALPROM)
+    ; SFTODONOW: Would need to ask Ken, but would it make sense to use a second status character of " " for truly empty sockets which are configured as ROM not RAM?
+    ; SFTODONOW: Technically "U" is independent of R/r/p - we *could* add a fifth column or put U in another column to avoid hiding R/r/p. Probably not really desirable but just a thought.
+    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:PHP ; rotate RAM presence flag for this bank into C and stash
+    LDY #'U' ; 'U'nplugged
+    ASL InsertStatusCopyLow:ROL InsertStatusCopyHigh:BCC SFTODOSECONDCHARINY ; branch if unplugged
+    LDY #'R' ; Physical 'R'OM
+    PLP:PHP:BCC SFTODOSECONDCHARINY; peek RAM presence flag, branch if configured as ROM
+    ; At this point the bank is either RAM or (on v2 hardware only) a PALPROM.
+    LDY #'r' ; onboard 'r'AM
+    JSR testV2hardware:BCC SFTODOSECONDCHARINY ; branch if v1 hardware
+; Then test if PALPROM in banks 8..11
+    CPX #8:BCC SFTODOSECONDCHARINY ; branch if not PALPROM (X<8)
+    CPX #12:BCS SFTODOSECONDCHARINY ; branch if not PALPROM (X>=12)
+    ; 8<=X<12
+    LDA cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
+    AND palprom_test_table-8,X:BEQ SFTODOSECONDCHARINY ; branch if not PALPROM
+    LDY #'p' ; onboard 'p'ALPROM
+.SFTODOSECONDCHARINY
+    PLP ; discard stacked C
+    TYA:JSR OSWRCH
+
+    ; Generate and print the third and four status characters (service and/or language)
+    LDY #'S' ; Service
+    ; Get the ROM type byte, taking unplugged banks into account.
+    LDA RomTypeTable,X:BNE HaveBestRomTypeByteInAWithFlagsReflectingA
+    PRVEN:LDA prvRomTypeTableCopy,X:PRVDIS
+.HaveBestRomTypeByteInAWithFlagsReflectingA
+    PHA ; push ROM type byte
+    ASSERT RomTypeService == 1 << 7
+    BMI HasServiceEntry
+    LDY #' '
+.HasServiceEntry
+    LDX #'L' ; Language
+    ASSERT RomTypeLanguage = 1 << 6
+    ASL A:BMI HasLanguageEntry
+    LDX #' '
+.HasLanguageEntry
+    TYA:JSR OSWRCH ; Print the third status character ('S' or ' ')
+    TXA:JSR OSWRCH ; Print the forth status character ('L' or ' ')
+
+    LDA #')':JSR OSWRCH
+
+    ; If this is not an empty bank, show the ROM title and version.
+    PLA ; pull stacked ROM type byte
+    BEQ NoRomTitleOrVersionToShow ; branch if empty bank
+    JSR printSpace
+    ; Print the ROM title and version.
+    JSR SetOsRdRmPtrToCopyrightOffset
+    LDY CurrentBank:JSR OSRDRM:STA BankCopyrightOffset
+    LDA #lo(Title):STA osRdRmPtr:ASSERT hi(Title) == hi(CopyrightOffset)
+.TitleAndVersionLoop
+    LDY CurrentBank:JSR OSRDRM:BNE NotNul ; read byte and convert NUL at end of title to space
+    LDA #' '
+.NotNul
+    JSR OSWRCH
+    INC osRdRmPtr ; advance osRdRmPtr; we know the high byte isn't going to change
+    LDA osRdRmPtr:CMP BankCopyrightOffset:BCC TitleAndVersionLoop
+.NoRomTitleOrVersionToShow
+    JMP OSNEWL
+ENDIF
+
 IF IBOS_VERSION >= 126
 .^SetOsRdRmPtrToCopyrightOffset
     LDA #lo(CopyrightOffset):STA osRdRmPtr:LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
@@ -7364,38 +7388,20 @@ ENDIF
 }
 
 IF IBOS_VERSION >= 127
-; Returns with Y='r' or 'p'. Preserves A.
-.TestforPALPROM
-{
-    LDY #'r' ; onboard RAM
-; Firstly, test for V2 hardware...
-    PHA
-    JSR testV2hardware
-    BCC endpptest
-    LDA cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
-; Then test if PALPROM in banks 8..11
-    CPX #8:BCC endpptest
-    CPX #12:BCS endpptest ; 8<=X<12
-    AND palprom_test_table-8,X:BEQ endpptest
-    LDY #'p' ; onboard PALPROM
-.endpptest
-    pla
-    rts
-.^RegRamMaskTable
+.RegRamMaskTable
     EQUB &01 ; bank 8
 ; note that RegRamMaskTable overlaps with the first three bytes of palprom_test_table; they should be 2, 4 & 8 for banks 9..11.
 ; This should probably be validated with an ASSERT
-.^palprom_test_table
+.palprom_test_table
     EQUB &02 ; bank 8  - PALPROM 2a is enabled when cpldPALPROMSelectionFlags0_7 bit 1 is set
     EQUB &04 ; bank 9  - PALPROM 2b is enabled when cpldPALPROMSelectionFlags0_7 bit 2 is set
     EQUB &08 ; bank 10 - PALPROM 4a is enabled when cpldPALPROMSelectionFlags0_7 bit 3 is set
     EQUB &40 ; bank 11 - PALPROM 8a is enabled when cpldPALPROMSelectionFlags0_7 bit 5 is set
-.^palprom_banks_table
+.palprom_banks_table
     EQUB &01 ; bank 8 - PALPROM 2a has 1 extra bank
     EQUB &01 ; bank 9 - PALPROM 2b has 1 extra bank
     EQUB &07 ; bank 10 - PALPROM 4a has 3 extra banks
     EQUB &7F ; bank 11 - PALPROM 8a has 7 extra banks
-}
 
 ; Test for V2 hardware. Carry is set if V2 hardware detected, otherwise carry is cleared.
 .testV2hardware
