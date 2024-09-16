@@ -7301,17 +7301,18 @@ ELSE
     ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh ; Not used here, but need to rotate anyway.
     JMP ShowRomHeader
  
- .TestRrpFlagsForEmptyBank
+.TestRrpFlagsForEmptyBank
+{
     LDY #'R' ; Physical POM
     ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCC RamRomPalpromFlagCharacterInY
     JSR TestforPALPROM
-
 .RamRomPalpromFlagCharacterInY
     TYA:JSR OSWRCH ; Print the second status character ('R','r' or 'p')
     JSR printSpace ; Print the third status character (' ' in place of 'S')
     JSR printSpace ; Print the forth status character (' ' in place of 'L')
     LDA #')':JSR OSWRCH
     JMP OSNEWL
+}
 
 .TestRrpFlagsForNonEmptyBank
     ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCC ShowRomHeader
