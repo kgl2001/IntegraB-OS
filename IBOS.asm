@@ -2063,9 +2063,8 @@ ELSE
 ; actively know of is at ShowBankLoop - to not rely on it.
 .PrintADecimal
 {
-Pad = &B0		;character output in place of leading zeros
-PadFlag = &B1	;b7 clear iff "0" should be converted into "Pad"
-; SFTODONOW: Given we are stealing CFS workspace for &B0 and &B1, should we move e.g. transientBCD into &B2/&B3?
+Pad = FilingSystemWorkspace + 0 		;character output in place of leading zeros
+PadFlag = FilingSystemWorkspace + 1	;b7 clear iff "0" should be converted into "Pad"
 
     LDX #&00		;Entry point for 8 bit binary conversion
     STX transientBin+1
