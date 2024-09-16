@@ -2069,8 +2069,9 @@ PadFlag = FilingSystemWorkspace + 1	;b7 clear iff "0" should be converted into "
     LDX #&00		;Entry point for 8 bit binary conversion
     STX transientBin+1
 
+; Entry point for 16 bit binary conversion - the low byte is in A, the high byte is in transientBin+1
 .^PrintAbcd16Decimal
-    PHA		;Entry point for 16 bit binary conversion
+    PHA
     STA transientBin+0
     LDA #&00
     STA transientBCD+0
