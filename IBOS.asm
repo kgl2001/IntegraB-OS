@@ -7305,12 +7305,16 @@ InsertStatusCopyHigh = &71
     DEC CurrentBank:BPL ShowRomLoop
     JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
 
+    ; SQUASH: This subroutine has only one caller and never returns early, but at least for the
+    ; moment inlining it makes the above "BPL ShowRomLoop" a branch out of range.
 .ShowRom
+    ; SFTODONOW: CAN WE AVOID THE ALWAYS-BLANK FIRST COLUMN IN THE ROM BANK OUTPUT?
     LDA CurrentBank:CLC:JSR PrintADecimal ; show bank number right-aligned
     JSR printSpace
     LDA #'(':JSR OSWRCH
 
-    ; Generate and print the first status character (protected/write-enabled)
+    ; Generate and print the first status character (protected/write-enabled). This indicates
+    ; which banks are actually RAM from a practical software perspective right now.
     LDX CurrentBank:JSR TestBankXForRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
     LDA #'E' ; write-Enabled
     PLP:BEQ BankTypeCharacterInA
@@ -7318,7 +7322,10 @@ InsertStatusCopyHigh = &71
 .BankTypeCharacterInA
     JSR OSWRCH ; Print the first status character (Protected / write-Enabled)
 
-    ; Generate and print the second status character (unplugged/ROM/RAM/PALPROM)
+    ; Generate and print the second status character (unplugged/ROM/RAM/PALPROM). This
+    ; indicates the hardware configuration - for example, on v2 hardware, a physical
+    ; write-enabled 16K SWR module plugged into a socket configured to accept a 16K chip will
+    ; appear as physical 'R'OM here, but write-'E'nabled in the first status character.
     ; SFTODONOW: Would need to ask Ken, but would it make sense to use a second status character of " " for truly empty sockets which are configured as ROM not RAM?
     ; SFTODONOW: Technically "U" is independent of R/r/p - we *could* add a fifth column or put U in another column to avoid hiding R/r/p. Probably not really desirable but just a thought.
     ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:PHP ; rotate RAM presence flag for this bank into C and stash
