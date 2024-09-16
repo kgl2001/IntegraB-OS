@@ -2075,7 +2075,6 @@ PadFlag = &B1	;b7 clear iff "0" should be converted into "Pad"
     LDA #&00
     STA transientBCD+0
     STA transientBCD+1
-    ; SQUASH: Is transientBCD+1 write-only? Can we remove it? SFTODONOW
 
     STA PadFlag		;When &B1 is set to 0, any printable zeros should be considered leading and should be replaced with either a padding space or nothing (defined by contents of &B0)
     BCS NoPadding		;If carry set, don't pad in place of leading zero (print chr$0)
