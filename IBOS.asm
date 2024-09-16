@@ -2075,6 +2075,7 @@ PadFlag = &B1	;b7 clear iff "0" should be converted into "Pad"
     LDA #&00
     STA transientBCD+0
     STA transientBCD+1
+    ; SQUASH: Is transientBCD+1 write-only? Can we remove it? SFTODONOW
 
     STA PadFlag		;When &B1 is set to 0, any printable zeros should be considered leading and should be replaced with either a padding space or nothing (defined by contents of &B0)
     BCS NoPadding		;If carry set, don't pad in place of leading zero (print chr$0)
@@ -2085,6 +2086,7 @@ PadFlag = &B1	;b7 clear iff "0" should be converted into "Pad"
     SED			;Switch to decimal mode
     LDX #&10		;The number of source bits
 .cnvbit
+    ; SQUASH: Can we avoid allocating ZP to transientBin+1 by keeping it in A/stacking it when required in this loop? If we tweak the above initialisation do use X instead of A for the initialisation, we may be able to enter the cnvbitloop with A=0 for free. SFTODONOW
     ASL transientBin+0	;Shift out one bit
     ROL transientBin+1
     LDA transientBCD+0	;And add into result
