@@ -7749,6 +7749,15 @@ ENDIF
     ; reset line???) clears SQWE first. Maybe this is something related to detecting power-on
     ; reset, though why we suddenly don't trust lastBreakType I don't know - maybe this is too
     ; early for that to have been set, though that seems unlikely.
+    ; SFTODO: I think the previous SFTODO might be wrong, and the actual idea here is to
+    ; execute the code at SQWESet on the first service call &10 (after power up? CTRL-BREAK?),
+    ; then to execute the code at SoftReset on subsequent service call &10s.
+    ; SFTODONOW: On b-em this code *always* seems to detect a soft reset. This means that
+    ; prvRomTypeTableCopy is not populated correctly. Ken - can you please confirm this *is*
+    ; still working on real hardware? Maybe deliberately corrupt prvRomTypeTableCopy by setting
+    ; all bytes to 0 and check it is regenerated on hard reset and that *UNPLUGged banks do get
+    ; their non-unplugged ROM type stored in prvRomTypeTableCopy? We can look at fixing b-em
+    ; once it's confirmed this isn't an IBOS bug.
     SEC:JSR AlarmAndSQWEControl:BCS SQWESet
     JMP SoftReset ; SQUASH: BCC always? SFTODO: Rename this label given its use here?
 .SQWESet
