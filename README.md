@@ -76,7 +76,7 @@ If you have problems or suggestions for improvement, please post in the [IBOS th
   * Change the information shown in the *ROMs parenthesis. The column that previously displayed 'U'nplugged will now also show 'p' if a PALPROM is configured, 'r' if the bank is defined as RAM or 'R' if the bank is defined as ROM.
   * Update RAM calculation for startup banner.
     - Can now calculate total RAM >256K.
-    - Will now display a maximum of 320K for V1 hardware, influenced by the values stored in the RTC ROM / RAM registers (set by *FX162,127,x and *FX162,128,y).
+    - Will now display a maximum of 320K for V1 hardware, influenced by the values stored in the RTC ROM / RAM registers. These can be set by *FX162,126,x (bit 0=bank 0, bit 7=bank 7) and *FX162,127,y (bit 0=bank 8, bit 7=bank15). SFTODONOW: THIS IS PARTLY DUPLICATE AN ENTRY ABOVE, WE NEED TO CONSOLIDATE THIS
     - and will display a maximum of 512K for V2 hardware. Without PALPROMs enabled, the maximum RAM will be 320K, and will be influenced by the position of the ROM / RAM jumpers on the IntegraB board. 
     - On V2 hardware, if PALPROMs are detected in banks 8..11, this will influence the calculation based on the size of PALPROM in use, up to a total maximum of 512K.
   * Update *SRLOAD, *SRWRITE and *SRWIPE commands to be PALPROM aware. These commands will reset a PALPROM bank back to a standard 16K RAM bank to prevent PALPROM switching on a non PALPROM ROM image.
