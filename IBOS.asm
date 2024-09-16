@@ -7286,10 +7286,16 @@ ELSE
     LDA #'P' ; Protected
 .BankTypeCharacterInA
     JSR OSWRCH ; Print the first status character (Protected / write-Enabled)
+
+    ; SFTODONOW: Would need to ask Ken, but would it make sense to use a second status character of " " for truly empty sockets which are configured as ROM not RAM?
+    ; We now need to derive the second status character, which will be one of:
+    ; 'R' - "physical 16K ROM or empty ROM socket" (bank is flagged as ROM in RamPresenceFlags) and ((has non-0 active ROM type) or (has non-0 active and pre-unplug ROM type, i.e. is truly empty))
+    ; 'r' - TODO THIS IS ALWAYS SET BY TESTFORPALPROM UNLESS THE BANK IS A PALPROM, BUT NEED TO TRACK CASES WHERE WE DO AND DON'T CALL THAT
+    ; 'p' - TODO SET BY TESTFORPALPROM IF THIS IS A PALPROM BANK, BUT NEED TO TRACK CASES WHERE WE DO AND DON'T CALL IT
+    ; 'U' - unplugged and non-empty
     LDY #'R' ; not unplugged
     LDX CurrentBank:LDA RomTypeTable,X
  ;   AND #&FE ; bit 0 of ROM type is undefined, so mask out 
- ; SFTODO: If we take this branch, will we ever do PRVDIS?
     BNE TestRrpFlagsForNonEmptyBank
 
  ; The RomTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
@@ -7299,6 +7305,7 @@ ELSE
     LDA prvRomTypeTableCopy,X
     PRVDIS
     BEQ TestRrpFlagsForEmptyBank
+    ; SFTODONOW: IS THERE ANY CHANCE WE CAN DO THIS ASL:ROL EARLIER IN COMMON CODE AND PHP IT THERE THEN PLP IT ON EACH CODE PATH? OR COULD DO THE ROTATE IN TESTFORPALPROM - WE DON'T CURRENTLY CALL IT ON THIS PATH, BUT COULD WE??
     ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh ; Not used here, but need to rotate anyway.
     JMP ShowRomHeader
  
@@ -7362,6 +7369,7 @@ ENDIF
 }
 
 IF IBOS_VERSION >= 127
+; Returns with Y='r' or 'p'. Preserves A.
 .TestforPALPROM
 {
     LDY #'r' ; onboard RAM
