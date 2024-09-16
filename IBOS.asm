@@ -7188,20 +7188,13 @@ ENDIF
     JMP ExitAndClaimServiceCall
 }
 
+;*ROMS Command
 {
 CurrentBank = TransientZP + 2
 BankCopyrightOffset = TransientZP + 3
-IF IBOS_VERSION >= 127
-; PrintADecimal uses transientBin and transientBCD so we must fit round those.
-RamPresenceCopyLow = TransientZP + 0
-RamPresenceCopyHigh = TransientZP + 1
-ENDIF
-
 
 IF IBOS_VERSION < 127
 .LA34A
-    ; ENHANCE: We could go and test all the individual banks to see if they're RAM, rather than
-    ; using this table and userRegRamPresenceFlags.
     EQUB &00								;ROM at Banks 0 & 1
     EQUB &00								;ROM at Banks 2 & 3
     EQUB &04								;Check for RAM at Banks 4 & 5
@@ -7210,11 +7203,7 @@ IF IBOS_VERSION < 127
     EQUB &20								;Check for RAM at Banks A & B
     EQUB &40								;Check for RAM at Banks C & D
     EQUB &80								;Check for RAM at Banks E & F
-ENDIF
 
-
-;*ROMS Command
-IF IBOS_VERSION < 127
 .^roms
     LDA #maxBank:STA CurrentBank
 .BankLoop
@@ -7262,6 +7251,11 @@ IF IBOS_VERSION < 127
     JMP OSNEWL
 
 ELSE
+; PrintADecimal uses transientBin and transientBCD so we must fit round those.
+RamPresenceCopyLow = TransientZP + 0
+RamPresenceCopyHigh = TransientZP + 1
+
+; SFTODONOW: TEMP NOTE, 9 BYTES FREE BEFORE STARTED TO TINKER WITH UNPLUG IMPLEMENTATION
 .^roms
     LDA #maxBank:STA CurrentBank
 
