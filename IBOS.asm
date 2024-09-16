@@ -7288,10 +7288,11 @@ ELSE
     JSR OSWRCH ; Print the first status character (Protected / write-Enabled)
 
     ; SFTODONOW: Would need to ask Ken, but would it make sense to use a second status character of " " for truly empty sockets which are configured as ROM not RAM?
+    ; SFTODONOW: Technically "U" is independent of R/r/p - we *could* add a fifth column or put U in another column to avoid hiding R/r/p. Probably not really desirable but just a thought.
     ; We now need to derive the second status character, which will be one of:
-    ; 'R' - "physical 16K ROM or empty ROM socket" (bank is flagged as ROM in RamPresenceFlags) and ((has non-0 active ROM type) or (has non-0 active and pre-unplug ROM type, i.e. is truly empty))
-    ; 'r' - TODO THIS IS ALWAYS SET BY TESTFORPALPROM UNLESS THE BANK IS A PALPROM, BUT NEED TO TRACK CASES WHERE WE DO AND DON'T CALL THAT
-    ; 'p' - TODO SET BY TESTFORPALPROM IF THIS IS A PALPROM BANK, BUT NEED TO TRACK CASES WHERE WE DO AND DON'T CALL IT
+    ; 'R' - configured as ROM, 'U' takes precedence
+    ; 'r' - configured as onboard RAM, 'U' takes precedence
+    ; 'p' - configured as PALPROM, 'U' takes precedence
     ; 'U' - unplugged and non-empty
     LDY #'R' ; not unplugged
     LDX CurrentBank:LDA RomTypeTable,X
