@@ -5887,14 +5887,6 @@ IF IBOS_VERSION >= 127
     PLP:PHP ; peek stacked C
     BCC BankPassedTests
     ; For *SRDATA/*SRROM, we perform some additional checks.
-    ; SFTODONOW: This check of prvRomTypeTableCopy,X is what older versions do for
-    ; *SRROM/*SRDATA, but it seems odd. With IBOS 1.20 for example, I can do *SRLOAD ROM 8000 7
-    ; Q then CTRL-BREAK then *SRDATA 7 and it happily destroys the ROM in bank 7. This is not
-    ; necessarily wrong, but I'm not sure what the purpose of checking prvRomTypeTableCopy here
-    ; is if this behaviour is meant to work. I note we are checking only the copy, not the OS
-    ; table, so maybe there is some intent to protect unplugged ROMs, but I'm far from clear.
-    ; It may be there is a bug updating prvRomTypeTableCopy in the first place, but I haven't
-    ; checked.
     PRVEN:LDA prvRomTypeTableCopy,X:PRVDIS:BEQ BankPassedTests
     CMP #RomTypeSrData:BEQ BankPassedTests
     ; This error is what DFS 2.24's SRAM utilities raise. SQUASH: The error message is a bit
