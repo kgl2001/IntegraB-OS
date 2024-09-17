@@ -2057,6 +2057,7 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
 
 ELSE
 
+IF FALSE ; SFTODNOW - HAD 33 BYTES FREE BEFORE THIS CHANGE
 ; Print A in decimal. C set on entry means no padding, C clear means right align with spaces in
 ; a three character field. A and Y are preserved.
 ; SQUASH: If it helps, we could probably corrupt Y and change the callers - the only one I
@@ -2125,6 +2126,99 @@ PadFlag = FilingSystemWorkspace + 1	;b7 clear iff "0" should be converted into "
 .PrintPad
     JMP OSWRCH
 }
+ELSE ; SFTODONOW: NEW EXPERIMENTAL
+{
+; SFTODONOW RENAME Pad TO PadChar?
+Pad = FilingSystemWorkspace + 0 ; character output in place of leading zeros
+PadFlag = FilingSystemWorkspace + ; b7 clear iff "0" should be converted into "Pad"
+HIGHBYTE = &80 ; SFTODONOW HACK
+
+; Print A in decimal. C set on entry means no padding, C clear means right align with spaces in
+; a three character field. A and Y are preserved.
+; SQUASH: If it helps, we could probably corrupt Y and change the callers - the only one I
+; actively know of is at ShowBankLoop - to not rely on it.
+.^PrintADecimal
+    LDX #0:STX HIGHBYTE
+.^PrintAbcd16Decimal ; SFTODONOW: RENAME THIS LABEL TO REMOVE BCD
+    PHA ; SFTODONOW DO ANY CALLERS ACTUALLY DEPEND ON US PRESERVING A?
+
+    LDX #0
+    STX PadFlag
+    BCS NoPadding
+    LDX #' '
+.NoPadding
+    STX Pad
+
+IF FALSE
+    LDX #&FF
+.HUNDREDSLOOP
+    INX
+    SEC:SBC #100:BCS NOUNDERFLOW
+    DEC HIGHBYTE:BMI HUNDREDSCOUNTED ; branch if underflow on high byte
+.NOUNDERFLOW
+    CMP #0:BNE HUNDREDSLOOP
+.HUNDREDSCOUNTED
+    JSR PrintDigitInX
+ENDIF
+
+IF FALSE
+    LDX #0
+.HUNDREDSLOOP
+    SEC:SBC #100:BCS NOUNDERFLOW
+    DEC HIGHBYTE:BMI HUNDREDSCOUNTED2 ; branch if underflow on high byte
+.NOUNDERFLOW
+    INX
+    CMP #0:BNE HUNDREDSLOOP
+    LDA HIGHBYTE:BEQ HUNDREDSCOUNTED
+    LDA #0:JMP HUNDREDSLOOP ; SFTODONOW IF CAN'T DO BETTER CAN AT LEAST BEQ ALWAYS
+.HUNDREDSCOUNTED2
+    ADC #100 ; we know C is clear SFTODONOW CHECK
+.HUNDREDSCOUNTED
+    JSR PrintDigitInX
+ENDIF
+
+    LDX #0
+.HUNDREDSLOOP
+    CMP #100:BCS NOUNDERFLOW
+    DEC HIGHBYTE:BMI HUNDREDSCOUNTED
+.NOUNDERFLOW
+    INX
+    SEC:SBC #100
+    JMP HUNDREDSLOOP
+.HUNDREDSCOUNTED
+    JSR PrintDigitInX
+
+
+    LDX #0
+.TENSLOOP
+    CMP #10:BCC TENSCOUNTED
+    INX
+    SBC #10 ; we know C is set
+    BNE TENSLOOP
+.TENSCOUNTED
+    JSR PrintDigitInX
+
+    DEC PadFlag		;Do not pad units if value is 0
+    TAX:JSR PrintDigitInX
+
+    PLA
+    RTS
+
+.PrintDigitInX
+    PHA
+    LDA Pad
+    CPX #0
+    BNE NotZero
+    BIT PadFlag:BPL PrintPad
+.NotZero
+    DEC PadFlag
+    TXA:ORA #'0'
+.PrintPad
+    JSR OSWRCH
+    PLA
+    RTS
+}
+ENDIF
 ENDIF
 		
 ; Parse a 32-bit integer from (transientCmdPtr),Y. The following prefixes are
