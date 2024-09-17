@@ -2057,6 +2057,9 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
 ELSE
 
 IF FALSE ; SFTODNOW - HAD 33 BYTES FREE BEFORE THIS CHANGE
+; This code works perfectly, but it needs four bytes of zero page workspace and we can get away
+; with the less flexible code below.
+;
 ; Print A in decimal. C set on entry means no padding, C clear means right align with spaces in
 ; a three character field. A and Y are preserved.
 ; SQUASH: If it helps, we could probably corrupt Y and change the callers - the only one I
