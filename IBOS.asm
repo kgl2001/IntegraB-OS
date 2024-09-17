@@ -252,8 +252,7 @@ transientDateSFTODO2 = &AA ; SFTODO: prob just temp storage
 transientDateSFTODO1 = &AB ; SFTODO!? 2 bytes?
 
 IF IBOS_VERSION >= 127
-transientBin = &AE	;2 bytes added by KL for IBOS1.27
-transientBCD = &AC	;2 bytes added by KL for IBOS1.27
+PrintDecimal16HighByte = &AE ; 1 byte
 ENDIF
 
 FilingSystemWorkspace = &B0; IBOS repurposes this, which feels a bit risky but presumably works in practice
@@ -2131,15 +2130,16 @@ ELSE ; SFTODONOW: NEW EXPERIMENTAL
 ; SFTODONOW RENAME Pad TO PadChar?
 Pad = FilingSystemWorkspace + 0 ; character output in place of leading zeros
 PadFlag = FilingSystemWorkspace + 1 ; b7 clear iff "0" should be converted into "Pad"
-HIGHBYTE = &80 ; SFTODONOW HACK
 
 ; Print A in decimal. C set on entry means no padding, C clear means right align with spaces in
 ; a three character field. A and Y are preserved.
 ; SQUASH: If it helps, we could probably corrupt Y and change the callers - the only one I
 ; actively know of is at ShowBankLoop - to not rely on it.
 .^PrintADecimal
-    LDX #0:STX HIGHBYTE
-.^PrintAbcd16Decimal ; SFTODONOW: RENAME THIS LABEL TO REMOVE BCD
+    LDX #0:STX PrintDecimal16HighByte
+; As PrintADecimal, but prints the 16-bit value <1000 with its high byte in
+; PrintDecimal16HighByte and its low byte in A.
+.^PrintDecimal16
     PHA ; SFTODONOW DO ANY CALLERS ACTUALLY DEPEND ON US PRESERVING A?
 
     LDX #0
@@ -2152,7 +2152,7 @@ HIGHBYTE = &80 ; SFTODONOW HACK
     LDX #0
 .HUNDREDSLOOP
     CMP #100:BCS NOUNDERFLOW
-    DEC HIGHBYTE:BMI HUNDREDSCOUNTED
+    DEC PrintDecimal16HighByte:BMI HUNDREDSCOUNTED
 .NOUNDERFLOW
     INX
     SEC:SBC #100
@@ -5257,16 +5257,15 @@ ELSE
     LDX #userRegRamPresenceFlags0_7:JSR sumRAM
     ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
     INX:JSR sumRAM
-    STA transientBin+1 ; we know A is zero after sumRAM
+    STA PrintDecimal16HighByte ; we know A is zero after sumRAM
     ; Y <= 32 here - we started at 4 and can have added a maximum of 16 sideways RAM banks and 12 extra PALPROM banks
     TYA
     ASL A ; result <= 64, no carry
     ASL A ; result <= 128, no carry
-    ASL A:ROL transientBin+1 ; result <= 256, so may have carry
-    ; SFTODONOW: Is STA transientBin redundant? Doesn't PrintAbcd... take the low byte in A?
-    ASL A:STA transientBin:ROL transientBin+1 ; <= 512, so may have carry
+    ASL A:ROL PrintDecimal16HighByte ; result <= 256, so may have carry
+    ASL A:ROL PrintDecimal16HighByte ; <= 512, so may have carry
     SEC
-    JSR PrintAbcd16Decimal
+    JSR PrintDecimal16
     LDA #'K':JSR OSWRCH
 .SoftReset
     JSR OSNEWL
