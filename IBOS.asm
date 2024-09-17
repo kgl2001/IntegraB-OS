@@ -5197,7 +5197,7 @@ ELSE
     ASL A ; result <= 64, no carry
     ASL A ; result <= 128, no carry
     ASL A:ROL transientBin+1 ; result <= 256, so may have carry
-    ; SFTODONOW: Is STA transientBin redundant? Doesn't PrintAbcd... take the low byte n A?
+    ; SFTODONOW: Is STA transientBin redundant? Doesn't PrintAbcd... take the low byte in A?
     ASL A:STA transientBin:ROL transientBin+1 ; <= 512, so may have carry
     SEC
     JSR PrintAbcd16Decimal
