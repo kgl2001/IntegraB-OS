@@ -2086,7 +2086,7 @@ PadFlag = FilingSystemWorkspace + 1	;b7 clear iff "0" should be converted into "
     SED			;Switch to decimal mode
     LDX #&10		;The number of source bits
 .cnvbit
-    ; SQUASH: Can we avoid allocating ZP to transientBin+1 by keeping it in A/stacking it when required in this loop? If we tweak the above initialisation do use X instead of A for the initialisation, we may be able to enter the cnvbitloop with A=0 for free. SFTODONOW
+    ; SQUASH: Can we avoid allocating ZP to transientBin+1 by keeping it in A/stacking it when required in this loop? If we tweak the above initialisation do use X instead of A for the initialisation, we may be able to enter the cnvbitloop with A=0 for free. SFTODONOW - we may also be (more easily) able to keep transientBin+0 on the stack
     ASL transientBin+0	;Shift out one bit
     ROL transientBin+1
     LDA transientBCD+0	;And add into result
@@ -5197,6 +5197,7 @@ ELSE
     ASL A ; result <= 64, no carry
     ASL A ; result <= 128, no carry
     ASL A:ROL transientBin+1 ; result <= 256, so may have carry
+    ; SFTODONOW: Is STA transientBin redundant? Doesn't PrintAbcd... take the low byte n A?
     ASL A:STA transientBin:ROL transientBin+1 ; <= 512, so may have carry
     SEC
     JSR PrintAbcd16Decimal
