@@ -2130,7 +2130,6 @@ PadFlag = FilingSystemWorkspace + 1	;b7 clear iff "0" should be converted into "
 }
 ELSE ; SFTODONOW: NEW EXPERIMENTAL
 {
-; SFTODONOW RENAME Pad TO PadChar?
 Pad = FilingSystemWorkspace + 0 ; character output in place of leading zeros
 PadFlag = FilingSystemWorkspace + 1 ; b7 clear iff "0" should be converted into "Pad"
 
@@ -2143,7 +2142,7 @@ PadFlag = FilingSystemWorkspace + 1 ; b7 clear iff "0" should be converted into 
 ; As PrintADecimal, but prints the 16-bit value <1000 with its high byte in
 ; PrintDecimal16HighByte and its low byte in A.
 .^PrintDecimal16
-    PHA ; SFTODONOW DO ANY CALLERS ACTUALLY DEPEND ON US PRESERVING A?
+    PHA
 
     LDX #0
     STX PadFlag
@@ -2153,32 +2152,29 @@ PadFlag = FilingSystemWorkspace + 1 ; b7 clear iff "0" should be converted into 
     STX Pad
 
     LDX #0
-.HUNDREDSLOOP
-    CMP #100:BCS NOUNDERFLOW
-    DEC PrintDecimal16HighByte:BMI HUNDREDSCOUNTED
-.NOUNDERFLOW
+.CountHundredsLoop
+    CMP #100:BCS NoUnderflow
+    DEC PrintDecimal16HighByte:BMI HundredsCounted
+.NoUnderflow
     INX
     SEC:SBC #100
-    JMP HUNDREDSLOOP
-.HUNDREDSCOUNTED
+    JMP CountHundredsLoop
+.HundredsCounted
     JSR PrintDigitInX
 
     LDX #0
-.TENSLOOP
-    CMP #10:BCC TENSCOUNTED
+.CountTensLoop
+    CMP #10:BCC TensCounted
     INX
     SBC #10 ; we know C is set
-    BNE TENSLOOP
-.TENSCOUNTED
+    BNE CountTensLoop
+.TensCounted
     JSR PrintDigitInX
 
-    DEC PadFlag		;Do not pad units if value is 0
-    ; SFTODONOW: WE CAN PROB DO TAX:PLA:FALLTHROUGH_TO PrintDigitInX
-    TAX:JSR PrintDigitInX
+    DEC PadFlag ; in the units place, we must always print 0 as 0 instead of Pad
+    TAX:PLA:FALLTHROUGH_TO PrintDigitInX
 
-    PLA
-    RTS
-
+; This preserves A
 .PrintDigitInX
     PHA
     LDA Pad
