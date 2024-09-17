@@ -2089,7 +2089,6 @@ PadFlag = FilingSystemWorkspace + 1	;b7 clear iff "0" should be converted into "
     SED			;Switch to decimal mode
     LDX #&10		;The number of source bits
 .cnvbit
-    ; SQUASH: Can we avoid allocating ZP to transientBin+1 by keeping it in A/stacking it when required in this loop? If we tweak the above initialisation do use X instead of A for the initialisation, we may be able to enter the cnvbitloop with A=0 for free. SFTODONOW - we may also be (more easily) able to keep transientBin+0 on the stack
     ASL transientBin+0	;Shift out one bit
     ROL transientBin+1
     LDA transientBCD+0	;And add into result
@@ -2117,7 +2116,7 @@ PadFlag = FilingSystemWorkspace + 1	;b7 clear iff "0" should be converted into "
     RTS
 
 .PrintDigitInA
-    TAX ; SQUASH: optimisable?
+    TAX
     LDA Pad
     CPX #0
     BNE NotZero
@@ -2128,7 +2127,7 @@ PadFlag = FilingSystemWorkspace + 1	;b7 clear iff "0" should be converted into "
 .PrintPad
     JMP OSWRCH
 }
-ELSE ; SFTODONOW: NEW EXPERIMENTAL
+ELSE
 {
 Pad = FilingSystemWorkspace + 0 ; character output in place of leading zeros
 PadFlag = FilingSystemWorkspace + 1 ; b7 clear iff "0" should be converted into "Pad"
@@ -7360,7 +7359,6 @@ RamPresenceCopyHigh = TransientZP + 1
 InsertStatusCopyLow = TransientZP + 4
 InsertStatusCopyHigh = TransientZP + 5
 
-; SFTODONOW: TEMP NOTE, 9 BYTES FREE BEFORE STARTED TO TINKER WITH UNPLUG IMPLEMENTATION
 .^roms
     LDA #maxBank:STA CurrentBank
 
