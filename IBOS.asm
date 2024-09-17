@@ -7324,7 +7324,7 @@ IF IBOS_VERSION < 127
 ; Entered with Y=' ' or 'U' and rom type byte in A.
 .ShowRomHeader
     PHA
-    TYA:JSR OSWRCH ; Print the second status character (' ', 'p', 'r', 'R' or 'U')
+    TYA:JSR OSWRCH ; Print the second status character (' ' or 'U')
     LDX #'S' ; Service
     PLA:PHA:ASSERT RomTypeService == 1 << 7:BMI HasServiceEntry
     LDX #' '
@@ -7403,7 +7403,11 @@ InsertStatusCopyHigh = TransientZP + 5
     ; indicates the hardware configuration - for example, on v2 hardware, a physical
     ; write-enabled 16K SWR module plugged into a socket configured to accept a 16K chip will
     ; appear as physical 'R'OM here, but write-'E'nabled in the first status character.
-    ; SFTODONOW: Would need to ask Ken, but would it make sense to use a second status character of " " for truly empty sockets which are configured as ROM not RAM?
+    ; SFTODONOW: Ken - I wonder if we should use 'S' (for "socket") instead of 'R', if this is
+    ; indicating that the physical socket on the Integra-B board is being used. This may be
+    ; based on a misconception and/or more confusing than necessary, but FWIW. This may not fit
+    ; so well on a v1 board, but we could use 'R' on v1 and 'S' on v2. Maybe on v1 hardware the
+    ; second column should be either 'U' or ' ' as I think it was in earlier versions of IBOS?
     ; SFTODONOW: Ken - technically "U" is independent of R/r/p and we could add another column
     ; to show the "U" to avoid hiding R/r/p for unplugged banks, or we could make U override a
     ; column other than the second. This is probably not a good idea, but I thought I'd at
