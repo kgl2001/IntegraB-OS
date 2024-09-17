@@ -2130,7 +2130,7 @@ ELSE ; SFTODONOW: NEW EXPERIMENTAL
 {
 ; SFTODONOW RENAME Pad TO PadChar?
 Pad = FilingSystemWorkspace + 0 ; character output in place of leading zeros
-PadFlag = FilingSystemWorkspace + ; b7 clear iff "0" should be converted into "Pad"
+PadFlag = FilingSystemWorkspace + 1 ; b7 clear iff "0" should be converted into "Pad"
 HIGHBYTE = &80 ; SFTODONOW HACK
 
 ; Print A in decimal. C set on entry means no padding, C clear means right align with spaces in
