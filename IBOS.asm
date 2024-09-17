@@ -7404,7 +7404,10 @@ InsertStatusCopyHigh = TransientZP + 5
     ; write-enabled 16K SWR module plugged into a socket configured to accept a 16K chip will
     ; appear as physical 'R'OM here, but write-'E'nabled in the first status character.
     ; SFTODONOW: Would need to ask Ken, but would it make sense to use a second status character of " " for truly empty sockets which are configured as ROM not RAM?
-    ; SFTODONOW: Technically "U" is independent of R/r/p - we *could* add a fifth column or put U in another column to avoid hiding R/r/p. Probably not really desirable but just a thought.
+    ; SFTODONOW: Ken - technically "U" is independent of R/r/p and we could add another column
+    ; to show the "U" to avoid hiding R/r/p for unplugged banks, or we could make U override a
+    ; column other than the second. This is probably not a good idea, but I thought I'd at
+    ; least see what you think.
     ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:PHP ; rotate RAM presence flag for this bank into C and stash
     LDY #'U' ; 'U'nplugged
     ASL InsertStatusCopyLow:ROL InsertStatusCopyHigh:BCC SFTODOSECONDCHARINY ; branch if unplugged
