@@ -252,7 +252,7 @@ transientDateSFTODO2 = &AA ; SFTODO: prob just temp storage
 transientDateSFTODO1 = &AB ; SFTODO!? 2 bytes?
 
 IF IBOS_VERSION >= 127
-PrintDecimal16HighByte = &AE ; 1 byte
+PrintDecimal16HighByte = TransientZP + 6 ; 1 byte
 ENDIF
 
 FilingSystemWorkspace = &B0; IBOS repurposes this, which feels a bit risky but presumably works in practice
@@ -2056,9 +2056,9 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
 
 ELSE
 
-IF FALSE ; SFTODNOW - HAD 33 BYTES FREE BEFORE THIS CHANGE
-; This code works perfectly, but it needs four bytes of zero page workspace and we can get away
-; with the less flexible code below.
+IF FALSE
+; This code works perfectly, but the less flexible code below is smaller and needs three bytes
+; less zero page workspace.
 ;
 ; Print A in decimal. C set on entry means no padding, C clear means right align with spaces in
 ; a three character field. A and Y are preserved.
@@ -7347,13 +7347,11 @@ ENDIF
     LDA osRdRmPtr:CMP BankCopyrightOffset:BCC TitleAndVersionLoop
     JMP OSNEWL
 ELSE
-; PrintADecimal uses transientBin and transientBCD so we must fit round those.
+; PrintADecimal uses PrintDecimal16HighByte so we must fit round that.
 RamPresenceCopyLow = TransientZP + 0
 RamPresenceCopyHigh = TransientZP + 1
-
-; SFTODONOW: THIS ALLOCATION IS UTTERLY WRONG, BUT I WANT TO GET ON WITH CODE FOR THE MOMENT
-InsertStatusCopyLow = &70
-InsertStatusCopyHigh = &71
+InsertStatusCopyLow = TransientZP + 4
+InsertStatusCopyHigh = TransientZP + 5
 
 ; SFTODONOW: TEMP NOTE, 9 BYTES FREE BEFORE STARTED TO TINKER WITH UNPLUG IMPLEMENTATION
 .^roms
