@@ -2138,6 +2138,10 @@ PadFlag = FilingSystemWorkspace + 1 ; b7 clear iff "0" should be converted into 
 ; SQUASH: If it helps, we could probably corrupt Y and change the callers - the only one I
 ; actively know of is at ShowBankLoop - to not rely on it.
 .^PrintADecimal
+    CLV
+; As PrintADecimal but the current value of the V flag is used. If V is set, it is assumed A<100
+; and the hundreds place is omitted.
+.^PrintADecimalUsingCurrentV
     LDX #0:STX PrintDecimal16HighByte
 ; As PrintADecimal, but prints the 16-bit value <1000 with its high byte in
 ; PrintDecimal16HighByte and its low byte in A.
@@ -2151,6 +2155,7 @@ PadFlag = FilingSystemWorkspace + 1 ; b7 clear iff "0" should be converted into 
 .NoPadding
     STX Pad
 
+    BVS SkipHundreds
     LDX #0
 .CountHundredsLoop
     CMP #100:BCS NoUnderflow
@@ -2161,7 +2166,9 @@ PadFlag = FilingSystemWorkspace + 1 ; b7 clear iff "0" should be converted into 
     JMP CountHundredsLoop
 .HundredsCounted
     JSR PrintDigitInX
+.SkipHundreds
 
+.^PrintADecimalTwoDigitEntry
     LDX #0
 .CountTensLoop
     CMP #10:BCC TensCounted
@@ -7346,7 +7353,7 @@ ENDIF
     INC osRdRmPtr ; advance osRdRmPtr; we know the high byte isn't going to change
     LDA osRdRmPtr:CMP BankCopyrightOffset:BCC TitleAndVersionLoop
     JMP OSNEWL
-ELSE
+ELSE ; IBOS_VERSION >= 127
 ; PrintADecimal uses PrintDecimal16HighByte so we must fit round that.
 RamPresenceCopyLow = TransientZP + 0
 RamPresenceCopyHigh = TransientZP + 1
@@ -7371,8 +7378,15 @@ InsertStatusCopyHigh = TransientZP + 5
     ; SQUASH: This subroutine has only one caller and never returns early, but at least for the
     ; moment inlining it makes the above "BPL ShowRomLoop" a branch out of range.
 .ShowRom
-    ; SFTODONOW: CAN WE AVOID THE ALWAYS-BLANK FIRST COLUMN IN THE ROM BANK OUTPUT?
-    LDA CurrentBank:CLC:JSR PrintADecimal ; show bank number right-aligned
+    ; SFTODONOW: Ken - I have tweaked things so the bank number only occupies two columns
+    ; instead of three. This costs 6 bytes of code space. I figured this would give an extra
+    ; column for the ROM title and version, but let me know if you'd rather switch this back.
+    ; Otherwise I'll turn this into a SQUASH: comment to note we could claw back space later if
+    ; necessary.
+    LDA CurrentBank
+    CLC ; right-align
+    BIT pageInPrvs81Rts ; set V => only use two columns
+    JSR PrintADecimalUsingCurrentV ; show bank number
     JSR printSpace
     LDA #'(':JSR OSWRCH
 
