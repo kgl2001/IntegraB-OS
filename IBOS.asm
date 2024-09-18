@@ -7416,7 +7416,9 @@ InsertStatusCopyHigh = TransientZP + 5
     ; - As a variant, arguably the third R/r/p column still has value on a v1 board (as it
     ;   shows the ROM/RAM banks configured with *FX163,{126,127},x), so we could always show it
     ;   regardless of hardware version.  We could *maybe* use different symbols in this third
-    ;   column on v1 hardware.
+    ;   column on v1 hardware. (See also the suggestion below to treat the first column
+    ;   differently on v1 hardware, so it looks similar to IBOS <1.27, and effectively shows
+    ;   which banks are configured as RAM via *FX163.)
     ; - I'm not a huge fan of using upper/lower case to distinguish things here. I may have
     ;   mentioned this before and I'm not trying to re-open an already made decision, it's just
     ;   that as rewriting this code has forced me to think about this and I'm making these
