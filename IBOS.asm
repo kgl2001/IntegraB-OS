@@ -7410,7 +7410,9 @@ InsertStatusCopyHigh = TransientZP + 5
     ;   R/r/p to be seen regardless of unplug status, which I think is nice and may also be
     ;   less confusing as we reduce "overloading". The fact that we're keeping all the symbol
     ;   letters distinct across all the columns should also help to avoid any confusion related
-    ;   to the changing number of columns.
+    ;   to the changing number of columns. (As noted elsewhere, I have removed the leading space
+    ;   on the ROM bank number, so we arguably have an extra column of screen real estate to
+    ;   play with.)
     ; - As a variant, arguably the third R/r/p column still has value on a v1 board (as it
     ;   shows the ROM/RAM banks configured with *FX163,{126,127},x), so we could always show it
     ;   regardless of hardware version.  We could *maybe* use different symbols in this third
