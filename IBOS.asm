@@ -5489,6 +5489,9 @@ ENDIF
 }
 
 ;*SRSET Command
+; ENHANCE: The *SRSET banks are not preserved on CTRL-BREAK, which doesn't seem right. The
+; default values also don't honour the same settings that *SRSET itself applies - it defaults
+; to four banks depending on OSMODE without checking things like write-enabled status.
 {
 .^srset     LDA (transientCmdPtr),Y
             CMP #'?'
@@ -7551,8 +7554,6 @@ ENDIF
     ; silently ignores the X.  One fix for this would be to do this BVS immediately after the
     ; NoBankNumber label, *but* that would break callers (such as - probably - *SRWE) which
     ; need to be able to parse an apparently invalid bank as a trailing option like "T".
-    ;
-    ; SFTODONOW *SRSET IS NOT PRESERVED ON CTRL BREAK IS THIS RIGHT?
     BVS SecRts
     INY
     JSR InvertTransientRomBankMask
