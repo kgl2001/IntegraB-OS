@@ -7428,7 +7428,7 @@ InsertStatusCopyHigh = TransientZP + 5
     ; configured in software via the PALPROM loader utility and the IBOS support for disabling
     ; PALPROM mode when appropriate.
     JSR testV2hardware:BCC SkipHardwareConfigColumn
-    LDY #'R' ; Physical 'R'OM
+    LDY #'R' ; Physical 'R'OM/'R'AM
     PLP:BCC HardwareConfigCharacterInY; pull stacked RAM presence flag, branch if configured as ROM
     ; At this point the bank is either RAM or a PALPROM in banks 8-11.
     LDY #'r' ; onboard 'r'AM
