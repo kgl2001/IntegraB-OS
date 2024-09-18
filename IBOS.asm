@@ -5254,7 +5254,7 @@ ELSE
 ; If configured as RAM, check if PALPROM is enabled
     LDA cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
     AND palprom_test_table,X:BEQ notpalprom
-    LDA palprom_banks_table,X ; number of extra PALPROM RAM banks
+    LDA palprom_banks_bitmap_table,X ; number of extra PALPROM RAM banks
     JSR sumRAMLoop
 .notpalprom
     DEX
@@ -7416,7 +7416,7 @@ InsertStatusCopyHigh = TransientZP + 5
     ; 8<=X<12
     LDA cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
     AND palprom_test_table-8,X:BEQ BankStatusCharacterInY ; branch if not PALPROM
-    LDY #'p' ; onboard 'p'ALPROM
+    LDY palprom_banks_digit_table-8,X
 .BankStatusCharacterInY
     PLP ; discard stacked RAM presence flag
     TYA:JSR OSWRCH
@@ -7478,11 +7478,16 @@ IF IBOS_VERSION >= 127
     EQUB &04 ; bank 9  - PALPROM 2b is enabled when cpldPALPROMSelectionFlags0_7 bit 2 is set
     EQUB &08 ; bank 10 - PALPROM 4a is enabled when cpldPALPROMSelectionFlags0_7 bit 3 is set
     EQUB &40 ; bank 11 - PALPROM 8a is enabled when cpldPALPROMSelectionFlags0_7 bit 5 is set
-.palprom_banks_table
+.palprom_banks_bitmap_table
     EQUB &01 ; bank 8 - PALPROM 2a has 1 extra bank
     EQUB &01 ; bank 9 - PALPROM 2b has 1 extra bank
     EQUB &07 ; bank 10 - PALPROM 4a has 3 extra banks
     EQUB &7F ; bank 11 - PALPROM 8a has 7 extra banks
+.palprom_banks_digit_table
+    EQUB '2' ; bank 8 - PALPROM 2a has 2 banks
+    EQUB '2' ; bank 9 - PALPROM 2a has 2 banks
+    EQUB '4' ; bank 10 - PALPROM 4a has 2 banks
+    EQUB '8' ; bank 10 - PALPROM 8a has 2 banks
 
 ; Test for V2 hardware. Carry is set if V2 hardware detected, otherwise carry is cleared.
 .testV2hardware
