@@ -7429,16 +7429,16 @@ InsertStatusCopyHigh = TransientZP + 5
     ; PALPROM mode when appropriate.
     JSR testV2hardware:BCC SkipHardwareConfigColumn
     LDY #'R' ; Physical 'R'OM
-    PLP:BCC BankStatusCharacterInY; pull stacked RAM presence flag, branch if configured as ROM
+    PLP:BCC HardwareConfigCharacterInY; pull stacked RAM presence flag, branch if configured as ROM
     ; At this point the bank is either RAM or a PALPROM in banks 8-11.
     LDY #'r' ; onboard 'r'AM
-    CPX #8:BCC BankStatusCharacterInY ; branch if not PALPROM (X<8)
-    CPX #12:BCS BankStatusCharacterInY ; branch if not PALPROM (X>=12)
+    CPX #8:BCC HardwareConfigCharacterInY ; branch if not PALPROM (X<8)
+    CPX #12:BCS HardwareConfigCharacterInY ; branch if not PALPROM (X>=12)
     ; 8<=X<12
     LDA cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
-    AND palprom_test_table-8,X:BEQ BankStatusCharacterInY ; branch if not PALPROM
+    AND palprom_test_table-8,X:BEQ HardwareConfigCharacterInY ; branch if not PALPROM
     LDY palprom_banks_digit_table-8,X
-.BankStatusCharacterInY
+.HardwareConfigCharacterInY
     TYA:JSR OSWRCH ; print the v2-only hardware configuration status character
 .SkipHardwareConfigColumn
 
