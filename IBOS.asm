@@ -2177,12 +2177,7 @@ PadFlag = FilingSystemWorkspace + 1 ; b7 clear iff "0" should be converted into 
 .TensCounted
     JSR PrintDigitInX
 
-IF FALSE ; SFTODONOW
-    DEC PadFlag ; in the units place, we must always print 0 as 0 instead of Pad
-    TAX:PLA:FALLTHROUGH_TO PrintDigitInX
-ELSE
     BPL PrintUnitDigitInA ; always branch (A<10 after CountTensLoop)
-ENDIF
 
 ; This preserves A and returns with flags reflecting A.
 .PrintDigitInX
