@@ -7369,6 +7369,7 @@ InsertStatusCopyHigh = TransientZP + 5
     LDX #userRegBankInsertStatus + 0:JSR ReadUserReg:STA InsertStatusCopyLow
     INX:JSR ReadUserReg:STA InsertStatusCopyHigh
 
+    ; SFTODONOW: 38 BYTES FREE AFTER PALPROM 2/4/8 BUT BEFORE OTHER CHANGES
 .ShowRomLoop
     JSR ShowRom
     DEC CurrentBank:BPL ShowRomLoop
@@ -7386,27 +7387,40 @@ InsertStatusCopyHigh = TransientZP + 5
     CLC ; right-align
     BIT pageInPrvs81Rts ; set V => only use two columns
     JSR PrintADecimalUsingCurrentV ; show bank number
+    TAX ; get CurrentBank into X
     JSR printSpace
     LDA #'(':JSR OSWRCH
 
+    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:PHP ; stack RAM presence flag
+
     ; Generate and print the first status character (protected/write-enabled). This indicates
-    ; which banks are actually RAM from a practical software perspective right now.
-    LDX CurrentBank:JSR TestBankXForRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
+    ; which banks are actually RAM from a practical software perspective right now. SFTODONOW UPDATE COMMENT FOR V1/V2 STUFF
+    JSR testV2hardware:BCS TestBankWriteProtectStatus ; branch if v2 hardware
+    LDA #' '
+    PLP:BCC BankTypeCharacterInA ; pull stacked RAM presence flag, branch if configured as ROM
+.TestBankWriteProtectStatus
+    JSR TestBankXForRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
     LDA #'E' ; write-Enabled
     PLP:BEQ BankTypeCharacterInA
     LDA #'P' ; write-Protected
 .BankTypeCharacterInA
     JSR OSWRCH ; Print the first status character (Protected / write-Enabled)
 
+    ; SFTODONOW DOCUMENT GENERATING UNPLUG COLUMN
+    LDA #'U' ; 'U'nplugged
+    ASL InsertStatusCopyLow:ROL InsertStatusCopyHigh:BCC UnplugStatusCharacterInA ; branch if unplugged
+    LDA #' ' ; not unplugged
+.UnplugStatusCharacterInA
+    JSR OSWRCH
+
+    JSR testV2hardware:BCC SkipHardwareConfigColumn
     ; Generate and print the second status character (unplugged/ROM/RAM/PALPROM). This
     ; indicates the hardware configuration - for example, on v2 hardware, a physical
     ; write-enabled 16K SWR module plugged into a socket configured to accept a 16K chip will
     ; appear as physical 'R'OM here, but write-'E'nabled in the first status character.
-    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:PHP ; stack RAM presence flag
-    LDY #'U' ; 'U'nplugged
-    ASL InsertStatusCopyLow:ROL InsertStatusCopyHigh:BCC BankStatusCharacterInY ; branch if unplugged
+    ; SFTODONOW UPDATE COMMENT FOR U TO OWN COLUMN AND V1/V2 STUFF
     LDY #'R' ; Physical 'R'OM
-    PLP:PHP:BCC BankStatusCharacterInY; peek RAM presence flag, branch if configured as ROM
+    PLP:BCC BankStatusCharacterInY; pull stacked RAM presence flag, branch if configured as ROM
     ; At this point the bank is either RAM or (on v2 hardware only) a PALPROM.
     LDY #'r' ; onboard 'r'AM
     JSR testV2hardware:BCC BankStatusCharacterInY ; branch if v1 hardware
@@ -7418,8 +7432,8 @@ InsertStatusCopyHigh = TransientZP + 5
     AND palprom_test_table-8,X:BEQ BankStatusCharacterInY ; branch if not PALPROM
     LDY palprom_banks_digit_table-8,X
 .BankStatusCharacterInY
-    PLP ; discard stacked RAM presence flag
     TYA:JSR OSWRCH
+.SkipHardwareConfigColumn
 
     ; Generate and print the third and four status characters (service and/or language)
     LDY #'S' ; Service
