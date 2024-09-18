@@ -7371,11 +7371,9 @@ InsertStatusCopyHigh = TransientZP + 5
     ; SQUASH: This subroutine has only one caller and never returns early, but at least for the
     ; moment inlining it makes the above "BPL ShowRomLoop" a branch out of range.
 .ShowRom
-    ; SFTODONOW: Ken - I have tweaked things so the bank number only occupies two columns
-    ; instead of three. This costs 6 bytes of code space. I figured this would give an extra
-    ; column for the ROM title and version, but let me know if you'd rather switch this back.
-    ; Otherwise I'll turn this into a SQUASH: comment to note we could claw back space later if
-    ; necessary.
+    ; SQUASH: This code uses a special entry point PrintADecimalUsingCurrentV to print the ROM
+    ; bank in two digits without a leading zero for the hundreds column. This costs 6 bytes of
+    ; code space, and we could revert this change later if we're short of space.
     LDA CurrentBank
     CLC ; right-align
     BIT pageInPrvs81Rts ; set V => only use two columns
@@ -7846,14 +7844,10 @@ ENDIF
     ; SFTODO: I think the previous SFTODO might be wrong, and the actual idea here is to
     ; execute the code at SQWESet on the first service call &10 (after power up? CTRL-BREAK?),
     ; then to execute the code at SoftReset on subsequent service call &10s.
-    ; SFTODONOW: On b-em this code *always* seems to detect a soft reset. This means that
+    ; SFTODO: On b-em this code *always* seems to detect a soft reset. This means that
     ; prvRomTypeTableCopy is not populated correctly because *UNPLUGged ROMs are completely
     ; invisible as the second call overwrites prvRoMTypeTableCopy with 0s for unplugged banks.
-    ; Ken - can you please confirm this *is* still working on real hardware? Maybe deliberately
-    ; corrupt prvRomTypeTableCopy by setting all bytes to 0 and check it is regenerated on hard
-    ; reset and that *UNPLUGged banks do get their non-unplugged ROM type stored in
-    ; prvRomTypeTableCopy? We can look at fixing b-em once it's confirmed this isn't an IBOS
-    ; bug.
+    ; Ken has confirmed this works fine on real hardware.
 IF FALSE
 IF IBOS_VERSION >= 127
     ; SFTODO: This hack allows working round the possible incompleteness of b-em's RTC emulation
@@ -11918,8 +11912,6 @@ ENDIF
 ; It would be nice if "*CO." could be used as an abbreviation for *CONFIGURE, as on the Master,
 ; but OS 1.20 interprets this as an abbreviation for "*CODE" and IBOS never gets a chance to
 ; see it. Short of installing a USERV handler, there isn't much we can do about this.
-
-; SFTODO: Look at the integrap ROM packaged with b-em and see if we can build that too.
 
 ; SFTODO: If a user application is using the private RAM (except the 1K allocated to IBOS), is
 ; there a danger that things like pressing Escape will trigger the printer buffer to be flushed
