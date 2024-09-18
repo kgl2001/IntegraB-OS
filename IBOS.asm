@@ -7425,14 +7425,6 @@ InsertStatusCopyHigh = TransientZP + 5
 .BankTypeCharacterInA
     JSR OSWRCH ; print the first status character
 
-    ; Generate and print the second status character. This shows 'U' if the bank has been
-    ; *UNPLUGged or a space otherwise.
-    LDA #'U' ; 'U'nplugged
-    ASL InsertStatusCopyLow:ROL InsertStatusCopyHigh:BCC UnplugStatusCharacterInA ; branch if unplugged
-    LDA #' ' ; not unplugged
-.UnplugStatusCharacterInA
-    JSR OSWRCH ; print the second status character
-
     ; On v2 hardware only, we add an extra column at this point which shows the hardware
     ; configuration:
     ; - 'R' means the bank is provided by a physical chip (which may be ROM or RAM), not the v2
@@ -7457,6 +7449,14 @@ InsertStatusCopyHigh = TransientZP + 5
 .HardwareConfigCharacterInY
     TYA:JSR OSWRCH ; print the v2-only hardware configuration status character
 .SkipHardwareConfigColumn
+
+    ; Generate and print the third status character. This shows 'U' if the bank has been
+    ; *UNPLUGged or a space otherwise.
+    LDA #'U' ; 'U'nplugged
+    ASL InsertStatusCopyLow:ROL InsertStatusCopyHigh:BCC UnplugStatusCharacterInA ; branch if unplugged
+    LDA #' ' ; not unplugged
+.UnplugStatusCharacterInA
+    JSR OSWRCH ; print the third status character
 
     ; Generate and print the service and language status characters.
     LDY #'S' ; Service
