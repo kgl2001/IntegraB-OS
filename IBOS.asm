@@ -2693,8 +2693,16 @@ ptr = &00 ; 2 bytes
     ;  - registers &2F / &30: userDefaultRegBankWriteProtectStatus ***CURRENTLY DISABLED***.
     ;  - register &31: userRegPALPROMConfig (outside the range anyway).
 IF IBOS_VERSION < 127
-    LDX #&32
+    LDX #&32 ; register &32 is outside range
 ELSE
+    ; Don't zero user RTC register &31 (PALPROM config). Instead only clear PALPROM flag iff the bank is write enabled
+    ; and will be cleared by FullResetPrv later in this reset process.
+    LDX #11
+.ppResetLoop
+    TXA:PHA
+    SEC:JSR ensureBankAIsUsableRamIfPossible ; Don't generate alarm if bank is Write Protected.
+    PLA:TAX
+    DEX:CPX #8:BCS ppResetLoop
     LDX #&30
 ENDIF
 .ZeroUserRegLoop
@@ -5724,6 +5732,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ;           OSWORD &43: buffer address (in host, high word always &FFFF)
 ; XY+6..7   OSWORD &42: data length
 ;           OSWORD &43: buffer length, 0 => no buffer, >=&8000 => use PAGE-HIMEM as buffer (ignore user-supplied buffer address)
+;                                                                 use (PAGE+&100)-HIMEM for IBOS >= 1.27
 ; XY+8..9   sideways RAM start address
 ; XY+10..11 OSWORD &43 only: data length (ignored on load, buggy on save; see comment below)
 ; XY+12..13 OSWORD &43 only: filename in I/O processor
@@ -5731,8 +5740,9 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ; SFTODO:
 ; For OSWORD &43, XY+10..11 *should* be the data length, but a bug in adjustPrvOsword43Block means
 ; that will actually be set to the user-supplied buffer length (before any adjustment is made
-; if PAGE-HIMEM is used as a buffer). This only affects direct OSWORD &43 calls; *SRSAVE sets up
-; the OSWORD block directly at prvOswordBlockCopy in the internal format and isn't affected by this bug.
+; if PAGE(or PAGE+&100 for IBOS >= 1.27)-HIMEM is used as a buffer). This only affects direct
+; OSWORD &43 calls; *SRSAVE sets up the OSWORD block directly at prvOswordBlockCopy in the internal
+; format and isn't affected by this bug.
 
 
 			
@@ -5745,7 +5755,8 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ; XY+6..7  =buffer length. If the buffer address is zero, a
 ;  default buffer is used in private workspace. If the
 ;  buffer length is larger than &7FFF, then language
-;  workspace from PAGE to HIMEM is used.
+;  workspace from PAGE to HIMEM is used for IBOS <= 1.26.
+;  workspace from (PAGE+&100) to HIMEM is used for IBOS >= 1.27.
 ; XY+8..9  =sideways start address
 ; XY+10..11=data length - ignored on LOAD SFTODO: except as Ken's comments below indicate, it will actually be another copy of buffer length
 ; XY+12..13=>filename in I/O processor
@@ -5832,6 +5843,10 @@ IF IBOS_VERSION >= 127
     CLC
     BIT prvOswordBlockCopy:BPL Rts ; branch if reading from SWR
     LDA prvOswordBlockCopy + 1:BMI Rts ; branch if pseudo addressing in operation
+; Alternate entry point with the bank number in A and therefore no checks for the OSWORD block
+; specifying a write or that normal non-pseudo addressing is in use. The behavior is otherwise
+; identical.
+.^ensureBankAIsUsableRamIfPossible
     TAX
     PHP
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE notWERam ; branch if not RAM
@@ -6739,6 +6754,8 @@ ENDIF
 ; Fix up an adjusted OSWORD &43 buffer at prvOswordBlockCopy so:
 ; - it has the right start address and size if we're supposed to use PAGE-HIMEM
 ;   as the buffer
+; - as of IBOS 1.27 uses (PAGE+&100)-HIMEM to avoid BASIC Bad Program error when
+;   no program is loaded to PAGE.
 ; - it has the actual file length populated if we're doing a write to sideways
 ;   RAM (the user-supplied one is ignored for OSWORD &43)
 ; SFTODO: I am assuming (probably true) this is used only by OSWORD 43 and
@@ -6763,6 +6780,9 @@ osfileBlock = L02EE
             STX prvOswordBlockCopy + 6                                                    ;low byte of buffer length
             LDY #&FF
             JSR OSBYTE
+IF IBOS_VERSION >= 127
+	  INX
+ENDIF
             STX prvOswordBlockCopy + 3                                                    ;high byte of (16-bit) buffer address
             LDA #osbyteReadHimem
             JSR OSBYTE
@@ -6964,7 +6984,9 @@ ENDIF
 ; XY+10..11=buffer length. If the buffer address is zero, a
 ;  default buffer is used in private workspace. If the
 ;  buffer length is larger than &7FFF, then language
-;  workspace from PAGE to HIMEM is used.
+;  workspace from PAGE to HIMEM is used (IBOS <= 1.26).
+;  workspace from PAGE+&100 to HIMEM is used (IBOS >= 1.27).
+
 
 ; SFTODOWIP
 ; SFTODO: I am thinking I probably need to set up a few example OSWORD &43 calls on paper and trace through the code to see what it would do in that concrete situation - the possible bug in the data length is making it extremely hard to think about this in the abstract
