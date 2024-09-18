@@ -2688,19 +2688,15 @@ ENDIF
 ptr = &00 ; 2 bytes
 
 .^FullReset
-    ; Zero user RTC registers &00-X inclusive, except the following, which are treated as a special case:
-    ;  - register &05: userRegLangFile.
-    ;  - registers &2F / &30: userDefaultRegBankWriteProtectStatus ***CURRENTLY DISABLED***.
-    ;  - register &31: userRegPALPROMConfig (outside the range anyway).
+    ; Zero user RTC registers &00-X inclusive, except register &05: userRegLangFile, which is treated as a special case
 IF IBOS_VERSION < 127
     LDX #&32 ; register &32 is outside range
 ELSE
-    ; Don't zero user RTC register &31 (PALPROM config). Instead only clear PALPROM flag iff the bank is write enabled
-    ; and will be cleared by FullResetPrv later in this reset process.
+    ; Don't zero user RTC register &31 (PALPROM config). Instead clear PALPROM flag iff the bank is write enabled
     LDX #11
 .ppResetLoop
     TXA:PHA
-    SEC:JSR ensureBankAIsUsableRamIfPossible ; Don't generate alarm if bank is Write Protected.
+    SEC:JSR ensureBankAIsUsableRamIfPossible ; Don't generate error if bank is Write Protected.
     PLA:TAX
     DEX:CPX #8:BCS ppResetLoop
     LDX #&30
