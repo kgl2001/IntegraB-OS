@@ -7407,7 +7407,10 @@ InsertStatusCopyHigh = TransientZP + 5
     ; SFTODONOW: Ken - technically "U" is independent of R/r/p and we could add another column
     ; to show the "U" to avoid hiding R/r/p for unplugged banks, or we could make U override a
     ; column other than the second. This is probably not a good idea, but I thought I'd at
-    ; least see what you think.
+    ; least see what you think. In some ways making a change here might be less confusing, as
+    ; the second column then becomes a pure "hardware configuration" status. Since we are keeping
+    ; all the status letters unique across all columns, it shouldn't be too confusing for users
+    ; if the U moves compared to where it was in earlier versions.
     ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:PHP ; rotate RAM presence flag for this bank into C and stash
     LDY #'U' ; 'U'nplugged
     ASL InsertStatusCopyLow:ROL InsertStatusCopyHigh:BCC SFTODOSECONDCHARINY ; branch if unplugged
