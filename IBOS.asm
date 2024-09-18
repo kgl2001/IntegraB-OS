@@ -207,6 +207,8 @@ userRegCentury = &35
 userRegHorzTV = &36 ; "horizontal *TV" settings
 userRegBankWriteProtectStatus = &38 ; 2 bytes, 1 bit per bank
 userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for the printer buffer (&90-&AC)
+;
+IF IBOS_VERSION < 127
 ; userRegRamPresenceFlags has a bit set for every 32K of RAM. Bit n represents sideways ROM
 ; banks 2n and 2n+1; however, bits 0 and 1 are effectively repurposed to represent the 64K of
 ; non-sideways RAM (the 32K on the model B, plus the 32K of shadow/private RAM on the
@@ -216,12 +218,10 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 ; Maybe stop treating banks 0-3 as a special case and just add 64K (for the main and
 ; shadow/private RAM) to the sideways RAM count when displaying the banner? Ken already has
 ; some code to change the behaviour in this area.
-;
-; KL 3/8/24: userRegRamPresenceFlags0_7 & userRegRamPresenceFlags8_F used in IBOS1.27 and above.
-IF IBOS_VERSION < 127
 userRegRamPresenceFlags = &7F
 ELSE
 userRegTmp = &7C ; 2 bytes for temporary use
+; KL 3/8/24: userRegRamPresenceFlags0_7 & userRegRamPresenceFlags8_F used in IBOS1.27 and above.
 userRegRamPresenceFlags0_7 = &7E
 userRegRamPresenceFlags8_F = &7F
 ENDIF
@@ -252,8 +252,7 @@ transientDateSFTODO2 = &AA ; SFTODO: prob just temp storage
 transientDateSFTODO1 = &AB ; SFTODO!? 2 bytes?
 
 IF IBOS_VERSION >= 127
-transientBin = &AE	;2 bytes added by KL for IBOS1.27
-transientBCD = &AC	;2 bytes added by KL for IBOS1.27
+PrintDecimal16HighByte = TransientZP + 6 ; 1 byte
 ENDIF
 
 FilingSystemWorkspace = &B0; IBOS repurposes this, which feels a bit risky but presumably works in practice
@@ -2057,20 +2056,25 @@ PadFlag = &B1 ; b7 clear iff "0" should be converted into "Pad"
 
 ELSE
 
+IF FALSE
+; This code works perfectly, but the less flexible code below is smaller and needs three bytes
+; less zero page workspace.
+;
 ; Print A in decimal. C set on entry means no padding, C clear means right align with spaces in
 ; a three character field. A and Y are preserved.
 ; SQUASH: If it helps, we could probably corrupt Y and change the callers - the only one I
 ; actively know of is at ShowBankLoop - to not rely on it.
 .PrintADecimal
 {
-Pad = &B0		;character output in place of leading zeros
-PadFlag = &B1	;b7 clear iff "0" should be converted into "Pad"
+Pad = FilingSystemWorkspace + 0 		;character output in place of leading zeros
+PadFlag = FilingSystemWorkspace + 1	;b7 clear iff "0" should be converted into "Pad"
 
     LDX #&00		;Entry point for 8 bit binary conversion
     STX transientBin+1
 
+; Entry point for 16 bit binary conversion - the low byte is in A, the high byte is in transientBin+1
 .^PrintAbcd16Decimal
-    PHA		;Entry point for 16 bit binary conversion
+    PHA
     STA transientBin+0
     LDA #&00
     STA transientBCD+0
@@ -2112,7 +2116,7 @@ PadFlag = &B1	;b7 clear iff "0" should be converted into "Pad"
     RTS
 
 .PrintDigitInA
-    TAX ; SQUASH: optimisable?
+    TAX
     LDA Pad
     CPX #0
     BNE NotZero
@@ -2123,6 +2127,76 @@ PadFlag = &B1	;b7 clear iff "0" should be converted into "Pad"
 .PrintPad
     JMP OSWRCH
 }
+ELSE
+{
+Pad = FilingSystemWorkspace + 0 ; character output in place of leading zeros
+PadFlag = FilingSystemWorkspace + 1 ; b7 clear iff "0" should be converted into "Pad"
+
+; Print A in decimal. C set on entry means no padding, C clear means right align with spaces in
+; a three character field. A and Y are preserved.
+; SQUASH: If it helps, we could probably corrupt Y and change the callers - the only one I
+; actively know of is at ShowBankLoop - to not rely on it.
+.^PrintADecimal
+    CLV
+; As PrintADecimal but the current value of the V flag is used. If V is set, it is assumed A<100
+; and the hundreds place is omitted.
+.^PrintADecimalUsingCurrentV
+    LDX #0:STX PrintDecimal16HighByte
+; As PrintADecimal, but prints the 16-bit value <1000 with its high byte in
+; PrintDecimal16HighByte and its low byte in A.
+.^PrintDecimal16
+    PHA
+
+    LDX #0
+    STX PadFlag
+    BCS NoPadding
+    LDX #' '
+.NoPadding
+    STX Pad
+
+    BVS SkipHundreds
+    LDX #0
+.CountHundredsLoop
+    CMP #100:BCS NoUnderflow
+    DEC PrintDecimal16HighByte:BMI HundredsCounted
+.NoUnderflow
+    INX
+    SEC:SBC #100
+    JMP CountHundredsLoop
+.HundredsCounted
+    JSR PrintDigitInX
+.SkipHundreds
+
+.^PrintADecimalTwoDigitEntry
+    LDX #0
+.CountTensLoop
+    CMP #10:BCC TensCounted
+    INX
+    SBC #10 ; we know C is set
+    BNE CountTensLoop
+.TensCounted
+    JSR PrintDigitInX
+
+    BPL PrintUnitDigitInA ; always branch (A<10 after CountTensLoop)
+
+; This preserves A and returns with flags reflecting A.
+.PrintDigitInX
+    PHA
+    LDA Pad
+    CPX #0
+    BNE NotZero
+    BIT PadFlag:BPL PrintPad
+.NotZero
+    DEC PadFlag
+    TXA
+.PrintUnitDigitInA
+    ORA #'0'
+.PrintPad
+    JSR OSWRCH
+    PLA
+    RTS
+}
+ENDIF
 ENDIF
 		
 ; Parse a 32-bit integer from (transientCmdPtr),Y. The following prefixes are
@@ -3741,7 +3815,7 @@ ENDIF
     PLA
     RTS
 			
-; Page out private RAM. Preserves A, X, Y and carry.
+; Page out private RAM. Preserves A, X, Y and carry. Flags reflect A on exit.
 ; SFTODO: This clears PRVS1 in RAMSEL, but is that actually necessary? If PRVEN is
 ; clear none of the private RAM is accessible. Do we ever just set PRVEN and rely
 ; on RAMSEL already having some of PRVS1/4/8 set? The name "pageOutPrv1" is chosen
@@ -5180,7 +5254,7 @@ ELSE
 ; If configured as RAM, check if PALPROM is enabled
     LDA cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
     AND palprom_test_table,X:BEQ notpalprom
-    LDA palprom_banks_table,X ; number of extra PALPROM RAM banks
+    LDA palprom_banks_bitmap_table,X ; number of extra PALPROM RAM banks
     JSR sumRAMLoop
 .notpalprom
     DEX
@@ -5189,15 +5263,15 @@ ELSE
     LDX #userRegRamPresenceFlags0_7:JSR sumRAM
     ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
     INX:JSR sumRAM
-    STA transientBin+1 ; we know A is zero after sumRAM
+    STA PrintDecimal16HighByte ; we know A is zero after sumRAM
     ; Y <= 32 here - we started at 4 and can have added a maximum of 16 sideways RAM banks and 12 extra PALPROM banks
     TYA
     ASL A ; result <= 64, no carry
     ASL A ; result <= 128, no carry
-    ASL A:ROL transientBin+1 ; result <= 256, so may have carry
-    ASL A:STA transientBin:ROL transientBin+1 ; <= 512, so may have carry
+    ASL A:ROL PrintDecimal16HighByte ; result <= 256, so may have carry
+    ASL A:ROL PrintDecimal16HighByte ; <= 512, so may have carry
     SEC
-    JSR PrintAbcd16Decimal
+    JSR PrintDecimal16
     LDA #'K':JSR OSWRCH
 .SoftReset
     JSR OSNEWL
@@ -5290,6 +5364,7 @@ ENDIF
 ;*SRWIPE Command
 .srwipe
 {
+IF IBOS_VERSION < 127
     JSR ParseRomBankListChecked2
     PRVEN
     LDX #0
@@ -5300,25 +5375,36 @@ ENDIF
     INX:CPX #maxBank + 1:BNE BankLoop
     JMP PrvDisexitSc
 
-; SQUASH: This has only one caller, the code immediately above - could it just be inlined?
 .WipeBankXIfRam
-IF IBOS_VERSION < 127
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE Rts
     PHA
-ENDIF
-IF IBOS_VERSION >= 127
-    TXA:PHA:CLC:JSR ensureBankAIsUsableRamIfPossible
-ENDIF
     LDX #lo(wipeBankATemplate):LDY #hi(wipeBankATemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
     JSR variableMainRamSubroutine
-IF IBOS_VERSION < 127
-; In IBOS Version >= 127, this function is carried out in ensureBankAIsUsableRamIfPossible
+    ; In IBOS Version >= 127, this function is carried out in ParseWERamBankListChecked
     PHA:JSR removeBankAFromSrDataBanks:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
-ENDIF
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
 .Rts
     RTS
+ELSE
+    CLC:JSR ParseWERamBankListChecked
+    PRVEN
+    ; SQUASH: Probably not worth it, but just possibly we do enough looping over a 16-bit ROM mask that
+    ; a subroutine which lets us do:
+    ;     JSR IterateOverTransientRomBankMask:EQUW subroutine_to_call_for_each_bank
+    ; might pay off. (This could always iterate low to high, for the cases where it sort of matters.)
+    LDX #maxBank
+.BankLoop
+    ASL transientRomBankMask:ROL transientRomBankMask + 1:BCC SkipBank
+    TXA:PHA
+    LDX #lo(wipeBankATemplate):LDY #hi(wipeBankATemplate):JSR CopyYxToVariableMainRamSubroutine
+    PLA
+    JSR variableMainRamSubroutine
+    TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
+.SkipBank
+    DEX:BPL BankLoop
+    JMP PrvDisexitSc
+ENDIF
 }
 
 IF IBOS_VERSION < 126
@@ -5355,7 +5441,7 @@ ENDIF
 .FindLoop
     CMP prvSrDataBanks,X:BEQ Found
     DEX:BPL FindLoop
-    SEC ; SFTODO: Not sure any callers care about this, and I think we'll *always* exit with carry set even if we do find a match
+    SEC ; SQUASH: Not sure any callers care about this, and I think we'll *always* exit with carry set even if we do find a match
     RTS
 
 .Found
@@ -5494,14 +5580,23 @@ ENDIF
     CLC
 .Common
     PHP
+IF IBOS_VERSION < 127
     JSR ParseRomBankListChecked2
     PRVEN
+ELSE
+    SEC:JSR ParseWERamBankListChecked
+ENDIF
+    ; SQUASH: We could save two bytes by doing LDX #maxBank, rotating left instead of right and
+    ; doing DEX:BPL BankLoop at the end. However, this would be slightly user-visible because
+    ; if the user has specified more banks than there are "slots", it would affect which of the
+    ; banks specified on the command line got used first.
     LDX #0
 .BankLoop
     ROR transientRomBankMask + 1:ROR transientRomBankMask:BCC SkipBank
     PLP:PHP:JSR DoBankX
 .SkipBank
     INX:CPX #maxBank + 1:BNE BankLoop
+    ; IBOS >= 1.27 won't have done PRVEN, but PRVDIS is safe even if it's redundant.
     JMP plpPrvDisexitSc ; SQUASH: close enough to BEQ always?
 
     ; SQUASH: This has only one caller and a single RTS, so can it just be inlined?
@@ -5509,19 +5604,36 @@ ENDIF
     ; SQUASH: Although some other code uses prvOswordBlockCopy + 1 to hold a bank number, I
     ; don't believe this code is ever used in conjunction with an OSWORD call. If that's right,
     ; we could shorten the code slightly by using a zero-page temporary for bankTmp.
-bankTmp = prvOswordBlockCopy + 1
+IF IBOS_VERSION < 127
+    bankTmp = prvOswordBlockCopy + 1
+ELSE
+    ; Putting bankTmp in transient ZP workspace saves code size in itself, but also allows us
+    ; to avoid doing PRVEN above.
+    bankTmp = L00AC
+ENDIF
 RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
 .DoBankX
     STX bankTmp
     PHP
     LDA #0:ROR A:STA RomRamFlagTmp ; put C in b7 of RomRamFlagTmp
+IF IBOS_VERSION < 127
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE FailSFTODOA ; branch if not RAM
     LDA prvRomTypeTableCopy,X:BEQ EmptyBank
     CMP #RomTypeSrData:BNE FailSFTODOA
 .EmptyBank
     LDA bankTmp:JSR removeBankAFromSrDataBanks
+ELSE
+    ; In IBOS >= 1.27, this is handled by ParseWERamBankListChecked.
+ENDIF
     PLP:BCS IsSrrom
-    LDA bankTmp:JSR AddBankAToSrDataBanks:BCS FailSFTODOB ; branch if already had max banks
+    LDA bankTmp:JSR AddBankAToSrDataBanks
+IF IBOS_VERSION < 127
+    BCS FailSFTODOB ; branch if already had max banks
+ELSE
+    ; ENHANCE: We could generate an error message here. IBOS < 1.27 seems to effectively just
+    ; ignore this error, as we just set some flags which I don't believe anything ever checks.
+    BCS RestoreXRts ; branch if already had max banks
+ENDIF
 .IsSrrom
     LDA RomRamFlagTmp:JSR WriteRomHeaderAndPatchUsingVariableMainRamSubroutine
     LDX bankTmp:LDA #RomTypeSrData:STA prvRomTypeTableCopy,X:STA RomTypeTable,X
@@ -5530,8 +5642,11 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
 .Rts
     RTS
 
+IF IBOS_VERSION < 127
     ; SQUASH: Set/clear V first in both these cases, then the first can "BVC always" to SEC:BCS
     ; RestoreXRts in second.
+    ; SQUASH: Does anything actually ever check C and V here? We are a * command, not a subroutine
+    ; being used by general code.
 .FailSFTODOA
 	PLP
     SEC
@@ -5541,6 +5656,7 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
 	SEC
     BIT Rts ; set V
     BCS RestoreXRts ; always branch
+ENDIF
 }
 
 {
@@ -5557,22 +5673,17 @@ RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
 }
 
 
-; At the moment this is only used by *SRWIPE, *SRROM and *SRDATA.
-; SFTODO: Do we really need this *and* ParseRomBankListChecked? Isn't ParseRomBankListChecked
-; better than this one?
-; SFTODONOW: I think as written ...Checked *is* better and would be a drop-in replacement -
-; would need to test. However, since I am looking to add write protect/*SRDATA/PALPROM check
-; logic, I need to be careful. It may be ...Checked could still be used everywhere and take a
-; flag to tell it what to do about checking for write protect etc.
+IF IBOS_VERSION < 127
 .ParseRomBankListChecked2
 {
-.L9B25      JSR ParseRomBankList
-            BCS badIdIndirect
-            RTS
+    JSR ParseRomBankList
+    BCS badIdIndirect
+    RTS
 }
+ENDIF
 
 .badIdIndirect
-.L9B2B      JMP badId						;Error Bad ID
+    JMP badId						;Error Bad ID
 
 
 ; SFTODO: This has only one caller
@@ -5721,14 +5832,11 @@ IF IBOS_VERSION >= 127
     CLC
     BIT prvOswordBlockCopy:BPL Rts ; branch if reading from SWR
     LDA prvOswordBlockCopy + 1:BMI Rts ; branch if pseudo addressing in operation
-; Alternate entry point with the bank number in A and therefore no checks for the OSWORD block
-; specifying a write or that normal non-pseudo addressing is in use. The behavior is otherwise
-; identical.
-.^ensureBankAIsUsableRamIfPossible
     TAX
     PHP
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE notWERam ; branch if not RAM
     PLP
+.^ensureWriteableBankXIsUsableRam
     TXA:PHA
     JSR removeBankAFromSrDataBanks
     PLA:TAX
@@ -5745,9 +5853,65 @@ IF IBOS_VERSION >= 127
 .notWERam
     PLP
     BCS Rts
+.^errorNotWERam
     JSR RaiseError
     EQUB &83
     EQUS "Not W/E RAM", &00
+}
+
+; This IBOS 1.27+ routine replaces ParseRamBankListChecked2. It wraps ParseRomBankListChecked,
+; which gives slightly improved error reporting compared to earlier IBOS versions. Each bank is
+; tested before any destructive operations are performed:
+; - for being write-enabled RAM
+; - iff C is set on entry, for being empty or for being a *SRDATA/*SRROM bank
+; An error is generated if a test fails for any bank. If all the banks pass the test,
+; destructive changes to make the banks "usable" are performed (see
+; ensureWriteableBankXIsUsableRam), so there is an implicit assumption that no errors can occur
+; after this point in our caller.
+;
+; At the moment this is only used by *SRWIPE (entered with C clear), *SRROM and *SRDATA (both
+; entered with C set).
+.ParseWERamBankListChecked
+{
+    PHP ; save C on entry
+    JSR ParseRomBankListChecked
+
+    ; The following loops perform a 16-bit rotate left on transientRomBankMask+{0,1}; this
+    ; means that by the time we finish each loop, the original value is restored for the
+    ; following loop or our caller to use.
+
+    LDX #maxBank
+.BankLoop1
+    ASL transientRomBankMask:ROL transientRomBankMask+1:INCCS transientRomBankMask
+    BCC SkipBank1
+    JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE errorNotWERam
+    PLP:PHP ; peek stacked C
+    BCC BankPassedTests
+    ; For *SRDATA/*SRROM, we perform some additional checks.
+    PRVEN:LDA prvRomTypeTableCopy,X:PRVDIS:BEQ BankPassedTests
+    CMP #RomTypeSrData:BEQ BankPassedTests
+    ; This error is what DFS 2.24's SRAM utilities raise. SQUASH: The error message is a bit
+    ; long and could probably be shrunk, given how relatively unimportant this case is - IBOS
+    ; <1.27 didn't generate an error in this case at all.
+    JSR RaiseError
+    EQUB &83
+    EQUS "RAM occupied", &00
+.BankPassedTests
+.SkipBank1
+    DEX:BPL BankLoop1
+    PLP ; discard stacked C
+
+    LDX #maxBank
+.BankLoop2
+    ASL transientRomBankMask:ROL transientRomBankMask+1:INCCS transientRomBankMask
+    BCC SkipBank2
+    TXA:PHA
+    JSR ensureWriteableBankXIsUsableRam
+    PLA:TAX
+.SkipBank2
+    DEX:BPL BankLoop2
+
+    RTS
 }
 ENDIF
 
@@ -6473,7 +6637,8 @@ ENDIF
     RTS
 }
 
-; Relocation code then check for RAM in bank X.
+; Relocation code then check for RAM in bank X. On exit X is preserved, A contains the same
+; value as X and Y is corrupted.
 ; SFTODO: "Using..." part of name is perhaps OTT, but it might be important to "remind" us that
 ; this tramples over variableMainRamSubroutine - perhaps change later once more code is
 ; labelled up
@@ -6938,7 +7103,7 @@ ENDIF
             JMP LA21B
 
 .dataLengthGreaterThanBufferLength
-.LA211      LDA #osfindOpenInput
+            LDA #osfindOpenInput
             JSR openFile
 .LA216      LDA #osgbpbReadCurPtr
             JSR doOsgbpbForOsword
@@ -6952,17 +7117,25 @@ ENDIF
 .LA22E      BIT prvOswordBlockCopy                                                                  ;function
             BPL PrvDisexitScIndirect                                                                ;branch if read
             BVS PrvDisexitScIndirect                                                                ;branch if pseudo-address
+            ; TODO: This looks like an unofficial extension to OSWORD &43 where b0 means
+            ; "*INSERT the bank automatically" and b1 means "*SRWP the bank automatically after
+            ; loading", but I am not sure.
+            ; SFTODONOW: Ken - would you be able to test these two extensions please? I suspect
+            ; you can do so fairly easily using the osword43-a.bas test tweaked to run
+            ; *without* a second processor (to avoid the bug) and adjusting the value poked
+            ; into block%?0 to set b0 and/or b1. Beforehand try write-enabling and/or
+            ; unplugging the bank and see if these are automatically undone.
             LSR prvOswordBlockCopy                                                                  ;function
             ; SFTODO: Why are we testing the low bit of 'function' here? The defined values always have this 0. Is something setting this internally to flag something?
             BCC LA240 ; SFTODO: always branch? At least during an official user-called OSWORD &43 we will, as low bit should always be 0 according to e.g. Master Ref Manual
             LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number
-            JSR createRomBankMaskAndInsertBanks
+            JSR createRomBankMaskForBankAAndInsertBanks
 .LA240      PRVEN								;switch in private RAM
             LSR prvOswordBlockCopy
             ; SFTODO: And again, we're testing what was b1 of 'function' before we started shifting - why? Is this an internal flag?
             BCC PrvDisexitScIndirect
-.LA248      LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number
-            JMP LA4FE
+            LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number
+            JMP writeProtectBankA
 
 .PrvDisexitScIndirect
 .LA24E      JMP PrvDisexitSc
@@ -7027,7 +7200,8 @@ ENDIF
 }
 
 ; A wrapper for ParseRomBankList which returns if at least one bank was parsed and generates an
-; error otherwise. At the moment, this is used only by *INSERT and *UNPLUG.
+; error otherwise. At the moment, this is used only by *INSERT and *UNPLUG and (from IBOS 1.27)
+; *SRWE/*SRWP.
 .ParseRomBankListChecked
 {
     JSR ParseRomBankList
@@ -7083,20 +7257,13 @@ ENDIF
     JMP ExitAndClaimServiceCall
 }
 
+;*ROMS Command
 {
 CurrentBank = TransientZP + 2
 BankCopyrightOffset = TransientZP + 3
-IF IBOS_VERSION >= 127
-; PrintADecimal uses transientBin and transientBCD so we must fit round those.
-RamPresenceCopyLow = TransientZP + 0
-RamPresenceCopyHigh = TransientZP + 1
-ENDIF
-
 
 IF IBOS_VERSION < 127
 .LA34A
-    ; ENHANCE: We could go and test all the individual banks to see if they're RAM, rather than
-    ; using this table and userRegRamPresenceFlags.
     EQUB &00								;ROM at Banks 0 & 1
     EQUB &00								;ROM at Banks 2 & 3
     EQUB &04								;Check for RAM at Banks 4 & 5
@@ -7105,19 +7272,14 @@ IF IBOS_VERSION < 127
     EQUB &20								;Check for RAM at Banks A & B
     EQUB &40								;Check for RAM at Banks C & D
     EQUB &80								;Check for RAM at Banks E & F
-ENDIF
 
-
-;*ROMS Command
-IF IBOS_VERSION < 127
 .^roms
     LDA #maxBank:STA CurrentBank
 .BankLoop
     JSR ShowRom
     DEC CurrentBank:BPL BankLoop
-    JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
+    JMP PrvDisExitAndClaimServiceCall2
 			
-; SQUASH: This has only one caller
 .ShowRom
     LDA CurrentBank:CLC:JSR PrintADecimal ; show bank number right-aligned
     JSR printSpace
@@ -7142,7 +7304,7 @@ IF IBOS_VERSION < 127
     AND #&FE ; bit 0 of ROM type is undefined, so mask out
     ; SFTODO: If we take this branch, will we ever do PRVDIS?
    BNE ShowRomHeader
- ; The RomTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
+    ; The RomTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
     ; if our private copy of the ROM type byte is non-0 show those flags.
     LDY #'U' ; Unplugged
     PRVEN ; SFTODO: We already did this, why do we need to do it again?
@@ -7156,70 +7318,10 @@ IF IBOS_VERSION < 127
     LDA #')':JSR OSWRCH
     JMP OSNEWL
 
-ELSE
-.^roms
-    LDA #maxBank:STA CurrentBank
-
-    LDX #userRegRamPresenceFlags0_7:JSR ReadUserReg:STA RamPresenceCopyLow
-    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
-    INX:JSR ReadUserReg:STA RamPresenceCopyHigh
-
-.ShowRomLoop
-    JSR ShowRom
-    DEC CurrentBank:BPL ShowRomLoop
-    JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
-
-.ShowRom
-    LDA CurrentBank:CLC:JSR PrintADecimal ; show bank number right-aligned
-    JSR printSpace
-    LDA #'(':JSR OSWRCH
-
-.IsSidewaysRamBank
-    LDX CurrentBank:JSR TestBankXForRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
-    LDA #'E' ; write-Enabled
-    PLP:BEQ BankTypeCharacterInA
-    LDA #'P' ; Protected
-.BankTypeCharacterInA
-    JSR OSWRCH ; Print the first status character (Protected / write-Enabled)
-    LDY #'R' ; not unplugged
-    LDX CurrentBank:LDA RomTypeTable,X
- ;   AND #&FE ; bit 0 of ROM type is undefined, so mask out 
- ; SFTODO: If we take this branch, will we ever do PRVDIS?
-    BNE TestRrpFlagsForNonEmptyBank
-
- ; The RomTypeTable entry is 0 so this ROM isn't active, but it may be one we've unplugged;
-    ; if our private copy of the ROM type byte is non-0 show those flags.
-    LDY #'U' ; Unplugged
-    PRVEN
-    LDA prvRomTypeTableCopy,X
-    PRVDIS
-    BEQ TestRrpFlagsForEmptyBank
-    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh ; Not used here, but need to rotate anyway.
-    JMP ShowRomHeader
- 
- .TestRrpFlagsForEmptyBank
-    LDY #'R' ; Physical POM
-    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCC RamRomPalpromFlagCharacterInY
-    JSR TestforPALPROM
-
-.RamRomPalpromFlagCharacterInY
-    TYA:JSR OSWRCH ; Print the second status character ('R','r' or 'p')
-    JSR printSpace ; Print the third status character (' ' in place of 'S')
-    JSR printSpace ; Print the forth status character (' ' in place of 'L')
-    LDA #')':JSR OSWRCH
-    JMP OSNEWL
-
-.TestRrpFlagsForNonEmptyBank
-    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:BCC ShowRomHeader
-    JSR TestforPALPROM
-    FALLTHROUGH_TO ShowRomHeader
-ENDIF
-
-; Entered with Y=' ' or 'U' and rom type byte in A (IBOS < 127).
-; Entered with Y=' ', 'p', 'r', 'R' or 'U' and rom type byte in A (IBOS >= 127).
+; Entered with Y=' ' or 'U' and rom type byte in A.
 .ShowRomHeader
     PHA
-    TYA:JSR OSWRCH ; Print the second status character (' ', 'p', 'r', 'R' or 'U')
+    TYA:JSR OSWRCH ; Print the second status character (' ' or 'U')
     LDX #'S' ; Service
     PLA:PHA:ASSERT RomTypeService == 1 << 7:BMI HasServiceEntry
     LDX #' '
@@ -7248,6 +7350,138 @@ ENDIF
     INC osRdRmPtr ; advance osRdRmPtr; we know the high byte isn't going to change
     LDA osRdRmPtr:CMP BankCopyrightOffset:BCC TitleAndVersionLoop
     JMP OSNEWL
+ELSE ; IBOS_VERSION >= 127
+; PrintADecimal uses PrintDecimal16HighByte so we must fit round that.
+RamPresenceCopyLow = TransientZP + 0
+RamPresenceCopyHigh = TransientZP + 1
+InsertStatusCopyLow = TransientZP + 4
+InsertStatusCopyHigh = TransientZP + 5
+
+.^roms
+    LDA #maxBank:STA CurrentBank
+
+    LDX #userRegRamPresenceFlags0_7:JSR ReadUserReg:STA RamPresenceCopyLow
+    ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
+    INX:JSR ReadUserReg:STA RamPresenceCopyHigh
+
+    LDX #userRegBankInsertStatus + 0:JSR ReadUserReg:STA InsertStatusCopyLow
+    INX:JSR ReadUserReg:STA InsertStatusCopyHigh
+
+.ShowRomLoop
+    JSR ShowRom
+    DEC CurrentBank:BPL ShowRomLoop
+    JMP PrvDisExitAndClaimServiceCall2 ; SQUASH: BMI always, maybe to equivalent code nearer by?
+
+    ; SQUASH: This subroutine has only one caller and never returns early, but at least for the
+    ; moment inlining it makes the above "BPL ShowRomLoop" a branch out of range.
+.ShowRom
+    ; SFTODONOW: Ken - I have tweaked things so the bank number only occupies two columns
+    ; instead of three. This costs 6 bytes of code space. I figured this would give an extra
+    ; column for the ROM title and version, but let me know if you'd rather switch this back.
+    ; Otherwise I'll turn this into a SQUASH: comment to note we could claw back space later if
+    ; necessary.
+    LDA CurrentBank
+    CLC ; right-align
+    BIT pageInPrvs81Rts ; set V => only use two columns
+    JSR PrintADecimalUsingCurrentV ; show bank number
+    TAX ; get CurrentBank into X
+    JSR printSpace
+    LDA #'(':JSR OSWRCH
+
+    ; Rotate RamPresenceCopy and stack the RAM presence flag for this bank. This is pulled off
+    ; in different places in the code below depending on whether we're on v1 or v2 hardware.
+    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:PHP
+
+    ; Generate and print the first status character. This shows whether RAM is
+    ; write-'P'rotected or write-'E'nabled. On v2 hardware any bank could contain RAM of some
+    ; kind and we have no way to tell (a bank may be external rather than onboard RAM but
+    ; temporarily write-protected), so we show P/E for all banks. On v1 hardware the RAM
+    ; presence flags tell us which banks are RAM, so we only show P/E for RAM banks and use a
+    ; space in this column for other banks (i.e. physically empty or physical ROM banks).
+    JSR testV2hardware:BCS TestBankWriteProtectStatus ; branch if v2 hardware
+    LDA #' '
+    PLP:BCC BankTypeCharacterInA ; pull stacked RAM presence flag, branch if configured as ROM
+.TestBankWriteProtectStatus
+    JSR TestBankXForRamUsingVariableMainRamSubroutine:PHP ; stash flags with Z set iff writeable
+    LDA #'E' ; write-Enabled
+    PLP:BEQ BankTypeCharacterInA
+    LDA #'P' ; write-Protected
+.BankTypeCharacterInA
+    JSR OSWRCH ; print the first status character
+
+    ; Generate and print the second status character. This shows 'U' if the bank has been
+    ; *UNPLUGged or a space otherwise.
+    LDA #'U' ; 'U'nplugged
+    ASL InsertStatusCopyLow:ROL InsertStatusCopyHigh:BCC UnplugStatusCharacterInA ; branch if unplugged
+    LDA #' ' ; not unplugged
+.UnplugStatusCharacterInA
+    JSR OSWRCH ; print the second status character
+
+    ; On v2 hardware only, we add an extra column at this point which shows the hardware
+    ; configuration:
+    ; - 'R' means the bank is provided by a physical chip (which may be ROM or RAM), not the v2
+    ;   onboard RAM.
+    ; - 'r' means the bank is a 16K RAM bank provided by the v2 onboard RAM.
+    ; - '2'/'4'/'8' means the bank is a n-bank PALPROM provided by the v2 onboard RAM.
+    ;
+    ; R vs r/2/4/8 is configured by the hardware ROM/RAM jumpers on the v2 board. r vs 2/4/8 is
+    ; configured in software via the PALPROM loader utility and the IBOS support for disabling
+    ; PALPROM mode when appropriate.
+    JSR testV2hardware:BCC SkipHardwareConfigColumn
+    LDY #'R' ; Physical 'R'OM/'R'AM
+    PLP:BCC HardwareConfigCharacterInY; pull stacked RAM presence flag, branch if configured as ROM
+    ; At this point the bank is either RAM or a PALPROM in banks 8-11.
+    LDY #'r' ; onboard 'r'AM
+    CPX #8:BCC HardwareConfigCharacterInY ; branch if not PALPROM (X<8)
+    CPX #12:BCS HardwareConfigCharacterInY ; branch if not PALPROM (X>=12)
+    ; 8<=X<12
+    LDA cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
+    AND palprom_test_table-8,X:BEQ HardwareConfigCharacterInY ; branch if not PALPROM
+    LDY palprom_banks_digit_table-8,X
+.HardwareConfigCharacterInY
+    TYA:JSR OSWRCH ; print the v2-only hardware configuration status character
+.SkipHardwareConfigColumn
+
+    ; Generate and print the service and language status characters.
+    LDY #'S' ; Service
+    ; Get the ROM type byte, taking unplugged banks into account.
+    LDA RomTypeTable,X:BNE HaveBestRomTypeByteInAWithFlagsReflectingA
+    PRVEN:LDA prvRomTypeTableCopy,X:PRVDIS
+.HaveBestRomTypeByteInAWithFlagsReflectingA
+    PHA ; push ROM type byte
+    ASSERT RomTypeService == 1 << 7
+    BMI HasServiceEntry
+    LDY #' '
+.HasServiceEntry
+    LDX #'L' ; Language
+    ASSERT RomTypeLanguage = 1 << 6
+    ASL A:BMI HasLanguageEntry
+    LDX #' '
+.HasLanguageEntry
+    TYA:JSR OSWRCH ; print the service status character ('S' or ' ')
+    TXA:JSR OSWRCH ; print the language status character ('L' or ' ')
+
+    LDA #')':JSR OSWRCH
+
+    ; If this is not an empty bank, show the ROM title and version.
+    PLA ; pull stacked ROM type byte
+    BEQ NoRomTitleOrVersionToShow ; branch if empty bank
+    JSR printSpace
+    ; Print the ROM title and version.
+    JSR SetOsRdRmPtrToCopyrightOffset
+    LDY CurrentBank:JSR OSRDRM:STA BankCopyrightOffset
+    LDA #lo(Title):STA osRdRmPtr:ASSERT hi(Title) == hi(CopyrightOffset)
+.TitleAndVersionLoop
+    LDY CurrentBank:JSR OSRDRM:BNE NotNul ; read byte and convert NUL at end of title to space
+    LDA #' '
+.NotNul
+    JSR OSWRCH
+    INC osRdRmPtr ; advance osRdRmPtr; we know the high byte isn't going to change
+    LDA osRdRmPtr:CMP BankCopyrightOffset:BCC TitleAndVersionLoop
+.NoRomTitleOrVersionToShow
+    JMP OSNEWL
+ENDIF
+
 IF IBOS_VERSION >= 126
 .^SetOsRdRmPtrToCopyrightOffset
     LDA #lo(CopyrightOffset):STA osRdRmPtr:LDA #hi(CopyrightOffset):STA osRdRmPtr + 1
@@ -7256,37 +7490,25 @@ ENDIF
 }
 
 IF IBOS_VERSION >= 127
-.TestforPALPROM
-{
-    LDY #'r' ; onboard RAM
-; Firstly, test for V2 hardware...
-    PHA
-    JSR testV2hardware
-    BCC endpptest
-    LDA cpldPALPROMSelectionFlags0_7 ; PALPROM Flags
-; Then test if PALPROM in banks 8..11
-    CPX #8:BCC endpptest
-    CPX #12:BCS endpptest ; 8<=X<12
-    AND palprom_test_table-8,X:BEQ endpptest
-    LDY #'p' ; onboard PALPROM
-.endpptest
-    pla
-    rts
-.^RegRamMaskTable
+.RegRamMaskTable
     EQUB &01 ; bank 8
 ; note that RegRamMaskTable overlaps with the first three bytes of palprom_test_table; they should be 2, 4 & 8 for banks 9..11.
 ; This should probably be validated with an ASSERT
-.^palprom_test_table
+.palprom_test_table
     EQUB &02 ; bank 8  - PALPROM 2a is enabled when cpldPALPROMSelectionFlags0_7 bit 1 is set
     EQUB &04 ; bank 9  - PALPROM 2b is enabled when cpldPALPROMSelectionFlags0_7 bit 2 is set
     EQUB &08 ; bank 10 - PALPROM 4a is enabled when cpldPALPROMSelectionFlags0_7 bit 3 is set
     EQUB &40 ; bank 11 - PALPROM 8a is enabled when cpldPALPROMSelectionFlags0_7 bit 5 is set
-.^palprom_banks_table
+.palprom_banks_bitmap_table
     EQUB &01 ; bank 8 - PALPROM 2a has 1 extra bank
     EQUB &01 ; bank 9 - PALPROM 2b has 1 extra bank
     EQUB &07 ; bank 10 - PALPROM 4a has 3 extra banks
     EQUB &7F ; bank 11 - PALPROM 8a has 7 extra banks
-}
+.palprom_banks_digit_table
+    EQUB '2' ; bank 8 - PALPROM 2a has 2 banks
+    EQUB '2' ; bank 9 - PALPROM 2b has 2 banks
+    EQUB '4' ; bank 10 - PALPROM 4a has 4 banks
+    EQUB '8' ; bank 11 - PALPROM 8a has 8 banks
 
 ; Test for V2 hardware. Carry is set if V2 hardware detected, otherwise carry is cleared.
 .testV2hardware
@@ -7352,7 +7574,7 @@ ENDIF
 ; preserved.
 ; SQUASH: Am I missing something, or wouldn't it be far easier just to do a 16-bit rotate left
 ; in a loop? Maybe that wouldn't be shorter. Maybe this is performance critical? (Doubt it)
-.^createRomBankMask
+.^createRomBankMaskForBankA
     PHA
     LDA #0:STA transientRomBankMask:STA transientRomBankMask + 1
     PLA
@@ -7427,8 +7649,8 @@ ENDIF
 }
 
 {
-.^createRomBankMaskAndInsertBanks
-    JSR createRomBankMask
+.^createRomBankMaskForBankAAndInsertBanks
+    JSR createRomBankMaskForBankA
 ; Read ROM type from ROM header for ROMs with a 1 bit in transientRomBankMask and save to the
 ; OS ROM type table and our private copy. This is used to immediately *INSERT ROMs without
 ; waiting for BREAK.
@@ -7489,53 +7711,63 @@ ENDIF
 }
 
 {
-; SFTODO: This little fragment of code is only called once via JMP, can't it just be moved to avoid the JMP (and improve readability)?
-.^LA4FE
-    JSR createRomBankMask
+; This entry point is used (as a JMP, not a subroutine) by OSWORD &43. It write-protects bank
+; A, and may (will) be called with PRVEN in effect, so we must PRVDIS before exiting the
+; service call.
+; SFTODO: This is only called once via JMP, can't it just be moved to avoid the JMP (and improve readability)?
+.^writeProtectBankA
+    JSR createRomBankMaskForBankA
     SEC
     PHP
-    JMP LA513 ; SQUASH: BCS always? Or move this code and just fall through?
-			
+IF IBOS_VERSION < 127
+    JMP writeProtectControlCommonNonInteractive
+ELSE
+    BCS writeProtectControlCommonNonInteractive ; always branch
+ENDIF
+
 ;*SRWE Command
 .^srwe
-    CLC:BCC Common ; always branch
+   CLC:BCC Common ; always branch
 
 ;*SRWP Command
 .^srwp
     SEC
 .Common
     PHP
-IF IBOS_VERSION >= 127
-    JSR testV2hardware:BCC v2Only
-ENDIF
-    ; SFTODONOW: Could/should this use one of the ParseRomBankListChecked subroutines? Of
-    ; course we do not want to do write protect, *SRDATA or PALPROM checks here, so be careful
-    ; as these routines are tweaked.
-    JSR ParseRomBankList:BCC LA513
-    JMP badId
-			
-.LA513
 IF IBOS_VERSION < 127
+    JSR ParseRomBankList:BCC writeProtectControlCommonNonInteractive
+    JMP badId
+; This entry point protects/unprotects (according to C) the bank(s) already set up in
+; transientRomBankMask. It can be entered from OSWORD &43, so it must not try to parse anything
+; from the command line.
+.writeProtectControlCommonNonInteractive
     LDX #userRegBankWriteProtectStatus:JSR ReadUserReg
 ELSE
-    LDX #userRegBankWriteProtectStatus
-    JSR FindNextCharAfterSpaceSkippingComma
-    BCS NoOption
-    AND #CapitaliseMask
-    CMP #'T'
-    BNE NoOption
+    JSR testV2hardware:BCC v2Only
+    JSR ParseRomBankListChecked
     ; We implement temporary changes by redirecting the WriteUserReg calls to two bytes of
     ; temporary space instead of the correct registers.
     LDX #userRegTmp
+    JSR FindNextCharAfterSpaceSkippingComma
+    BCS NoOption ; branch if at end of line
+    AND #CapitaliseMask
+    CMP #'T'
+    BEQ userRegInX ; branch if we have a "T" option; X is already set
 .NoOption
+; This entry point protects/unprotects (according to C) the bank(s) already set up in
+; transientRomBankMask. It can be entered from OSWORD &43, so it must not try to parse anything
+; from the command line. There is no check for v2 hardware on this path, but it is presumably
+; harmless to read and write junk from these non-existent hardware addresses.
+.writeProtectControlCommonNonInteractive
+    LDX #userRegBankWriteProtectStatus
+.userRegInX
     LDA cpldRamWriteProtectFlags0_7
 ENDIF
-    ORA L00AE
-    PLP
-    PHP
-    BCC LA520
-    EOR L00AE
-.LA520
+    ORA transientRomBankMask + 0
+    PLP:PHP ; peek stacked C
+    BCC dontInvert1 ; branch if we are write-enabling
+    EOR transientRomBankMask + 0
+.dontInvert1
 IF IBOS_VERSION < 127
     JSR WriteUserReg
     INX
@@ -7545,21 +7777,23 @@ ELSE
     JSR WriteUserReg
     LDA cpldRamWriteProtectFlags8_F
 ENDIF
-    ORA L00AF
-    PLP
-    BCC LA52E
-    EOR L00AF
-.LA52E
+    ORA transientRomBankMask + 1
+    PLP ; get stacked C
+    BCC dontInvert2 ; branch if we are write-enabling
+    EOR transientRomBankMask + 1
+.dontInvert2
 IF IBOS_VERSION < 127
     JSR WriteUserReg
     PRVEN
     JSR SFTODOWRITEPROTECTISH
 .^PrvDisExitAndClaimServiceCall2
-    PRVDIS
 ELSE
     STA cpldRamWriteProtectFlags8_F
     INX:JSR WriteUserReg
 ENDIF
+    ; We need to PRVDIS because we may have been entered via writeProtectBankA from OSWORD &43
+    ; which will have done PRVEN. This is harmless if we haven't done PRVEN.
+    PRVDIS
     JMP ExitAndClaimServiceCall
 }
 
@@ -7615,6 +7849,24 @@ ENDIF
     ; reset line???) clears SQWE first. Maybe this is something related to detecting power-on
     ; reset, though why we suddenly don't trust lastBreakType I don't know - maybe this is too
     ; early for that to have been set, though that seems unlikely.
+    ; SFTODO: I think the previous SFTODO might be wrong, and the actual idea here is to
+    ; execute the code at SQWESet on the first service call &10 (after power up? CTRL-BREAK?),
+    ; then to execute the code at SoftReset on subsequent service call &10s.
+    ; SFTODONOW: On b-em this code *always* seems to detect a soft reset. This means that
+    ; prvRomTypeTableCopy is not populated correctly because *UNPLUGged ROMs are completely
+    ; invisible as the second call overwrites prvRoMTypeTableCopy with 0s for unplugged banks.
+    ; Ken - can you please confirm this *is* still working on real hardware? Maybe deliberately
+    ; corrupt prvRomTypeTableCopy by setting all bytes to 0 and check it is regenerated on hard
+    ; reset and that *UNPLUGged banks do get their non-unplugged ROM type stored in
+    ; prvRomTypeTableCopy? We can look at fixing b-em once it's confirmed this isn't an IBOS
+    ; bug.
+IF FALSE
+IF IBOS_VERSION >= 127
+    ; SFTODO: This hack allows working round the possible incompleteness of b-em's RTC emulation
+    ; here so prvRomTypeTableCopy is set up correctly.
+    LDA &8F:INC &8F:CMP #0:BEQ SQWESet
+ENDIF
+ENDIF
     SEC:JSR AlarmAndSQWEControl:BCS SQWESet
     JMP SoftReset ; SQUASH: BCC always? SFTODO: Rename this label given its use here?
 .SQWESet
