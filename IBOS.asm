@@ -5492,15 +5492,13 @@ ENDIF
 ; ENHANCE: The *SRSET banks are not preserved on CTRL-BREAK, which doesn't seem right. The
 ; default values also don't honour the same settings that *SRSET itself applies - it defaults
 ; to four banks depending on OSMODE without checking things like write-enabled status.
+; ENHANCE: This does not check the state after ParseRomBankList - "*SRSET HG" is accepted. Care
+; is needed here as arguably "*SRSET" is legitimate, specifying no pseudo banks are defined.
 {
 .^srset     LDA (transientCmdPtr),Y
             CMP #'?'
             BEQ showStatus
 	  ; Select the first four suitable banks from the list provided and store them at prvPseudoBankNumbers.
-      ; SFTODONOW: Should this exclude write-protected banks? I can see arguments either way.
-      ; ENHANCE: This does not check the state after ParseRomBankList - "*SRSET HG" is
-      ; accepted. Care is needed here as arguably "*SRSET" is legitimate, specifying no pseudo
-      ; banks are defined.
             JSR ParseRomBankList
             PRVEN
             LDX #&00
