@@ -7413,19 +7413,25 @@ InsertStatusCopyHigh = TransientZP + 5
 .BankTypeCharacterInA
     JSR OSWRCH ; print the first status character
 
-    ; SFTODONOW DOCUMENT GENERATING UNPLUG COLUMN
+    ; Generate and print the second status character. This shows 'U' if the bank has been
+    ; *UNPLUGged or a space otherwise.
     LDA #'U' ; 'U'nplugged
     ASL InsertStatusCopyLow:ROL InsertStatusCopyHigh:BCC UnplugStatusCharacterInA ; branch if unplugged
     LDA #' ' ; not unplugged
 .UnplugStatusCharacterInA
-    JSR OSWRCH
+    JSR OSWRCH ; print the second status character
 
+    ; On v2 hardware only, we add an extra column at this point which shows the hardware
+    ; configuration:
+    ; - 'R' means the bank is provided by a physical chip (which may be ROM or RAM), not the v2
+    ;   onboard RAM.
+    ; - 'r' means the bank is a 16K RAM bank provided by the v2 onboard RAM.
+    ; - '2'/'4'/'8' means the bank is a n-bank PALPROM provided by the v2 onboard RAM.
+    ;
+    ; R vs r/2/4/8 is configured by the hardware ROM/RAM jumpers on the v2 board. r vs 2/4/8 is
+    ; configured in software via the PALPROM loader utility and the IBOS support for disabling
+    ; PALPROM mode when appropriate.
     JSR testV2hardware:BCC SkipHardwareConfigColumn
-    ; Generate and print the second status character (unplugged/ROM/RAM/PALPROM). This
-    ; indicates the hardware configuration - for example, on v2 hardware, a physical
-    ; write-enabled 16K SWR module plugged into a socket configured to accept a 16K chip will
-    ; appear as physical 'R'OM here, but write-'E'nabled in the first status character.
-    ; SFTODONOW UPDATE COMMENT FOR U TO OWN COLUMN AND V1/V2 STUFF
     LDY #'R' ; Physical 'R'OM
     PLP:BCC BankStatusCharacterInY; pull stacked RAM presence flag, branch if configured as ROM
     ; At this point the bank is either RAM or (on v2 hardware only) a PALPROM.
@@ -7439,7 +7445,7 @@ InsertStatusCopyHigh = TransientZP + 5
     AND palprom_test_table-8,X:BEQ BankStatusCharacterInY ; branch if not PALPROM
     LDY palprom_banks_digit_table-8,X
 .BankStatusCharacterInY
-    TYA:JSR OSWRCH
+    TYA:JSR OSWRCH ; print the v2-only third status character
 .SkipHardwareConfigColumn
 
     ; Generate and print the third and four status characters (service and/or language)
