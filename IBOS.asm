@@ -5497,15 +5497,16 @@ ENDIF
 }
 
 ;*SRSET Command
+; ENHANCE: The *SRSET banks are not preserved on CTRL-BREAK, which doesn't seem right. The
+; default values also don't honour the same settings that *SRSET itself applies - it defaults
+; to four banks depending on OSMODE without checking things like write-enabled status.
+; ENHANCE: This does not check the state after ParseRomBankList - "*SRSET HG" is accepted. Care
+; is needed here as arguably "*SRSET" is legitimate, specifying no pseudo banks are defined.
 {
 .^srset     LDA (transientCmdPtr),Y
             CMP #'?'
             BEQ showStatus
 	  ; Select the first four suitable banks from the list provided and store them at prvPseudoBankNumbers.
-      ; SFTODONOW: Should this exclude write-protected banks? I can see arguments either way.
-      ; ENHANCE: This does not check the state after ParseRomBankList - "*SRSET HG" is
-      ; accepted. Care is needed here as arguably "*SRSET" is legitimate, specifying no pseudo
-      ; banks are defined.
             JSR ParseRomBankList
             PRVEN
             LDX #&00
@@ -7139,22 +7140,17 @@ ENDIF
 .LA22E      BIT prvOswordBlockCopy                                                                  ;function
             BPL PrvDisexitScIndirect                                                                ;branch if read
             BVS PrvDisexitScIndirect                                                                ;branch if pseudo-address
-            ; TODO: This looks like an unofficial extension to OSWORD &43 where b0 means
-            ; "*INSERT the bank automatically" and b1 means "*SRWP the bank automatically after
-            ; loading", but I am not sure.
-            ; SFTODONOW: Ken - would you be able to test these two extensions please? I suspect
-            ; you can do so fairly easily using the osword43-a.bas test tweaked to run
-            ; *without* a second processor (to avoid the bug) and adjusting the value poked
-            ; into block%?0 to set b0 and/or b1. Beforehand try write-enabling and/or
-            ; unplugging the bank and see if these are automatically undone.
+            ; The following code implements an unofficial (?) extension to OSWORD &43 where b0
+            ; means "initialise the bank without needing a BREAK" and b1 means "*SRWP the bank
+            ; automatically after loading". (TODO: I do wonder if MOS 3.50/5.00 which IIRC
+            ; support an I option on *SRLOAD to initialise immediately implement this behaviour
+            ; of b0?)
             LSR prvOswordBlockCopy                                                                  ;function
-            ; SFTODO: Why are we testing the low bit of 'function' here? The defined values always have this 0. Is something setting this internally to flag something?
-            BCC LA240 ; SFTODO: always branch? At least during an official user-called OSWORD &43 we will, as low bit should always be 0 according to e.g. Master Ref Manual
+            BCC LA240
             LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number
-            JSR createRomBankMaskForBankAAndInsertBanks
+            JSR createRomBankMaskForBankAAndInitialiseBanks
 .LA240      PRVEN								;switch in private RAM
             LSR prvOswordBlockCopy
-            ; SFTODO: And again, we're testing what was b1 of 'function' before we started shifting - why? Is this an internal flag?
             BCC PrvDisexitScIndirect
             LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number
             JMP writeProtectBankA
@@ -7397,11 +7393,9 @@ InsertStatusCopyHigh = TransientZP + 5
     ; SQUASH: This subroutine has only one caller and never returns early, but at least for the
     ; moment inlining it makes the above "BPL ShowRomLoop" a branch out of range.
 .ShowRom
-    ; SFTODONOW: Ken - I have tweaked things so the bank number only occupies two columns
-    ; instead of three. This costs 6 bytes of code space. I figured this would give an extra
-    ; column for the ROM title and version, but let me know if you'd rather switch this back.
-    ; Otherwise I'll turn this into a SQUASH: comment to note we could claw back space later if
-    ; necessary.
+    ; SQUASH: This code uses a special entry point PrintADecimalUsingCurrentV to print the ROM
+    ; bank in two digits without a leading zero for the hundreds column. This costs 6 bytes of
+    ; code space, and we could revert this change later if we're short of space.
     LDA CurrentBank
     CLC ; right-align
     BIT pageInPrvs81Rts ; set V => only use two columns
@@ -7431,6 +7425,14 @@ InsertStatusCopyHigh = TransientZP + 5
 .BankTypeCharacterInA
     JSR OSWRCH ; print the first status character
 
+    ; Generate and print the second status character. This shows 'U' if the bank has been
+    ; *UNPLUGged or a space otherwise.
+    LDA #'U' ; 'U'nplugged
+    ASL InsertStatusCopyLow:ROL InsertStatusCopyHigh:BCC UnplugStatusCharacterInA ; branch if unplugged
+    LDA #' ' ; not unplugged
+.UnplugStatusCharacterInA
+    JSR OSWRCH ; print the second status character
+
     ; On v2 hardware only, we add an extra column at this point which shows the hardware
     ; configuration:
     ; - 'R' means the bank is provided by a physical chip (which may be ROM or RAM), not the v2
@@ -7455,14 +7457,6 @@ InsertStatusCopyHigh = TransientZP + 5
 .HardwareConfigCharacterInY
     TYA:JSR OSWRCH ; print the v2-only hardware configuration status character
 .SkipHardwareConfigColumn
-
-    ; Generate and print the third status character. This shows 'U' if the bank has been
-    ; *UNPLUGged or a space otherwise.
-    LDA #'U' ; 'U'nplugged
-    ASL InsertStatusCopyLow:ROL InsertStatusCopyHigh:BCC UnplugStatusCharacterInA ; branch if unplugged
-    LDA #' ' ; not unplugged
-.UnplugStatusCharacterInA
-    JSR OSWRCH ; print the third status character
 
     ; Generate and print the service and language status characters.
     LDY #'S' ; Service
@@ -7573,8 +7567,6 @@ ENDIF
     ; silently ignores the X.  One fix for this would be to do this BVS immediately after the
     ; NoBankNumber label, *but* that would break callers (such as - probably - *SRWE) which
     ; need to be able to parse an apparently invalid bank as a trailing option like "T".
-    ;
-    ; SFTODONOW *SRSET IS NOT PRESERVED ON CTRL BREAK IS THIS RIGHT?
     BVS SecRts
     INY
     JSR InvertTransientRomBankMask
@@ -7671,10 +7663,10 @@ ENDIF
 }
 
 {
-.^createRomBankMaskForBankAAndInsertBanks
+.^createRomBankMaskForBankAAndInitialiseBanks
     JSR createRomBankMaskForBankA
 ; Read ROM type from ROM header for ROMs with a 1 bit in transientRomBankMask and save to the
-; OS ROM type table and our private copy. This is used to immediately *INSERT ROMs without
+; OS ROM type table and our private copy. This is used to immediately activate ROMs without
 ; waiting for BREAK.
 .^insertBanksUsingTransientRomBankMask
     PRVEN
@@ -7874,14 +7866,10 @@ ENDIF
     ; SFTODO: I think the previous SFTODO might be wrong, and the actual idea here is to
     ; execute the code at SQWESet on the first service call &10 (after power up? CTRL-BREAK?),
     ; then to execute the code at SoftReset on subsequent service call &10s.
-    ; SFTODONOW: On b-em this code *always* seems to detect a soft reset. This means that
+    ; SFTODO: On b-em this code *always* seems to detect a soft reset. This means that
     ; prvRomTypeTableCopy is not populated correctly because *UNPLUGged ROMs are completely
     ; invisible as the second call overwrites prvRoMTypeTableCopy with 0s for unplugged banks.
-    ; Ken - can you please confirm this *is* still working on real hardware? Maybe deliberately
-    ; corrupt prvRomTypeTableCopy by setting all bytes to 0 and check it is regenerated on hard
-    ; reset and that *UNPLUGged banks do get their non-unplugged ROM type stored in
-    ; prvRomTypeTableCopy? We can look at fixing b-em once it's confirmed this isn't an IBOS
-    ; bug.
+    ; Ken has confirmed this works fine on real hardware.
 IF FALSE
 IF IBOS_VERSION >= 127
     ; SFTODO: This hack allows working round the possible incompleteness of b-em's RTC emulation
@@ -11946,8 +11934,6 @@ ENDIF
 ; It would be nice if "*CO." could be used as an abbreviation for *CONFIGURE, as on the Master,
 ; but OS 1.20 interprets this as an abbreviation for "*CODE" and IBOS never gets a chance to
 ; see it. Short of installing a USERV handler, there isn't much we can do about this.
-
-; SFTODO: Look at the integrap ROM packaged with b-em and see if we can build that too.
 
 ; SFTODO: If a user application is using the private RAM (except the 1K allocated to IBOS), is
 ; there a danger that things like pressing Escape will trigger the printer buffer to be flushed
