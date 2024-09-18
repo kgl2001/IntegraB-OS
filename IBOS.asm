@@ -7356,9 +7356,6 @@ RamPresenceCopyLow = TransientZP + 0
 RamPresenceCopyHigh = TransientZP + 1
 InsertStatusCopyLow = TransientZP + 4
 InsertStatusCopyHigh = TransientZP + 5
-; SFTODONOW: We probably have a spare byte of TransientZP to stash the v2 flag once to avoid
-; repeated calls to testV2Hardware, and with the upcoming changes to *ROMS to check this more
-; often it may be a code size saving to do so.
 
 .^roms
     LDA #maxBank:STA CurrentBank
@@ -7370,7 +7367,6 @@ InsertStatusCopyHigh = TransientZP + 5
     LDX #userRegBankInsertStatus + 0:JSR ReadUserReg:STA InsertStatusCopyLow
     INX:JSR ReadUserReg:STA InsertStatusCopyHigh
 
-    ; SFTODONOW: 38 BYTES FREE AFTER PALPROM 2/4/8 BUT BEFORE OTHER CHANGES
 .ShowRomLoop
     JSR ShowRom
     DEC CurrentBank:BPL ShowRomLoop
@@ -7443,10 +7439,10 @@ InsertStatusCopyHigh = TransientZP + 5
     AND palprom_test_table-8,X:BEQ BankStatusCharacterInY ; branch if not PALPROM
     LDY palprom_banks_digit_table-8,X
 .BankStatusCharacterInY
-    TYA:JSR OSWRCH ; print the v2-only third status character
+    TYA:JSR OSWRCH ; print the v2-only hardware configuration status character
 .SkipHardwareConfigColumn
 
-    ; Generate and print the third and four status characters (service and/or language)
+    ; Generate and print the service and language status characters.
     LDY #'S' ; Service
     ; Get the ROM type byte, taking unplugged banks into account.
     LDA RomTypeTable,X:BNE HaveBestRomTypeByteInAWithFlagsReflectingA
@@ -7462,8 +7458,8 @@ InsertStatusCopyHigh = TransientZP + 5
     ASL A:BMI HasLanguageEntry
     LDX #' '
 .HasLanguageEntry
-    TYA:JSR OSWRCH ; Print the third status character ('S' or ' ')
-    TXA:JSR OSWRCH ; Print the forth status character ('L' or ' ')
+    TYA:JSR OSWRCH ; print the service status character ('S' or ' ')
+    TXA:JSR OSWRCH ; print the language status character ('L' or ' ')
 
     LDA #')':JSR OSWRCH
 
