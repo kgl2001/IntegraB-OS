@@ -7506,9 +7506,9 @@ IF IBOS_VERSION >= 127
     EQUB &7F ; bank 11 - PALPROM 8a has 7 extra banks
 .palprom_banks_digit_table
     EQUB '2' ; bank 8 - PALPROM 2a has 2 banks
-    EQUB '2' ; bank 9 - PALPROM 2a has 2 banks
-    EQUB '4' ; bank 10 - PALPROM 4a has 2 banks
-    EQUB '8' ; bank 10 - PALPROM 8a has 2 banks
+    EQUB '2' ; bank 9 - PALPROM 2b has 2 banks
+    EQUB '4' ; bank 10 - PALPROM 4a has 4 banks
+    EQUB '8' ; bank 11 - PALPROM 8a has 8 banks
 
 ; Test for V2 hardware. Carry is set if V2 hardware detected, otherwise carry is cleared.
 .testV2hardware
