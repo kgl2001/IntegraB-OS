@@ -7118,22 +7118,17 @@ ENDIF
 .LA22E      BIT prvOswordBlockCopy                                                                  ;function
             BPL PrvDisexitScIndirect                                                                ;branch if read
             BVS PrvDisexitScIndirect                                                                ;branch if pseudo-address
-            ; TODO: This looks like an unofficial extension to OSWORD &43 where b0 means
-            ; "*INSERT the bank automatically" and b1 means "*SRWP the bank automatically after
-            ; loading", but I am not sure.
-            ; SFTODONOW: Ken - would you be able to test these two extensions please? I suspect
-            ; you can do so fairly easily using the osword43-a.bas test tweaked to run
-            ; *without* a second processor (to avoid the bug) and adjusting the value poked
-            ; into block%?0 to set b0 and/or b1. Beforehand try write-enabling and/or
-            ; unplugging the bank and see if these are automatically undone.
+            ; The following code implements an unofficial (?) extension to OSWORD &43 where b0
+            ; means "initialise the bank without needing a BREAK" and b1 means "*SRWP the bank
+            ; automatically after loading". (TODO: I do wonder if MOS 3.50/5.00 which IIRC
+            ; support an I option on *SRLOAD to initialise immediately implement this behaviour
+            ; of b0?)
             LSR prvOswordBlockCopy                                                                  ;function
-            ; SFTODO: Why are we testing the low bit of 'function' here? The defined values always have this 0. Is something setting this internally to flag something?
-            BCC LA240 ; SFTODO: always branch? At least during an official user-called OSWORD &43 we will, as low bit should always be 0 according to e.g. Master Ref Manual
+            BCC LA240
             LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number
-            JSR createRomBankMaskForBankAAndInsertBanks
+            JSR createRomBankMaskForBankAAndInitialiseBanks
 .LA240      PRVEN								;switch in private RAM
             LSR prvOswordBlockCopy
-            ; SFTODO: And again, we're testing what was b1 of 'function' before we started shifting - why? Is this an internal flag?
             BCC PrvDisexitScIndirect
             LDA prvOswordBlockCopy + 1                                                              ;absolute ROM number
             JMP writeProtectBankA
@@ -7648,10 +7643,10 @@ ENDIF
 }
 
 {
-.^createRomBankMaskForBankAAndInsertBanks
+.^createRomBankMaskForBankAAndInitialiseBanks
     JSR createRomBankMaskForBankA
 ; Read ROM type from ROM header for ROMs with a 1 bit in transientRomBankMask and save to the
-; OS ROM type table and our private copy. This is used to immediately *INSERT ROMs without
+; OS ROM type table and our private copy. This is used to immediately activate ROMs without
 ; waiting for BREAK.
 .^insertBanksUsingTransientRomBankMask
     PRVEN
