@@ -7399,52 +7399,6 @@ InsertStatusCopyHigh = TransientZP + 5
     ; indicates the hardware configuration - for example, on v2 hardware, a physical
     ; write-enabled 16K SWR module plugged into a socket configured to accept a 16K chip will
     ; appear as physical 'R'OM here, but write-'E'nabled in the first status character.
-    ;
-    ; SFTODONOW: Barring bugs, this new implementation should generate the same output as the
-    ; previous v1.27 code, except that 'U' is derived from the actual insertion bitmap so it
-    ; works for empty banks too. I have some thoughts on possible additional changes:
-    ; - 'U'nplugged is completely independent of R/r/p states. I wonder if we might be better
-    ;   off having the second column show only 'U' or ' ' as in earlier versions. If we detect
-    ;   v2 hardware, we could add an *extra* column (which I suggest should come after the
-    ;   'U'/' ' column and before the service column) showing R/r/p. This way we allow R/r/p to
-    ;   be seen regardless of unplug status, which I think is nice and may also be less
-    ;   confusing as we reduce "overloading". The fact that we're keeping all the symbol
-    ;   letters distinct across all the columns should also help to avoid any confusion related
-    ;   to the changing number of columns. (As noted elsewhere, I have removed the leading
-    ;   space on the ROM bank number, so we arguably have an extra column of screen real estate
-    ;   to play with.)
-    ; - As a variant, arguably the third R/r/p column still has value on a v1 board (as it
-    ;   shows the ROM/RAM banks configured with *FX163,{126,127},x), so we could always show it
-    ;   regardless of hardware version.  We could *maybe* use different symbols in this third
-    ;   column on v1 hardware. (See also the suggestion below to treat the first column
-    ;   differently on v1 hardware, so it looks similar to IBOS <1.27, and effectively shows
-    ;   which banks are configured as RAM via *FX163.)
-    ; - I'm not a huge fan of using upper/lower case to distinguish things here. I may have
-    ;   mentioned this before and I'm not trying to re-open an already made decision, it's just
-    ;   that as rewriting this code has forced me to think about this and I'm making these
-    ;   other suggestions I thought I'd throw this in. I don't feel super-strongly about this,
-    ;   but I care more about not relying on upper/lower case than the precise letters we use.
-    ;   That said, some suggestions:
-    ;   - Maybe PALPROM could use "A" (first letter not already used by something else), "B"
-    ;     for banked, "+" to indicate it is "big" or a digit to show the number of banks. Or we
-    ;     could use "P" for PALPROM and use "D" (write-Disabled) in the first column instead of
-    ;     "P" for protected, although this might confuse users accustomed to earlier IBOS
-    ;     versions and write-Protected/write-Enabled do form a nice pair. We could also change
-    ;     the first column to use "W" for writeable and (say) "N" for non-writeable to free
-    ;     up "P" for "PALPROM". I'm dithering here, but while P/E showing for every bank makes
-    ;     a lot of sense on a v2 board where you can if you choose have RAM in every bank, on
-    ;     v1 hardware where there may actually be no memory of any kind in some banks, talking
-    ;     about that non-existent memory being protected or not feels a bit odd and I half
-    ;     wonder if v1 hardware should use something like " " for write-protected (and possibly
-    ;     missing) and "E" for write-enabled. Or maybe v1 hardware should not show the new "third"
-    ;     column with R/r/p in (or should never show these values in the "U"/" " column if we
-    ;     don't have the new third column at all), but these values should be combined with the
-    ;     writeable test, so *on v1 hardware* the first column is:
-    ;     - " " if the bank does not have the RAM presence flag set, otherwise
-    ;     - "P" if the bank has RAM presence flag set but is not writeable
-    ;     - "E" if the bank has RAM presence flag set and is writeable
-    ;   - Maybe ROM/RAM ("R"/"r") could use "O"/"A" (first unique letter), or maybe "+"/"-"
-    ;     (although it isn't obvious to me which would be which, so I don't like this much).
     ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:PHP ; stack RAM presence flag
     LDY #'U' ; 'U'nplugged
     ASL InsertStatusCopyLow:ROL InsertStatusCopyHigh:BCC BankStatusCharacterInY ; branch if unplugged
