@@ -69,17 +69,19 @@ If you have problems or suggestions for improvement, please post in the [IBOS th
 
 * v1.27 (August / September 2024):
   * New release with support for additional features of the V2 hardware - extra RAM & emulated PALPROMs in banks 8..11
-  * Record the presence/absence of each 16K RAM bank separately in private RAM instead of tracking 32K chunks. This changes the use of two bytes of private RAM and may need manual fixing after upgrading from an earlier version. This also means *CSAVE-d configurations will not be compatible with earlier IBOS versions and vice-versa. If you have the standard 64K of sideways RAM in banks 4-7 a full system reset will set the RAM presence flags in the private RAM correctly but will lose other *CONFIGURE settings, which will need to be manually reset afterwards. Instead of doing a full system reset, you can manually update the RAM presence flags by issuing *FX162,126,x and *FX162,127,x commands, where *FX162,126,x will update the flags for banks 0-7 and *FX162,127,x will update the flags for banks 8-15.
   * Implement new software Write Protect & Write Enable commands, *SRWP & *SRWE. These commands will only function on V2 hardware. They will generate an error if you attempt to run them on V1 hardware
   * *SRWP & *SRWE have 'T'emporary option whereby the W/E and W/P actions will only apply until reset is carried out, or the command is run again (on *any* bank) without the T option.
   * Don't re-enter the current language on *TUBE OFF if it is a HI language. In this case we behave as on a CTRL-BREAK and enter the language specified by *CONFIGURE LANG, falling back to the IBOS NLE if that isn't usable.
-  * Change the information shown in the *ROMs parenthesis. The column that previously displayed 'U'nplugged will now also show 'p' if a PALPROM is configured, 'r' if the bank is defined as RAM or 'R' if the bank is defined as ROM.
+  * Add new column to *ROMs output. This column will display 'r' if bank is set to use internal RAM, 'R' if the external ROM socket is being used, or '2', '4' or '8' if a PALPROM has been loaded. The numeric value represents the total number of 16K chunks used by the PALPROM.
   * Update RAM calculation for startup banner.
     - Can now calculate total RAM >256K.
-    - Will now display a maximum of 320K for V1 hardware, influenced by the values stored in the RTC ROM / RAM registers. These can be set by *FX162,126,x (bit 0=bank 0, bit 7=bank 7) and *FX162,127,y (bit 0=bank 8, bit 7=bank15). SFTODONOW: THIS IS PARTLY DUPLICATE AN ENTRY ABOVE, WE NEED TO CONSOLIDATE THIS
+    - Will now display a maximum of 320K for V1 hardware, using two private RAM registers to manage all 16 banks in 16K blocks. These registers can be set by *FX162,126,x (bit 0=bank 0, bit 7=bank 7) and *FX162,127,y (bit 0=bank 8, bit 7=bank15). Was previously implemented using a single register to manage all 16 banks in 32K blocks so may need manual fixing after upgrading from an earlier version. This also means *CSAVE-d configurations will not be compatible with earlier IBOS versions and vice-versa.
     - and will display a maximum of 512K for V2 hardware. Without PALPROMs enabled, the maximum RAM will be 320K, and will be influenced by the position of the ROM / RAM jumpers on the IntegraB board. 
     - On V2 hardware, if PALPROMs are detected in banks 8..11, this will influence the calculation based on the size of PALPROM in use, up to a total maximum of 512K.
   * Update *SRLOAD, *SRWRITE and *SRWIPE commands to be PALPROM aware. These commands will reset a PALPROM bank back to a standard 16K RAM bank to prevent PALPROM switching on a non PALPROM ROM image.
+  * Update *SRWIPE / *SRDATA / *SRROM commands to test if all banks in list can be written to. Will abort without making any changes and report a 'Not W/E RAM' error if any bank in list can not be written to.
+  * Update *SRDATA / *SRROM commands to test for free banks. Will abort without making any changes, and generate a 'RAM occupied' error if any bank in the list is already in use.
+  * Reset PALPROM config parameters during Integra Reset if PALPROM bank is Write Enabled at the point of reset.
   * Fix long standing bug where *SRLOAD & *SRWRITE were not *SRDATA ('RAM') aware. These commands will now reduce the SRDATA RAM counter if the bank had previously been configured as a *SRDATA (RAM) bank.
-  * Check for writable RAM in *SRLOAD/*SRWRITE/*SRWIPE calls and generate a "Bad id" if the bank is not writable RAM.
+  * Check for writable RAM in *SRLOAD/*SRWRITE/*SRWIPE calls and generate a "Not W/E RAM" if the bank is not writable RAM.
   * Preserve A in OSBYTE &6F (111), as all OSBYTE calls should.
