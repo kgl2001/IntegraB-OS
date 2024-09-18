@@ -7356,6 +7356,9 @@ RamPresenceCopyLow = TransientZP + 0
 RamPresenceCopyHigh = TransientZP + 1
 InsertStatusCopyLow = TransientZP + 4
 InsertStatusCopyHigh = TransientZP + 5
+; SFTODONOW: We probably have a spare byte of TransientZP to stash the v2 flag once to avoid
+; repeated calls to testV2Hardware, and with the upcoming changes to *ROMS to check this more
+; often it may be a code size saving to do so.
 
 .^roms
     LDA #maxBank:STA CurrentBank
