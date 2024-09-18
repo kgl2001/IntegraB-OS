@@ -7366,6 +7366,7 @@ InsertStatusCopyHigh = TransientZP + 5
     LDX #userRegRamPresenceFlags0_7:JSR ReadUserReg:STA RamPresenceCopyLow
     ASSERT userRegRamPresenceFlags0_7 + 1 == userRegRamPresenceFlags8_F
     INX:JSR ReadUserReg:STA RamPresenceCopyHigh
+
     LDX #userRegBankInsertStatus + 0:JSR ReadUserReg:STA InsertStatusCopyLow
     INX:JSR ReadUserReg:STA InsertStatusCopyHigh
 
@@ -7391,10 +7392,16 @@ InsertStatusCopyHigh = TransientZP + 5
     JSR printSpace
     LDA #'(':JSR OSWRCH
 
-    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:PHP ; stack RAM presence flag
+    ; Rotate RamPresenceCopy and stack the RAM presence flag for this bank. This is pulled off
+    ; in different places in the code below depending on whether we're on v1 or v2 hardware.
+    ASL RamPresenceCopyLow:ROL RamPresenceCopyHigh:PHP
 
-    ; Generate and print the first status character (protected/write-enabled). This indicates
-    ; which banks are actually RAM from a practical software perspective right now. SFTODONOW UPDATE COMMENT FOR V1/V2 STUFF
+    ; Generate and print the first status character. This shows whether RAM is
+    ; write-'P'rotected or write-'E'nabled. On v2 hardware any bank could contain RAM of some
+    ; kind and we have no way to tell (a bank may be external rather than onboard RAM but
+    ; temporarily write-protected), so we show P/E for all banks. On v1 hardware the RAM
+    ; presence flags tell us which banks are RAM, so we only show P/E for RAM banks and use a
+    ; space in this column for other banks (i.e. physically empty or physical ROM banks).
     JSR testV2hardware:BCS TestBankWriteProtectStatus ; branch if v2 hardware
     LDA #' '
     PLP:BCC BankTypeCharacterInA ; pull stacked RAM presence flag, branch if configured as ROM
@@ -7404,7 +7411,7 @@ InsertStatusCopyHigh = TransientZP + 5
     PLP:BEQ BankTypeCharacterInA
     LDA #'P' ; write-Protected
 .BankTypeCharacterInA
-    JSR OSWRCH ; Print the first status character (Protected / write-Enabled)
+    JSR OSWRCH ; print the first status character
 
     ; SFTODONOW DOCUMENT GENERATING UNPLUG COLUMN
     LDA #'U' ; 'U'nplugged
