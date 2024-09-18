@@ -7434,10 +7434,8 @@ InsertStatusCopyHigh = TransientZP + 5
     JSR testV2hardware:BCC SkipHardwareConfigColumn
     LDY #'R' ; Physical 'R'OM
     PLP:BCC BankStatusCharacterInY; pull stacked RAM presence flag, branch if configured as ROM
-    ; At this point the bank is either RAM or (on v2 hardware only) a PALPROM.
+    ; At this point the bank is either RAM or a PALPROM in banks 8-11.
     LDY #'r' ; onboard 'r'AM
-    JSR testV2hardware:BCC BankStatusCharacterInY ; branch if v1 hardware
-    ; Then test if PALPROM in banks 8..11
     CPX #8:BCC BankStatusCharacterInY ; branch if not PALPROM (X<8)
     CPX #12:BCS BankStatusCharacterInY ; branch if not PALPROM (X>=12)
     ; 8<=X<12
