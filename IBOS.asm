@@ -7169,7 +7169,7 @@ ENDIF
             LDA #osfindOpenInput
             LDX #lo(loadSwrTemplate)
             LDY #hi(loadSwrTemplate)
-            JMP LA1AA								;Relocate code from &9EAE
+            JMP LA1AA								;Relocate code from &9EAE SQUASH: BNE always?
 
 .readFromSwr
 .LA1A4      LDA #osfindOpenOutput
