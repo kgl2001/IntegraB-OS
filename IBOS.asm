@@ -826,6 +826,10 @@ osEntryOsbyteIssueServiceRequest = &F168 ; start of OSBYTE 143 in OS 1.20
 osReturnFromRom = &FF89
 LF16E       = &F16E
 
+IF IBOS_VERSION >= 127
+    Osword43FunctionTemporaryWEBit = 4
+ENDIF
+
 bufNumKeyboard = 0
 bufNumPrinter = 3 ; OS buffer number for the printer buffer
 
@@ -968,7 +972,7 @@ ENDMACRO
 start = &8000
 end = &C000
 ORG start
-GUARD end
+;SFTODONOWGUARD end
 
 .RomHeader
     JMP language
@@ -5832,6 +5836,9 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 }
 
 IF IBOS_VERSION >= 127
+; TODO: We should possibly get rid of this ViaOsword variant and just allow the "Not W/E Ram"
+; error to be generated when called via OSWORD &43. OSWORD &43 can already generate numerous OS
+; errors, as can Acorn's own implementation.
 .ensureOswordBlockBankIsUsableRamIfPossibleViaOsword
 {
     SEC
@@ -5840,6 +5847,14 @@ IF IBOS_VERSION >= 127
     CLC
     BIT prvOswordBlockCopy:BPL Rts ; branch if reading from SWR
     LDA prvOswordBlockCopy + 1:BMI Rts ; branch if pseudo addressing in operation
+    PHA
+    JSR createRomBankMaskForBankAAndInitialiseBanks
+    LDA prvOswordBlockCopy:AND #Osword43FunctionTemporaryWEBit:BEQ NotTemporaryWriteEnable
+    ; We update the CPLD flags even if we're on v1 hardware; this is just a no-op in that case.
+    LDA cpldRamWriteProtectFlags0_7:ORA transientRomBankMask + 0:STA cpldRamWriteProtectFlags0_7
+    LDA cpldRamWriteProtectFlags8_F:ORA transientRomBankMask + 1:STA cpldRamWriteProtectFlags8_F
+.NotTemporaryWriteEnable
+    PLA
 ; Alternate entry point with the bank number in A and therefore no checks for the OSWORD block
 ; specifying a write or that normal non-pseudo addressing is in use. The behavior is otherwise
 ; identical.
@@ -5980,7 +5995,16 @@ ENDIF
             LDA prvOswordBlockCopy							;function
             ORA #&02								;set bit 1
 .L9C1B      STA prvOswordBlockCopy							;function
-.L9C1E      INY									;Next Character
+.L9C1E
+IF IBOS_VERSION >= 127
+            CMP #'T'
+            BNE NextCharacter
+            LDA prvOswordBlockCopy
+            ORA #Osword43FunctionTemporaryWEBit
+            STA prvOswordBlockCopy
+.NextCharacter
+ENDIF
+            INY									;Next Character
             BNE L9BF1								;Loop
 .rts        RTS									;End
 }
@@ -7054,6 +7078,16 @@ ENDIF
     XASSERT_USE_PRV1
             JSR adjustOsword43LengthAndBuffer
 IF IBOS_VERSION >= 127
+            ; We save the current write protect flags and reapply them afterwards; this is
+            ; harmless if we are on v1 hardware where these registers don't mean anything or if
+            ; we are on v2 hardware and aren't actually changing anything anyway.
+            LDA cpldRamWriteProtectFlags0_7:PHA
+            LDA cpldRamWriteProtectFlags8_F:PHA
+
+            ; TODO: We should maybe do this ensureOsword... later - doing it here will take the
+            ; bank out of PALPROM mode even if we can't find the file to load. (But if we do it
+            ; later it will trample over the {load,save}SwrTemplate code we're about to copy to
+            ; main RAM.)
             JSR ensureOswordBlockBankIsUsableRamIfPossibleViaOsword
 ENDIF
             LDA prvOswordBlockCopy + 6                                                              ;low byte of buffer length
@@ -7086,6 +7120,10 @@ ENDIF
             JSR openFile
             JSR getAddressesAndLengthFromPrvOswordBlockCopy
             JSR doTransfer
+IF IBOS_VERSION >= 127
+            PLA:STA cpldRamWriteProtectFlags8_F
+            PLA:STA cpldRamWriteProtectFlags0_7
+ENDIF
             JMP LA22B
 
 .bufferLengthNotZero
