@@ -262,8 +262,10 @@ vduStatus = &D0
 vduStatusShadow = &10
 osEscapeFlag = &FF
 romActiveLastBrk = &024A
+spoolFileHandle = &0257
 negativeVduQueueSize = &026A
 tubePresenceFlag = &027A ; SFTODO: allmem says 0=inactive, is there actually a specific bit or value for active? what does this code rely on?
+outputStreamCharacterDestination = &027C
 osShadowRamFlag = &027F ; *SHADOW option, 1=force shadow mode, 0=don't force shadow mode
 breakInterceptJmp = &0287 ; memory location corresponding to *FX247
 currentLanguageRom = &028C ; SFTODO: not sure yet if we're using this for what the OS does or repurposing it
@@ -3980,13 +3982,16 @@ OswordInputLineBlockCopy = &AB ; 5 bytes
     ; pressed.
 .AppendLoop
     JSR IncrementAndPrintLineNumber
+IF IBOS_VERSION < 127
     ; Copy OswordInputLineBlock into OswordInputLineBlockCopy in main RAM for use.
-    ; SQUASH: I don't believe this is necessary, we can just use OswordInputLineBlock directly.
     LDY #(OswordInputLineBlockEnd - OswordInputLineBlock) - 1
 .CopyLoop
     LDA OswordInputLineBlock,Y:STA OswordInputLineBlockCopy,Y
     DEY:BPL CopyLoop
     LDX #lo(OswordInputLineBlockCopy):LDY #hi(OswordInputLineBlockCopy)
+ELSE
+    LDX #lo(OswordInputLineBlock):LDY #hi(OswordInputLineBlock)
+ENDIF
     LDA #oswordInputLine:JSR OSWORD:BCS Escape
     INY:STY LineLengthIncludingCr
     LDX #0
@@ -4032,8 +4037,11 @@ ENDIF
 OriginalOutputDeviceStatus = TransientZP + 1
 
     LDA #osfindOpenInput:JSR ParseFilenameAndOpen
-    ; SQUASH: We could just read/write &27C directly
+IF IBOS_VERSION < 127
     LDA #osbyteReadWriteOutputDevice:LDX #0:LDY #&FF:JSR OSBYTE
+ELSE
+    LDA outputStreamCharacterDestination
+ENDIF
     STA OriginalOutputDeviceStatus
     ; Disable screen drivers, enable printer, disable *SPOOL
     LDA #osbyteSelectOutputDevice:LDX #%00011010:LDY #0:JSR OSBYTE
@@ -4069,8 +4077,11 @@ OriginalOutputDeviceStatus = TransientZP + 1
     ; get away with it in BASIC as that's part of the user ZP.
     LDX L00AB:LDA #osargsReadExtent:JSR OSARGS
     LDA #osargsWritePtr:JSR OSARGS
-    ; SQUASH: We could just poke the OS workspace directly at &257.
+IF IBOS_VERSION < 127
     LDA #osbyteReadWriteSpoolFileHandle:LDX transientFileHandle:LDY #0:JSR OSBYTE
+ELSE
+    LDX transientFileHandle:STX spoolFileHandle
+ENDIF
     JMP ExitAndClaimServiceCall
 }
 			
