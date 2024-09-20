@@ -1188,12 +1188,12 @@ ELSE
     EQUS &02, &98                       ;Parameter &99:                 '<id>(,<id>)...'
     EQUS &02, &98                       ;Parameter &9A:                 '<id>(,<id>)...'
     EQUS &04, "(", &98, &A2             ;Parameter &9B:                 '(<id>(,<id>).../?)'
-    EQUS &05, &94, &AD, &A5, &A4        ;Parameter &9C:                 '<fsp> <sraddr> (<id>) (Q)(I)'
+    EQUS &06, &94, &AD, &A5, &A4, &B2   ;Parameter &9C:                 '<fsp> <sraddr> (<id>) (Q)(I)(T)'
     EQUS &05, &94, &AD, &AB, &A5        ;Parameter &9D:                 '<fsp> (<end>/+<len>) (<id>) (Q)'
     EQUS &06, "<", &AC, &AB, &AD, &A6   ;Parameter &9E:                 '<addr> (<end>/+<len>) <sraddr> (<id>)'
     EQUS &02, &9E                       ;Parameter &9F:                 '<addr> (<end>/+<len>) <sraddr> (<id>)'
-    EQUS &03, &98, &B2                  ;Parameter &A0:                 '<id>(,<id>)... (T)'
-    EQUS &03, &98, &B2                  ;Parameter &A1:                 '<id>(,<id>)... (T)'
+    EQUS &04, &98, " ", &B2             ;Parameter &A0:                 '<id>(,<id>)... (T)'
+    EQUS &04, &98, " ", &B2             ;Parameter &A1:                 '<id>(,<id>)... (T)'
     EQUS &04, "/?)"                     ;Parameter &A2:                 '/?)'
     EQUS &08, "ON/OFF", &A2             ;Parameter &A3:                 'ON/OFF/?)'
     EQUS &04, "(I)"                     ;Parameter &A4:                 '(I)'
@@ -1210,7 +1210,7 @@ ELSE
     EQUS &05, ")..."                    ;Parameter &AF:                 ')...'
     EQUS &05, "(<0-"                    ;Parameter &B0:                 '(<0-'
     EQUS &04, &B0, "4>"                 ;Parameter &B1:                 '(<0-4>'
-    EQUS &05, " (T)"                    ;Parameter &B2:                 ' (T)'
+    EQUS &04, "(T)"                     ;Parameter &B2:                 '(T)'
 ENDIF
 
 ;lookup table for start address of recognised * commands
