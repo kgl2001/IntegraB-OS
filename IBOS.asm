@@ -2757,10 +2757,17 @@ FullResetPrv = &2800
     LDA #ramselShen OR ramselPrvs841:STA ramselCopy:STA ramsel
     LDA #romselPrvEn:STA romselCopy:STA romsel
     LDA #&30:JSR ZeroPageAUpToC0 ; SFTODO: mildly magic
-    ; Initialise prvSrDataBanks. SQUASH: SHhorten with a loop?
+    ; Initialise prvSrDataBanks.
     LDA #&FF
+IF IBOS_VERSION < 127
     STA prvSrDataBanks + 0:STA prvSrDataBanks + 1
     STA prvSrDataBanks + 2:STA prvSrDataBanks + 3
+ELSE
+    LDY #3
+.InitialisePrvSrDataBanksLoop
+    STA prvSrDataBanks,Y
+    DEY:BPL InitialisePrvSrDataBanksLoop
+ENDIF
     LDA #0:STA ramselCopy:STA ramsel
     PLA:STA romselCopy:STA romsel
     ; Set the user registers to their default values.
