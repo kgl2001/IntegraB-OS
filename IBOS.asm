@@ -5916,6 +5916,8 @@ IF IBOS_VERSION >= 127
     BIT prvOswordBlockCopy:BPL Rts ; branch if reading from SWR
     LDA prvOswordBlockCopy + 1:BMI Rts ; branch if pseudo addressing in operation
     PHA
+    ; TODO: We probably shouldn't be touching TransientZP from an OSWORD call. I'm not sure
+    ; this is respected in general in IBOS though, and in practice it will be fine here.
     JSR createRomBankMaskForBankAAndInitialiseBanks
     LDA prvOswordBlockCopy:AND #Osword43FunctionTemporaryWEBit:BEQ NotTemporaryWriteEnable
     ; We update the CPLD flags even if we're on v1 hardware; this is just a no-op in that case.
