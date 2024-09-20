@@ -4229,6 +4229,7 @@ ENDIF
     LDA #0:STA transientConfigPrefix
     PLA:TAY ; restore original Y
     SEC
+.^ParseNoShRts
     RTS
 }
 
@@ -4242,9 +4243,13 @@ ENDIF
 
 ; Inverse of ParseNoSh; prints "" (A=0), "NO" (A=1) or "SH" (A=2).
 .PrintNoSh
+IF IBOS_VERSION < 127
     CMP #0:BNE Not0 ; SQUASH: TAX instead of CMP #0, BEQ to a nearby RTS
     RTS
 .Not0
+ELSE
+    TAX:BEQ ParseNoShRts
+ENDIF
     CMP #2:BEQ Sh
     LDA #'N':JSR OSWRCH
     LDA #'O':JMP OSWRCH
