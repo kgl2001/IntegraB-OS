@@ -974,7 +974,7 @@ ENDMACRO
 start = &8000
 end = &C000
 ORG start
-;SFTODONOWGUARD end
+GUARD end
 
 .RomHeader
     JMP language
@@ -5919,7 +5919,7 @@ IF IBOS_VERSION >= 127
     PHA
     ; TODO: We probably shouldn't be touching TransientZP from an OSWORD call. I'm not sure
     ; this is respected in general in IBOS though, and in practice it will be fine here.
-    JSR createRomBankMaskForBankAAndInitialiseBanks
+    JSR createRomBankMaskForBankA
     LDA prvOswordBlockCopy:AND #Osword43FunctionTemporaryWEBit:BEQ NotTemporaryWriteEnable
     ; We update the CPLD flags even if we're on v1 hardware; this is just a no-op in that case.
     LDA cpldRamWriteProtectFlags0_7:ORA transientRomBankMask + 0:STA cpldRamWriteProtectFlags0_7
@@ -6834,7 +6834,7 @@ ENDIF
     STA prvOswordBlockCopy + 8 ; low byte of sideways start address
     LDA prvOswordBlockCopy + 3 ; byte 1 of "buffer address" we parsed earlier
     STA prvOswordBlockCopy + 9 ; high byte of sideways start address
-    BIT prvOswordBlockCopy + 7 ; SFTODO: document what's at this address
+    BIT prvOswordBlockCopy + 7 ; SFTODO: document what's at this address SQUASH: is this redundant? what do we do with the result?
 IF IBOS_VERSION >= 127
     JSR ensureOswordBlockBankIsUsableRamIfPossibleViaStarCmd
 ENDIF
@@ -7191,11 +7191,7 @@ ENDIF
             JSR openFile
             JSR getAddressesAndLengthFromPrvOswordBlockCopy
             JSR doTransfer
-IF IBOS_VERSION >= 127
-            PLA:STA cpldRamWriteProtectFlags8_F
-            PLA:STA cpldRamWriteProtectFlags0_7
-ENDIF
-            JMP LA22B
+            JMP osword43TransferDone
 
 .bufferLengthNotZero
 ; SFTODO: Does this assume the entire file fits into the buffer? Is that OK? Maybe 1770 DFS does the same?
@@ -7241,8 +7237,14 @@ ENDIF
             BCC LA216
             LDA L02EE
             BEQ LA22E
-.LA22B      JSR CloseHandleL02EE
-.LA22E      BIT prvOswordBlockCopy                                                                  ;function
+.osword43TransferDone
+            JSR CloseHandleL02EE
+.LA22E
+IF IBOS_VERSION >= 127
+            PLA:STA cpldRamWriteProtectFlags8_F
+            PLA:STA cpldRamWriteProtectFlags0_7
+ENDIF
+            BIT prvOswordBlockCopy                                                                  ;function
             BPL PrvDisexitScIndirect                                                                ;branch if read
             BVS PrvDisexitScIndirect                                                                ;branch if pseudo-address
             ; The following code implements an unofficial (?) extension to OSWORD &43 where b0
@@ -7281,7 +7283,7 @@ ENDIF
             JSR doOsgbpbForOsword
             JSR decreaseDataLengthAndAdjustBufferLength
             BCC LA266
-            JMP LA22B
+            JMP osword43TransferDone
 			
 .LA27E      LDA prvOswordBlockCopy + 12
             STA L02EE
