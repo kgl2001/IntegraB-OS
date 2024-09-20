@@ -4044,6 +4044,7 @@ ELSE
 ENDIF
     STA OriginalOutputDeviceStatus
     ; Disable screen drivers, enable printer, disable *SPOOL
+    ; SQUASH: Could we write directly to outputStreamCharacterDestination?
     LDA #osbyteSelectOutputDevice:LDX #%00011010:LDY #0:JSR OSBYTE
 .Loop
     BIT osEscapeFlag:BMI Escape
