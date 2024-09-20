@@ -4151,6 +4151,9 @@ ENDIF
     LDA ConvertIntegerResult + 2:STA osfileBlock + 16
     LDA ConvertIntegerResult + 3:STA osfileBlock + 17
     LDA #osfileCreateFile:LDX #lo(osfileBlock):LDY #hi(osfileBlock):JSR OSFILE
+IF IBOS_VERSION >= 127
+.ExitAndClaimServiceCallIndirect
+ENDIF
     JMP ExitAndClaimServiceCall
 
 ; *CONFIGURE and *STATUS simply issue the corresponding service calls, so the
@@ -4190,8 +4193,10 @@ ENDIF
     EQUB &FE
     EQUS "Bad parameter", &00
 
+IF IBOS_VERSION < 127
 .ExitAndClaimServiceCallIndirect ; SQUASH: Re-use the JMP to this above
     JMP ExitAndClaimServiceCall
+ENDIF
 }
 
 ; Check next two characters of command line:
