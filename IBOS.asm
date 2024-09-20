@@ -3696,7 +3696,11 @@ ENDIF
     LDA (transientCmdPtr),Y
     CMP #'?':BEQ ShowShadow
     CMP #vduCr:BNE GenerateSyntaxErrorIndirect2
-    LDA #0:JMP ParsedOK ; default to *SHADOW 0 if no argument SQUASH: could BEQ ; always branch
+IF IBOS_VERSION < 127
+    LDA #0:JMP ParsedOK ; default to *SHADOW 0 if no argument
+ELSE
+    LDA #0:BEQ ParsedOK ; default to *SHADOW 0 if not argument, always branch
+ENDIF
 .ShowShadow
     JSR CmdRefDynamicSyntaxGenerationForTransientCmdIdx
     LDA osShadowRamFlag
