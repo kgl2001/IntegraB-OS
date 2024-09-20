@@ -4069,13 +4069,18 @@ ENDIF
 .SpoolOn
 {
     LDA #osfindOpenUpdate:JSR ParseFilenameAndOpen:TAY
-    ; SFTODO: Should the next line be LDX #L00AB? X is the address of a four byte zero page
-    ; control block; &AB would be a legitimate location (it's transient ZP workspace), but it's
-    ; not obvious to me that &AB will *contain* a suitable location, we could trample over
-    ; anything if it is arbitrary. In *practice* &AB might (from playing in b-em, not analysing
-    ; code) contain &81, which would mean we're trampling over language ZP workspace but we'll
-    ; get away with it in BASIC as that's part of the user ZP.
-    LDX L00AB:LDA #osargsReadExtent:JSR OSARGS
+    ; I think this is wrong in older versions of IBOS. For OSARGS X is the address of a four
+    ; byte word in zero page - we can use &AB-&AE inclusive as this is part of the transient
+    ; command workspace, but &AB doesn't *contain* the address of four free bytes of zero page
+    ; AFAICS. In practice (just based on playing around in b-em) &AB might contain &81 in
+    ; practice, which would mean we trample over the user zero page workspace in BASIC, which
+    ; means we'd typically get away with the incorrect version.
+IF IBOS_VERSION < 127
+    LDX L00AB
+ELSE
+    LDX #L00AB
+ENDIF
+    LDA #osargsReadExtent:JSR OSARGS
     LDA #osargsWritePtr:JSR OSARGS
 IF IBOS_VERSION < 127
     LDA #osbyteReadWriteSpoolFileHandle:LDX transientFileHandle:LDY #0:JSR OSBYTE
