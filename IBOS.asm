@@ -4244,7 +4244,7 @@ ENDIF
 ; Inverse of ParseNoSh; prints "" (A=0), "NO" (A=1) or "SH" (A=2).
 .PrintNoSh
 IF IBOS_VERSION < 127
-    CMP #0:BNE Not0 ; SQUASH: TAX instead of CMP #0, BEQ to a nearby RTS
+    CMP #0:BNE Not0
     RTS
 .Not0
 ELSE
@@ -4380,19 +4380,37 @@ ENDIF
 .^SetConfigValueTransientConfigPrefix
     JSR SetYToTransientCmdIdxTimes3
     JSR GetShiftedBitMask
-    LDA ConfParBit + 1,Y:TAX ; SQUASH: LDX blah,Y?
+IF IBOS_VERSION < 127
+    LDA ConfParBit + 1,Y:TAX
+ELSE
+    LDX ConfParBit + 1,Y
+ENDIF
     LDA transientConfigPrefix:JSR ShiftALeftByX:AND transientConfigBitMask:STA transientConfigPrefix
     LDA transientConfigBitMask:EOR #&FF:STA transientConfigBitMask
-    LDA ConfParBit + ConfParBitUserRegOffset,Y:TAX ; SQUASH: avoid this with LDX blah,Y?
+IF IBOS_VERSION < 127
+    LDA ConfParBit + ConfParBitUserRegOffset,Y:TAX
+ELSE
+    LDX ConfParBit + ConfParBitUserRegOffset,Y
+ENDIF
     JSR ReadUserReg:AND transientConfigBitMask:ORA transientConfigPrefix:JMP WriteUserReg
 
 .^GetConfigValue
     JSR SetYToTransientCmdIdxTimes3
     JSR GetShiftedBitMask
-    LDA ConfParBit + ConfParBitUserRegOffset,Y:TAX ; SQUASH: can we just use LDX blah,Y to avoid this?
-    JSR ReadUserReg:AND transientConfigBitMask:STA transientConfigPrefixSFTODO ; SQUASH: Just PHA?
-    LDA ConfParBit+1,Y:TAX ; SQUASH: LDX blah,Y
-    LDA transientConfigPrefixSFTODO:JSR ShiftARightByX:STA transientConfigPrefixSFTODO ; SQUASH: LDA->PLA?
+IF IBOS_VERSION < 127
+    LDA ConfParBit + ConfParBitUserRegOffset,Y:TAX
+ELSE
+    LDX ConfParBit + ConfParBitUserRegOffset,Y
+ENDIF
+    JSR ReadUserReg:AND transientConfigBitMask
+IF IBOS_VERSION < 127
+    STA transientConfigPrefixSFTODO
+    LDA ConfParBit+1,Y:TAX
+    LDA transientConfigPrefixSFTODO
+ELSE
+    LDX ConfParBit+1,Y
+ENDIF
+    JSR ShiftARightByX:STA transientConfigPrefixSFTODO ; SQUASH: LDA->PLA?
     RTS
 }
 			
