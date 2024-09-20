@@ -4179,7 +4179,12 @@ ENDIF
     PLA:BEQ ExitAndClaimServiceCallIndirect ; branch if we have no argument
     ; Documentation on these service calls seems a bit thin on the ground, but it looks as
     ; though they return with X=0 if a ROM recognised the argument.
-    CPX #0:BEQ ExitAndClaimServiceCallIndirect ; SQUASH: TXA instead of CPX #0
+IF IBOS_VERSION < 127
+    CPX #0
+ELSE
+    TXA
+ENDIF
+    BEQ ExitAndClaimServiceCallIndirect
 .^GenerateBadParameter
     JSR RaiseError
     EQUB &FE
