@@ -4194,7 +4194,7 @@ ENDIF
     EQUS "Bad parameter", &00
 
 IF IBOS_VERSION < 127
-.ExitAndClaimServiceCallIndirect ; SQUASH: Re-use the JMP to this above
+.ExitAndClaimServiceCallIndirect
     JMP ExitAndClaimServiceCall
 ENDIF
 }
@@ -4219,7 +4219,12 @@ ENDIF
     CMP #'S':BNE NoMatch
     INY:LDA (transientCmdPtr),Y:AND #CapitaliseMask:CMP #'H':BNE NoMatch
     INY
-    LDA #2:JMP Match ; SQUASH: "BNE ; always branch"
+    LDA #2
+IF IBOS_VERSION < 127
+    JMP Match
+ELSE
+    BNE Match ; always branch
+ENDIF
 .NoMatch
     LDA #0:STA transientConfigPrefix
     PLA:TAY ; restore original Y
