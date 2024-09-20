@@ -3404,9 +3404,11 @@ ENDIF
     BCS prvPrintBufferBankListInitialised2 ; stop parsing if bank number is invalid
     TAY
     JSR TestForEmptySwrInBankY:TYA:BCS NotEmptySwrBank
-    ; SQUASH: INC TmpBankCount:LDX TmpBankCount:STA prvPrintBufferBankList-1,X:...:CPX
-    ; #MaxPrintBufferSwrBanks+1? Or initialise TmpBankCount to &FF?
+IF IBOS_VERSION < 127
     LDX TmpBankCount:STA prvPrintBufferBankList,X:INX:STX TmpBankCount
+ELSE
+    INC TmpBankCount:LDX TmpBankCount:STA prvPrintBufferBankList,X
+ENDIF
     CPX #MaxPrintBufferSwrBanks:BEQ prvPrintBufferBankListInitialised2
 .NotEmptySwrBank
     LDY TmpTransientCmdPtrOffset
@@ -3419,9 +3421,6 @@ IF IBOS_VERSION < 127
 ENDIF
 }
 
-; SQUASH: Could we use this in some other places where we're initialising
-; prvPrintBufferBankList? Even if we called this first and then overwrote the first entry it
-; would potentially still save code.
 .UnassignPrintBufferBanks
     LDA #&FF
 IF IBOS_VERSION < 127
@@ -3549,8 +3548,6 @@ IF IBOS_VERSION < 127
     LDA #lo(TestAddress):STA RomAccessSubroutineVariableInsn + 1
     LDA #hi(TestAddress):STA RomAccessSubroutineVariableInsn + 2
     LDA #opcodeLdaAbs:STA RomAccessSubroutineVariableInsn:JSR RomAccessSubroutine:EOR #&FF
-    ; SQUASH: We keep stashing A temporarily in X here, but couldn't we just use X to do the
-    ; modifications so A is naturally preserved?
     TAX:LDA #opcodeStaAbs:STA RomAccessSubroutineVariableInsn:TXA:JSR RomAccessSubroutine
     TAX:LDA #opcodeCmpAbs:STA RomAccessSubroutineVariableInsn:TXA:JSR RomAccessSubroutine
     SEC
@@ -3559,7 +3556,6 @@ IF IBOS_VERSION < 127
 .IsRom
     TAX
     ; Modify stacked flags to reflect current status of carry.
-    ; SQUASH: Could we do ASSERT flagC == 1:PLA:PHP:LSR A:PLP:ROL A:PHA instead of all this?
     PLA:BCS SetStackedCarry
     AND_NOT flagC:PHA
     JMP StackedFlagsModified
@@ -3568,8 +3564,6 @@ IF IBOS_VERSION < 127
 .StackedFlagsModified
     ; Undo the bit flip of TestAddress so we leave the bank as we found it.
     TXA:EOR #&FF
-    ; SQUASH: We are stashing A temporarily in X here, but couldn't we just use X to do the
-    ; modifications so A is naturally preserved?
     TAX:LDA #opcodeStaAbs:STA RomAccessSubroutineVariableInsn:TXA:JSR RomAccessSubroutine
     PLP
     JMP PlaTaxRts
