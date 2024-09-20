@@ -3507,11 +3507,19 @@ ELSE
     JSR PrintADecimalNoPad
 ENDIF
     LDA prvPrintBufferBankList:AND #&F0:CMP #&40:BNE BufferInSwr2 ; SFTODO: magic constants
+IF IBOS_VERSION < 127
     LDX #0:JSR PrintKInPrivateOrSidewaysRAM ; write 'k in Private RAM'
+ELSE
+    LDX #0:JSR PrintKInPrivateOrSidewaysRAMXLoop
+ENDIF
     JMP OSNEWLPrvDisExitAndClaimServiceCall
 			
 .BufferInSwr2
+IF IBOS_VERSION < 127
     LDX #1:JSR PrintKInPrivateOrSidewaysRAM ; write 'k in Sideways RAM '
+ELSE
+    LDX #KInSidewaysRamString-KInPrivateRamString:JSR PrintKInPrivateOrSidewaysRAMXLoop ; write 'k in Sideways RAM '
+ENDIF
     LDY #0
 .ShowBankLoop
     LDA prvPrintBufferBankList,Y:BMI AllBanksShown
@@ -3606,13 +3614,14 @@ ENDIF
     EQUS "Printing!", &00
 }
 
-; SQUASH: Since this only has two callers, wouldn't it be easier for them just to do LDX #0 or
-; LDX #KInSidewaysRamString - KInPrivateRamString themselves instead of needing to faff with
-; the CPX# stuff?
-.PrintKInPrivateOrSidewaysRAM
 {
+IF IBOS_VERSION < 127
+.^PrintKInPrivateOrSidewaysRAM
     CPX #0:BEQ PrintOffsetXLoop
     LDX #KInSidewaysRamString - KInPrivateRamString
+ELSE
+.^PrintKInPrivateOrSidewaysRAMXLoop
+ENDIF
 .PrintOffsetXLoop
     LDA KInPrivateRamString,X:BEQ Rts
     JSR OSWRCH
@@ -3620,9 +3629,9 @@ ENDIF
 .Rts
     RTS
 
-.KInPrivateRamString
+.^KInPrivateRamString
     EQUS "k in Private RAM", &00
-.KInSidewaysRamString
+.^KInSidewaysRamString
     EQUS "k in Sideways RAM ", &00
 }
 
