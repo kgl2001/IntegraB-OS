@@ -4410,7 +4410,7 @@ IF IBOS_VERSION < 127
 ELSE
     LDX ConfParBit+1,Y
 ENDIF
-    JSR ShiftARightByX:STA transientConfigPrefixSFTODO ; SQUASH: LDA->PLA?
+    JSR ShiftARightByX:STA transientConfigPrefixSFTODO
     RTS
 }
 			
