@@ -5660,10 +5660,10 @@ ENDIF
     PHP
 IF IBOS_VERSION < 127
     JSR ParseRomBankListChecked2
-    PRVEN
 ELSE
     SEC:JSR ParseWERamBankListChecked
 ENDIF
+    PRVEN ; prvRomTypeTableCopy (and bankTmp on IBOS <1.27) are in private RAM
     ; SQUASH: We could save two bytes by doing LDX #maxBank, rotating left instead of right and
     ; doing DEX:BPL BankLoop at the end. However, this would be slightly user-visible because
     ; if the user has specified more banks than there are "slots", it would affect which of the
@@ -11613,7 +11613,21 @@ ENDIF
     LDA VectorEntryStackedA+1,X ; get original A=character to insert
     JSR StaPrintBufferWritePtr
     JSR AdvancePrintBufferWritePtr
+IF IBOS_VERSION < 127
     JSR DecrementPrintBufferFree
+ELSE
+    ; Subtract 1 from the 24-bit value in prvPrintBuffer{High,Mid,Low}.
+    XASSERT_USE_PRV1
+    ; This is a 24-bit extension of the 16-bit decrement described at
+    ; http://6502.org/users/obelisk/6502/algorithms.html.
+    LDA prvPrintBufferFreeLow:BNE SkipMidHighDec
+    LDA prvPrintBufferFreeMid:BNE SkipHighDec
+    DEC prvPrintBufferFreeHigh
+.SkipHighDec
+    DEC prvPrintBufferFreeMid
+.SkipMidHighDec
+    DEC prvPrintBufferFreeLow
+ENDIF
     ; Return to caller with carry clear to indicate insertion succeeded.
     TSX:LDA VectorEntryStackedFlags+1,X:AND_NOT flagC:STA VectorEntryStackedFlags+1,X
     JMP RestoreRamselClearPrvenReturnFromVectorHandler
@@ -11900,26 +11914,16 @@ ENDIF
 }
 
 ; SQUASH: This has only a single caller
+IF IBOS_VERSION < 127
 ; Subtract 1 from the 24-bit value in prvPrintBuffer{High,Mid,Low}.
 .DecrementPrintBufferFree
     XASSERT_USE_PRV1
-IF IBOS_VERSION < 127
     SEC
     LDA prvPrintBufferFreeLow:SBC #1:STA prvPrintBufferFreeLow
     LDA prvPrintBufferFreeMid:SBC #0:STA prvPrintBufferFreeMid
     DECCC prvPrintBufferFreeHigh
-ELSE
-    ; This is a 24-bit extension of the 16-bit decrement described at
-    ; http://6502.org/users/obelisk/6502/algorithms.html.
-    LDA prvPrintBufferFreeLow:BNE SkipMidHighDec
-    LDA prvPrintBufferFreeMid:BNE SkipHighDec
-    DEC prvPrintBufferFreeHigh
-.SkipHighDec
-    DEC prvPrintBufferFreeMid
-.SkipMidHighDec
-    DEC prvPrintBufferFreeLow
-ENDIF
     RTS
+ENDIF
 
 ; A code template copied to RAM at RomAccessSubroutine which is patched at runtime to
 ; read, write or compare A against a byte of sideways ROM in bank Y. X is corrupted.
