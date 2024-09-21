@@ -5991,7 +5991,7 @@ IF IBOS_VERSION >= 127
     PLP:PHP ; peek stacked C
     BCC BankPassedTests
     ; For *SRDATA/*SRROM, we perform some additional checks.
-    PRVEN:LDA prvRomTypeTableCopy,X:PRVDIS:BEQ BankPassedTests
+    LDA prvRomTypeTableCopy,X:BEQ BankPassedTests
     CMP #RomTypeSrData:BEQ BankPassedTests
     ; This error is what DFS 2.24's SRAM utilities raise. SQUASH: The error message is a bit
     ; long and could probably be shrunk, given how relatively unimportant this case is - IBOS
