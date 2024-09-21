@@ -3409,7 +3409,7 @@ ENDIF
 IF IBOS_VERSION < 127
     LDX TmpBankCount:STA prvPrintBufferBankList,X:INX:STX TmpBankCount
 ELSE
-    INC TmpBankCount:LDX TmpBankCount:STA prvPrintBufferBankList,X
+    INC TmpBankCount:LDX TmpBankCount:STA prvPrintBufferBankList-1,X
 ENDIF
     CPX #MaxPrintBufferSwrBanks:BEQ prvPrintBufferBankListInitialised2
 .NotEmptySwrBank
