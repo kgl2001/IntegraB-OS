@@ -6055,26 +6055,32 @@ ENDIF
             BNE L9C07								;No? Goto next check
             LDA #&80								;set bit 7
             STA prvOswordBlockCopy + 7							;high byte of buffer length
-            BNE L9C1E								;Increment and loop
-.L9C07      CMP #'I'								;'I'
+            BNE NextCharacter ;Increment and loop
+.L9C07
+            CMP #'I'								;'I'
             BNE L9C12								;No? Goto next check
             LDA prvOswordBlockCopy							;function
             ORA #&01								;set bit 0 SFTODO: aha, so this and code below is where the mysterious undocumented function bits are set - update other comments, perhaps used named constants for this
-            BNE L9C1B								;write function, increment and loop
+            BNE UpdatePrvOswordBlockCopy								;write function, increment and loop
 .L9C12      CMP #'P'								;'P' ; SFTODO: what does this do? it's not in *HELP output I think
-            BNE L9C1E								;Increment and loop
+IF IBOS_VERSION < 127
+            BNE NextCharacter
+ELSE
+            BNE TestT
+ENDIF
             LDA prvOswordBlockCopy							;function
             ORA #&02								;set bit 1
-.L9C1B      STA prvOswordBlockCopy							;function
-.L9C1E
 IF IBOS_VERSION >= 127
+            BNE UpdatePrvOswordBlockCopy ; always branch
+.TestT
             CMP #'T'
             BNE NextCharacter
             LDA prvOswordBlockCopy
             ORA #Osword43FunctionTemporaryWEBit
-            STA prvOswordBlockCopy
-.NextCharacter
+            FALLTHROUGH_TO UpdatePrvOswordBlockCopy
 ENDIF
+.UpdatePrvOswordBlockCopy      STA prvOswordBlockCopy							;function
+.NextCharacter
             INY									;Next Character
             BNE L9BF1								;Loop
 .rts        RTS									;End
@@ -6589,7 +6595,12 @@ SavedY = P% + 1 ; 1 byte
     TXA
     LDX romselCopy
     STA romselCopy:STA romsel
-    CPY #0:BEQ LastByte ; SQUASH: CPY #0 -> TYA?
+IF IBOS_VERSION < 127
+    CPY #0
+ELSE
+    TYA
+ENDIF
+    BEQ LastByte
 .Loop
 .^mainRamTransferTemplateLdaStaPair1
     LDA (transientOs4243SwrAddr),Y
@@ -6834,7 +6845,9 @@ ENDIF
     STA prvOswordBlockCopy + 8 ; low byte of sideways start address
     LDA prvOswordBlockCopy + 3 ; byte 1 of "buffer address" we parsed earlier
     STA prvOswordBlockCopy + 9 ; high byte of sideways start address
-    BIT prvOswordBlockCopy + 7 ; SFTODO: document what's at this address SQUASH: is this redundant? what do we do with the result?
+IF IBOS_VERSION < 127
+    BIT prvOswordBlockCopy + 7 ; redundant
+ENDIF
 IF IBOS_VERSION >= 127
     JSR ensureOswordBlockBankIsUsableRamIfPossibleViaStarCmd
 ENDIF
@@ -7169,7 +7182,11 @@ ENDIF
             LDA #osfindOpenInput
             LDX #lo(loadSwrTemplate)
             LDY #hi(loadSwrTemplate)
-            JMP LA1AA								;Relocate code from &9EAE SQUASH: BNE always?
+IF IBOS_VERSION < 127
+            JMP LA1AA
+ELSE
+            BNE LA1AA ; branch always
+ENDIF
 
 .readFromSwr
 .LA1A4      LDA #osfindOpenOutput
@@ -7319,6 +7336,10 @@ ENDIF
             LDX #&EE
             LDY #&02
             JSR OSFILE
+IF IBOS_VERSION >= 127
+            PLA:STA cpldRamWriteProtectFlags8_F
+            PLA:STA cpldRamWriteProtectFlags0_7
+ENDIF
 .^PrvDisexitSc
 .LA2DE      PRVDIS								;switch out private RAM
             JMP ExitAndClaimServiceCall								;Exit Service Call
@@ -7373,8 +7394,12 @@ ENDIF
     JSR ParseRomBankListChecked:JSR InvertTransientRomBankMask
     ; SFTODO: L00AE/L00AF are magic addresses
     LDX #userRegBankInsertStatus + 0:JSR ReadUserReg:AND L00AE:JSR WriteUserReg
-    ; SQUASH: Replace LDX # with ASSERT:INX?
-    LDX #userRegBankInsertStatus + 1:JSR ReadUserReg:AND L00AF
+IF IBOS_VERSION < 127
+    LDX #userRegBankInsertStatus + 1
+ELSE
+    INX
+ENDIF
+    JSR ReadUserReg:AND L00AF
     JSR WriteUserRegAndCheckNextCharI:BNE ExitAndClaimServiceCallIndirect2 ; branch if not 'I'
     INY ; skip 'I'
     JSR unplugBanksUsingTransientRomBankMask
@@ -7705,7 +7730,11 @@ ENDIF
     TAX:TYA:PHA:TXA ; push Y, preserving A
     LDX #0
     CMP #8:BCC LowByte
-    LDX #1 ; SQUASH: INX
+IF IBOS_VERSION < 127
+    LDX #1
+ELSE
+    INX
+ENDIF
 .LowByte
     AND #7:TAY
     LDA #0
