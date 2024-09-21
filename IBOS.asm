@@ -7205,9 +7205,9 @@ ENDIF
             STA prvOswordBlockCopy + 7                                                              ;high byte of buffer length
             PLA
             JSR openFile
-            ; TODO: What if a filing system error occurs after this point? PRVEN is in effect,
-            ; so won't the system lock up when the IBOS ROM is effectively corrupt (missing its
-            ; header and service entry)? Not tested this to see.
+            ; TODO: What if a filing system-generated OS error occurs after this point? PRVEN
+            ; is in effect, so won't the system lock up when the IBOS ROM is effectively
+            ; corrupt (missing its header and service entry)? Not tested this to see.
             JSR getAddressesAndLengthFromPrvOswordBlockCopy
             JSR doTransfer
             JMP osword43TransferDone
