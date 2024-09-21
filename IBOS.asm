@@ -819,6 +819,12 @@ prvRomTypeTableCopy = prv83 + &2C ; 16 bytes
 ; am 95% sure this is right, but be good to check all code using it later.
 prvLastScreenMode = prv83 + &3F
 
+IF IBOS_VERSION < 127
+    SrRomDataBankTmp = prvOswordBlockCopy + 1
+ELSE
+    SrRomDataBankTmp = L00AC
+ENDIF
+
 ; We take advantage of some unofficial OS 1.20 entry points; since IBOS only needs to run on
 ; the Model B this is fine. SQUASH: Any prospect of taking this further? Tastefully of course!
 LDC16       = &DC16
@@ -5492,7 +5498,7 @@ IF IBOS_VERSION < 126
 ENDIF
 
 ; SQUASH: This has only one caller
-; A=0 on entry means the header should say "RAM", otherwise it will say "ROM". A is also copied into the (unused) second byte of the bank's service entry; SFTODO: I don't know why specifically, but maybe this is just done because that's what the Acorn DFS SRAM utilities do (speculation; I haven't checked).
+; A=0 on entry means the header should say "RAM", otherwise it will say "ROM". The bank number is also copied into the (unused) second byte of the bank's service entry; SFTODO: I don't know why specifically, but maybe this is just done because that's what the Acorn DFS SRAM utilities do (speculation; I haven't checked).
 .WriteRomHeaderAndPatchUsingVariableMainRamSubroutine
 {
     XASSERT_USE_PRV1
@@ -5503,9 +5509,17 @@ ENDIF
     ; ROM - so patch variableMainRamSubroutine's ROM header to say "ROM" instead of "RAM"
     LDA #'O':STA WriteRomHeaderDataAO
 .Ram
-    LDA prvOswordBlockCopy + 1 ; SFTODO: THIS IS THE SAME LOCATINO AS IN SRROM/SRDATA SO WE NEED A GLOBAL NAME FOR IT RATHER THAN JUST THE LOCAL ONE WE CURRENTLY HAVE (bankTmp)
+IF IBOS_VERSION < 1.27
+    LDA prvOswordBlockCopy + 1
+ELSE
+    LDA SrRomDataBankTmp
+ENDIF
+IF IBOS_VERSION < 127
+    ; This is redundant in IBOS >=1.27 (and may have been redundant before). Pseudo-bank
+    ; numbers will be converted inside ParseBankNumber.
     JSR checkRamBankAndMakeAbsolute
     STA prvOswordBlockCopy + 1
+ENDIF
     STA WriteRomHeaderDataSFTODO
     JMP variableMainRamSubroutine
 }
@@ -5663,7 +5677,7 @@ IF IBOS_VERSION < 127
 ELSE
     SEC:JSR ParseWERamBankListChecked
 ENDIF
-    PRVEN ; prvRomTypeTableCopy (and bankTmp on IBOS <1.27) are in private RAM
+    PRVEN ; prvRomTypeTableCopy (and SrRomDataBankTmp on IBOS <1.27) are in private RAM
     ; SQUASH: We could save two bytes by doing LDX #maxBank, rotating left instead of right and
     ; doing DEX:BPL BankLoop at the end. However, this would be slightly user-visible because
     ; if the user has specified more banks than there are "slots", it would affect which of the
@@ -5678,20 +5692,9 @@ ENDIF
     JMP plpPrvDisexitSc ; SQUASH: close enough to BEQ always?
 
     ; SQUASH: This has only one caller and a single RTS, so can it just be inlined?
-    ; SQUASH: DoBankX seems to set/clear C/V to indicate things, but nothing seems to check them.
-    ; SQUASH: Although some other code uses prvOswordBlockCopy + 1 to hold a bank number, I
-    ; don't believe this code is ever used in conjunction with an OSWORD call. If that's right,
-    ; we could shorten the code slightly by using a zero-page temporary for bankTmp.
-IF IBOS_VERSION < 127
-    bankTmp = prvOswordBlockCopy + 1
-ELSE
-    ; Putting bankTmp in transient ZP workspace saves code size in itself, but also allows us
-    ; to avoid doing PRVEN above.
-    bankTmp = L00AC
-ENDIF
 RomRamFlagTmp = L00AD ; &80 for *SRROM, &00 for *SRDATA
 .DoBankX
-    STX bankTmp
+    STX SrRomDataBankTmp
     PHP
     LDA #0:ROR A:STA RomRamFlagTmp ; put C in b7 of RomRamFlagTmp
 IF IBOS_VERSION < 127
@@ -5699,12 +5702,12 @@ IF IBOS_VERSION < 127
     LDA prvRomTypeTableCopy,X:BEQ EmptyBank
     CMP #RomTypeSrData:BNE FailSFTODOA
 .EmptyBank
-    LDA bankTmp:JSR removeBankAFromSrDataBanks
+    LDA SrRomDataBankTmp:JSR removeBankAFromSrDataBanks
 ELSE
     ; In IBOS >= 1.27, this is handled by ParseWERamBankListChecked.
 ENDIF
     PLP:BCS IsSrrom
-    LDA bankTmp:JSR AddBankAToSrDataBanks
+    LDA SrRomDataBankTmp:JSR AddBankAToSrDataBanks
 IF IBOS_VERSION < 127
     BCS FailSFTODOB ; branch if already had max banks
 ELSE
@@ -5714,9 +5717,9 @@ ELSE
 ENDIF
 .IsSrrom
     LDA RomRamFlagTmp:JSR WriteRomHeaderAndPatchUsingVariableMainRamSubroutine
-    LDX bankTmp:LDA #RomTypeSrData:STA prvRomTypeTableCopy,X:STA RomTypeTable,X
+    LDX SrRomDataBankTmp:LDA #RomTypeSrData:STA prvRomTypeTableCopy,X:STA RomTypeTable,X
 .RestoreXRts
-	LDX bankTmp
+	LDX SrRomDataBankTmp
 .Rts
     RTS
 
@@ -5737,6 +5740,7 @@ IF IBOS_VERSION < 127
 ENDIF
 }
 
+; SQUASH: This *may* be redundant in IBOS >=1.27, would need to check carefully.
 {
 .^checkRamBankAndMakeAbsolute
     XASSERT_USE_PRV1
