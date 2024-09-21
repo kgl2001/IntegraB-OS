@@ -5464,14 +5464,13 @@ IF IBOS_VERSION < 127
     LDX #lo(wipeBankATemplate):LDY #hi(wipeBankATemplate):JSR CopyYxToVariableMainRamSubroutine
     PLA
     JSR variableMainRamSubroutine
-    ; In IBOS Version >= 127, this function is carried out in ParseWERamBankListChecked
+    ; In IBOS Version >= 127, this function is carried out in ParseWERamBankListCheckedAndPrvEn
     PHA:JSR removeBankAFromSrDataBanks:PLA ; SFTODO: So *SRWIPE implicitly performs a *SRROM on each bank it wipes?
     TAX:LDA #0:STA RomTypeTable,X:STA prvRomTypeTableCopy,X
 .Rts
     RTS
 ELSE
-    CLC:JSR ParseWERamBankListChecked
-    PRVEN
+    CLC:JSR ParseWERamBankListCheckedAndPrvEn
     ; SQUASH: Probably not worth it, but just possibly we do enough looping over a 16-bit ROM mask that
     ; a subroutine which lets us do:
     ;     JSR IterateOverTransientRomBankMask:EQUW subroutine_to_call_for_each_bank
@@ -5674,10 +5673,10 @@ ENDIF
     PHP
 IF IBOS_VERSION < 127
     JSR ParseRomBankListChecked2
-ELSE
-    SEC:JSR ParseWERamBankListChecked
-ENDIF
     PRVEN ; prvRomTypeTableCopy (and SrRomDataBankTmp on IBOS <1.27) are in private RAM
+ELSE
+    SEC:JSR ParseWERamBankListCheckedAndPrvEn
+ENDIF
     ; SQUASH: We could save two bytes by doing LDX #maxBank, rotating left instead of right and
     ; doing DEX:BPL BankLoop at the end. However, this would be slightly user-visible because
     ; if the user has specified more banks than there are "slots", it would affect which of the
@@ -5704,7 +5703,7 @@ IF IBOS_VERSION < 127
 .EmptyBank
     LDA SrRomDataBankTmp:JSR removeBankAFromSrDataBanks
 ELSE
-    ; In IBOS >= 1.27, this is handled by ParseWERamBankListChecked.
+    ; In IBOS >= 1.27, this is handled by ParseWERamBankListCheckedAndPrvEn.
 ENDIF
     PLP:BCS IsSrrom
     LDA SrRomDataBankTmp:JSR AddBankAToSrDataBanks
@@ -5971,11 +5970,14 @@ IF IBOS_VERSION >= 127
 ; ensureWriteableBankXIsUsableRam), so there is an implicit assumption that no errors can occur
 ; after this point in our caller.
 ;
+; PRVEN is in effect when this returns.
+;
 ; At the moment this is only used by *SRWIPE (entered with C clear), *SRROM and *SRDATA (both
 ; entered with C set).
-.ParseWERamBankListChecked
+.ParseWERamBankListCheckedAndPrvEn
 {
     PHP ; save C on entry
+    PRVEN
     JSR ParseRomBankListChecked
 
     ; The following loops perform a 16-bit rotate left on transientRomBankMask+{0,1}; this
