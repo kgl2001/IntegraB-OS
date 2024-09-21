@@ -5908,15 +5908,12 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 }
 
 IF IBOS_VERSION >= 127
-; TODO: We should possibly get rid of this ViaOsword variant and just allow the "Not W/E Ram"
-; error to be generated when called via OSWORD &43. OSWORD &43 can already generate numerous OS
-; errors, as can Acorn's own implementation.
+; This generates OS errors, which is not generally correct for OSWORD calls. However, Acorn's
+; own OSWORD &43 is quite happy to generate OS errors, and the OSWORD &42 and &43 APIs provide
+; no way to pass back a failure to the user (the parameter block is unmodified on exit, unless
+; it got trampled on by the transfer), so I think it's reasonable behaviour here.
 .ensureOswordBlockBankIsUsableRamIfPossibleViaOsword
 {
-    SEC
-    EQUB opcodeLdaImmediate ; skip following CLC
-.^ensureOswordBlockBankIsUsableRamIfPossibleViaStarCmd
-    CLC
     BIT prvOswordBlockCopy:BPL Rts ; branch if reading from SWR
     LDA prvOswordBlockCopy + 1:BMI Rts ; branch if pseudo addressing in operation
     PHA
@@ -5929,8 +5926,10 @@ IF IBOS_VERSION >= 127
     LDA cpldRamWriteProtectFlags8_F:ORA transientRomBankMask + 1:STA cpldRamWriteProtectFlags8_F
 .NotTemporaryWriteEnable
     PLA
+    CLC
 ; Alternate entry point with the bank number in A and therefore no checks for the OSWORD block
-; specifying a write or that normal non-pseudo addressing is in use. The behavior is otherwise
+; specifying a write or that normal non-pseudo addressing is in use. Additionally, for this
+; entry point errors are generated iff C is clear on entry.
 ; identical.
 .^ensureBankAIsUsableRamIfPossible
     TAX
@@ -6226,9 +6225,6 @@ ENDIF
             JSR parseOsword4243Length
             JSR L9C42
 	  JSR ParseBankNumberIfPresent
-IF IBOS_VERSION >= 127
-	  JSR ensureOswordBlockBankIsUsableRamIfPossibleViaStarCmd
-ENDIF
             JMP osword42Internal
 }
 
@@ -6853,9 +6849,6 @@ ENDIF
     STA prvOswordBlockCopy + 9 ; high byte of sideways start address
 IF IBOS_VERSION < 127
     BIT prvOswordBlockCopy + 7 ; redundant
-ENDIF
-IF IBOS_VERSION >= 127
-    JSR ensureOswordBlockBankIsUsableRamIfPossibleViaStarCmd
 ENDIF
     JMP osword43Internal
 }
