@@ -6126,37 +6126,41 @@ ENDIF
             STA prvOswordBlockCopy + 9
             RTS
 
+; SQUASH: This has only one caller and doesn't seem to return early.
 {
-.^L9C52
+.^ParseSrReadWriteCommand
     XASSERT_USE_PRV1
-      JSR FindNextCharAfterSpace								;find next character. offset stored in Y
+    JSR FindNextCharAfterSpace
 IF IBOS_VERSION < 127
-            LDA (transientCmdPtr),Y
+    LDA (transientCmdPtr),Y
 ENDIF
-            CMP #'@'
-            BNE parseOsword4243BufferAddress
-            INY
-            TYA
-            PHA
-            LDA tubePresenceFlag
-            BPL L9C67
-            LDA #&08
-            BNE L9C71
-.L9C67      LDA #&B4								;select read/write OSHWM
-            LDX #&00
-            LDY #&FF
-            JSR OSBYTE								;execute read/write OSHWM
-            TYA
-.L9C71      STA prvOswordBlockCopy + 3
-            LDA #&00
-            STA prvOswordBlockCopy + 2
-            STA prvOswordBlockCopy + 4
-            STA prvOswordBlockCopy + 5
-            PLA
-            TAY
-            RTS
+    CMP #'@'
+    BNE parseOsword4243BufferAddress
+    INY
+    TYA
+    PHA
+    LDA tubePresenceFlag
+    BPL L9C67
+    LDA #&08
+    BNE L9C71
+.L9C67
+    ; SQUASH: Can we factor this OSHWM read out into a function?
+    LDA #osbyteReadWriteOshwm
+    LDX #&00
+    LDY #&FF
+    JSR OSBYTE
+    TYA
+.L9C71
+    STA prvOswordBlockCopy + 3
+    LDA #&00
+    STA prvOswordBlockCopy + 2
+    STA prvOswordBlockCopy + 4
+    STA prvOswordBlockCopy + 5
+    PLA
+    TAY
+    RTS
 }
-			
+
 ; Parse a 32-bit hex-default value from the command line and store it in the "buffer address" part of prvOswordBlockCopy. (Some callers will move it from there to where they really want it afterwards.)
 .parseOsword4243BufferAddress
 {
@@ -6221,7 +6225,7 @@ ENDIF
 .L9CDF      STA prvOswordBlockCopy
             LDA #&00
             STA L02EE
-            JSR L9C52
+            JSR ParseSrReadWriteCommand
             JSR parseOsword4243Length
             JSR L9C42
 	  JSR ParseBankNumberIfPresent
