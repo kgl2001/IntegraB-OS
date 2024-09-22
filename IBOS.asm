@@ -5923,7 +5923,7 @@ IF IBOS_VERSION >= 127
     ; TODO: We probably shouldn't be touching TransientZP from an OSWORD call. I'm not sure
     ; this is respected in general in IBOS though, and in practice it will be fine here. Note
     ; that we only do it if the IBOS-specific write enable bit is set.
-    JSR createRomBankMaskForBankA
+    PLA:PHA:JSR createRomBankMaskForBankA
     ; We update the CPLD flags even if we're on v1 hardware; this is just a no-op in that case.
     LDX #1
 .Loop
