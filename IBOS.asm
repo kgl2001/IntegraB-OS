@@ -6118,18 +6118,19 @@ ENDIF
 .GenerateSyntaxErrorIndirect
 	  JMP GenerateSyntaxErrorForTransientCommandIndex
 
-.L9C42
+; SQUASH: This only has one caller and doesn't seem to return early.
+.parseOsword42SramStartAddress
     XASSERT_USE_PRV1
-      JSR ConvertIntegerDefaultHex
-            BCS GenerateSyntaxErrorIndirect
-            LDA L00B0
-            STA prvOswordBlockCopy + 8
-            LDA L00B1
-            STA prvOswordBlockCopy + 9
-            RTS
+    JSR ConvertIntegerDefaultHex
+    BCS GenerateSyntaxErrorIndirect
+    LDA L00B0
+    STA prvOswordBlockCopy + 8
+    LDA L00B1
+    STA prvOswordBlockCopy + 9
+    RTS
 
 ; SQUASH: This has only one caller and doesn't seem to return early.
-.parseSrReadWriteStartAddress
+.parseOsword42SourceStartAddress
 {
     XASSERT_USE_PRV1
     JSR FindNextCharAfterSpace
@@ -6187,7 +6188,7 @@ ENDIF
     RTS
 }
 
-.parseOsword4243Length
+.parseOsword4243EndAddress
 {
     XASSERT_USE_PRV1
     JSR FindNextCharAfterSpace
@@ -6237,9 +6238,9 @@ ENDIF
     STA prvOswordBlockCopy
     LDA #&00
     STA L02EE
-    JSR parseSrReadWriteStartAddress
-    JSR parseOsword4243Length
-    JSR L9C42
+    JSR parseOsword42SourceStartAddress
+    JSR parseOsword4243EndAddress
+    JSR parseOsword42SramStartAddress
     JSR ParseBankNumberIfPresent
     JMP osword42Internal
 }
@@ -6848,7 +6849,7 @@ ENDIF
     JSR getSrsaveLoadFilename
     JSR parseOsword4243BufferAddress
     BIT prvOswordBlockCopy:BMI NotSave ; test function
-    JSR parseOsword4243Length
+    JSR parseOsword4243EndAddress
     ; SFTODO: Once the code is all worked out for both OSWORD &42 and &43, it's probably best
     ; to define constants e.g. prvOswordBlockCopyBufferLength = prvOswordBlockCopy + 6 and use
     ; those everywhere, instead of relying on comments on each line.
