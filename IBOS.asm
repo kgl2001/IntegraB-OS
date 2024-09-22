@@ -6136,7 +6136,7 @@ ENDIF
 IF IBOS_VERSION < 127
     LDA (transientCmdPtr),Y
 ENDIF
-    ;
+    ; There seems to be an undocumented feature here where specifying "@" means "HIMEM".
     CMP #'@':BNE parseOsword4243BufferAddress
     INY
     TYA
@@ -6186,40 +6186,40 @@ ENDIF
     STA prvOswordBlockCopy + 5
     RTS
 }
-			
+
 .parseOsword4243Length
 {
     XASSERT_USE_PRV1
-            JSR FindNextCharAfterSpace								;find next character. offset stored in Y
+    JSR FindNextCharAfterSpace
 IF IBOS_VERSION < 127
-            LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
 ENDIF
-            CMP #'+'
-            PHP
-            BNE L9CA7
-            INY
-.L9CA7      JSR ConvertIntegerDefaultHex
-            BCS GenerateSyntaxErrorIndirect
-            PLP
-            BEQ L9CC7
-	  ; SFTODO: I think the next three lines give the Integra-B style "exclusive" end address on *SRSAVE - do they have a similarly "incompatible-with-Master" effect on other commands calling this code, or is this adjustment required to be compatible on those other cases?
-            INC L00B0
-            BNE L9CB5
-            INC L00B1
-.L9CB5      SEC
-            LDA L00B0
-            SBC prvOswordBlockCopy + 2
-            STA prvOswordBlockCopy + 6
-            LDA L00B1
-            SBC prvOswordBlockCopy + 3
-            STA prvOswordBlockCopy + 7
-            RTS
+    CMP #'+'
+    PHP
+    BNE NotPlus
+    INY
+.NotPlus
+    JSR ConvertIntegerDefaultHex
+    BCS GenerateSyntaxErrorIndirect
+    PLP:BEQ Plus
+    ; SFTODO: I think the next three lines give the Integra-B style "exclusive" end address on *SRSAVE - do they have a similarly "incompatible-with-Master" effect on other commands calling this code, or is this adjustment required to be compatible on those other cases?
+    INCWORD L00B0
+    SEC
+    LDA L00B0
+    SBC prvOswordBlockCopy + 2
+    STA prvOswordBlockCopy + 6
+    LDA L00B1
+    SBC prvOswordBlockCopy + 3
+    ; SQUASH: JMP/BXX to STA:RTS at end of Plus branch?
+    STA prvOswordBlockCopy + 7
+    RTS
 
-.L9CC7      LDA L00B0
-            STA prvOswordBlockCopy + 6
-            LDA L00B1
-            STA prvOswordBlockCopy + 7
-            RTS
+.Plus
+    LDA L00B0
+    STA prvOswordBlockCopy + 6
+    LDA L00B1
+    STA prvOswordBlockCopy + 7
+    RTS
 }
 
 {
