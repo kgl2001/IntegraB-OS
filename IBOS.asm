@@ -343,6 +343,7 @@ oswordInputLine = &00
 oswordSound = &07
 oswordReadPixel = &09
 
+tubeOshwm = &800
 shadowHimem = &8000
 
 romBinaryVersion = &8008
@@ -5839,7 +5840,8 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ; SFTODO: The way this block is set up by *SRSAVE and *SRLOAD is almost certainly the *right* way, so go through that code and then update all comments to reflect that and just document in the relevant places that this routine is buggy and sets it up wrong and what the consequences are
 
 .adjustPrvOsword43Block
-; SFTODO: Could this be rewritten more compactly as a loop?
+; SQUASH: Could this be rewritten more compactly as a loop? Maybe using a (from/to) pair table
+; if it's too complex to do a simple increment/decrement loop.
 ; SFTODO: This only has one caller
 {
     XASSERT_USE_PRV1
@@ -6127,30 +6129,32 @@ ENDIF
             RTS
 
 ; SQUASH: This has only one caller and doesn't seem to return early.
+.parseSrReadWriteStartAddress
 {
-.^ParseSrReadWriteCommand
     XASSERT_USE_PRV1
     JSR FindNextCharAfterSpace
 IF IBOS_VERSION < 127
     LDA (transientCmdPtr),Y
 ENDIF
-    CMP #'@'
-    BNE parseOsword4243BufferAddress
+    ;
+    CMP #'@':BNE parseOsword4243BufferAddress
     INY
     TYA
     PHA
-    LDA tubePresenceFlag
-    BPL L9C67
-    LDA #&08
-    BNE L9C71
-.L9C67
+    LDA tubePresenceFlag:BPL NoTube
+    ; We're in the host, so we can't read the tube OSHWM with osbyteReadWriteOshwm.
+    LDA #>tubeOshwm
+    BNE OshwmInA
+.NoTube
     ; SQUASH: Can we factor this OSHWM read out into a function?
     LDA #osbyteReadWriteOshwm
     LDX #&00
     LDY #&FF
     JSR OSBYTE
     TYA
-.L9C71
+.OshwmInA
+    ; Set start address to OSHWM; high word is zero so the start address will be in the co-pro
+    ; if we have one.
     STA prvOswordBlockCopy + 3
     LDA #&00
     STA prvOswordBlockCopy + 2
@@ -6162,20 +6166,25 @@ ENDIF
 }
 
 ; Parse a 32-bit hex-default value from the command line and store it in the "buffer address" part of prvOswordBlockCopy. (Some callers will move it from there to where they really want it afterwards.)
+; SFTODO: I am not sure this routine is well-named. I think there is some sort of attempt to
+; internally unify the structure of the OSWORD &42/&43 blocks in prvOswordBlockCopy and that
+; precisely what this is the address *of* is different for OSWORD &42/&43. All this code would
+; benefit from a reworking of labels and comments.
 .parseOsword4243BufferAddress
 {
     XASSERT_USE_PRV1
-            JSR ConvertIntegerDefaultHex
-            BCS GenerateSyntaxErrorIndirect
-            LDA L00B0
-            STA prvOswordBlockCopy + 2
-            LDA L00B1
-            STA prvOswordBlockCopy + 3
-            LDA L00B2
-            STA prvOswordBlockCopy + 4
-            LDA L00B3
-            STA prvOswordBlockCopy + 5
-            RTS
+    JSR ConvertIntegerDefaultHex
+    BCS GenerateSyntaxErrorIndirect
+    ; SQUASH: Rewrite as a loop?
+    LDA L00B0
+    STA prvOswordBlockCopy + 2
+    LDA L00B1
+    STA prvOswordBlockCopy + 3
+    LDA L00B2
+    STA prvOswordBlockCopy + 4
+    LDA L00B3
+    STA prvOswordBlockCopy + 5
+    RTS
 }
 			
 .parseOsword4243Length
@@ -6225,7 +6234,7 @@ ENDIF
 .L9CDF      STA prvOswordBlockCopy
             LDA #&00
             STA L02EE
-            JSR ParseSrReadWriteCommand
+            JSR parseSrReadWriteStartAddress
             JSR parseOsword4243Length
             JSR L9C42
 	  JSR ParseBankNumberIfPresent
