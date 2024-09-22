@@ -6224,21 +6224,24 @@ ENDIF
 
 {
 ;*SRREAD Command
-.^srread	  PRVEN								;switch in private RAM
-            LDA #&00
-            JMP L9CDF ; SQUASH: BEQ always or use BIT to skip next two bytes
-			
+.^srread
+    PRVEN
+    LDA #&00
+    JMP Common ; SQUASH: BEQ always or use BIT to skip next two bytes
+
 ;*SRWRITE Command
-.^srwrite	  PRVEN								;switch in private RAM
-            LDA #&80
-.L9CDF      STA prvOswordBlockCopy
-            LDA #&00
-            STA L02EE
-            JSR parseSrReadWriteStartAddress
-            JSR parseOsword4243Length
-            JSR L9C42
-	  JSR ParseBankNumberIfPresent
-            JMP osword42Internal
+.^srwrite
+    PRVEN
+    LDA #&80
+.Common
+    STA prvOswordBlockCopy
+    LDA #&00
+    STA L02EE
+    JSR parseSrReadWriteStartAddress
+    JSR parseOsword4243Length
+    JSR L9C42
+    JSR ParseBankNumberIfPresent
+    JMP osword42Internal
 }
 
 ; SFTODO: slightly poor name based on quick scan of code below, I don't know
