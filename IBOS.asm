@@ -5917,27 +5917,30 @@ IF IBOS_VERSION >= 127
 .ensureOswordBlockBankIsUsableRamIfPossibleViaOsword
 {
     BIT prvOswordBlockCopy:BPL Rts ; branch if reading from SWR
-    LDA prvOswordBlockCopy + 1:BMI Rts ; branch if pseudo addressing in operation
-    PHA
+    LDX prvOswordBlockCopy + 1:BMI Rts ; branch if pseudo addressing in operation
     LDA prvOswordBlockCopy:AND #Osword43FunctionTemporaryWEBit:BEQ NotTemporaryWriteEnable
-    ; TODO: We probably shouldn't be touching TransientZP from an OSWORD call. I'm not sure
-    ; this is respected in general in IBOS though, and in practice it will be fine here. Note
-    ; that we only do it if the IBOS-specific write enable bit is set.
-    PLA:PHA:JSR createRomBankMaskForBankA
+
+    ; transientRomBankMask overlaps transientOs4243BytesToTransfer, so we must save and restore
+    ; this in order to be able to use createRomBankMaskForBankA safely.
+    LDA transientRomBankMask:PHA:LDA transientRomBankMask+1:PHA
+    TXA:JSR createRomBankMaskForBankA
     ; We update the CPLD flags even if we're on v1 hardware; this is just a no-op in that case.
+    ; SQUASH: I think we could use Y for this loop, then we wouldn't need to do "LDX
+    ; prvOswordBlockCopy + 1" again below.
     LDX #1
 .Loop
     LDA cpldRamWriteProtectFlags0_7,X:ORA transientRomBankMask,X:STA cpldRamWriteProtectFlags0_7,X
     DEX:BPL Loop
+    PLA:STA transientRomBankMask+1:PLA:STA transientRomBankMask
+
 .NotTemporaryWriteEnable
-    PLA
     CLC
 ; Alternate entry point with the bank number in A and therefore no checks for the OSWORD block
 ; specifying a write or that normal non-pseudo addressing is in use. Additionally, for this
 ; entry point errors are generated iff C is clear on entry.
 ; identical.
 .^ensureBankAIsUsableRamIfPossible
-    TAX
+    LDX prvOswordBlockCopy + 1
     PHP
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE notWERam ; branch if not RAM
     PLP
@@ -6323,7 +6326,11 @@ ENDIF
             LDA #&C0
             SBC transientOs4243SwrAddr + 1
             STA L00AD
-            JMP L9D42 ; SFTODO: This is redundant and could be replaced by FALLTHROUGH_TO L9D42
+IF IBOS_VERSION < 127
+            JMP L9D42
+ELSE
+            FALLTHROUGH_TO L9D42
+ENDIF
 
 ; SFTODO: calculate n=(AF AE) - (AD AC), if n<0 go to L9D53 else (AE AF)=n:RTS
 .L9D42      SEC
@@ -6514,9 +6521,12 @@ ENDIF
     INC staAbs + 1:BNE wipeLoop
     INC staAbs + 2:BIT staAbs + 2:BVC wipeLoop ; test high byte bit 6 (have we reached &4000?)
     LDA romselCopy
-    ; SQUASH: We could replace next three instructions with JMP osStxRomselAndCopyAndRts.
+IF IBOS_VERSION < 127
     STX romselCopy:STX romsel
     RTS
+ELSE
+    JMP osStxRomselAndCopyAndRts
+ENDIF
 
     RELOCATE variableMainRamSubroutine, wipeBankATemplate
     ASSERT P% - wipeBankATemplate <= variableMainRamSubroutineMaxSize
@@ -6535,9 +6545,12 @@ ENDIF
     LDA SrDataHeader,Y:STA &8000,Y ; SFTODO: mildly magic
     DEY:BPL CopyLoop
     LDA romselCopy
-    ; SQUASH: We could replace next three instructions with JMP osStxRomselAndCopyAndRts.
+IF IBOS_VERSION < 127
     STX romselCopy:STX romsel
     RTS
+ELSE
+    JMP osStxRomselAndCopyAndRts
+ENDIF
 
 ;ROM Header
 .SrDataHeader
