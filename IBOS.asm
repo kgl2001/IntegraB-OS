@@ -1195,10 +1195,10 @@ ELSE
     EQUS &02, &98                       ;Parameter &99:                 '<id>(,<id>)...'
     EQUS &02, &98                       ;Parameter &9A:                 '<id>(,<id>)...'
     EQUS &04, "(", &98, &A2             ;Parameter &9B:                 '(<id>(,<id>).../?)'
-    EQUS &06, &94, &AD, &A5, &A4, &B2   ;Parameter &9C:                 '<fsp> <sraddr> (<id>) (Q)(I)(T)'
-    EQUS &05, &94, &AD, &AB, &A5        ;Parameter &9D:                 '<fsp> (<end>/+<len>) (<id>) (Q)'
-    EQUS &06, "<", &AC, &AB, &AD, &A6   ;Parameter &9E:                 '<addr> (<end>/+<len>) <sraddr> (<id>)'
-    EQUS &02, &9E                       ;Parameter &9F:                 '<addr> (<end>/+<len>) <sraddr> (<id>)'
+    EQUS &06, &94, &AD, &A5, &A4, &B2   ;Parameter &9C for *SRLOAD:     '<fsp> <sraddr> (<id>) (Q)(I)(T)' # ENHANCE: add '(P)'?
+    EQUS &05, &94, &AD, &AB, &A5        ;Parameter &9D for *SRSAVE:     '<fsp> (<end>/+<len>) (<id>) (Q)'
+    EQUS &06, "<", &AC, &AB, &AD, &A6   ;Parameter &9E for *SRREAD:     '<addr> (<end>/+<len>) <sraddr> (<id>)'
+    EQUS &04, &9E, " ", &B2             ;Parameter &9F for *SRWRITE:    '<addr> (<end>/+<len>) <sraddr> (<id>) (T)'
     EQUS &04, &98, " ", &B2             ;Parameter &A0:                 '<id>(,<id>)... (T)'
     EQUS &04, &98, " ", &B2             ;Parameter &A1:                 '<id>(,<id>)... (T)'
     EQUS &04, "/?)"                     ;Parameter &A2:                 '/?)'
@@ -5919,13 +5919,16 @@ IF IBOS_VERSION >= 127
     BIT prvOswordBlockCopy:BPL Rts ; branch if reading from SWR
     LDA prvOswordBlockCopy + 1:BMI Rts ; branch if pseudo addressing in operation
     PHA
-    ; TODO: We probably shouldn't be touching TransientZP from an OSWORD call. I'm not sure
-    ; this is respected in general in IBOS though, and in practice it will be fine here.
-    JSR createRomBankMaskForBankA
     LDA prvOswordBlockCopy:AND #Osword43FunctionTemporaryWEBit:BEQ NotTemporaryWriteEnable
+    ; TODO: We probably shouldn't be touching TransientZP from an OSWORD call. I'm not sure
+    ; this is respected in general in IBOS though, and in practice it will be fine here. Note
+    ; that we only do it if the IBOS-specific write enable bit is set.
+    JSR createRomBankMaskForBankA
     ; We update the CPLD flags even if we're on v1 hardware; this is just a no-op in that case.
-    LDA cpldRamWriteProtectFlags0_7:ORA transientRomBankMask + 0:STA cpldRamWriteProtectFlags0_7
-    LDA cpldRamWriteProtectFlags8_F:ORA transientRomBankMask + 1:STA cpldRamWriteProtectFlags8_F
+    LDX #1
+.Loop
+    LDA cpldRamWriteProtectFlags0_7,X:ORA transientRomBankMask,X:STA cpldRamWriteProtectFlags0_7,X
+    DEX:BPL Loop
 .NotTemporaryWriteEnable
     PLA
     CLC
@@ -6250,6 +6253,16 @@ ENDIF
     JSR parseOsword4243EndAddress
     JSR parseOsword42SramStartAddress
     JSR ParseBankNumberIfPresent
+IF IBOS_VERSION >= 127
+    ; Parse a 'T' option, if present.
+    JSR FindNextCharAfterSpace
+    AND #CapitaliseMask
+    CMP #'T':BNE NotT
+    LDA prvOswordBlockCopy
+    ORA #Osword43FunctionTemporaryWEBit
+    STA prvOswordBlockCopy
+.NotT
+ENDIF
     JMP osword42Internal
 }
 
@@ -6993,10 +7006,19 @@ ENDIF
 IF IBOS_VERSION < 127
     BCS LA0B1 ; SFTODO: I don't believe this branch can ever be taken
 ELSE
+    ; We save the current write protect flags and reapply them afterwards; this is
+    ; harmless if we are on v1 hardware where these registers don't mean anything or if
+    ; we are on v2 hardware and aren't actually changing anything anyway.
+    LDA cpldRamWriteProtectFlags0_7:PHA
+    LDA cpldRamWriteProtectFlags8_F:PHA
     JSR ensureOswordBlockBankIsUsableRamIfPossibleViaOsword
 ENDIF
     JSR PrepareMainSidewaysRamTransfer
     JSR doTransfer
+IF IBOS_VERSION >= 127
+    PLA:STA cpldRamWriteProtectFlags8_F
+    PLA:STA cpldRamWriteProtectFlags0_7
+ENDIF
 .LA0B1
     PHP
     BIT prvTubeReleasePending:BPL NoTubeReleasePending
