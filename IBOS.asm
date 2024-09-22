@@ -6048,49 +6048,57 @@ ENDIF
 .parseSrsaveLoadFlags
 {
     XASSERT_USE_PRV1
-            LDA #&00
-            STA prvOswordBlockCopy + 6							;low byte of buffer length
-            STA prvOswordBlockCopy + 7							;high byte of buffer length
-.L9BF1      JSR FindNextCharAfterSpace							;find next character. offset stored in Y
+    LDA #&00
+    STA prvOswordBlockCopy + 6							;low byte of buffer length
+    STA prvOswordBlockCopy + 7							;high byte of buffer length
+.Loop
+    JSR FindNextCharAfterSpace							;find next character. offset stored in Y
 IF IBOS_VERSION < 127
-            LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
+    LDA (transientCmdPtr),Y ; Redundant. Included in JSR FindNextCharAfterSpace
 ENDIF
-            CMP #vduCr
-            BEQ rts  								;Yes? Then jump to end
-            AND #CapitaliseMask								;Capitalise
-            CMP #'Q'								;'Q'
-            BNE L9C07								;No? Goto next check
-            LDA #&80								;set bit 7
-            STA prvOswordBlockCopy + 7							;high byte of buffer length
-            BNE NextCharacter ;Increment and loop
+    CMP #vduCr
+    BEQ rts  								;Yes? Then jump to end
+    AND #CapitaliseMask								;Capitalise
+IF IBOS_VERSION < 127
+    CMP #'Q'								;'Q'
+    BNE L9C07								;No? Goto next check
+    LDA #&80								;set bit 7
+    STA prvOswordBlockCopy + 7							;high byte of buffer length
+    BNE NextCharacter ;Increment and loop
 .L9C07
-            CMP #'I'								;'I'
-            BNE L9C12								;No? Goto next check
-            LDA prvOswordBlockCopy							;function
-            ORA #&01								;set bit 0 SFTODO: aha, so this and code below is where the mysterious undocumented function bits are set - update other comments, perhaps used named constants for this
-            BNE UpdatePrvOswordBlockCopy								;write function, increment and loop
-.L9C12      CMP #'P'								;'P' ; SFTODO: what does this do? it's not in *HELP output I think
-IF IBOS_VERSION < 127
-            BNE NextCharacter
-ELSE
-            BNE TestT
-ENDIF
-            LDA prvOswordBlockCopy							;function
-            ORA #&02								;set bit 1
-IF IBOS_VERSION >= 127
-            BNE UpdatePrvOswordBlockCopy ; always branch
-.TestT
-            CMP #'T'
-            BNE NextCharacter
-            LDA prvOswordBlockCopy
-            ORA #Osword43FunctionTemporaryWEBit
-            FALLTHROUGH_TO UpdatePrvOswordBlockCopy
-ENDIF
+    CMP #'I'								;'I'
+    BNE L9C12								;No? Goto next check
+    LDA prvOswordBlockCopy							;function
+    ORA #&01								;set bit 0 SFTODO: aha, so this and code below is where the mysterious undocumented function bits are set - update other comments, perhaps used named constants for this
+    BNE UpdatePrvOswordBlockCopy								;write function, increment and loop
+.L9C12
+    CMP #'P'								;'P' ; SFTODO: what does this do? it's not in *HELP output I think
+    BNE NextCharacter
+    LDA prvOswordBlockCopy							;function
+    ORA #&02								;set bit 1
 .UpdatePrvOswordBlockCopy      STA prvOswordBlockCopy							;function
+ELSE
+    TAX
+    CPX #'Q':BNE NotQ
+    LDA #&80:STA prvOswordBlockCopy + 7 ; set high byte of buffer length SFTODO: is it?
+.NotQ
+    LDA prvOswordBlockCopy
+    CPX #'I':BNE NotI
+    ORA #&01
+.NotI
+    CPX #'P':BNE NotP
+    ORA #&02
+.NotP
+    CPX #'T':BNE NotT
+    ORA #Osword43FunctionTemporaryWEBit
+.NotT
+    STA prvOswordBlockCopy
+ENDIF
 .NextCharacter
-            INY									;Next Character
-            BNE L9BF1								;Loop
-.rts        RTS									;End
+    INY
+    BNE Loop
+.rts
+    RTS
 }
 
 ; SFTODO: This has only one caller
