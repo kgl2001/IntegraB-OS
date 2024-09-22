@@ -2709,7 +2709,7 @@ ELSE
     LDX #11
 .ppResetLoop
     TXA:PHA
-    SEC:JSR ensureBankAIsUsableRamIfPossible ; Don't generate error if bank is Write Protected.
+    SEC:JSR ensureBankXIsUsableRamIfPossible ; Don't generate error if bank is Write Protected.
     PLA:TAX
     DEX:CPX #8:BCS ppResetLoop
     LDX #&30
@@ -5935,12 +5935,12 @@ IF IBOS_VERSION >= 127
 
 .NotTemporaryWriteEnable
     CLC
-; Alternate entry point with the bank number in A and therefore no checks for the OSWORD block
+    LDX prvOswordBlockCopy + 1
+; Alternate entry point with the bank number in X and therefore no checks for the OSWORD block
 ; specifying a write or that normal non-pseudo addressing is in use. Additionally, for this
 ; entry point errors are generated iff C is clear on entry.
 ; identical.
-.^ensureBankAIsUsableRamIfPossible
-    LDX prvOswordBlockCopy + 1
+.^ensureBankXIsUsableRamIfPossible
     PHP
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE notWERam ; branch if not RAM
     PLP
