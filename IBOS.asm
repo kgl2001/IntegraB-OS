@@ -5922,6 +5922,7 @@ IF IBOS_VERSION >= 127
 
     ; transientRomBankMask overlaps transientOs4243BytesToTransfer, so we must save and restore
     ; this in order to be able to use createRomBankMaskForBankA safely.
+    ; SQUASH: Can we use {Save,Restore}TransientZP?
     LDA transientRomBankMask:PHA:LDA transientRomBankMask+1:PHA
     TXA:JSR createRomBankMaskForBankA
     ; We update the CPLD flags even if we're on v1 hardware; this is just a no-op in that case.
