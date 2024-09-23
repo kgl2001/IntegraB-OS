@@ -1193,7 +1193,7 @@ ELSE
     EQUS &02, &98                            ;Parameter &99 for *SRDATA:     '<id>(,<id>)...'
     EQUS &02, &98                            ;Parameter &9A for *SRROM:      '<id>(,<id>)...'
     EQUS &04, "(", &98, &A2                  ;Parameter &9B for *SRSET:      '(<id>(,<id>).../?)'
-    EQUS &07, &94, &AD, &A5, &A4, &B2, &B3   ;Parameter &9C for *SRLOAD:     '<fsp> <sraddr> (<id>) (Q)(I)(T)(P)'
+    EQUS &09, &94, &AD, &A5, &A4, &B2, "(P)" ;Parameter &9C for *SRLOAD:     '<fsp> <sraddr> (<id>) (Q)(I)(T)(P)'
     EQUS &05, &94, &AD, &AB, &A5             ;Parameter &9D for *SRSAVE:     '<fsp> (<end>/+<len>) (<id>) (Q)'
     EQUS &06, "<", &AC, &AB, &AD, &A6        ;Parameter &9E for *SRREAD:     '<addr> (<end>/+<len>) <sraddr> (<id>)'
     EQUS &04, &9E, " ", &B2                  ;Parameter &9F for *SRWRITE:    '<addr> (<end>/+<len>) <sraddr> (<id>) (T)'
@@ -1216,7 +1216,6 @@ ELSE
     EQUS &05, "(<0-"                         ;Parameter &B0:                 '(<0-'
     EQUS &04, &B0, "4>"                      ;Parameter &B1:                 '(<0-4>'
     EQUS &04, "(T)"                          ;Parameter &B2:                 '(T)'
-    EQUS &04, "(P)"                          ;Parameter &B3:                 '(P)'
     
 ENDIF
 
@@ -5916,7 +5915,6 @@ IF IBOS_VERSION >= 127
 
     ; transientRomBankMask overlaps transientOs4243BytesToTransfer, so we must save and restore
     ; this in order to be able to use createRomBankMaskForBankA safely.
-    ; SQUASH: Can we use {Save,Restore}TransientZP?
     LDA transientRomBankMask:PHA:LDA transientRomBankMask+1:PHA
     TXA:JSR createRomBankMaskForBankA
     ; We update the CPLD flags even if we're on v1 hardware; this is just a no-op in that case.
