@@ -5848,7 +5848,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             LDA prvOswordBlockCopy + 2
             STA prvOswordBlockCopy + 13
             LDA prvOswordBlockCopy + 3
-            JSR checkRamBankAndMakeAbsoluteAndUpdatePrvOswordBlockCopy                    ;convert pseudo RAM bank to absolute RAM bank & save to private address &21
+            JSR checkRamBankAndMakeAbsoluteAndUpdatePrvOswordBlockCopy ; convert pseudo RAM bank to absolute RAM bank & save to private address &21
             LDA prvOswordBlockCopy + 8
             STA prvOswordBlockCopy + 2
             LDA prvOswordBlockCopy + 9
@@ -5861,10 +5861,12 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             STA prvOswordBlockCopy + 6
             LDA prvOswordBlockCopy + 11
             STA prvOswordBlockCopy + 7
-            LDA prvOswordBlockCopy + 6							;<----This won't work, because we've already overwritten &26 with &2A!!!
-            STA prvOswordBlockCopy + 10							;<----This won't work, because we've already overwritten &26 with &2A!!!
-            LDA prvOswordBlockCopy + 7							;<----This won't work, because we've already overwritten &27 with &2B!!!
-            STA prvOswordBlockCopy + 11							;<----This won't work, because we've already overwritten &27 with &2B!!!
+	  ; SQUASH: As written, these next 4 lines are redundant. STA prvOswordBlockCopy + 10 and prvOswordBlockCopy + 11
+	  ; already contain the values of prvOswordBlockCopy + 6 and prvOswordBlockCopy + 7. Or is this a bug?
+            LDA prvOswordBlockCopy + 6
+            STA prvOswordBlockCopy + 10
+            LDA prvOswordBlockCopy + 7
+            STA prvOswordBlockCopy + 11
             RTS
 }
 			
@@ -5881,30 +5883,22 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ;&80 - Write to absolute address
 ;&C0 - Write to pseudo-address
 
-; SFTODO: Could this be rewritten more compactly as a loop?
 ; SFTODO: This has only one caller
 .adjustPrvOsword42Block
 {
     XASSERT_USE_PRV1
-            LDA prvOswordBlockCopy + 7						;ROM number
-            PHA
-            LDA prvOswordBlockCopy + 6
-            STA prvOswordBlockCopy + 7
-            LDA prvOswordBlockCopy + 5
-            STA prvOswordBlockCopy + 6
-            LDA prvOswordBlockCopy + 4
-            STA prvOswordBlockCopy + 5
-            LDA prvOswordBlockCopy + 3
-            STA prvOswordBlockCopy + 4
-            LDA prvOswordBlockCopy + 2
-            STA prvOswordBlockCopy + 3
-            LDA prvOswordBlockCopy + 1
-            STA prvOswordBlockCopy + 2
-            PLA
-.^checkRamBankAndMakeAbsoluteAndUpdatePrvOswordBlockCopy ; SFTODO: catchy!
-.L9BBC     JSR checkRamBankAndMakeAbsolute					;convert pseudo RAM bank to absolute RAM bank
-            STA prvOswordBlockCopy + 1						;and save to private address &8221
-            RTS
+    LDA prvOswordBlockCopy + 7 ; ROM number
+    PHA
+    LDX #6
+.loop
+    LDA prvOswordBlockCopy,X:STA prvOswordBlockCopy+1,X
+    DEX
+    BNE loop
+    PLA
+.^checkRamBankAndMakeAbsoluteAndUpdatePrvOswordBlockCopy
+    JSR checkRamBankAndMakeAbsolute
+    STA prvOswordBlockCopy + 1
+    RTS
 }
 
 IF IBOS_VERSION >= 127
