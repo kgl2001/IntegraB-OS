@@ -5861,7 +5861,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             STA prvOswordBlockCopy + 6
             LDA prvOswordBlockCopy + 11
             STA prvOswordBlockCopy + 7
-	  ; SQUASH: As written, these next 4 lines are redundant. STA prvOswordBlockCopy + 10 and prvOswordBlockCopy + 11
+	  ; SQUASH: As written, these next 4 lines are redundant. prvOswordBlockCopy + 10 and prvOswordBlockCopy + 11
 	  ; already contain the values of prvOswordBlockCopy + 6 and prvOswordBlockCopy + 7. Or is this a bug?
             LDA prvOswordBlockCopy + 6
             STA prvOswordBlockCopy + 10
