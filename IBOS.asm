@@ -210,18 +210,16 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 ;
 IF IBOS_VERSION < 127
 ; userRegRamPresenceFlags has a bit set for every 32K of RAM. Bit n represents sideways ROM
-; banks 2n and 2n+1; however, bits 0 and 1 are effectively repurposed to represent the 64K of
+; banks 2n and 2n+1; however, bits 0 and 1 are effectively re-purposed to represent the 64K of
 ; non-sideways RAM (the 32K on the model B, plus the 32K of shadow/private RAM on the
 ; Integra-B). Banks 0-3 are the sockets on the motherboard and are assumed to never contain
 ; RAM, so there's no conflict here; see the code for *ROMS, which treats banks 0-3 differently.
 ; ENHANCE: Could we auto-detect this on startup instead of requiring the user to configure it?
-; Maybe stop treating banks 0-3 as a special case and just add 64K (for the main and
-; shadow/private RAM) to the sideways RAM count when displaying the banner? Ken already has
-; some code to change the behaviour in this area.
+; As of IBOS 1.27 we stop treating banks 0-3 as a special case and just add 64K (for the main
+; and shadow/private RAM) to the sideways RAM count when displaying the banner.
 userRegRamPresenceFlags = &7F
 ELSE
 userRegTmp = &7C ; 2 bytes for temporary use
-; KL 3/8/24: userRegRamPresenceFlags0_7 & userRegRamPresenceFlags8_F used in IBOS1.27 and above.
 userRegRamPresenceFlags0_7 = &7E
 userRegRamPresenceFlags8_F = &7F
 ENDIF
@@ -5913,7 +5911,7 @@ IF IBOS_VERSION >= 127
 ; This generates OS errors, which is not generally correct for OSWORD calls. However, Acorn's
 ; own OSWORD &43 is quite happy to generate OS errors, and the OSWORD &42 and &43 APIs provide
 ; no way to pass back a failure to the user (the parameter block is unmodified on exit, unless
-; it got trampled on by the transfer), so I think it's reasonable behaviour here.
+; it got trampled on by the transfer), so I think it's reasonable behavior here.
 .ensureOswordBlockBankIsUsableRamIfPossibleViaOsword
 {
     BIT prvOswordBlockCopy:BPL Rts ; branch if reading from SWR
@@ -5939,7 +5937,6 @@ IF IBOS_VERSION >= 127
 ; Alternate entry point with the bank number in X and therefore no checks for the OSWORD block
 ; specifying a write or that normal non-pseudo addressing is in use. Additionally, for this
 ; entry point errors are generated iff C is clear on entry.
-; identical.
 .^ensureBankXIsUsableRamIfPossible
     PHP
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE notWERam ; branch if not RAM
