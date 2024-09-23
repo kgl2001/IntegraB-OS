@@ -210,18 +210,16 @@ userRegPrvPrintBufferStart = &3A ; the first page in private RAM reserved for th
 ;
 IF IBOS_VERSION < 127
 ; userRegRamPresenceFlags has a bit set for every 32K of RAM. Bit n represents sideways ROM
-; banks 2n and 2n+1; however, bits 0 and 1 are effectively repurposed to represent the 64K of
+; banks 2n and 2n+1; however, bits 0 and 1 are effectively re-purposed to represent the 64K of
 ; non-sideways RAM (the 32K on the model B, plus the 32K of shadow/private RAM on the
 ; Integra-B). Banks 0-3 are the sockets on the motherboard and are assumed to never contain
 ; RAM, so there's no conflict here; see the code for *ROMS, which treats banks 0-3 differently.
 ; ENHANCE: Could we auto-detect this on startup instead of requiring the user to configure it?
-; Maybe stop treating banks 0-3 as a special case and just add 64K (for the main and
-; shadow/private RAM) to the sideways RAM count when displaying the banner? Ken already has
-; some code to change the behaviour in this area.
+; As of IBOS 1.27 we stop treating banks 0-3 as a special case and just add 64K (for the main
+; and shadow/private RAM) to the sideways RAM count when displaying the banner.
 userRegRamPresenceFlags = &7F
 ELSE
 userRegTmp = &7C ; 2 bytes for temporary use
-; KL 3/8/24: userRegRamPresenceFlags0_7 & userRegRamPresenceFlags8_F used in IBOS1.27 and above.
 userRegRamPresenceFlags0_7 = &7E
 userRegRamPresenceFlags8_F = &7F
 ENDIF
@@ -1117,145 +1115,147 @@ ENDIF
 ;Lookup table for recognised * command parameters
 IF IBOS_VERSION < 127
 .CmdParTbl
-    EQUS &09, "(", &A6, "(R))/", &A1    ;Parameter &80 for *ALARM:      '((=<TIME>(R))/ON/OFF/?)'
-    EQUS &04, "(" ,&A7, ")"             ;Parameter &81 for *CALENDAR:   '(<DATE>)'
-    EQUS &07, "((=)", &A7, ")"          ;Parameter &82 for *DATE:       '((=)<DATE>)'
-    EQUS &03, &A6, ")"                  ;Parameter &83 for *TIME:       '(=<TIME>)'
-    EQUS &06, &85, "(,", &A8,&AD        ;Parameter &84 for *CONFIGURE:  '(<par>)(,<par>)...'
-    EQUS &04, "(", &A8, ")"             ;Parameter &85 for *STATUS:     '(<par>)'
-    EQUS &02, &94                       ;Parameter &86 for *CSAVE:      '<fsp>'
-    EQUS &02, &94                       ;Parameter &87 for *CLOAD:      '<fsp>'
-    EQUS &08, "(<cmd>", &A0             ;Parameter &88 for *BOOT:       '(<cmd>/?)'
-    EQUS &06, &AF, "/#" , &98, &A0      ;Parameter &89 for *BUFFER:     '(<0-4>/#<id>(,<id>).../?)'
-    EQUS &03, "(", &A1                  ;Parameter &8A for *PURGE:      '(ON/OFF/?)'
-    EQUS &03, &98,&A2                   ;Parameter &8B for *INSERT:     '<id>(,<id>)...(I)'
-    EQUS &03, &98,&A2                   ;Parameter &8C for *UNPLUG:     '<id>(,<id>)...(I)'
-    EQUS &01                            ;Parameter &8D for *ROMS:
-    EQUS &03, &AF,&A0                   ;Parameter &8E for *OSMODE:     '(<0-4>/?)'
-    EQUS &07, "(", &AE, "1>", &A0, ")"  ;Parameter &8F for *SHADOW:     '((<0-1>/?))'
-    EQUS &03, "(", &A1                  ;Parameter &90 for *SHX:        '(ON/OFF/?)'
-    EQUS &03, "(", &A1                  ;Parameter &91 for *TUBE:       '(ON/OFF/?)'
-    EQUS &03, "<", &AA                  ;Parameter &92 for *GOIO:       '<addr>'
-    EQUS &01                            ;Parameter &93 for *NLE:
-    EQUS &06, "<fsp>"                   ;Parameter &94:                 '<fsp>'
-    EQUS &04, &94, " ", &AC             ;Parameter &95:                 '<fsp> <len>'
-    EQUS &02, &94                       ;Parameter &96:                 '<fsp>'
-    EQUS &02, &94                       ;Parameter &97:                 '<fsp>'
-    EQUS &06, &A5, "(,", &A5, &AD       ;Parameter &98:                 '<id>(,<id>)...'
-    EQUS &02, &98                       ;Parameter &99:                 '<id>(,<id>)...'
-    EQUS &02, &98                       ;Parameter &9A:                 '<id>(,<id>)...'
-    EQUS &04, "(", &98, &A0             ;Parameter &9B:                 '(<id>(,<id>).../?)'
-    EQUS &05, &94, &AB, &A3, &A2        ;Parameter &9C:                 '<fsp> <sraddr> (<id>) (Q)(I)'
-    EQUS &05, &94, &AB, &A9, &A3        ;Parameter &9D:                 '<fsp> (<end>/+<len>) (<id>) (Q)'
-    EQUS &06, "<", &AA, &A9, &AB, &A4   ;Parameter &9E:                 '<addr> (<end>/+<len>) <sraddr> (<id>)'
-    EQUS &02, &9E                       ;Parameter &9F:                 '<addr> (<end>/+<len>) <sraddr> (<id>)'
-    EQUS &04, "/?)"                     ;Parameter &A0:                 '/?)'
-    EQUS &08, "ON/OFF", &A0             ;Parameter &A1:                 'ON/OFF/?)'
-    EQUS &04, "(I)"                     ;Parameter &A2:                 '(I)'
-    EQUS &06, &A4," (Q)"                ;Parameter &A3:                 ' (<id>) (Q)'
-    EQUS &05, " (", &A5, ")"            ;Parameter &A4:                 ' (<id>)'
-    EQUS &05, "<id>"                    ;Parameter &A5:                 '<id>'
-    EQUS &09, "(=<time>"                ;Parameter &A6:                 '(=<time>'
-    EQUS &07, "<date>"                  ;Parameter &A7:                 '<date>'
-    EQUS &06, "<par>"                   ;Parameter &A8:                 '<par>'
-    EQUS &0C, " (<end>/+", &AC, ")"     ;Parameter &A9:                 ' (<end>/+<len>)'
-    EQUS &06, "addr>"                   ;Parameter &AA:                 'addr>'
-    EQUS &06, " <sr", &AA               ;Parameter &AB:                 ' <sraddr>'
-    EQUS &06, "<len>"                   ;Parameter &AC:                 '<len>'
-    EQUS &05, ")..."                    ;Parameter &AD:                 ')...'
-    EQUS &05, "(<0-"                    ;Parameter &AE:                 '(<0-'
-    EQUS &04, &AE, "4>"                 ;Parameter &AF:                 '(<0-4>'
+    EQUS &09, "(", &A6, "(R))/", &A1         ;Parameter &80 for *ALARM:      '((=<TIME>(R))/ON/OFF/?)'
+    EQUS &04, "(" ,&A7, ")"                  ;Parameter &81 for *CALENDAR:   '(<DATE>)'
+    EQUS &07, "((=)", &A7, ")"               ;Parameter &82 for *DATE:       '((=)<DATE>)'
+    EQUS &03, &A6, ")"                       ;Parameter &83 for *TIME:       '(=<TIME>)'
+    EQUS &06, &85, "(,", &A8,&AD             ;Parameter &84 for *CONFIGURE:  '(<par>)(,<par>)...'
+    EQUS &04, "(", &A8, ")"                  ;Parameter &85 for *STATUS:     '(<par>)'
+    EQUS &02, &94                            ;Parameter &86 for *CSAVE:      '<fsp>'
+    EQUS &02, &94                            ;Parameter &87 for *CLOAD:      '<fsp>'
+    EQUS &08, "(<cmd>", &A0                  ;Parameter &88 for *BOOT:       '(<cmd>/?)'
+    EQUS &06, &AF, "/#" , &98, &A0           ;Parameter &89 for *BUFFER:     '(<0-4>/#<id>(,<id>).../?)'
+    EQUS &03, "(", &A1                       ;Parameter &8A for *PURGE:      '(ON/OFF/?)'
+    EQUS &03, &98,&A2                        ;Parameter &8B for *INSERT:     '<id>(,<id>)...(I)'
+    EQUS &03, &98,&A2                        ;Parameter &8C for *UNPLUG:     '<id>(,<id>)...(I)'
+    EQUS &01                                 ;Parameter &8D for *ROMS:
+    EQUS &03, &AF,&A0                        ;Parameter &8E for *OSMODE:     '(<0-4>/?)'
+    EQUS &07, "(", &AE, "1>", &A0, ")"       ;Parameter &8F for *SHADOW:     '((<0-1>/?))'
+    EQUS &03, "(", &A1                       ;Parameter &90 for *SHX:        '(ON/OFF/?)'
+    EQUS &03, "(", &A1                       ;Parameter &91 for *TUBE:       '(ON/OFF/?)'
+    EQUS &03, "<", &AA                       ;Parameter &92 for *GOIO:       '<addr>'
+    EQUS &01                                 ;Parameter &93 for *NLE:
+    EQUS &06, "<fsp>"                        ;Parameter &94:                 '<fsp>'
+    EQUS &04, &94, " ", &AC                  ;Parameter &95:                 '<fsp> <len>'
+    EQUS &02, &94                            ;Parameter &96:                 '<fsp>'
+    EQUS &02, &94                            ;Parameter &97:                 '<fsp>'
+    EQUS &06, &A5, "(,", &A5, &AD            ;Parameter &98:                 '<id>(,<id>)...'
+    EQUS &02, &98                            ;Parameter &99:                 '<id>(,<id>)...'
+    EQUS &02, &98                            ;Parameter &9A:                 '<id>(,<id>)...'
+    EQUS &04, "(", &98, &A0                  ;Parameter &9B:                 '(<id>(,<id>).../?)'
+    EQUS &05, &94, &AB, &A3, &A2             ;Parameter &9C:                 '<fsp> <sraddr> (<id>) (Q)(I)'
+    EQUS &05, &94, &AB, &A9, &A3             ;Parameter &9D:                 '<fsp> (<end>/+<len>) (<id>) (Q)'
+    EQUS &06, "<", &AA, &A9, &AB, &A4        ;Parameter &9E:                 '<addr> (<end>/+<len>) <sraddr> (<id>)'
+    EQUS &02, &9E                            ;Parameter &9F:                 '<addr> (<end>/+<len>) <sraddr> (<id>)'
+    EQUS &04, "/?)"                          ;Parameter &A0:                 '/?)'
+    EQUS &08, "ON/OFF", &A0                  ;Parameter &A1:                 'ON/OFF/?)'
+    EQUS &04, "(I)"                          ;Parameter &A2:                 '(I)'
+    EQUS &06, &A4," (Q)"                     ;Parameter &A3:                 ' (<id>) (Q)'
+    EQUS &05, " (", &A5, ")"                 ;Parameter &A4:                 ' (<id>)'
+    EQUS &05, "<id>"                         ;Parameter &A5:                 '<id>'
+    EQUS &09, "(=<time>"                     ;Parameter &A6:                 '(=<time>'
+    EQUS &07, "<date>"                       ;Parameter &A7:                 '<date>'
+    EQUS &06, "<par>"                        ;Parameter &A8:                 '<par>'
+    EQUS &0C, " (<end>/+", &AC, ")"          ;Parameter &A9:                 ' (<end>/+<len>)'
+    EQUS &06, "addr>"                        ;Parameter &AA:                 'addr>'
+    EQUS &06, " <sr", &AA                    ;Parameter &AB:                 ' <sraddr>'
+    EQUS &06, "<len>"                        ;Parameter &AC:                 '<len>'
+    EQUS &05, ")..."                         ;Parameter &AD:                 ')...'
+    EQUS &05, "(<0-"                         ;Parameter &AE:                 '(<0-'
+    EQUS &04, &AE, "4>"                      ;Parameter &AF:                 '(<0-4>'
 ELSE
 .CmdParTbl
-    EQUS &09, "(", &A8, "(R))/", &A3    ;Parameter &80 for *ALARM:      '((=<TIME>(R))/ON/OFF/?)'
-    EQUS &04, "(" ,&A9, ")"             ;Parameter &81 for *CALENDAR:   '(<DATE>)'
-    EQUS &07, "((=)", &A9, ")"          ;Parameter &82 for *DATE:       '((=)<DATE>)'
-    EQUS &03, &A8, ")"                  ;Parameter &83 for *TIME:       '(=<TIME>)'
-    EQUS &06, &85, "(,", &AA,&AF        ;Parameter &84 for *CONFIGURE:  '(<par>)(,<par>)...'
-    EQUS &04, "(", &AA, ")"             ;Parameter &85 for *STATUS:     '(<par>)'
-    EQUS &02, &94                       ;Parameter &86 for *CSAVE:      '<fsp>'
-    EQUS &02, &94                       ;Parameter &87 for *CLOAD:      '<fsp>'
-    EQUS &08, "(<cmd>", &A2             ;Parameter &88 for *BOOT:       '(<cmd>/?)'
-    EQUS &06, &B1, "/#" , &98, &A2      ;Parameter &89 for *BUFFER:     '(<0-4>/#<id>(,<id>).../?)'
-    EQUS &03, "(", &A4                  ;Parameter &8A for *PURGE:      '(ON/OFF/?)'
-    EQUS &03, &98,&A4                   ;Parameter &8B for *INSERT:     '<id>(,<id>)...(I)'
-    EQUS &03, &98,&A4                   ;Parameter &8C for *UNPLUG:     '<id>(,<id>)...(I)'
-    EQUS &01                            ;Parameter &8D for *ROMS:
-    EQUS &03, &B1,&A2                   ;Parameter &8E for *OSMODE:     '(<0-4>/?)'
-    EQUS &07, "(", &B0, "1>", &A2, ")"  ;Parameter &8F for *SHADOW:     '((<0-1>/?))'
-    EQUS &03, "(", &A3                  ;Parameter &90 for *SHX:        '(ON/OFF/?)'
-    EQUS &03, "(", &A3                  ;Parameter &91 for *TUBE:       '(ON/OFF/?)'
-    EQUS &03, "<", &AC                  ;Parameter &92 for *GOIO:       '<addr>'
-    EQUS &01                            ;Parameter &93 for *NLE:
-    EQUS &06, "<fsp>"                   ;Parameter &94:                 '<fsp>'
-    EQUS &04, &94, " ", &AE             ;Parameter &95:                 '<fsp> <len>'
-    EQUS &02, &94                       ;Parameter &96:                 '<fsp>'
-    EQUS &02, &94                       ;Parameter &97:                 '<fsp>'
-    EQUS &06, &A7, "(,", &A7, &AF       ;Parameter &98:                 '<id>(,<id>)...'
-    EQUS &02, &98                       ;Parameter &99:                 '<id>(,<id>)...'
-    EQUS &02, &98                       ;Parameter &9A:                 '<id>(,<id>)...'
-    EQUS &04, "(", &98, &A2             ;Parameter &9B:                 '(<id>(,<id>).../?)'
-    EQUS &06, &94, &AD, &A5, &A4, &B2   ;Parameter &9C for *SRLOAD:     '<fsp> <sraddr> (<id>) (Q)(I)(T)' # ENHANCE: add '(P)'?
-    EQUS &05, &94, &AD, &AB, &A5        ;Parameter &9D for *SRSAVE:     '<fsp> (<end>/+<len>) (<id>) (Q)'
-    EQUS &06, "<", &AC, &AB, &AD, &A6   ;Parameter &9E for *SRREAD:     '<addr> (<end>/+<len>) <sraddr> (<id>)'
-    EQUS &04, &9E, " ", &B2             ;Parameter &9F for *SRWRITE:    '<addr> (<end>/+<len>) <sraddr> (<id>) (T)'
-    EQUS &04, &98, " ", &B2             ;Parameter &A0:                 '<id>(,<id>)... (T)'
-    EQUS &04, &98, " ", &B2             ;Parameter &A1:                 '<id>(,<id>)... (T)'
-    EQUS &04, "/?)"                     ;Parameter &A2:                 '/?)'
-    EQUS &08, "ON/OFF", &A2             ;Parameter &A3:                 'ON/OFF/?)'
-    EQUS &04, "(I)"                     ;Parameter &A4:                 '(I)'
-    EQUS &06, &A6," (Q)"                ;Parameter &A5:                 ' (<id>) (Q)'
-    EQUS &05, " (", &A7, ")"            ;Parameter &A6:                 ' (<id>)'
-    EQUS &05, "<id>"                    ;Parameter &A7:                 '<id>'
-    EQUS &09, "(=<time>"                ;Parameter &A8:                 '(=<time>'
-    EQUS &07, "<date>"                  ;Parameter &A9:                 '<date>'
-    EQUS &06, "<par>"                   ;Parameter &AA:                 '<par>'
-    EQUS &0C, " (<end>/+", &AE, ")"     ;Parameter &AB:                 ' (<end>/+<len>)'
-    EQUS &06, "addr>"                   ;Parameter &AC:                 'addr>'
-    EQUS &06, " <sr", &AC               ;Parameter &AD:                 ' <sraddr>'
-    EQUS &06, "<len>"                   ;Parameter &AE:                 '<len>'
-    EQUS &05, ")..."                    ;Parameter &AF:                 ')...'
-    EQUS &05, "(<0-"                    ;Parameter &B0:                 '(<0-'
-    EQUS &04, &B0, "4>"                 ;Parameter &B1:                 '(<0-4>'
-    EQUS &04, "(T)"                     ;Parameter &B2:                 '(T)'
+    EQUS &09, "(", &A8, "(R))/", &A3         ;Parameter &80 for *ALARM:      '((=<TIME>(R))/ON/OFF/?)'
+    EQUS &04, "(" ,&A9, ")"                  ;Parameter &81 for *CALENDAR:   '(<DATE>)'
+    EQUS &07, "((=)", &A9, ")"               ;Parameter &82 for *DATE:       '((=)<DATE>)'
+    EQUS &03, &A8, ")"                       ;Parameter &83 for *TIME:       '(=<TIME>)'
+    EQUS &06, &85, "(,", &AA,&AF             ;Parameter &84 for *CONFIGURE:  '(<par>)(,<par>)...'
+    EQUS &04, "(", &AA, ")"                  ;Parameter &85 for *STATUS:     '(<par>)'
+    EQUS &02, &94                            ;Parameter &86 for *CSAVE:      '<fsp>'
+    EQUS &02, &94                            ;Parameter &87 for *CLOAD:      '<fsp>'
+    EQUS &08, "(<cmd>", &A2                  ;Parameter &88 for *BOOT:       '(<cmd>/?)'
+    EQUS &06, &B1, "/#" , &98, &A2           ;Parameter &89 for *BUFFER:     '(<0-4>/#<id>(,<id>).../?)'
+    EQUS &03, "(", &A4                       ;Parameter &8A for *PURGE:      '(ON/OFF/?)'
+    EQUS &03, &98,&A4                        ;Parameter &8B for *INSERT:     '<id>(,<id>)...(I)'
+    EQUS &03, &98,&A4                        ;Parameter &8C for *UNPLUG:     '<id>(,<id>)...(I)'
+    EQUS &01                                 ;Parameter &8D for *ROMS:
+    EQUS &03, &B1,&A2                        ;Parameter &8E for *OSMODE:     '(<0-4>/?)'
+    EQUS &07, "(", &B0, "1>", &A2, ")"       ;Parameter &8F for *SHADOW:     '((<0-1>/?))'
+    EQUS &03, "(", &A3                       ;Parameter &90 for *SHX:        '(ON/OFF/?)'
+    EQUS &03, "(", &A3                       ;Parameter &91 for *TUBE:       '(ON/OFF/?)'
+    EQUS &03, "<", &AC                       ;Parameter &92 for *GOIO:       '<addr>'
+    EQUS &01                                 ;Parameter &93 for *NLE:
+    EQUS &06, "<fsp>"                        ;Parameter &94 for *APPEND:     '<fsp>'
+    EQUS &04, &94, " ", &AE                  ;Parameter &95 for *CREATE:     '<fsp> <len>'
+    EQUS &02, &94                            ;Parameter &96 for *PRINT:      '<fsp>'
+    EQUS &02, &94                            ;Parameter &97 for *SPOOLON:    '<fsp>'
+    EQUS &06, &A7, "(,", &A7, &AF            ;Parameter &98 for *SRWIPE:     '<id>(,<id>)...'
+    EQUS &02, &98                            ;Parameter &99 for *SRDATA:     '<id>(,<id>)...'
+    EQUS &02, &98                            ;Parameter &9A for *SRROM:      '<id>(,<id>)...'
+    EQUS &04, "(", &98, &A2                  ;Parameter &9B for *SRSET:      '(<id>(,<id>).../?)'
+    EQUS &07, &94, &AD, &A5, &A4, &B2, &B3   ;Parameter &9C for *SRLOAD:     '<fsp> <sraddr> (<id>) (Q)(I)(T)(P)'
+    EQUS &05, &94, &AD, &AB, &A5             ;Parameter &9D for *SRSAVE:     '<fsp> (<end>/+<len>) (<id>) (Q)'
+    EQUS &06, "<", &AC, &AB, &AD, &A6        ;Parameter &9E for *SRREAD:     '<addr> (<end>/+<len>) <sraddr> (<id>)'
+    EQUS &04, &9E, " ", &B2                  ;Parameter &9F for *SRWRITE:    '<addr> (<end>/+<len>) <sraddr> (<id>) (T)'
+    EQUS &04, &98, " ", &B2                  ;Parameter &A0 for *SRWE:       '<id>(,<id>)... (T)'
+    EQUS &04, &98, " ", &B2                  ;Parameter &A1 for *SRWP:       '<id>(,<id>)... (T)'
+    EQUS &04, "/?)"                          ;Parameter &A2:                 '/?)'
+    EQUS &08, "ON/OFF", &A2                  ;Parameter &A3:                 'ON/OFF/?)'
+    EQUS &04, "(I)"                          ;Parameter &A4:                 '(I)'
+    EQUS &06, &A6," (Q)"                     ;Parameter &A5:                 ' (<id>) (Q)'
+    EQUS &05, " (", &A7, ")"                 ;Parameter &A6:                 ' (<id>)'
+    EQUS &05, "<id>"                         ;Parameter &A7:                 '<id>'
+    EQUS &09, "(=<time>"                     ;Parameter &A8:                 '(=<time>'
+    EQUS &07, "<date>"                       ;Parameter &A9:                 '<date>'
+    EQUS &06, "<par>"                        ;Parameter &AA:                 '<par>'
+    EQUS &0C, " (<end>/+", &AE, ")"          ;Parameter &AB:                 ' (<end>/+<len>)'
+    EQUS &06, "addr>"                        ;Parameter &AC:                 'addr>'
+    EQUS &06, " <sr", &AC                    ;Parameter &AD:                 ' <sraddr>'
+    EQUS &06, "<len>"                        ;Parameter &AE:                 '<len>'
+    EQUS &05, ")..."                         ;Parameter &AF:                 ')...'
+    EQUS &05, "(<0-"                         ;Parameter &B0:                 '(<0-'
+    EQUS &04, &B0, "4>"                      ;Parameter &B1:                 '(<0-4>'
+    EQUS &04, "(T)"                          ;Parameter &B2:                 '(T)'
+    EQUS &04, "(P)"                          ;Parameter &B3:                 '(P)'
+    
 ENDIF
 
 ;lookup table for start address of recognised * commands
 .^CmdExTbl
-    EQUW alarm-1                        ;address of *ALARM command
-    EQUW calend-1                       ;address of *CALENDAR command
-    EQUW date-1                         ;address of *DATE command
-    EQUW time-1                         ;address of *TIME command
-    EQUW config-1                       ;address of *CONFIGURE command
-    EQUW status-1                       ;address of *STATUS command
-    EQUW csave-1                        ;address of *CSAVE command
-    EQUW cload-1                        ;address of *CLOAD command
-    EQUW boot-1                         ;address of *BOOT command
-    EQUW buffer-1                       ;address of *BUFFER command
-    EQUW purge-1                        ;address of *PURGE command
-    EQUW insert-1                       ;address of *INSERT command
-    EQUW unplug-1                       ;address of *UNPLUG command
-    EQUW roms-1                         ;address of *ROMS command
-    EQUW osmode-1                       ;address of *OSMODE command
-    EQUW shadow-1                       ;address of *SHADOW command
-    EQUW shx-1                          ;address of *SHX command
-    EQUW tube-1                         ;address of *TUBE command
-    EQUW goio-1                         ;address of *GOIO command
-    EQUW nle-1                          ;address of *NLE command
-    EQUW append-1                       ;address of *APPEND command
-    EQUW create-1                       ;address of *CREATE command
-    EQUW print-1                        ;address of *PRINT command
-    EQUW SpoolOn-1                      ;address of *SPOOLON command
-    EQUW srwipe-1                       ;address of *SRWIPE command
-    EQUW srdata-1                       ;address of *SRDATA command
-    EQUW srrom-1                        ;address of *SRROM command
-    EQUW srset-1                        ;address of *SRSET command
-    EQUW srload-1                       ;address of *SRLOAD command
-    EQUW srsave-1                       ;address of *SRSAVE command
-    EQUW srread-1                       ;address of *SRREAD command
-    EQUW srwrite-1                      ;address of *SRWRITE command
-    EQUW srwe-1                         ;address of *SRWE command
-    EQUW srwp-1                         ;address of *SRWP command
+    EQUW alarm-1                             ;address of *ALARM command
+    EQUW calend-1                            ;address of *CALENDAR command
+    EQUW date-1                              ;address of *DATE command
+    EQUW time-1                              ;address of *TIME command
+    EQUW config-1                            ;address of *CONFIGURE command
+    EQUW status-1                            ;address of *STATUS command
+    EQUW csave-1                             ;address of *CSAVE command
+    EQUW cload-1                             ;address of *CLOAD command
+    EQUW boot-1                              ;address of *BOOT command
+    EQUW buffer-1                            ;address of *BUFFER command
+    EQUW purge-1                             ;address of *PURGE command
+    EQUW insert-1                            ;address of *INSERT command
+    EQUW unplug-1                            ;address of *UNPLUG command
+    EQUW roms-1                              ;address of *ROMS command
+    EQUW osmode-1                            ;address of *OSMODE command
+    EQUW shadow-1                            ;address of *SHADOW command
+    EQUW shx-1                               ;address of *SHX command
+    EQUW tube-1                              ;address of *TUBE command
+    EQUW goio-1                              ;address of *GOIO command
+    EQUW nle-1                               ;address of *NLE command
+    EQUW append-1                            ;address of *APPEND command
+    EQUW create-1                            ;address of *CREATE command
+    EQUW print-1                             ;address of *PRINT command
+    EQUW SpoolOn-1                           ;address of *SPOOLON command
+    EQUW srwipe-1                            ;address of *SRWIPE command
+    EQUW srdata-1                            ;address of *SRDATA command
+    EQUW srrom-1                             ;address of *SRROM command
+    EQUW srset-1                             ;address of *SRSET command
+    EQUW srload-1                            ;address of *SRLOAD command
+    EQUW srsave-1                            ;address of *SRSAVE command
+    EQUW srread-1                            ;address of *SRREAD command
+    EQUW srwrite-1                           ;address of *SRWRITE command
+    EQUW srwe-1                              ;address of *SRWE command
+    EQUW srwp-1                              ;address of *SRWP command
 }
 	
 ;Store *CONFIGURE reference table pointer address in X & Y
@@ -5850,7 +5850,7 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             LDA prvOswordBlockCopy + 2
             STA prvOswordBlockCopy + 13
             LDA prvOswordBlockCopy + 3
-            JSR checkRamBankAndMakeAbsoluteAndUpdatePrvOswordBlockCopy                    ;convert pseudo RAM bank to absolute RAM bank & save to private address &21
+            JSR checkRamBankAndMakeAbsoluteAndUpdatePrvOswordBlockCopy ; convert pseudo RAM bank to absolute RAM bank & save to private address &21
             LDA prvOswordBlockCopy + 8
             STA prvOswordBlockCopy + 2
             LDA prvOswordBlockCopy + 9
@@ -5863,10 +5863,12 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
             STA prvOswordBlockCopy + 6
             LDA prvOswordBlockCopy + 11
             STA prvOswordBlockCopy + 7
-            LDA prvOswordBlockCopy + 6							;<----This won't work, because we've already overwritten &26 with &2A!!!
-            STA prvOswordBlockCopy + 10							;<----This won't work, because we've already overwritten &26 with &2A!!!
-            LDA prvOswordBlockCopy + 7							;<----This won't work, because we've already overwritten &27 with &2B!!!
-            STA prvOswordBlockCopy + 11							;<----This won't work, because we've already overwritten &27 with &2B!!!
+	  ; SQUASH: As written, these next 4 lines are redundant. prvOswordBlockCopy + 10 and prvOswordBlockCopy + 11
+	  ; already contain the values of prvOswordBlockCopy + 6 and prvOswordBlockCopy + 7. Or is this a bug?
+            LDA prvOswordBlockCopy + 6
+            STA prvOswordBlockCopy + 10
+            LDA prvOswordBlockCopy + 7
+            STA prvOswordBlockCopy + 11
             RTS
 }
 			
@@ -5883,37 +5885,29 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
 ;&80 - Write to absolute address
 ;&C0 - Write to pseudo-address
 
-; SFTODO: Could this be rewritten more compactly as a loop?
 ; SFTODO: This has only one caller
 .adjustPrvOsword42Block
 {
     XASSERT_USE_PRV1
-            LDA prvOswordBlockCopy + 7						;ROM number
-            PHA
-            LDA prvOswordBlockCopy + 6
-            STA prvOswordBlockCopy + 7
-            LDA prvOswordBlockCopy + 5
-            STA prvOswordBlockCopy + 6
-            LDA prvOswordBlockCopy + 4
-            STA prvOswordBlockCopy + 5
-            LDA prvOswordBlockCopy + 3
-            STA prvOswordBlockCopy + 4
-            LDA prvOswordBlockCopy + 2
-            STA prvOswordBlockCopy + 3
-            LDA prvOswordBlockCopy + 1
-            STA prvOswordBlockCopy + 2
-            PLA
-.^checkRamBankAndMakeAbsoluteAndUpdatePrvOswordBlockCopy ; SFTODO: catchy!
-.L9BBC     JSR checkRamBankAndMakeAbsolute					;convert pseudo RAM bank to absolute RAM bank
-            STA prvOswordBlockCopy + 1						;and save to private address &8221
-            RTS
+    LDA prvOswordBlockCopy + 7 ; ROM number
+    PHA
+    LDX #6
+.loop
+    LDA prvOswordBlockCopy,X:STA prvOswordBlockCopy+1,X
+    DEX
+    BNE loop
+    PLA
+.^checkRamBankAndMakeAbsoluteAndUpdatePrvOswordBlockCopy
+    JSR checkRamBankAndMakeAbsolute
+    STA prvOswordBlockCopy + 1
+    RTS
 }
 
 IF IBOS_VERSION >= 127
 ; This generates OS errors, which is not generally correct for OSWORD calls. However, Acorn's
 ; own OSWORD &43 is quite happy to generate OS errors, and the OSWORD &42 and &43 APIs provide
 ; no way to pass back a failure to the user (the parameter block is unmodified on exit, unless
-; it got trampled on by the transfer), so I think it's reasonable behaviour here.
+; it got trampled on by the transfer), so I think it's reasonable behavior here.
 .ensureOswordBlockBankIsUsableRamIfPossibleViaOsword
 {
     BIT prvOswordBlockCopy:BPL Rts ; branch if reading from SWR
@@ -5940,7 +5934,6 @@ IF IBOS_VERSION >= 127
 ; Alternate entry point with the bank number in X and therefore no checks for the OSWORD block
 ; specifying a write or that normal non-pseudo addressing is in use. Additionally, for this
 ; entry point errors are generated iff C is clear on entry.
-; identical.
 .^ensureBankXIsUsableRamIfPossible
     PHP
     JSR TestBankXForRamUsingVariableMainRamSubroutine:BNE notWERam ; branch if not RAM
