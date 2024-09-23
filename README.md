@@ -88,3 +88,4 @@ If you have problems or suggestions for improvement, please post in the [IBOS th
   * Reset PALPROM config parameters during Integra Reset if PALPROM bank is Write Enabled at the point of reset.
   * Fix long-standing bug where *SRLOAD & *SRWRITE were not *SRDATA ('RAM') aware. These commands will now reduce the SRDATA RAM counter if the bank had previously been configured as a *SRDATA ('RAM') bank.
   * Preserve A in OSBYTE &6F (111), as all OSBYTE calls should.
+  * Increase the buffer start address from PAGE to PAGE + &100, to avoid 'Bad Program' message using Q option to *SRLOAD or *SRSAVE ROM images when no BASIC program exists in memory.
