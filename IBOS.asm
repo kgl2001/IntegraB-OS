@@ -5890,11 +5890,26 @@ pseudoAddressingBankDataSize = &4000 - pseudoAddressingBankHeaderSize
     XASSERT_USE_PRV1
     LDA prvOswordBlockCopy + 7 ; ROM number
     PHA
+IF IBOS_VERSION < 127
+            LDA prvOswordBlockCopy + 6
+            STA prvOswordBlockCopy + 7
+            LDA prvOswordBlockCopy + 5
+            STA prvOswordBlockCopy + 6
+            LDA prvOswordBlockCopy + 4
+            STA prvOswordBlockCopy + 5
+            LDA prvOswordBlockCopy + 3
+            STA prvOswordBlockCopy + 4
+            LDA prvOswordBlockCopy + 2
+            STA prvOswordBlockCopy + 3
+            LDA prvOswordBlockCopy + 1
+            STA prvOswordBlockCopy + 2
+ELSE
     LDX #6
 .loop
     LDA prvOswordBlockCopy,X:STA prvOswordBlockCopy+1,X
     DEX
     BNE loop
+ENDIF
     PLA
 .^checkRamBankAndMakeAbsoluteAndUpdatePrvOswordBlockCopy
     JSR checkRamBankAndMakeAbsolute
