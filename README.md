@@ -89,3 +89,8 @@ If you have problems or suggestions for improvement, please post in the [IBOS th
   * Fix long-standing bug where *SRLOAD & *SRWRITE were not *SRDATA ('RAM') aware. These commands will now reduce the SRDATA RAM counter if the bank had previously been configured as a *SRDATA ('RAM') bank.
   * Preserve A in OSBYTE &6F (111), as all OSBYTE calls should.
   * Increase the buffer start address from PAGE to PAGE + &100, to avoid 'Bad Program' message using Q option to *SRLOAD or *SRSAVE ROM images when no BASIC program exists in memory.
+
+* v1.28 (November 2026):
+  * Fix OSWORD &42 / &43 with pseudo addressing (function bit 6 set) giving a 'Not W/E RAM' error. The write-enable check added in v1.27 tested the relative bank number (0-3) used for pseudo addressing as if it were an absolute bank, so it checked banks 0-3 (ROM sockets) instead of skipping the check. This stopped BBC Domesday running, which sets banks 4-7 to *SRDATA and moves data with pseudo-addressed OSWORD &42 ("TRAP: fatal error detected in SC at 40, param 131").
+  * Fix OSWORD &42 / &43 with pseudo banks W-Z given as bank IDs &10-&13, as on the Master. These were looked up 16 bytes past the pseudo bank table, in the printer buffer bank list, so W could become IBOS's own bank (with private RAM paged in) and X-Z gave 'Bad id'. Affects all earlier versions. IDs above &13 now give 'Bad id'.
+  * Binary version number 1.

@@ -996,6 +996,8 @@ IF IBOS_VERSION < 127
     EQUB &FF ; binary version number
 ELIF IBOS_VERSION == 127
     EQUB 0 ; binary version number
+ELIF IBOS_VERSION == 128
+    EQUB 1 ; binary version number
 ELSE
     ; We could do EQUB IBOS_VERSION-127 but it feels safest to be explicit, in case we end up
     ; having IBOS 2.00 at some point with IBOS_VERSION == 200.
@@ -1025,6 +1027,12 @@ ELIF IBOS_VERSION == 127
         EQUS "1.27" ; version string
     ELSE
         EQUS "X.27" ; version string
+    ENDIF
+ELIF IBOS_VERSION == 128
+    IF INCLUDE_APPEND
+        EQUS "1.28" ; version string
+    ELSE
+        EQUS "X.28" ; version string
     ENDIF
 ENDIF
 .Copyright
@@ -5746,9 +5754,20 @@ ENDIF
             AND #&7F								;drop the highest bit
             CMP #maxBank + 1								;check if RAM bank is absolute or pseudo address
             BCC rts
+IF IBOS_VERSION < 128
             TAX
             ; SFTODO: Any danger this is ever going to have X>3 and access an arbitrary byte?
+            ; Yes: OSWORD &42/&43 pass pseudo banks W-Z as &10-&13, so this reads
+            ; prvPrintBufferBankList. Fixed in IBOS 1.28.
             LDA prvPseudoBankNumbers,X							;lookup table to convert pseudo RAM W, X, Y, Z into absolute address???
+ELSE
+            ; OSWORD &42/&43 pass pseudo banks W-Z as IDs &10-&13 (as on the Master);
+            ; anything higher is a bad ID.
+            CMP #maxBank + 1 + 4
+            BCS badIdIndirect
+            TAX
+            LDA prvPseudoBankNumbers - (maxBank + 1),X				;convert pseudo RAM W, X, Y, Z into absolute bank
+ENDIF
             BMI badIdIndirect								;check for Bad ID
 .rts        RTS
 }
@@ -5925,7 +5944,15 @@ IF IBOS_VERSION >= 127
 .ensureOswordBlockBankIsUsableRamIfPossibleViaOsword
 {
     BIT prvOswordBlockCopy:BPL Rts ; branch if reading from SWR
+IF IBOS_VERSION < 128
+    ; Bug: with pseudo addressing prvOswordBlockCopy + 1 holds the relative bank 0-3 set by
+    ; getAddressesAndLengthFromPrvOswordBlockCopy, never b7 set, so this tests banks 0-3
+    ; and gives "Not W/E RAM" (e.g. Domesday: *SRDATA 4-7 then OSWORD &42 function &C0).
     LDX prvOswordBlockCopy + 1:BMI Rts ; branch if pseudo addressing in operation
+ELSE
+    BVS Rts ; branch if pseudo addressing in operation (function b6)
+    LDX prvOswordBlockCopy + 1
+ENDIF
     LDA prvOswordBlockCopy:AND #Osword43FunctionTemporaryWEBit:BEQ NotTemporaryWriteEnable
 
     ; transientRomBankMask overlaps transientOs4243BytesToTransfer, so we must save and restore
@@ -12109,6 +12136,8 @@ ELIF IBOS_VERSION == 126
     SAVE "IBOS-126.rom", start, end
 ELIF IBOS_VERSION == 127
     SAVE "IBOS-127.rom", start, end
+ELIF IBOS_VERSION == 128
+    SAVE "IBOS-128.rom", start, end
 ELSE
     ERROR "Unknown IBOS_VERSION"
 ENDIF
