@@ -150,6 +150,11 @@ rtcUserBase = &0E
 ;Register &0F - &2D:	0: Tube / 2-4: BAUD / 5-7: Printer
 ;Register &10 - &A0:	0: File system disc/net flag / 4: Boot / 5-7: Data
 ;Register &11 - &FF:          <v1.26: unused / >=v1.26: 0-3: FILE, 4-7: spare
+;Register &1E - &2D:          Not used by IBOS: one byte per ROM bank, &1E + bank number (CMOS
+;                             30-45), following the Master's convention for ROMs' own settings,
+;                             read and written with OSBYTE &A1 / &A2. VFS 2.02ib keeps its
+;                             *CONFIGURE options in the byte for the bank VFS202IBLO is in
+;                             (e.g. &26 for bank 8). Cleared to 0 by a full reset.
 ;Register &31 - &00:          >=v1.27: PALPROM Config: 0-1: Spare / 2: pp2a / 3: pp2b / 4..5: pp4a / 6..7: pp8a
 
 
@@ -5516,7 +5521,7 @@ ENDIF
     ; ROM - so patch variableMainRamSubroutine's ROM header to say "ROM" instead of "RAM"
     LDA #'O':STA WriteRomHeaderDataAO
 .Ram
-IF IBOS_VERSION < 1.27
+IF IBOS_VERSION < 127
     LDA prvOswordBlockCopy + 1
 ELSE
     LDA SrRomDataBankTmp
